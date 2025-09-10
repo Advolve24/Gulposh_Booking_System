@@ -28,13 +28,11 @@ export default function Bookings() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // filters
     const [status, setStatus] = useState("all");
     const [room, setRoom] = useState("");
     const [q, setQ] = useState("");
     const [range, setRange] = useState();
 
-    // dialog
     const [open, setOpen] = useState(false);
     const [selected, setSelected] = useState(null);
     const [cancelling, setCancelling] = useState(false);

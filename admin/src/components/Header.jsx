@@ -19,7 +19,7 @@ const Header = () => {
         {/* Right: user */}
         <div className="flex items-center gap-3">
              <div>
-                   <Link to="/dashboard" className='text-sm'>DashBoard</Link>
+                   <Link to="/dashboard" className='text-sm'>Dashboard</Link>
                    <Link to="/rooms/new" className='ml-4 text-sm'>Add Room</Link>
                    <Link to="/bookings" className='ml-4 text-sm'>Bookings</Link>
                    <Link to="/users" className='ml-4 text-sm'>Users</Link>

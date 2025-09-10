@@ -5,12 +5,11 @@ export const useAuth = create((set) => ({
   user: null,
   ready: false,
 
-  // expose setter so other places can use it safely
   setUser: (user) => set({ user }),
 
   init: async () => {
     try {
-      const me = await adminMe();     // GET /api/admin/me
+      const me = await adminMe();     
       set({ user: me, ready: true });
     } catch {
       set({ user: null, ready: true });
@@ -18,7 +17,7 @@ export const useAuth = create((set) => ({
   },
 
   login: async (email, password) => {
-    const me = await adminLogin(email, password); // POST /api/admin/login
+    const me = await adminLogin(email, password); 
     set({ user: me });
     sessionStorage.setItem("adminUser", JSON.stringify(me));
   },
