@@ -94,7 +94,7 @@ export default function Dashboard() {
     })();
   }, [blackouts]);
 
-  const fmt = (d) => format(new Date(d), "dd MMM yyyy");
+  const fmt = (d) => format(new Date(d), "dd MMM yy");
 
   // Overlap guard for blocking
   const picked =
