@@ -20,6 +20,7 @@ const ALLOWED = [
   "https://villagulposh.netlify.app",
   "http://localhost:5173",
   "http://localhost:5174",
+  "https://gulposhbookingsystem.netlify.app/",
 ];
 
 app.use((req, res, next) => {
