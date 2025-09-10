@@ -10,8 +10,9 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { CheckCircle, XCircle } from "lucide-react";
 
-const fmt = (d) => (d ? format(new Date(d), "dd MMM yyyy") : "—");
+const fmt = (d) => (d ? format(new Date(d), "dd MMM yy") : "—");
 const diffNightsInclusive = (from, to) => {
     const a = new Date(from), b = new Date(to);
     a.setHours(0, 0, 0, 0); b.setHours(0, 0, 0, 0);
@@ -52,7 +53,7 @@ export default function Bookings() {
                 params.from = new Date(range.from).toISOString();
                 params.to = new Date(range.to).toISOString();
             }
-            const data = await listBookingsAdmin(params); 
+            const data = await listBookingsAdmin(params);
             setBookings(Array.isArray(data) ? data : (data?.items || []));
         } catch (e) {
             toast.error(e?.response?.data?.message || "Failed to load bookings");
@@ -78,7 +79,7 @@ export default function Bookings() {
         if (!confirm("Cancel this booking?")) return;
         setCancelling(true);
         try {
-            await cancelBookingAdmin(selected._id); 
+            await cancelBookingAdmin(selected._id);
             toast.success("Booking cancelled");
             setOpen(false);
             load();
@@ -104,21 +105,21 @@ export default function Bookings() {
                 <CardHeader className="flex-row items-center justify-between">
                     <CardTitle>Bookings</CardTitle>
                     <div className="flex justify-end w-[70%] gap-2">
-                    <div className="w-[40%] -mt-6">
-                        <label className="text-sm block mb-1">Status</label>
-                        <Select value={status} onValueChange={setStatus}>
-                            <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="confirmed">Confirmed</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>  
-                    <Button variant="secondary" onClick={load} disabled={loading}>
-                        {loading ? "Loading..." : "Refresh"}
-                    </Button>
+                        <div className="w-[40%] -mt-6">
+                            <label className="text-sm block mb-1">Status</label>
+                            <Select value={status} onValueChange={setStatus}>
+                                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All</SelectItem>
+                                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button variant="secondary" onClick={load} disabled={loading}>
+                            {loading ? "Loading..." : "Refresh"}
+                        </Button>
                     </div>
                 </CardHeader>
                 <CardContent className="overflow-x-auto">
@@ -185,11 +186,35 @@ export default function Bookings() {
                     {selected && (
                         <div className="space-y-2 text-sm">
                             <div><span className="text-muted-foreground">Booking ID:</span> {selected._id}</div>
-                            <div><span className="text-muted-foreground">Guest:</span> {selected.user?.name || selected.guestName || "—"} ({selected.user?.email || selected.guestEmail || "—"})</div>
                             <div><span className="text-muted-foreground">Room:</span> {selected.room?.name || selected.roomName || "—"}</div>
                             <div><span className="text-muted-foreground">Dates:</span> {fmt(selected.startDate)} → {fmt(selected.endDate)}</div>
                             <div><span className="text-muted-foreground">Nights:</span> {diffNightsInclusive(selected.startDate, selected.endDate)}</div>
                             <div><span className="text-muted-foreground">Guests:</span> {selected.guests ?? "—"}</div>
+                            {(() => {
+                                const withMeal =
+                                    selected?.withMeal ??
+                                    selected?.meal ??
+                                    selected?.includeMeal ??
+                                    selected?.mealIncluded ??
+                                    false;
+
+                                return (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-muted-foreground">With meal:</span>
+                                        {withMeal ? (
+                                            <span className="inline-flex items-center gap-1 text-green-600">
+                                                <CheckCircle className="h-4 w-4" />
+                                                Yes
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 text-red-600">
+                                                <XCircle className="h-4 w-4" />
+                                                No
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                             <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={selected.status} /></div>
                             <div><span className="text-muted-foreground">Created:</span> {fmt(selected.createdAt)}</div>
                             {selected.note && <div><span className="text-muted-foreground">Note:</span> {selected.note}</div>}

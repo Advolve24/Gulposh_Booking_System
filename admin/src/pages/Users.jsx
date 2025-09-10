@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { format } from "date-fns";
 import { toast } from "sonner";
 
-const fmt = (d) => (d ? format(new Date(d), "dd MMM yyyy") : "—");
+const fmt = (d) => (d ? format(new Date(d), "dd MMM yy") : "—");
 
 export default function Users() {
   const [users, setUsers] = useState([]);

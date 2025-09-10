@@ -60,7 +60,7 @@ export const listUserBookingsAdmin = async (req, res) => {
     if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid user id" });
 
     const bookings = await Booking.find({ user: id })
-      .select("room startDate endDate status createdAt total")
+      .select("room startDate endDate status createdAt total withMeal")
       .populate("room", "name")
       .sort({ startDate: -1 });
 
@@ -71,6 +71,7 @@ export const listUserBookingsAdmin = async (req, res) => {
       endDate: b.endDate,
       status: b.status,
       total: b.total ?? null,
+      withMeal: !!b.withMeal,
       createdAt: b.createdAt,
     })));
   } catch (err) {
@@ -84,27 +85,24 @@ export const listBookingsAdmin = async (req, res) => {
   try {
     const { status, room, q, from, to } = req.query;
 
-    // base filter
     const filter = {};
     if (status && status !== "all") filter.status = status;
     if (room && mongoose.isValidObjectId(room)) filter.room = room;
 
-    // date overlap: booking [startDate, endDate] intersects [from, to]
     if (from || to) {
       const fromD = from ? new Date(from) : null;
       const toD   = to   ? new Date(to)   : null;
-      // only add if valid
       if (fromD && !isNaN(fromD)) filter.endDate   = { ...(filter.endDate || {}),   $gte: fromD };
       if (toD   && !isNaN(toD))   filter.startDate = { ...(filter.startDate || {}), $lte: toD };
     }
 
     let items = await Booking.find(filter)
+      .select("user room startDate endDate guests status createdAt total note withMeal")
       .populate("user", "name email")
       .populate("room", "name")
       .sort({ createdAt: -1 })
       .lean();
 
-    // lightweight text filter after query (name/email/bookingId/guestName/guestEmail)
     if (q && q.trim()) {
       const term = q.trim().toLowerCase();
       const isId = mongoose.isValidObjectId(term);
@@ -128,6 +126,7 @@ export const listBookingsAdmin = async (req, res) => {
       total: b.total ?? null,
       createdAt: b.createdAt,
       note: b.note ?? null,
+      withMeal: !!b.withMeal, 
     })));
   } catch (err) {
     console.error("listBookingsAdmin error:", err);
