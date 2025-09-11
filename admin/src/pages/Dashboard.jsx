@@ -149,15 +149,15 @@ export default function Dashboard() {
 
   const statCard = (icon, label, value) => (
     <Card className="w-[48%] md:w-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-          {icon}
-          {label}
+      <CardHeader className="">
+        <CardTitle className="text-sm text-muted-foreground md:flex items-center gap-2 ">
+          <div className="p-4 bg-primary rounded-[10px] text-white flex justify-center">{icon}</div>
+          <div className="text-2xl font-semibold flex flex-col md:ml-6 mt-4">
+            <div>{value}</div>
+            <div className="text-[16px] font-normal">{label}</div>
+          </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold">{value}</div>
-      </CardContent>
     </Card>
   );
 
@@ -165,15 +165,15 @@ export default function Dashboard() {
     <div className="max-w-6xl p-6 mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* LEFT: overview */}
       <div className="md:col-span-1 md:flex-col md:gap-4 md:justify-start flex flex-row gap-3 justify-between flex-wrap">
-        {statCard(<Users2 className="h-4 w-4" />, "Users", stats.users)}
+        {statCard(<Users2 className="h-6 w-6" />, "Users", stats.users)}
         {statCard(
-          <ClipboardList className="h-4 w-4" />,
+          <ClipboardList className="h-6 w-6" />,
           "Active bookings",
           stats.bookings
         )}
-        {statCard(<BedSingle className="h-4 w-4" />, "Rooms", stats.rooms)}
+        {statCard(<BedSingle className="h-6 w-6" />, "Rooms", stats.rooms)}
         {statCard(
-          <CalendarRangeIcon className="h-4 w-4" />,
+          <CalendarRangeIcon className="h-6 w-6" />,
           "Upcoming stays",
           stats.upcoming
         )}
@@ -181,154 +181,157 @@ export default function Dashboard() {
 
       {/* RIGHT: calendar + rooms */}
       <div className="md:col-span-2 flex flex-col gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Block / Unblock Dates</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4 sm:items-start">
+
+        {/* Calendar + From-To Block Dates in one row */}
+        <div className="flex flex-col sm:flex-row gap-6">
+          {/* Calendar Section */}
+          <Card className="w-full sm:basis-[60%]">
+            <CardHeader>
+              <CardTitle>Block / Unblock Dates</CardTitle>
+            </CardHeader>
+            <CardContent>
               <Calendar
                 mode="range"
                 numberOfMonths={1}
                 selected={range}
                 onSelect={setRange}
-                disabled={disabled} // past + booked + blackouts
-                className="rounded-md border md:w-[420px] w-[280px] [--cell-size:32px]"
+                disabled={disabled}
+                className="rounded-md border w-full [--cell-size:32px] bg-white"
               />
-              <div className="flex-1 space-y-3">
-                <div className="text-sm">
-                  <div>
-                    <span className="text-muted-foreground">From: </span>
-                    {range?.from ? fmt(range.from) : "—"}
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">
-                      To:&nbsp;&nbsp;&nbsp;&nbsp;
-                    </span>
-                    {range?.to ? fmt(range.to) : "—"}
-                  </div>
+            </CardContent>
+          </Card>
+
+          {/* From-To Block Dates Section */}
+          <Card className="w-full sm:basis-[40%]">
+            <CardHeader>
+              <CardTitle>Selected Dates</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-sm space-y-1">
+                <div>
+                  <span className="text-muted-foreground">From: </span>
+                  {range?.from ? fmt(range.from) : "—"}
                 </div>
-
-                <Button
-                  onClick={blockSelected}
-                  disabled={loadingBlk || !range?.from || !range?.to || hasConflict}
-                >
-                  Block selected dates
-                </Button>
-                {hasConflict && (
-                  <div className="text-xs text-red-600">
-                    Selected range overlaps an existing booking/blackout.
-                  </div>
-                )}
-
-                <div className="pt-2">
-                  <div className="text-sm font-medium mb-2">
-                    Current blackouts
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {blackouts.length === 0 && (
-                      <span className="text-sm text-muted-foreground">None</span>
-                    )}
-                    {blackouts.map((b) => (
-                      <Badge key={b._id} variant="secondary" className="gap-2">
-                        {fmt(b.from)} – {fmt(b.to)}
-                        <button
-                          className="ml-1 text-red-600 hover:underline"
-                          onClick={() => removeBlk(b._id)}
-                        >
-                          Remove
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
+                <div>
+                  <span className="text-muted-foreground">To:&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                  {range?.to ? fmt(range.to) : "—"}
                 </div>
               </div>
+
+              <Button
+                onClick={blockSelected}
+                disabled={loadingBlk || !range?.from || !range?.to || hasConflict}
+              >
+                Block selected dates
+              </Button>
+
+              {hasConflict && (
+                <div className="text-xs text-red-600">
+                  Selected range overlaps an existing booking/blackout.
+                </div>
+              )}
+
+              <div className="pt-2">
+                <div className="text-sm font-medium mb-2">Current blackouts</div>
+                <div className="flex flex-wrap gap-2">
+                  {blackouts.length === 0 && (
+                    <span className="text-sm text-muted-foreground">None</span>
+                  )}
+                  {blackouts.map((b) => (
+                    <Badge key={b._id} variant="secondary" className="gap-2 bg-[#fffaf6]">
+                      {fmt(b.from)} – {fmt(b.to)}
+                      <button
+                        className="ml-1 text-red-600 hover:underline"
+                        onClick={() => removeBlk(b._id)}
+                      >
+                        Remove
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+
+        {/* Rooms Section */}
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <div className="flex justify-between w-full">
+              <CardTitle>Rooms</CardTitle>
+              <Button onClick={() => navigate("/rooms/new")} size="sm">
+                Add room
+              </Button>
             </div>
-
-            <div className="border-t my-4" />
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold">Rooms</h3>
-                <Button onClick={() => navigate("/rooms/new")} size="sm">
-                  Add room
-                </Button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="text-left text-muted-foreground">
-                    <tr>
-                      <th className="py-2 pr-4">Room</th>
-                      <th className="py-2 pr-4">Price</th>
-                      <th className="py-2 pr-4">With meal</th>
-                      <th className="py-2 pr-4">Actions</th>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="text-left text-muted-foreground">
+                  <tr>
+                    <th className="py-2 pr-4">Room</th>
+                    <th className="py-2 pr-4">Price</th>
+                    <th className="py-2 pr-4">With meal</th>
+                    <th className="py-2 pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rooms.map((r) => (
+                    <tr key={r._id} className="border-t">
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-2 md:w-[290px] w-[200px]">  
+                          {r.coverImage ? (
+                            <img
+                              src={r.coverImage}
+                              alt=""
+                              className="h-[60px] w-[180px] object-cover rounded"
+                            />
+                          ) : (
+                            <div className="h-10 w-14 bg-muted rounded" />
+                          )}
+                          <div className="font-medium w-[70%]">{r.name}</div>
+                        </div>
+                      </td>
+                      <td className="py-2 pr-4">₹{r.pricePerNight}</td>
+                      <td className="py-2 pr-4">₹{r.priceWithMeal}</td>
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-2">
+                          <Button size="icon" variant="outline"
+                            onClick={() =>
+                              window.open(
+                                `${import.meta.env.VITE_PUBLIC_URL || "http://localhost:5174/"}/room/${r._id}`,
+                                "_blank"
+                              )
+                            }>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="outline"
+                            onClick={() => navigate(`/rooms/new?id=${r._id}`)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" onClick={() => onDeleteRoom(r._id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {rooms.map((r) => (
-                      <tr key={r._id} className="border-t">
-                        <td className="py-2 pr-4">
-                          <div className="flex items-center gap-2">
-                            {r.coverImage ? (
-                              <img
-                                src={r.coverImage}
-                                alt=""
-                                className="h-14 w-28 object-cover rounded"
-                              />
-                            ) : (
-                              <div className="h-10 w-14 bg-muted rounded" />
-                            )}
-                            <div className="font-medium">{r.name}</div>
-                          </div>
-                        </td>
-                        <td className="py-2 pr-4">₹{r.pricePerNight}</td>
-                        <td className="py-2 pr-4">₹{r.priceWithMeal}</td>
-                        <td className="py-2 pr-4">
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() =>
-                                window.open(
-                                  `${import.meta.env.VITE_PUBLIC_URL || "http://localhost:5174/"}/room/${r._id}`,
-                                  "_blank"
-                                )
-                              }
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() => navigate(`/rooms/new?id=${r._id}`)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              onClick={() => onDeleteRoom(r._id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {rooms.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="py-6 text-center text-muted-foreground">
-                          No rooms yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                  {rooms.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-6 text-center text-muted-foreground">
+                        No rooms yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
+
       </div>
+
     </div>
   );
 }
