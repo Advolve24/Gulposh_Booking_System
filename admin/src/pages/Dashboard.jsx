@@ -238,7 +238,7 @@ export default function Dashboard() {
                     <span className="text-sm text-muted-foreground">None</span>
                   )}
                   {blackouts.map((b) => (
-                    <Badge key={b._id} variant="secondary" className="gap-2 bg-[#fffaf6]">
+                    <Badge key={b._id} variant="secondary" className="gap-2 bg-[#fffaf6] text-[14px] mt-1">
                       {fmt(b.from)} – {fmt(b.to)}
                       <button
                         className="ml-1 text-red-600 hover:underline"

@@ -7,15 +7,11 @@ const { isValidObjectId } = mongoose;
 export const listUsersAdmin = async (_req, res) => {
   try {
     const users = await User.find()
-      .select("name email phone createdAt")
+      .select("name email phone mobile createdAt") 
       .sort({ createdAt: -1 });
 
     const counts = await Booking.aggregate([
-      { $group: {
-          _id: "$user",
-          count: { $sum: 1 },
-          lastBookingAt: { $max: "$createdAt" }
-      }}
+      { $group: { _id: "$user", count: { $sum: 1 }, lastBookingAt: { $max: "$createdAt" } } }
     ]);
 
     const byId = new Map(counts.map(c => [String(c._id), c]));
@@ -25,13 +21,12 @@ export const listUsersAdmin = async (_req, res) => {
         _id: u._id,
         name: u.name || "",
         email: u.email || "",
-        phone: u.phone || "",
+        phone: u.phone ?? u.mobile ?? "",
         createdAt: u.createdAt,
         bookingsCount: add.count || 0,
         lastBookingAt: add.lastBookingAt || null
       };
     });
-
     res.json(out);
   } catch (err) {
     console.error("listUsersAdmin error:", err);
@@ -39,20 +34,28 @@ export const listUsersAdmin = async (_req, res) => {
   }
 };
 
+
 export const getUserAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid user id" });
 
-    const user = await User.findById(id).select("name email phone createdAt");
+    const user = await User.findById(id).select("name email phone mobile createdAt"); 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.json(user);
+    res.json({
+      _id: user._id,
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone ?? user.mobile ?? "",
+      createdAt: user.createdAt
+    });
   } catch (err) {
     console.error("getUserAdmin error:", err);
     res.status(500).json({ message: "Failed to load user" });
   }
 };
+
 
 export const listUserBookingsAdmin = async (req, res) => {
   try {
@@ -137,24 +140,75 @@ export const listBookingsAdmin = async (req, res) => {
 
 export const cancelBookingAdmin = async (req, res) => {
   try {
-    const { id } = req.params; // booking id
+    const { id } = req.params; 
     if (!mongoose.isValidObjectId(id)) {
       return res.status(400).json({ message: "Invalid booking id" });
     }
-
     const b = await Booking.findById(id);
     if (!b) return res.status(404).json({ message: "Booking not found" });
 
     if (b.status === "cancelled") {
       return res.json({ ok: true, booking: b });
     }
-
     b.status = "cancelled";
     await b.save();
-
     res.json({ ok: true, booking: b });
   } catch (err) {
     console.error("cancelBookingAdmin error:", err);
     res.status(500).json({ message: "Failed to cancel booking" });
+  }
+};
+
+
+// updateUserAdmin
+export const updateUserAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const { name, email, phone } = req.body || {};
+    if (name  !== undefined) user.name  = String(name).trim();
+    if (email !== undefined) user.email = String(email).trim();
+    if (phone !== undefined) {
+      const v = String(phone).trim();
+      user.phone  = v;   
+      user.mobile = v;
+    }
+
+    await user.save();
+    res.json({
+      _id: user._id,
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone ?? user.mobile ?? "",
+      createdAt: user.createdAt,
+    });
+  } catch (err) {
+    console.error("updateUserAdmin error:", err);
+    res.status(500).json({ message: "Failed to update user" });
+  }
+};
+
+
+
+export const deleteUserAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    await Booking.deleteMany({ user: id });
+    await User.findByIdAndDelete(id);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("deleteUserAdmin error:", err);
+    res.status(500).json({ message: "Failed to delete user" });
   }
 };

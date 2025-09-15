@@ -28,3 +28,28 @@ export const addBlackout = ({ from, to, note }) =>
   api.post("/blackouts", { from, to, note }).then(r => r.data);
 export const removeBlackout = (id) =>
   api.delete(`/blackouts/${id}`).then(r => r.data);
+
+export const uploadImage = async (file) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  const { data } = await api.post("/upload", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.url; 
+};
+
+export const uploadImages = async (files) => {
+  const fd = new FormData();
+  files.forEach((f) => fd.append("files", f));
+  const { data } = await api.post("/upload/batch", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.urls || [];
+};
+
+
+export const updateUserAdmin = (id, payload) =>
+  api.put(`/users/${id}`, payload).then(r => r.data);
+
+export const deleteUserAdmin = (id) =>
+  api.delete(`/users/${id}`).then(r => r.data);

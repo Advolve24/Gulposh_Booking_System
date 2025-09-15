@@ -3,7 +3,7 @@ import {
   listUsersAdmin,
   getUserAdminById,
   listUserBookingsAdmin,
-  cancelBookingAdmin,           // <-- add
+  cancelBookingAdmin,
 } from "../api/admin";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import { updateUserAdmin, deleteUserAdmin } from "../api/admin";
 
 const fmt = (d) => (d ? format(new Date(d), "dd MMM yy") : "—");
 
@@ -23,6 +25,81 @@ export default function Users() {
   const [detail, setDetail] = useState(null);
   const [detailBookings, setDetailBookings] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [selected, setSelected] = useState(null);
+
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+
+  const onOpenUser = (u) => {
+    setSelected(u);
+    setEditMode(false);
+    setEditName(u?.name || "");
+    setEditEmail(u?.email || "");
+    setEditPhone(u?.phone || "");
+    setOpen(true);
+  };
+
+
+const saveUser = async () => {
+  if (!selected?._id) return;
+  setSaving(true);
+  try {
+    const apiRes = await updateUserAdmin(selected._id, {
+      name:  editName,
+      email: editEmail,
+      phone: editPhone,
+    });
+    const updated = {
+      ...apiRes,
+      phone: apiRes?.phone ?? apiRes?.mobile ?? editPhone,
+    };
+    toast.success("User updated");
+    setSelected(prev => ({ ...prev, ...updated }));
+    setUsers(prev =>
+      prev.map(u =>
+        u._id === selected._id
+          ? {
+              ...u,
+              name:  updated.name ?? u.name,
+              email: updated.email ?? u.email,
+              phone: updated.phone ?? u.phone,   
+            }
+          : u
+      )
+    );
+    setEditMode(false);
+  } catch (e) {
+    toast.error(e?.response?.data?.message || "Update failed");
+  } finally {
+    setSaving(false);
+  }
+};
+
+
+  const removeUser = async () => {
+    if (!selected?._id) return;
+    if (!confirm("Delete this user? This will remove all their bookings as well.")) return;
+    const id = selected._id;
+    const prevUsers = users;
+    setOpen(false);
+    setUsers((list) => list.filter((u) => u._id !== id));
+    setSelected(null);
+    setDeleting(true);
+    try {
+      await deleteUserAdmin(id);
+      toast.success("User deleted");
+    } catch (e) {
+      setUsers(prevUsers);
+      toast.error(e?.response?.data?.message || "Delete failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const reload = async () => {
     setLoading(true);
@@ -48,6 +125,7 @@ export default function Users() {
     );
   }, [q, users]);
 
+
   const openDetail = async (id) => {
     setOpen(true);
     setDetailLoading(true);
@@ -56,14 +134,19 @@ export default function Users() {
         getUserAdminById(id),
         listUserBookingsAdmin(id),
       ]);
-      setDetail(u);
-      setDetailBookings(b);
+      setSelected({ ...u, bookings: b });
+      setEditMode(false);
+      setSelected({ ...u, bookings: b });
+      setEditName(u?.name || "");
+      setEditEmail(u?.email || "");
+      setEditPhone(u?.phone ?? u?.mobile ?? "");
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to load user");
     } finally {
       setDetailLoading(false);
     }
   };
+
 
   const doCancel = async (bookingId) => {
     const ok = confirm("Cancel this booking? This cannot be undone.");
@@ -79,8 +162,9 @@ export default function Users() {
       setDetailBookings(list =>
         list.map(b => b._id === bookingId ? { ...b, status: "cancelled" } : b)
       );
-    } catch {}
+    } catch { }
   };
+
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-5">
@@ -120,7 +204,7 @@ export default function Users() {
                     <tr key={u._id} className="border-t">
                       <td className="py-2 pr-4">{u.name || "—"}</td>
                       <td className="py-2 pr-4">{u.email || "—"}</td>
-                      <td className="py-2 pr-4">{u.phone || "—"}</td>
+                      <td className="py-2 pr-4">{u.phone ?? u.mobile ?? "—"}</td>
                       <td className="py-2 pr-4">{u.bookingsCount ?? 0}</td>
                       <td className="py-2 pr-4">{fmt(u.createdAt)}</td>
                       <td className="py-2 pr-4">{fmt(u.lastBookingAt)}</td>
@@ -140,69 +224,76 @@ export default function Users() {
 
       {/* Detail dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader className="flex items-center justify-between">
             <DialogTitle>User details</DialogTitle>
+            <div className="flex gap-2">
+              {!editMode ? (
+                <Button variant="outline" onClick={() => setEditMode(true)}>Edit user</Button>
+              ) : (
+                <>
+                  <Button variant="secondary" onClick={() => setEditMode(false)}>Cancel</Button>
+                  <Button onClick={saveUser} disabled={saving}>
+                    {saving ? "Saving..." : "Save"}
+                  </Button>
+                </>
+              )}
+              <Button onClick={removeUser} disabled={deleting}>
+                {deleting ? "Deleting..." : "Delete user"}
+              </Button>
+            </div>
           </DialogHeader>
 
-          {detailLoading ? (
-            <div className="py-10 text-center text-muted-foreground">Loading…</div>
-          ) : !detail ? (
-            <div className="py-10 text-center text-muted-foreground">No user loaded</div>
-          ) : (
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><span className="text-muted-foreground">Name: </span>{detail.name || "—"}</div>
-                <div><span className="text-muted-foreground">Email: </span>{detail.email || "—"}</div>
-                <div><span className="text-muted-foreground">Phone: </span>{detail.phone || "—"}</div>
-                <div><span className="text-muted-foreground">Joined: </span>{fmt(detail.createdAt)}</div>
+          {/* SUMMARY / EDIT FORM */}
+          {!editMode ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-2 text-sm">
+                <div><span className="text-muted-foreground">Name:</span>  {selected?.name || "—"}</div>
+                <div><span className="text-muted-foreground">Email:</span> {selected?.email || "—"}</div>
+                <div><span className="text-muted-foreground">Phone:</span> {selected?.phone || "—"}</div>
+                <div><span className="text-muted-foreground">Joined:</span> {fmt(selected?.createdAt)}</div>
               </div>
 
-              <div className="border-t pt-3">
+              <div className="pt-4 border-t">
                 <div className="font-medium mb-2">Bookings</div>
-                {detailBookings.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No bookings</div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead className="text-left text-muted-foreground">
-                        <tr>
-                          <th className="py-2 pr-4">Room</th>
-                          <th className="py-2 pr-4">From</th>
-                          <th className="py-2 pr-4">To</th>
-                          <th className="py-2 pr-4">Status</th>
-                          <th className="py-2 pr-4">Created</th>
-                          <th className="py-2 pr-4">Actions</th> {/* NEW */}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detailBookings.map(b => (
-                          <tr key={b._id} className="border-t">
-                            <td className="py-2 pr-4">{b.room?.name || "—"}</td>
-                            <td className="py-2 pr-4">{fmt(b.startDate)}</td>
-                            <td className="py-2 pr-4">{fmt(b.endDate)}</td>
-                            <td className="py-2 pr-4">{b.status}</td>
-                            <td className="py-2 pr-4">{fmt(b.createdAt)}</td>
-                            <td className="py-2 pr-4">
-                              {b.status !== "cancelled" ? (
-                                <Button size="sm" variant="destructive" onClick={() => doCancel(b._id)}>
-                                  Cancel this booking
-                                </Button>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                <table className="min-w-full text-sm">
+                  {/* … header … */}
+                  <tbody>
+                    {(selected?.bookings || []).map(b => (
+                      <tr key={b._id} className="border-t">
+                        <td className="py-2 pr-4">{b.room?.name || "—"}</td>
+                        <td className="py-2 pr-4">{fmt(b.startDate)}</td>
+                        <td className="py-2 pr-4">{fmt(b.endDate)}</td>
+                        <td className="py-2 pr-4">{b.status}</td>
+                        <td className="py-2 pr-4">{fmt(b.createdAt)}</td>
+                      </tr>
+                    ))}
+                    {(selected?.bookings || []).length === 0 && (
+                      <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">No bookings.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Name</Label>
+                <Input className="mt-2" value={editName} onChange={e => setEditName(e.target.value)} />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input className="mt-2" value={editEmail} onChange={e => setEditEmail(e.target.value)} />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Phone</Label>
+                <Input className="mt-2" value={editPhone} onChange={e => setEditPhone(e.target.value)} />
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }

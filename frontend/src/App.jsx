@@ -8,6 +8,7 @@ import Header from "./components/Header";
 import { useAuth } from "./store/authStore";
 import AuthModal from "./components/AuthModal"; 
 import MyBookings from "./pages/MyBookings";
+import MyAccount from "./pages/MyAccount";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="/room/:id" element={<RoomPage />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/bookings" element={<MyBookings />} />
+        <Route path="/my-account" element={<MyAccount />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

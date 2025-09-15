@@ -1,9 +1,7 @@
-// server.js
 import "dotenv/config.js";
 import express from "express";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
-
 import authRoutes from "./routes/auth.routes.js";
 import roomRoutes from "./routes/room.routes.js";
 import paymentsRoutes from "./routes/payments.routes.js";
@@ -12,6 +10,9 @@ import adminAuthRoutes from "./routes/admin.auth.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
 import blackoutRoutes from "./routes/blackout.routes.js";
 import adminBlackoutRoutes from "./routes/admin.blackout.routes.js";
+import adminUploadRoutes from "./routes/admin.upload.routes.js";
+import path from "node:path";
+import fs from "node:fs";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -47,6 +48,10 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(cookieParser());
 
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+app.use("/uploads", express.static(UPLOAD_DIR));
+
 // optional health check
 app.get("/", (_req, res) => res.send("API is up"));
 
@@ -55,6 +60,7 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/admin", adminAuthRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminUploadRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/blackouts", blackoutRoutes);
 app.use("/api/admin/blackouts", adminBlackoutRoutes);
