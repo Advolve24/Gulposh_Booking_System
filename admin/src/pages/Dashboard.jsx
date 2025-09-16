@@ -149,10 +149,10 @@ export default function Dashboard() {
 
   const statCard = (icon, label, value) => (
     <Card className="w-[48%] md:w-full">
-      <CardHeader className="">
-        <CardTitle className="text-sm text-muted-foreground md:flex items-center gap-2 ">
-          <div className="p-4 bg-primary rounded-[10px] text-white flex justify-center">{icon}</div>
-          <div className="text-2xl font-semibold flex flex-col md:ml-6 mt-4">
+      <CardHeader className="p-0 md:p-4">
+        <CardTitle className="text-sm text-muted-foreground md:flex items-center gap-2">
+          <div className="p-4 bg-primary md:rounded-[10px] rounded-t-[10px] text-white flex justify-center">{icon}</div>
+          <div className="text-2xl font-semibold flex flex-col md:ml-6 mt-0 md:p-0 p-4">
             <div>{value}</div>
             <div className="text-[16px] font-normal">{label}</div>
           </div>
