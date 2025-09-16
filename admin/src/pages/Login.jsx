@@ -1,15 +1,12 @@
-// admin/src/pages/Login.jsx
 import { useEffect, useState } from "react";
 import { useAuth } from "../store/auth";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { toast } from "sonner";
-
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 import { Loader2, Eye, EyeOff, Shield } from "lucide-react";
 
 export default function Login() {

@@ -19,8 +19,8 @@ export const useAuth = create((set, get) => ({
     }
   },
 
-  register: async (name, email, password) => {
-    const { data } = await api.post("/auth/register", { name, email, password });
+  register: async (name, email, password, phone) => {
+    const { data } = await api.post("/auth/register", { name, email, password, phone });
     set({ user: data, showAuthModal: false });
     return data;
   },
