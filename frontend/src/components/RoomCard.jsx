@@ -10,7 +10,6 @@ export default function RoomCard({ room , range, guests }) {
         ...(hasGuests && { guests }),
       }
     : undefined;
-  // (Optional) also include query params so a refresh keeps the dates
  const params = new URLSearchParams();
   if (hasRange) {
     params.set("from", range.from.toISOString());
@@ -21,7 +20,9 @@ export default function RoomCard({ room , range, guests }) {
 
   return (
     <div className="border rounded-xl overflow-hidden">
+      <Link to={`/room/${room._id}${search}`} state={linkState}>
       <img src={room.coverImage || "https://picsum.photos/600/400"} className="w-full h-48 object-cover" />
+      </Link>
       <div className="p-4 space-y-2">
         <h3 className="text-lg font-semibold">{room.name}</h3>
         <p className="text-sm text-gray-600 line-clamp-2">{room.description}</p>

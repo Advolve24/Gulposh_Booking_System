@@ -8,12 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Phone } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function AuthModal() {
   const { showAuthModal, closeAuth, login, register } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "", phone: "" });
   const [loading, setLoading] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+
 
   const onLogin = async () => {
     setLoading(true);
@@ -62,16 +65,27 @@ export default function AuthModal() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="login-password">Password</Label>
-              <Input
-                id="login-password"
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
+              <Label htmlFor="reg-password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="reg-password"
+                  type={showRegisterPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Create a strong password"
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterPassword((prev) => !prev)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                >
+                  {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
+
             <Button className="w-full" onClick={onLogin} disabled={loading}>
               {loading ? "Signing in..." : "Sign in"}
             </Button>
@@ -119,15 +133,26 @@ export default function AuthModal() {
 
             <div className="space-y-2">
               <Label htmlFor="reg-password">Password</Label>
-              <Input
-                id="reg-password"
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                placeholder="Create a strong password"
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <Input
+                  id="reg-password"
+                  type={showRegisterPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Create a strong password"
+                  autoComplete="new-password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterPassword((prev) => !prev)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                >
+                  {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
+
 
             <Button className="w-full" onClick={onRegister} disabled={loading}>
               {loading ? "Creating..." : "Create account"}

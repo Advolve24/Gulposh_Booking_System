@@ -1,4 +1,3 @@
-// src/pages/Checkout.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/http";
@@ -10,6 +9,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { loadRazorpayScript } from "../lib/loadRazorpay";
 import { toast } from "sonner";
+import CalendarRange from "../components/CalendarRange";
+import { Eye, EyeOff } from "lucide-react";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+
 
 function toDateOnly(d) {
   const x = new Date(d);
@@ -30,12 +33,15 @@ const isValidPhone = (p) => {
 export default function Checkout() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { user, register, login, init } = useAuth(); // <-- from store
-
+  const { user, register, login, init } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
   const roomId = state?.roomId;
   const startDate = state?.startDate ? new Date(state.startDate) : null;
   const endDate = state?.endDate ? new Date(state.endDate) : null;
   const guests = state?.guests ? Number(state.guests) : null;
+  const [range, setRange] = useState({ from: startDate || null, to: endDate || null });
+  const [guestsState, setGuestsState] = useState(String(guests || ""));
+
 
   const [room, setRoom] = useState(null);
   const [withMeal, setWithMeal] = useState(false);
@@ -85,47 +91,59 @@ export default function Checkout() {
   // If pricing is per guest, change to: nights * pricePerNight * (guests || 1)
   const total = useMemo(() => (nights ? nights * pricePerNight : 0), [nights, pricePerNight]);
 
- async function ensureAuthed() {
-  if (user) return;
+  async function ensureAuthed() {
+    if (user) return;
 
-  const { name, email, password } = form;
-  if (!name?.trim() || !email?.trim() || !password?.trim()) {
-    throw new Error("Please fill name, email and password.");
+    const { name, email, password } = form;
+    if (!name?.trim() || !email?.trim() || !password?.trim()) {
+      throw new Error("Please fill name, email and password.");
+    }
+
+    try {
+      await api.post("/auth/register", { name: name.trim(), email: email.trim(), password: password.trim() }, { withCredentials: true });
+    } catch (e) {
+      const already = e?.response?.status === 400 || /already/i.test(String(e?.response?.data?.message || ""));
+      if (!already) throw e;
+      await api.post("/auth/login", { email: email.trim(), password: password.trim() }, { withCredentials: true });
+    }
+
+    // Force a round-trip that requires the cookie
+    await api.get("/auth/me", { withCredentials: true });
+    await init?.();    // refresh the header/user store
   }
 
-  try {
-    await api.post("/auth/register", { name: name.trim(), email: email.trim(), password: password.trim() }, { withCredentials: true });
-  } catch (e) {
-    const already = e?.response?.status === 400 || /already/i.test(String(e?.response?.data?.message || ""));
-    if (!already) throw e;
-    await api.post("/auth/login", { email: email.trim(), password: password.trim() }, { withCredentials: true });
-  }
+  const onGuestsChange = (v) => {
+    setGuestsState(v);
+  };
 
-  // Force a round-trip that requires the cookie
-  await api.get("/auth/me", { withCredentials: true });
-  await init?.();    // refresh the header/user store
-}
 
 
   const proceed = async () => {
     try {
       await ensureAuthed();
 
-      // 1) Load widget
+      const start = range?.from;
+      const end = range?.to;
+      const guests = Number(guestsState);
+
+      if (!start || !end || !guests) {
+        toast.error("Please select dates and guests.");
+        return;
+      }
       const ok = await loadRazorpayScript();
       if (!ok) throw new Error("Failed to load Razorpay");
 
-      // 2) Ask backend to create an order (server recomputes pricing!)
       const { data: order } = await api.post("/payments/create-order", {
         roomId: room._id,
-        startDate,
-        endDate,
+        startDate: start,
+        endDate: end,
         guests,
         withMeal,
         contactName: form.name,
         contactEmail: form.email,
         contactPhone: form.phone,
       });
+
 
       // 3) Open Razorpay
       const rzp = new window.Razorpay({
@@ -236,34 +254,58 @@ export default function Checkout() {
           {!user && (
             <div className="space-y-1 sm:col-span-2">
               <Label>Password</Label>
-              <Input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                placeholder="Create a password"
-              />
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Create a password"
+                  className="pr-10" // add some space for the button
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground">
                 We’ll create your account or sign you in if it already exists.
               </p>
             </div>
           )}
+
         </div>
 
-        {/* Booking summary (readonly) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="space-y-1">
-            <Label>Check-in</Label>
-            <Input value={formatDate(startDate)} readOnly />
+        {/* Dates & Guests Editable */}
+        <div className="grid w-full grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1 sm:col-span-2">
+            <Label>Check-in / Check-out</Label>
+            <CalendarRange
+              value={range}
+              onChange={setRange}
+              numberOfMonths={1}
+              disabledRanges={[]}
+            />
           </div>
-          <div className="space-y-1">
-            <Label>Check-out</Label>
-            <Input value={formatDate(endDate)} readOnly />
-          </div>
-          <div className="space-y-1">
+
+          <div className="space-y-1 sm:col-span-1">
             <Label>Guests</Label>
-            <Input value={String(guests || "")} readOnly />
+            <Select value={guestsState} onValueChange={onGuestsChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select guests" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: Math.max(1, room?.maxGuests || 5) }, (_, i) => i + 1).map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
+
+
 
         {/* With meal */}
         <div className="flex items-center gap-3 pt-2">
