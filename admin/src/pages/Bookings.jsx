@@ -147,7 +147,7 @@ export default function Bookings() {
                                                 <span className="text-xs text-muted-foreground">{b.user?.email || b.guestEmail || "—"}</span>
                                             </div>
                                         </td>
-                                        <td className="py-2 pr-4">{b.room?.name || b.roomName || "—"}</td>
+                                        <td className="py-2 pr-4">{b.room?.name || b.roomName || (b.isVilla ? "-" : "Entire Villa")}</td>
                                         <td className="py-2 pr-4">{fmt(b.startDate)} → {fmt(b.endDate)}</td>
                                         <td className="py-2 pr-4">{nights}</td>
                                         <td className="py-2 pr-4">{b.guests ?? "—"}</td>

@@ -25,16 +25,17 @@ export default function Dashboard() {
   const [disabled, setDisabled] = useState(() => [{ before: todayDateOnlyUTC() }]);
   const navigate = useNavigate();
 
-  const reload = async () => {
-    try {
-      const [s, b, r] = await Promise.all([getStats(), listBlackouts(), listRooms()]);
-      setStats(s);
-      setBlackouts(b);
-      setRooms(r);
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load dashboard");
-    }
-  };
+ const reload = async () => {
+  try {
+    const [s, b, r] = await Promise.all([getStats(), listBlackouts(), listRooms()]);
+    setStats(s);
+    setBlackouts(b);
+    setRooms(r.filter(room => room.name?.toLowerCase() !== "entire villa"));
+  } catch (e) {
+    toast.error(e?.response?.data?.message || "Failed to load dashboard");
+  }
+};
+
   useEffect(() => { reload(); }, []);
 
   useEffect(() => {

@@ -7,12 +7,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { loadRazorpayScript } from "../lib/loadRazorpay";
 import { toDateOnlyUTC, todayDateOnlyUTC, toDateOnlyFromAPIUTC } from "../lib/date";
+import { useNavigate } from "react-router-dom";
+
 
 export default function VillaBookingForm() {
     const [range, setRange] = useState();
     const [disabled, setDisabled] = useState([]);
     const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", guests: 1, customAmount: "" });
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     // fetch disabled ranges
     useEffect(() => {
@@ -99,6 +102,7 @@ export default function VillaBookingForm() {
                             contactPhone: form.phone,
                         });
                         toast.success("Villa booking confirmed!");
+                        navigate("/dashboard");
                     } catch (err) {
                         toast.error(err?.response?.data?.message || "Verification failed");
                     }
@@ -115,11 +119,12 @@ export default function VillaBookingForm() {
     };
 
     return (
-        <div className="max-w-2xl mx-auto p-6 bg-white shadow rounded space-y-6">
-            <h2 className="text-xl font-bold">Book Entire Villa (Admin)</h2>
+        <div className="max-w-6xl flex flex-wrap justify-between mx-auto p-6 bg-white shadow rounded space-y-6 mt-4">
+            <h2 className="text-xl font-bold w-full">Book Entire Villa</h2>
 
-            <Calendar mode="range" selected={range} onSelect={setRange} disabled={[{ before: todayDateOnlyUTC() }, ...disabled]} numberOfMonths={1} />
+            <Calendar className="w-[35%]" mode="range" selected={range} onSelect={setRange} disabled={[{ before: todayDateOnlyUTC() }, ...disabled]} numberOfMonths={1} />
 
+            <div className="w-[48%]">
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <Label>Guests</Label>
@@ -131,7 +136,7 @@ export default function VillaBookingForm() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="mt-2 grid grid-cols-2 gap-4">
                 <div>
                     <Label>Name</Label>
                     <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
@@ -150,9 +155,10 @@ export default function VillaBookingForm() {
                 </div>
             </div>
 
-            <Button onClick={submit} disabled={loading} className="w-full">
+            <Button onClick={submit} disabled={loading} className="w-full mt-4">
                 {loading ? "Processing..." : "Proceed to Payment"}
             </Button>
+            </div>
         </div>
     );
 }

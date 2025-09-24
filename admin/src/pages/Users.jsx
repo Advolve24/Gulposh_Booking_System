@@ -177,7 +177,7 @@ export default function Users() {
                     <th className="py-2 pr-4">Name</th>
                     <th className="py-2 pr-4">Email</th>
                     <th className="py-2 pr-4">Phone</th>
-                    <th className="py-2 pr-4">Joined</th>
+                    <th className="py-2 pr-4">CreatedAt</th>
                     <th className="py-2 pr-4">Actions</th>
                   </tr>
                 </thead>
@@ -254,7 +254,7 @@ export default function Users() {
                   {selected?.phone || "—"}
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Joined:</span>{" "}
+                  <span className="text-muted-foreground">CreatedAt:</span>{" "}
                   {fmt(selected?.createdAt)}
                 </div>
               </div>
