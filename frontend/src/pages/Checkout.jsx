@@ -23,7 +23,6 @@ function formatDate(d) {
     ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
     : "";
 }
-// simple validators
 const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e).trim());
 const isValidPhone = (p) => {
   const digits = String(p || "").replace(/\D/g, "");
@@ -44,6 +43,19 @@ export default function Checkout() {
 
 
   const [room, setRoom] = useState(null);
+
+  const maxGuestsCap = useMemo(() => {
+    if (!room) return null;
+    if (typeof room.maxGuests === "number" && room.maxGuests > 0) return room.maxGuests;
+
+    const nums = (room.accommodation || [])
+      .flatMap((s) => Array.from(String(s).matchAll(/\d+/g)).map((m) => Number(m[0])))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
+    const sum = nums.length ? nums.reduce((a, b) => a + b, 0) : 0;
+    return Math.max(1, sum || 1);
+  }, [room]);
+
   const [withMeal, setWithMeal] = useState(false);
   const [form, setForm] = useState({
     name: user?.name || "",
@@ -52,7 +64,6 @@ export default function Checkout() {
     password: "",
   });
 
-  // Guard
   useEffect(() => {
     if (!roomId || !startDate || !endDate || !guests) {
       toast.error("Please select a room, dates and guests first.");
@@ -60,13 +71,11 @@ export default function Checkout() {
     }
   }, [roomId, startDate, endDate, guests, navigate]);
 
-  // Load room info
   useEffect(() => {
     if (!roomId) return;
     api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
   }, [roomId]);
 
-  // If user becomes available, hydrate name/email
   useEffect(() => {
     if (user) {
       setForm((f) => ({
@@ -88,7 +97,6 @@ export default function Checkout() {
     return withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : room.pricePerNight || 0;
   }, [room, withMeal]);
 
-  // If pricing is per guest, change to: nights * pricePerNight * (guests || 1)
   const total = useMemo(() => (nights ? nights * pricePerNight : 0), [nights, pricePerNight]);
 
   async function ensureAuthed() {
@@ -107,9 +115,8 @@ export default function Checkout() {
       await api.post("/auth/login", { email: email.trim(), password: password.trim() }, { withCredentials: true });
     }
 
-    // Force a round-trip that requires the cookie
     await api.get("/auth/me", { withCredentials: true });
-    await init?.();    // refresh the header/user store
+    await init?.();
   }
 
   const onGuestsChange = (v) => {
@@ -145,10 +152,9 @@ export default function Checkout() {
       });
 
 
-      // 3) Open Razorpay
       const rzp = new window.Razorpay({
         key: order.key,
-        amount: order.amount, // paise
+        amount: order.amount,
         currency: order.currency || "INR",
         name: room.name,
         description: `Booking • ${nights} night(s)`,
@@ -165,17 +171,15 @@ export default function Checkout() {
           guests: String(guests),
           withMeal: String(!!withMeal),
         },
-        theme: { color: "#BA081C" }, // your primary
+        theme: { color: "#BA081C" },
 
         handler: async (resp) => {
-          // 4) Verify payment on backend and create booking
           try {
             const { data } = await api.post("/payments/verify", {
               razorpay_payment_id: resp.razorpay_payment_id,
               razorpay_order_id: resp.razorpay_order_id,
               razorpay_signature: resp.razorpay_signature,
 
-              // send checkout fields so backend stores them too
               roomId: room._id,
               startDate,
               endDate,
@@ -187,8 +191,6 @@ export default function Checkout() {
             });
 
             toast.success("Payment successful! Booking confirmed.");
-            // You can redirect to a booking details page later:
-            // navigate(`/my-bookings/${data.booking._id}`);
             navigate("/my-bookings", { replace: true });
           } catch (e) {
             toast.error(e?.response?.data?.message || "Verification failed");
@@ -297,11 +299,12 @@ export default function Checkout() {
                 <SelectValue placeholder="Select guests" />
               </SelectTrigger>
               <SelectContent>
-                {Array.from({ length: Math.max(1, room?.maxGuests || 5) }, (_, i) => i + 1).map((n) => (
+                {Array.from({ length: Math.max(1, maxGuestsCap || 1) }, (_, i) => i + 1).map((n) => (
                   <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
           </div>
         </div>
 
