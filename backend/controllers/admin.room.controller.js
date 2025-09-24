@@ -42,11 +42,10 @@ export const createRoom = async (req, res) => {
 };
 
 
-export const listRooms = async (_req, res) => {
+export const listRoomsAdmin = async (_req, res) => {
   const rooms = await Room.find().sort({ createdAt: -1 });
   res.json(rooms);
 };
-
 
 export const getRoomAdmin = async (req, res) => {
   const room = await Room.findById(req.params.id);

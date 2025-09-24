@@ -1,55 +1,58 @@
+// admin.js
 import { api } from "./http";
 
-// These are now /api/admin/login etc. because baseURL already ends with /admin
-export const adminLogin  = (email, password) => api.post("/login", { email, password }).then(r => r.data);
-export const adminLogout = () => api.post("/logout");
-export const adminMe     = () => api.get("/me").then(r => r.data);
+// --- Auth for admin panel ---
+export const adminLogin  = (email, password) => api.post("/admin/login", { email, password }).then(r => r.data);
+export const adminLogout = () => api.post("/admin/logout");
+export const adminMe     = () => api.get("/admin/me").then(r => r.data);
 
-// Admin rooms live at /api/admin/rooms — do NOT prefix with /admin here
-export const createRoom  = (payload) => api.post("/rooms", payload).then(r => r.data);
+// --- Rooms ---
+export const createRoom  = (payload) => api.post("/admin/rooms", payload).then(r => r.data);
+export const listRooms   = () => api.get("/admin/rooms").then(r => r.data);
+export const getRoomAdmin = async (id) => (await api.get(`/admin/rooms/${id}`)).data;
+export const updateRoom = async (id, payload) => (await api.put(`/admin/rooms/${id}`, payload)).data;
+export const deleteRoom = (id) => api.delete(`/admin/rooms/${id}`).then(r => r.data);
 
-export const getStats = () => api.get("/stats").then(r => r.data);
+// --- Users ---
+export const listUsersAdmin = () => api.get("/admin/users").then(r => r.data);
+export const getUserAdminById = (id) => api.get(`/admin/users/${id}`).then(r => r.data);
+export const updateUserAdmin = (id, payload) => api.put(`/admin/users/${id}`, payload).then(r => r.data);
+export const deleteUserAdmin = (id) => api.delete(`/admin/users/${id}`).then(r => r.data);
 
-export const listRooms = () => api.get("/rooms").then(r => r.data);
-export const getRoomAdmin = async (id) => (await api.get(`/rooms/${id}`)).data;      
-export const updateRoom = async (id, payload) => (await api.put(`/rooms/${id}`, payload)).data; 
-export const deleteRoom = (id) => api.delete(`/rooms/${id}`).then(r => r.data);
+// Create offline user by admin
+export const createUserByAdmin = (payload) =>
+  api.post("/admin/users", payload).then(r => r.data);
 
-export const listUsersAdmin = () => api.get("/users").then(r => r.data);
-export const getUserAdminById = (id) => api.get(`/users/${id}`).then(r => r.data);
-export const listUserBookingsAdmin = (id) => api.get(`/users/${id}/bookings`).then(r => r.data);
-export const cancelBookingAdmin = (bookingId) => api.post(`/bookings/${bookingId}/cancel`).then(r => r.data);
-export const listBookings = (params = {}) => api.get("/bookings", { params }).then(r => r.data);
-export const listBookingsAdmin = (params) => api.get("/bookings", { params }).then(r => r.data);
-export const cancelBooking = (bookingId) =>  api.patch(`/bookings/${bookingId}/cancel`).then(r => r.data);
+// --- Bookings ---
+export const listUserBookingsAdmin = (id) => api.get(`/admin/users/${id}/bookings`).then(r => r.data);
+export const listBookingsAdmin = (params) => api.get("/admin/bookings", { params }).then(r => r.data);
+export const cancelBookingAdmin = (bookingId) => api.post(`/admin/bookings/${bookingId}/cancel`).then(r => r.data);
 
-export const listBlackouts = () => api.get("/blackouts").then(r => r.data);
+// --- Blackouts ---
+export const listBlackouts = () => api.get("/admin/blackouts").then(r => r.data);
 export const addBlackout = ({ from, to, note }) =>
-  api.post("/blackouts", { from, to, note }).then(r => r.data);
+  api.post("/admin/blackouts", { from, to, note }).then(r => r.data);
 export const removeBlackout = (id) =>
-  api.delete(`/blackouts/${id}`).then(r => r.data);
+  api.delete(`/admin/blackouts/${id}`).then(r => r.data);
 
+// --- Uploads ---
 export const uploadImage = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
-  const { data } = await api.post("/upload", fd, {
+  const { data } = await api.post("/admin/upload", fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return data.url; 
+  return data.url;
 };
 
 export const uploadImages = async (files) => {
   const fd = new FormData();
   files.forEach((f) => fd.append("files", f));
-  const { data } = await api.post("/upload/batch", fd, {
+  const { data } = await api.post("/admin/upload/batch", fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data.urls || [];
 };
 
-
-export const updateUserAdmin = (id, payload) =>
-  api.put(`/users/${id}`, payload).then(r => r.data);
-
-export const deleteUserAdmin = (id) =>
-  api.delete(`/users/${id}`).then(r => r.data);
+// --- Stats ---
+export const getStats = () => api.get("/admin/stats").then(r => r.data);

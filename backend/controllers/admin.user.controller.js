@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import User from "../models/User.js";
 import Booking from "../models/Booking.js";
+import bcrypt from "bcryptjs";
 
 const { isValidObjectId } = mongoose;
 
@@ -212,3 +213,45 @@ export const deleteUserAdmin = async (req, res) => {
     res.status(500).json({ message: "Failed to delete user" });
   }
 };
+
+
+
+export const createUserAdmin = async (req, res) => {
+  try {
+    let { name, email, phone, password, isAdmin } = req.body || {};
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const exists = await User.findOne({ email: normalizedEmail });
+    if (exists) return res.status(400).json({ message: "Email already in use" });
+
+    if (!password || String(password).length < 6) {
+      password = Math.random().toString(36).slice(-10);
+    }
+    const passwordHash = await bcrypt.hash(String(password), 10);
+
+    const user = await User.create({
+      name: (name || "").trim(),
+      email: normalizedEmail,
+      phone: (phone || "").trim(),
+      passwordHash,
+      isAdmin: !!isAdmin,
+    });
+
+    const payload = {
+      _id: user._id,
+      name: user.name || "",
+      email: user.email,
+      phone: user.phone || "",
+      isAdmin: !!user.isAdmin,
+    };
+    if (req.body?.password ? false : true) payload.tempPassword = password;
+
+    res.status(201).json(payload);
+  } catch (err) {
+    console.error("createUserAdmin error:", err);
+    res.status(500).json({ message: "Failed to create user" });
+  }
+};
+
+

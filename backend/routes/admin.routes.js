@@ -1,14 +1,15 @@
 import express from "express";
 import { requireAdminSession } from "../middleware/adminSession.js";
-import { createRoom, listRooms, deleteRoom, getRoomAdmin, updateRoom } from "../controllers/admin.room.controller.js";
+import { createRoom, listRoomsAdmin, deleteRoom, getRoomAdmin, updateRoom } from "../controllers/admin.room.controller.js";
 import { getAdminStats } from "../controllers/admin.stats.controller.js";
-import { listUsersAdmin, getUserAdmin, listUserBookingsAdmin, cancelBookingAdmin, listBookingsAdmin, updateUserAdmin, deleteUserAdmin } from "../controllers/admin.user.controller.js";
+import { listUsersAdmin, getUserAdmin, listUserBookingsAdmin, cancelBookingAdmin, listBookingsAdmin, updateUserAdmin, deleteUserAdmin,  createUserAdmin  } from "../controllers/admin.user.controller.js";
+import { createVillaOrder, verifyVillaPayment } from "../controllers/admin.villa.controller.js";
 
 const router = express.Router();
 
 router.use(requireAdminSession);
 router.get("/stats", getAdminStats);
-router.get("/rooms", listRooms);
+router.get("/rooms", listRoomsAdmin);
 router.post("/rooms", createRoom);
 router.delete("/rooms/:id", deleteRoom);
 router.get("/rooms/:id", getRoomAdmin);     
@@ -21,5 +22,9 @@ router.patch("/bookings/:id/cancel", cancelBookingAdmin);
 router.put("/users/:id", updateUserAdmin);      
 router.delete("/users/:id", deleteUserAdmin);
 router.get("/bookings", listBookingsAdmin);
+router.post("/villa-order", createVillaOrder);
+router.post("/villa-verify", verifyVillaPayment);
+
+
 
 export default router;

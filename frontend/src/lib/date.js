@@ -11,10 +11,10 @@ export const toDateOnlyFromAPI = (s) => {
 
 // NEW: use UTC parts from an ISO date string (great for bookings coming from DB)
 export const toDateOnlyFromAPIUTC = (s) => {
+  if (!s) return null;
   const d = new Date(s);
-  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 };
-
 export const todayDateOnly = () => {
   const t = new Date();
   return new Date(t.getFullYear(), t.getMonth(), t.getDate());

@@ -17,6 +17,8 @@ const roomSchema = new mongoose.Schema(
     roomServices: { type: [String], default: [] },
 
     accommodation: { type: [String], default: [] },
+
+    isVilla: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

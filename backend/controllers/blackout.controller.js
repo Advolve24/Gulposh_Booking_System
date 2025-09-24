@@ -2,7 +2,7 @@ import Blackout from "../models/Blackout.js";
 
 const toDateOnly = (d) => {
   const t = new Date(d);
-  return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()));
 };
 
 export const listBlackouts = async (_req, res) => {

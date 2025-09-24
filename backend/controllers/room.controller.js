@@ -51,15 +51,15 @@ export const getDisabledRanges = async (_req, res) => {
 
 export const listRooms = async (_req, res) => {
   try {
-    const rooms = await Room.find()
-      .select("name coverImage pricePerNight priceWithMeal description accommodation maxGuests");
+    const rooms = await Room.find({ isVilla: { $ne: true } })
+      .select("name coverImage pricePerNight priceWithMeal description accommodation maxGuests")
+      .sort({ createdAt: -1 });
     res.json(rooms);
   } catch (err) {
     console.error("listRooms error:", err);
     res.status(500).json({ message: "Failed to load rooms" });
   }
 };
-
 
 export const getRoomById = async (req, res) => {
   try {
@@ -109,3 +109,27 @@ export const getBlockedDatesAll = async (_req, res) => {
     endDate: b.endDate
   })));
 };
+
+
+export const getRoomBookings = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid room id" });
+    }
+    const bookings = await Booking.find({
+      room: id,
+      status: { $ne: "cancelled" },
+    }).select("startDate endDate");
+
+    res.json(bookings.map(b => ({
+      startDate: b.startDate,
+      endDate: b.endDate,
+    })));
+  } catch (err) {
+    console.error("getRoomBookings error:", err);
+    res.status(500).json({ message: "Failed to load bookings" });
+  }
+};
+
+

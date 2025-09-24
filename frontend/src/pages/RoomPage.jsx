@@ -1,4 +1,3 @@
-// src/pages/RoomPage.jsx
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { api } from "../api/http";

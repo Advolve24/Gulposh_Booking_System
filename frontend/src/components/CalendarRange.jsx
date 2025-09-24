@@ -4,32 +4,55 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { toDateOnlyFromAPI, todayDateOnly } from "../lib/date";
+import { toDateOnlyFromAPIUTC, todayDateOnly } from "../lib/date";
 
 export default function CalendarRange({ roomId, value, onChange, disabledRanges }) {
   const [roomRanges, setRoomRanges] = useState([]);
   const [globalRanges, setGlobalRanges] = useState([]);
 
+  // Room-specific bookings + room-specific blocks
   useEffect(() => {
     if (!roomId || disabledRanges) return;
-    api.get(`/rooms/${roomId}/blocked`).then(({ data }) => {
-      const ranges = (data || []).map(b => ({
-        from: toDateOnlyFromAPI(b.startDate),
-        to:   toDateOnlyFromAPI(b.endDate), 
-      }));
-      setRoomRanges(ranges);
-    });
+    (async () => {
+      try {
+        // 1) per-room "blocked" (your endpoint currently returns bookings for that room)
+        const blockedRes = await api.get(`/rooms/${roomId}/blocked`);
+        const blockedRanges = (blockedRes.data || []).map(b => ({
+          from: toDateOnlyFromAPIUTC(b.startDate),
+          to:   toDateOnlyFromAPIUTC(b.endDate),
+        }));
+
+        // 2) per-room bookings (new endpoint you added)
+        const bookingsRes = await api.get(`/rooms/${roomId}/bookings`); // <-- FIXED
+        const bookingRanges = (bookingsRes.data || []).map(b => ({
+          from: toDateOnlyFromAPIUTC(b.startDate),
+          to:   toDateOnlyFromAPIUTC(b.endDate),
+        }));
+
+        setRoomRanges([...blockedRanges, ...bookingRanges]);
+      } catch (e) {
+        console.error("CalendarRange fetch error:", e);
+        setRoomRanges([]);
+      }
+    })();
   }, [roomId, disabledRanges]);
 
+  // Admin blackouts (global)
   useEffect(() => {
     if (disabledRanges) return;
-    api.get("/blackouts").then(({ data }) => {
-      const ranges = (data || []).map(b => ({
-        from: toDateOnlyFromAPI(b.from),
-        to:   toDateOnlyFromAPI(b.to),
-      }));
-      setGlobalRanges(ranges);
-    });
+    (async () => {
+      try {
+        const { data } = await api.get("/blackouts");
+        const ranges = (data || []).map(b => ({
+          from: toDateOnlyFromAPIUTC(b.from),
+          to:   toDateOnlyFromAPIUTC(b.to),
+        }));
+        setGlobalRanges(ranges);
+      } catch (e) {
+        console.error("CalendarRange blackouts error:", e);
+        setGlobalRanges([]);
+      }
+    })();
   }, [disabledRanges]);
 
   const checkIn  = value?.from ? format(value.from, "dd MMM yyyy") : "Add date";
