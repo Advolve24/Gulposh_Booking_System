@@ -262,7 +262,7 @@ export default function Checkout() {
                   value={form.password}
                   onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                   placeholder="Create a password"
-                  className="pr-10" // add some space for the button
+                  className="pr-10" 
                 />
                 <button
                   type="button"

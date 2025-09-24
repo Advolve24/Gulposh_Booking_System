@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
@@ -9,6 +8,7 @@ import { useAuth } from "./store/authStore";
 import AuthModal from "./components/AuthModal"; 
 import MyBookings from "./pages/MyBookings";
 import MyAccount from "./pages/MyAccount";
+import Invoices from "./pages/Invoices";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -37,6 +37,7 @@ export default function App() {
         <Route path="/bookings" element={<MyBookings />} />
         <Route path="/my-account" element={<MyAccount />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/invoices" element={<Invoices />} />
       </Routes>
     </BrowserRouter>
   );

@@ -71,6 +71,10 @@ export default function Header() {
                   My bookings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/invoices")}>
+                  My Invoices
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onLogout} className="text-red-600">
                   Logout
                 </DropdownMenuItem>
