@@ -9,7 +9,7 @@ export const useAuth = create((set) => ({
 
   init: async () => {
     try {
-      const me = await adminMe();     
+      const me = await adminMe();   // ✅ admin endpoint
       set({ user: me, ready: true });
     } catch {
       set({ user: null, ready: true });
@@ -17,9 +17,10 @@ export const useAuth = create((set) => ({
   },
 
   login: async (email, password) => {
-    const me = await adminLogin(email, password); 
+    const me = await adminLogin(email, password);  // ✅ admin endpoint
     set({ user: me });
     sessionStorage.setItem("adminUser", JSON.stringify(me));
+    return me;
   },
 
   logout: async () => {

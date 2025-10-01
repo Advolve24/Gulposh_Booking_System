@@ -18,10 +18,9 @@ export const adminLogin = async (req, res) => {
   const token = jwt.sign(
     { id: user._id, email: user.email, isAdmin: true },
     process.env.JWT_SECRET,
-    { expiresIn: "30m" }
+    { expiresIn: "5m" }
   );
 
-  // IMPORTANT: Different name + different path (matches your admin router mount)
   setSessionCookie(res, "admin_token", token, { path: "/api/admin", persistent: !!remember, days: 7 });
 
   res.json({ id: user._id, name: user.name, email: user.email, isAdmin: true });

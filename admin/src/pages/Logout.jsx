@@ -1,24 +1,24 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminLogout } from "../api/admin";
-import { useAuth } from "../store/auth"; 
-
+import { useAuth } from "../store/auth";
 
 export default function Logout() {
   const navigate = useNavigate();
-  const { setUser, init } = useAuth(); 
+  const { setUser } = useAuth();
 
   useEffect(() => {
     (async () => {
       try {
-        await adminLogout();         
+        await adminLogout();
       } catch {}
-      setUser(null);                 
-      await init?.();                
+
+      setUser(null);
       sessionStorage.removeItem("adminUser");
+
       navigate("/login", { replace: true });
     })();
-  }, [navigate, setUser, init]);
+  }, [navigate, setUser]);
 
   return null;
 }

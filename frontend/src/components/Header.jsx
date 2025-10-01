@@ -1,4 +1,3 @@
-// src/components/Header.jsx
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../store/authStore";
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,6 @@ export default function Header() {
   return (
     <header className="w-full border-b">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        {/* Left: logos */}
         <Link to="/" className="flex items-center gap-3">
           <div className="h-10 flex items-center">
             
@@ -48,7 +46,6 @@ export default function Header() {
           </div>
         </Link>
 
-        {/* Right: user */}
         <div className="flex items-center gap-3">
           {user ? (
             <DropdownMenu>
