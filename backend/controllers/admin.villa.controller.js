@@ -18,7 +18,6 @@ const nightsBetween = (start, end) => {
   return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
 };
 
-// Create Razorpay order for villa
 export const createVillaOrder = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -67,7 +66,7 @@ export const createVillaOrder = async (req, res) => {
   }
 };
 
-// Verify Villa payment
+
 export const verifyVillaPayment = async (req, res) => {
   try {
     const userId = req.user?.id;

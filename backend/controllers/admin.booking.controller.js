@@ -1,4 +1,3 @@
-// controllers/admin.villa.controller.js
 import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
 
@@ -18,12 +17,11 @@ export const createVillaBooking = async (req, res) => {
       return res.status(400).json({ message: "userId, startDate, endDate, customAmount are required" });
     }
 
-    // find special villa room
     const villaRoom = await Room.findOne({ name: "Entire Villa" });
     if (!villaRoom) return res.status(400).json({ message: "Villa room not configured" });
 
     const nights = nightsBetween(startDate, endDate);
-    const pricePerNight = Number(customAmount); // dynamic amount per night
+    const pricePerNight = Number(customAmount); 
     const amount = pricePerNight * nights;
 
     const booking = await Booking.create({

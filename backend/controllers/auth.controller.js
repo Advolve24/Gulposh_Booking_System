@@ -70,7 +70,7 @@ export const login = async (req, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
-      phone: user.phone,          // include phone in login response too
+      phone: user.phone,          
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
@@ -97,7 +97,6 @@ export const updateMe = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-    // If email provided and changed, ensure unique
     let emailChanged = false;
     if (email !== undefined) {
       const newEmail = normalizeEmail(email);
@@ -114,12 +113,11 @@ export const updateMe = async (req, res) => {
     if (phone !== undefined) {
       const v = String(phone).trim();
       user.phone = v;
-      user.mobile = v;       // keep legacy field in sync
+      user.mobile = v;       
     }
 
     await user.save();
 
-    // If email changed, refresh JWT so cookie matches
     if (emailChanged) {
       const token = jwt.sign(
         { id: user._id, email: user.email, isAdmin: !!user.isAdmin },

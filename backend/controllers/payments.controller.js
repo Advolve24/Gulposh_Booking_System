@@ -1,4 +1,3 @@
-// backend/src/controllers/payments.controller.js
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import Room from "../models/Room.js";
@@ -31,25 +30,22 @@ export const createOrder = async (req, res) => {
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "Room not found" });
 
-    // compute totals...
     const nights = nightsBetween(startDate, endDate);
     if (!nights) return res.status(400).json({ message: "Invalid date range" });
     const pricePerNight = withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : room.pricePerNight;
     const amountINR     = nights * pricePerNight;
     const amountPaise   = Math.round(amountINR * 100);
 
-    // make a guaranteed-short receipt (or comment it out completely)
     const shortId = String(room._id).slice(-6);
     const shortTs = Date.now().toString(36);
     const receipt = `r_${shortId}_${shortTs}`.slice(0, 40);
 
-    // DEBUG: verify length on server before calling Razorpay
     console.log("[rzp] receipt:", receipt, "len:", receipt.length);
 
     const payload = {
       amount: amountPaise,
       currency: "INR",
-      receipt, // ← if you still get errors, REMOVE this line entirely.
+      receipt, 
       notes: {
         roomId: String(room._id),
         userId: String(userId),

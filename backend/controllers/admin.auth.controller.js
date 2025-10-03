@@ -18,7 +18,7 @@ export const adminLogin = async (req, res) => {
   const token = jwt.sign(
     { id: user._id, email: user.email, isAdmin: true },
     process.env.JWT_SECRET,
-    { expiresIn: "5m" }
+    { expiresIn: "30m" }
   );
 
   setSessionCookie(res, "admin_token", token, { path: "/api/admin", persistent: !!remember, days: 7 });

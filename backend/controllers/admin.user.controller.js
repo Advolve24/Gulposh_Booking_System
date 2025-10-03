@@ -161,7 +161,6 @@ export const cancelBookingAdmin = async (req, res) => {
 };
 
 
-// updateUserAdmin
 export const updateUserAdmin = async (req, res) => {
   try {
     const { id } = req.params;
