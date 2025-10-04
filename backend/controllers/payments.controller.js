@@ -2,6 +2,8 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Room from "../models/Room.js";
 import Booking from "../models/Booking.js";
+import { sendWhatsAppText, sendWhatsAppTemplate } from "../utils/whatsapp.js";
+import { parseYMD } from "../lib/date.js";
 
 const rp = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -16,6 +18,12 @@ const nightsBetween = (start, end) => {
   const ms = toDateOnly(end) - toDateOnly(start);
   return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
 };
+
+function toUTCDateOnly(d) {
+  const x = new Date(d);
+  return new Date(Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), x.getUTCDate()));
+}
+
 
 export const createOrder = async (req, res) => {
   try {
@@ -33,8 +41,8 @@ export const createOrder = async (req, res) => {
     const nights = nightsBetween(startDate, endDate);
     if (!nights) return res.status(400).json({ message: "Invalid date range" });
     const pricePerNight = withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : room.pricePerNight;
-    const amountINR     = nights * pricePerNight;
-    const amountPaise   = Math.round(amountINR * 100);
+    const amountINR = nights * pricePerNight;
+    const amountPaise = Math.round(amountINR * 100);
 
     const shortId = String(room._id).slice(-6);
     const shortTs = Date.now().toString(36);
@@ -45,7 +53,7 @@ export const createOrder = async (req, res) => {
     const payload = {
       amount: amountPaise,
       currency: "INR",
-      receipt, 
+      receipt,
       notes: {
         roomId: String(room._id),
         userId: String(userId),
@@ -96,6 +104,7 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid payment payload" });
     }
 
+    // Verify signature...
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expected = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -106,17 +115,28 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "Signature mismatch" });
     }
 
+    // Parse booking dates as YYYY-MM-DD UTC
+    const sDate = parseYMD(startDate);
+    const eDate = parseYMD(endDate);
+
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "Room not found" });
 
-    const nights = nightsBetween(startDate, endDate);
-    const pricePerNight = withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : room.pricePerNight;
+    const nights = (eDate - sDate) / (1000 * 60 * 60 * 24); // diff in days
+    if (nights <= 0) return res.status(400).json({ message: "Invalid date range" });
+
+    const pricePerNight = withMeal && room.priceWithMeal > 0
+      ? room.priceWithMeal
+      : room.pricePerNight;
     const amountINR = nights * pricePerNight;
 
     const booking = await Booking.create({
       user: userId,
       room: room._id,
-      startDate, endDate, guests, withMeal: !!withMeal,
+      startDate: sDate,   // ✅ stored as UTC midnight
+      endDate: eDate,     // ✅ stored as UTC midnight
+      guests,
+      withMeal: !!withMeal,
       contactName: contactName || "",
       contactEmail: contactEmail || "",
       contactPhone: contactPhone || "",
@@ -130,6 +150,16 @@ export const verifyPayment = async (req, res) => {
       paymentId: razorpay_payment_id,
       signature: razorpay_signature,
     });
+
+    // WhatsApp message
+    const msg = `✅ Hi ${contactName}, your booking is confirmed!
+🏠 Room: ${room.name}
+📅 ${startDate} → ${endDate}
+👥 Guests: ${guests}
+💰 Amount: ₹${amountINR}`;
+
+    const sent = await sendWhatsAppText(contactPhone, msg);
+    if (!sent) await sendWhatsAppTemplate(contactPhone, "hello_world");
 
     res.json({ ok: true, booking });
   } catch (err) {

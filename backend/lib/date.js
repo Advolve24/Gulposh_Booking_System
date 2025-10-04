@@ -37,3 +37,9 @@ export const addDaysUTC = (d, n) => {
   if (!d) return null;
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + n));
 };
+
+export function parseYMD(s) {
+  if (!s) return null;
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)); 
+}

@@ -1,8 +1,8 @@
-// src/pages/Home.jsx
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/http";
 import RoomCard from "../components/RoomCard";
 import CalendarRange from "../components/CalendarRange";
+import { format } from "date-fns";
 import {
   Select,
   SelectTrigger,

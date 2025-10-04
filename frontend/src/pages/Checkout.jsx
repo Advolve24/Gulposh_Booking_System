@@ -11,12 +11,16 @@ import { loadRazorpayScript } from "../lib/loadRazorpay";
 import { toast } from "sonner";
 import CalendarRange from "../components/CalendarRange";
 import { Eye, EyeOff } from "lucide-react";
+import { format } from "date-fns";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
 
 function toDateOnly(d) {
   const x = new Date(d);
   return new Date(x.getFullYear(), x.getMonth(), x.getDate());
+}
+function toYMD(d) {
+  return d ? format(new Date(d), "yyyy-MM-dd") : null;
 }
 function formatDate(d) {
   return d
@@ -142,8 +146,8 @@ export default function Checkout() {
 
       const { data: order } = await api.post("/payments/create-order", {
         roomId: room._id,
-        startDate: start,
-        endDate: end,
+        startDate: toYMD(start),  
+        endDate: toYMD(end),
         guests,
         withMeal,
         contactName: form.name,
@@ -181,8 +185,8 @@ export default function Checkout() {
               razorpay_signature: resp.razorpay_signature,
 
               roomId: room._id,
-              startDate,
-              endDate,
+              startDate: toYMD(start),  
+              endDate: toYMD(end), 
               guests,
               withMeal,
               contactName: form.name,
