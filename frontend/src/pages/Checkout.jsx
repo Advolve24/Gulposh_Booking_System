@@ -14,7 +14,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 
-
+// Helpers
 function toDateOnly(d) {
   const x = new Date(d);
   return new Date(x.getFullYear(), x.getMonth(), x.getDate());
@@ -22,45 +22,26 @@ function toDateOnly(d) {
 function toYMD(d) {
   return d ? format(new Date(d), "yyyy-MM-dd") : null;
 }
-function formatDate(d) {
-  return d
-    ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-    : "";
-}
 const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e).trim());
-const isValidPhone = (p) => {
-  const digits = String(p || "").replace(/\D/g, "");
-  return digits.length >= 10 && digits.length <= 15;
-};
+const isValidPhone = (p) => /^[0-9]{10}$/.test(String(p).trim());
 
 export default function Checkout() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { user, register, login, init } = useAuth();
+  const { user, init } = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
+  const [room, setRoom] = useState(null);
+  const [withMeal, setWithMeal] = useState(false);
+  const [errors, setErrors] = useState({});
+
   const roomId = state?.roomId;
   const startDate = state?.startDate ? new Date(state.startDate) : null;
   const endDate = state?.endDate ? new Date(state.endDate) : null;
   const guests = state?.guests ? Number(state.guests) : null;
+
   const [range, setRange] = useState({ from: startDate || null, to: endDate || null });
   const [guestsState, setGuestsState] = useState(String(guests || ""));
-
-
-  const [room, setRoom] = useState(null);
-
-  const maxGuestsCap = useMemo(() => {
-    if (!room) return null;
-    if (typeof room.maxGuests === "number" && room.maxGuests > 0) return room.maxGuests;
-
-    const nums = (room.accommodation || [])
-      .flatMap((s) => Array.from(String(s).matchAll(/\d+/g)).map((m) => Number(m[0])))
-      .filter((n) => Number.isFinite(n) && n > 0);
-
-    const sum = nums.length ? nums.reduce((a, b) => a + b, 0) : 0;
-    return Math.max(1, sum || 1);
-  }, [room]);
-
-  const [withMeal, setWithMeal] = useState(false);
   const [form, setForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -90,6 +71,12 @@ export default function Checkout() {
     }
   }, [user]);
 
+  // restrict phone input
+  const handlePhoneChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setForm((f) => ({ ...f, phone: digits }));
+  };
+
   const nights = useMemo(() => {
     if (!startDate || !endDate) return 0;
     const ms = toDateOnly(endDate) - toDateOnly(startDate);
@@ -103,34 +90,77 @@ export default function Checkout() {
 
   const total = useMemo(() => (nights ? nights * pricePerNight : 0), [nights, pricePerNight]);
 
+  // --- validation ---
+  const validateForm = () => {
+    const newErrors = {};
+    if (!form.name.trim()) newErrors.name = "Name is required";
+    if (!form.email.trim()) newErrors.email = "Email is required";
+    else if (!isValidEmail(form.email)) newErrors.email = "Invalid email format";
+    if (!form.phone.trim()) newErrors.phone = "Phone number is required";
+    else if (!isValidPhone(form.phone)) newErrors.phone = "Enter a valid 10-digit phone number";
+    if (!user && !form.password.trim()) newErrors.password = "Password is required";
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      Object.values(newErrors).forEach((msg) => toast.error(msg));
+      return false;
+    }
+    return true;
+  };
+
+
+  const maxGuestsCap = useMemo(() => {
+    if (!room) return 1;
+    if (typeof room.maxGuests === "number" && room.maxGuests > 0) return room.maxGuests;
+
+    const nums = (room.accommodation || [])
+      .flatMap((s) => Array.from(String(s).matchAll(/\d+/g)).map((m) => Number(m[0])))
+      .filter((n) => Number.isFinite(n) && n > 0);
+
+    const sum = nums.length ? nums.reduce((a, b) => a + b, 0) : 0;
+    return Math.max(1, sum || 1);
+  }, [room]);
+
+
   async function ensureAuthed() {
     if (user) return;
 
-    const { name, email, password } = form;
-    if (!name?.trim() || !email?.trim() || !password?.trim()) {
-      throw new Error("Please fill name, email and password.");
-    }
+    const { name, email, password, phone } = form;
+    if (!validateForm()) throw new Error("Please correct the form before proceeding.");
 
     try {
-      await api.post("/auth/register", { name: name.trim(), email: email.trim(), password: password.trim() }, { withCredentials: true });
+      await api.post(
+        "/auth/register",
+        {
+          name: name.trim(),
+          email: email.trim(),
+          password: password.trim(),
+          phone: phone.trim(),
+        },
+        { withCredentials: true }
+      );
     } catch (e) {
-      const already = e?.response?.status === 400 || /already/i.test(String(e?.response?.data?.message || ""));
+      const already =
+        e?.response?.status === 400 ||
+        /already/i.test(String(e?.response?.data?.message || ""));
       if (!already) throw e;
-      await api.post("/auth/login", { email: email.trim(), password: password.trim() }, { withCredentials: true });
+
+      await api.post(
+        "/auth/login",
+        { email: email.trim(), password: password.trim() },
+        { withCredentials: true }
+      );
     }
 
     await api.get("/auth/me", { withCredentials: true });
     await init?.();
   }
 
-  const onGuestsChange = (v) => {
-    setGuestsState(v);
-  };
-
-
+  const onGuestsChange = (v) => setGuestsState(v);
 
   const proceed = async () => {
     try {
+      if (!validateForm()) return;
       await ensureAuthed();
 
       const start = range?.from;
@@ -138,15 +168,16 @@ export default function Checkout() {
       const guests = Number(guestsState);
 
       if (!start || !end || !guests) {
-        toast.error("Please select dates and guests.");
+        toast.error("Please select valid dates and guests.");
         return;
       }
+
       const ok = await loadRazorpayScript();
       if (!ok) throw new Error("Failed to load Razorpay");
 
       const { data: order } = await api.post("/payments/create-order", {
         roomId: room._id,
-        startDate: toYMD(start),  
+        startDate: toYMD(start),
         endDate: toYMD(end),
         guests,
         withMeal,
@@ -154,7 +185,6 @@ export default function Checkout() {
         contactEmail: form.email,
         contactPhone: form.phone,
       });
-
 
       const rzp = new window.Razorpay({
         key: order.key,
@@ -176,36 +206,28 @@ export default function Checkout() {
           withMeal: String(!!withMeal),
         },
         theme: { color: "#BA081C" },
-
         handler: async (resp) => {
           try {
-            const { data } = await api.post("/payments/verify", {
+            await api.post("/payments/verify", {
               razorpay_payment_id: resp.razorpay_payment_id,
               razorpay_order_id: resp.razorpay_order_id,
               razorpay_signature: resp.razorpay_signature,
-
               roomId: room._id,
-              startDate: toYMD(start),  
-              endDate: toYMD(end), 
+              startDate: toYMD(start),
+              endDate: toYMD(end),
               guests,
               withMeal,
               contactName: form.name,
               contactEmail: form.email,
               contactPhone: form.phone,
             });
-
             toast.success("Payment successful! Booking confirmed.");
             navigate("/my-bookings", { replace: true });
           } catch (e) {
             toast.error(e?.response?.data?.message || "Verification failed");
           }
         },
-
-        modal: {
-          ondismiss: () => {
-            toast("Payment flow was cancelled.");
-          },
-        },
+        modal: { ondismiss: () => toast("Payment flow was cancelled.") },
       });
 
       rzp.open();
@@ -218,7 +240,6 @@ export default function Checkout() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Top banner */}
       <div className="bg-primary text-primary-foreground rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="text-lg sm:text-xl font-semibold">{room.name}</div>
         <div className="flex items-center gap-3 text-sm sm:text-base">
@@ -228,9 +249,7 @@ export default function Checkout() {
         </div>
       </div>
 
-      {/* Form card */}
       <div className="rounded-xl border p-4 sm:p-6 space-y-5">
-        {/* Account / Contact */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div className="space-y-1 sm:col-span-2">
             <Label>Name</Label>
@@ -239,7 +258,9 @@ export default function Checkout() {
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="Your full name"
             />
+            {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
           </div>
+
           <div className="space-y-1 sm:col-span-2">
             <Label>Email</Label>
             <Input
@@ -248,15 +269,20 @@ export default function Checkout() {
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               placeholder="you@example.com"
             />
+            {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
           </div>
+
           <div className="space-y-1 sm:col-span-2">
             <Label>Phone</Label>
             <Input
+              type="tel"
               value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              placeholder="+91 XXXXX XXXXX"
+              onChange={handlePhoneChange}
+              placeholder="10-digit mobile number"
             />
+            {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
           </div>
+
           {!user && (
             <div className="space-y-1 sm:col-span-2">
               <Label>Password</Label>
@@ -266,7 +292,7 @@ export default function Checkout() {
                   value={form.password}
                   onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                   placeholder="Create a password"
-                  className="pr-10" 
+                  className="pr-10"
                 />
                 <button
                   type="button"
@@ -276,24 +302,19 @@ export default function Checkout() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
               <p className="text-xs text-muted-foreground">
                 We’ll create your account or sign you in if it already exists.
               </p>
             </div>
           )}
-
         </div>
 
-        {/* Dates & Guests Editable */}
+        {/* Dates & Guests */}
         <div className="grid w-full grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1 sm:col-span-2">
             <Label>Check-in / Check-out</Label>
-            <CalendarRange
-              value={range}
-              onChange={setRange}
-              numberOfMonths={1}
-              disabledRanges={[]}
-            />
+            <CalendarRange value={range} onChange={setRange} numberOfMonths={1} disabledRanges={[]} />
           </div>
 
           <div className="space-y-1 sm:col-span-1">
@@ -303,16 +324,16 @@ export default function Checkout() {
                 <SelectValue placeholder="Select guests" />
               </SelectTrigger>
               <SelectContent>
-                {Array.from({ length: Math.max(1, maxGuestsCap || 1) }, (_, i) => i + 1).map((n) => (
-                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                {Array.from({ length: maxGuestsCap }, (_, i) => i + 1).map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
           </div>
         </div>
-
-
 
         {/* With meal */}
         <div className="flex items-center gap-3 pt-2">
@@ -340,7 +361,7 @@ export default function Checkout() {
           </div>
         </div>
 
-        <Button className="w-full mt-2" onClick={proceed} disabled={!startDate || !endDate || !guests}>
+        <Button className="w-full mt-2" onClick={proceed}>
           Proceed to Payment
         </Button>
       </div>

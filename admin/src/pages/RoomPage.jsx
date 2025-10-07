@@ -69,7 +69,7 @@ export default function RoomPage() {
             })
           );
         }
-      } catch (_) {}
+      } catch (_) { }
     })();
 
     api.get("/blackouts").then(({ data }) => {
@@ -100,7 +100,7 @@ export default function RoomPage() {
     }
     const g = stateGuests || qpGuests;
     if (g) setGuests(String(g));
-  }, []); 
+  }, []);
   useEffect(() => {
     const sp = new URLSearchParams(searchParams);
     if (range?.from && range?.to) {
@@ -179,8 +179,8 @@ export default function RoomPage() {
     try {
       await ensureUserExists();
 
-      const start = toDateOnlyUTC(range.from);
-      const end = toDateOnlyUTC(range.to);
+      const start = range?.from;
+      const end = range?.to;
       const g = Number(guests);
 
       if (!start || !end || !g) {
@@ -191,9 +191,10 @@ export default function RoomPage() {
       if (!ok) throw new Error("Failed to load Razorpay");
 
       const { data: order } = await api.post("/payments/create-order", {
+        userId: selectedUserId,
         roomId: room._id,
-        startDate: start,
-        endDate: end,
+        startDate: start.toISOString(),   
+        endDate: end.toISOString(), 
         guests: g,
         withMeal,
         contactName: form.name,
@@ -224,8 +225,8 @@ export default function RoomPage() {
               razorpay_order_id: resp.razorpay_order_id,
               razorpay_signature: resp.razorpay_signature,
               roomId: room._id,
-              startDate: start,
-              endDate: end,
+              startDate: start.toISOString(),
+              endDate: end.toISOString(),
               guests: g,
               withMeal,
               contactName: form.name,
@@ -321,7 +322,7 @@ export default function RoomPage() {
           </div>
         </div>
 
-\        <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3 pt-2">
           <Checkbox id="withMeal" checked={withMeal} onCheckedChange={(v) => setWithMeal(Boolean(v))} />
           <Label htmlFor="withMeal" className="cursor-pointer">
             Include meals (₹{room.priceWithMeal}/night)
@@ -330,7 +331,7 @@ export default function RoomPage() {
 
         <Separator className="my-2" />
 
-\        <div className="space-y-1 text-sm">
+               <div className="space-y-1 text-sm">
           <div className="flex items-center justify-between"><span>Nights</span><span>{nights}</span></div>
           <div className="flex items-center justify-between"><span>Price per night</span><span>₹{pricePerNight}</span></div>
           <div className="flex items-center justify-between font-medium text-base pt-1"><span>Total</span><span>₹{total}</span></div>

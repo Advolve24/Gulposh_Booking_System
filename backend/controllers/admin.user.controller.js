@@ -101,7 +101,7 @@ export const listBookingsAdmin = async (req, res) => {
     }
 
     let items = await Booking.find(filter)
-      .select("user room startDate endDate guests status createdAt total note withMeal")
+      .select("user room startDate endDate guests status createdAt amount note withMeal adminMeta total")
       .populate("user", "name email")
       .populate("room", "name")
       .sort({ createdAt: -1 })
@@ -127,6 +127,8 @@ export const listBookingsAdmin = async (req, res) => {
       endDate: b.endDate,
       guests: b.guests ?? null,
       status: b.status,
+      amount: b.amount ?? null,
+      adminMeta: b.adminMeta ?? {},
       total: b.total ?? null,
       createdAt: b.createdAt,
       note: b.note ?? null,
@@ -253,4 +255,29 @@ export const createUserAdmin = async (req, res) => {
   }
 };
 
+
+export const updateBookingAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullName, phone, govIdType, govIdNumber, amountPaid, paymentMode } = req.body;
+
+    const booking = await Booking.findById(id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    booking.adminMeta = {
+      fullName: fullName || booking.adminMeta?.fullName,
+      phone: phone || booking.adminMeta?.phone,
+      govIdType: govIdType || booking.adminMeta?.govIdType,
+      govIdNumber: govIdNumber || booking.adminMeta?.govIdNumber,
+      amountPaid: amountPaid ?? booking.adminMeta?.amountPaid,
+      paymentMode: paymentMode || booking.adminMeta?.paymentMode,
+    };
+
+    await booking.save();
+    res.json({ ok: true, booking });
+  } catch (err) {
+    console.error("updateBookingAdmin error:", err);
+    res.status(400).json({ message: err.message });
+  }
+};
 

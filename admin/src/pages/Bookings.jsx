@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { CheckCircle, XCircle } from "lucide-react";
+import EditBookingDialog from "@/components/EditBookingDialog.jsx";
 
 const fmt = (d) => (d ? format(new Date(d), "dd MMM yy") : "—");
 const diffNightsInclusive = (from, to) => {
@@ -28,6 +29,7 @@ export default function Bookings() {
     const [roomId, setRoomId] = useState("all");
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
 
     const [status, setStatus] = useState("all");
     const [room, setRoom] = useState("");
@@ -164,6 +166,16 @@ export default function Bookings() {
                                                 >
                                                     Cancel
                                                 </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    onClick={() => {
+                                                        setSelected(b);
+                                                        setEditOpen(true);
+                                                    }}
+                                                >
+                                                    Edit
+                                                </Button>
                                             </div>
                                         </td>
                                     </tr>
@@ -232,6 +244,15 @@ export default function Bookings() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {selected && (
+  <EditBookingDialog
+    open={editOpen}
+    onOpenChange={setEditOpen}
+    booking={selected}
+    reload={load}
+  />
+)}
         </div>
     );
 }

@@ -1,4 +1,3 @@
-// src/components/AuthModal.jsx
 import { useState } from "react";
 import { useAuth } from "../store/authStore";
 import {
@@ -10,31 +9,65 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Eye, EyeOff } from "lucide-react";
 
+// --- validation helpers ---
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+const isValidGmail = (email) => /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email.trim());
+const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone.trim());
+
 export default function AuthModal() {
   const { showAuthModal, closeAuth, login, register } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "", phone: "" });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
+  // --- common validation ---
+  const validate = (mode) => {
+    const newErrors = {};
+    if (mode === "login") {
+      if (!form.email.trim()) newErrors.email = "Email is required.";
+      else if (!isValidEmail(form.email)) newErrors.email = "Enter a valid email.";
+      if (!form.password) newErrors.password = "Password is required.";
+    } else if (mode === "register") {
+      if (!form.name.trim()) newErrors.name = "Name is required.";
+      if (!form.email.trim()) newErrors.email = "Email is required.";
+      else if (!isValidEmail(form.email)) newErrors.email = "Enter a valid email address.";
+      else if (!isValidGmail(form.email)) newErrors.email = "Only Gmail addresses are allowed.";
+      if (!form.phone.trim()) newErrors.phone = "Phone number is required.";
+      else if (!isValidPhone(form.phone)) newErrors.phone = "Enter a valid 10-digit phone number.";
+      if (!form.password) newErrors.password = "Password is required.";
+      else if (form.password.length < 6) newErrors.password = "Password must be at least 6 characters.";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const onLogin = async () => {
+    if (!validate("login")) return;
     setLoading(true);
-    try { await login(form.email.trim(), form.password); }
-    finally { setLoading(false); }
+    try {
+      await login(form.email.trim(), form.password);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onRegister = async () => {
-    // simple client-side checks
-    const phone = form.phone.replace(/[^\d+]/g, "").trim();
-    if (!form.name.trim()) return alert("Name is required");
-    if (!form.email.trim()) return alert("Email is required");
-    if (!form.password) return alert("Password is required");
-    if (!phone) return alert("Phone is required");
-
+    if (!validate("register")) return;
+    const phone = form.phone.replace(/[^\d]/g, "").trim();
     setLoading(true);
-    try { await register(form.name.trim(), form.email.trim(), form.password, phone); }
-    finally { setLoading(false); }
+    try {
+      await register(form.name.trim(), form.email.trim(), form.password, phone);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // restrict phone input to 10 digits
+  const handlePhoneChange = (e) => {
+    const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setForm((f) => ({ ...f, phone: digitsOnly }));
   };
 
   return (
@@ -53,37 +86,40 @@ export default function AuthModal() {
 
           {/* LOGIN */}
           <TabsContent value="login" className="space-y-3">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="login-email">Email</Label>
               <Input
                 id="login-email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="you@example.com"
+                placeholder="you@gmail.com"
                 autoComplete="email"
               />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="reg-password">Password</Label>
+
+            <div className="space-y-1">
+              <Label htmlFor="login-password">Password</Label>
               <div className="relative">
                 <Input
-                  id="reg-password"
-                  type={showRegisterPassword ? "text" : "password"}
+                  id="login-password"
+                  type={showLoginPassword ? "text" : "password"}
                   value={form.password}
                   onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  placeholder="Create a strong password"
-                  autoComplete="new-password"
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
                   className="pr-10"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowRegisterPassword((prev) => !prev)}
+                  onClick={() => setShowLoginPassword((prev) => !prev)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
                 >
-                  {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
             <Button className="w-full" onClick={onLogin} disabled={loading}>
@@ -93,7 +129,7 @@ export default function AuthModal() {
 
           {/* REGISTER */}
           <TabsContent value="register" className="space-y-3">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="reg-name">Name</Label>
               <Input
                 id="reg-name"
@@ -102,36 +138,37 @@ export default function AuthModal() {
                 placeholder="Your name"
                 autoComplete="name"
               />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="reg-email">Email</Label>
               <Input
                 id="reg-email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="you@example.com"
+                placeholder="you@gmail.com"
                 autoComplete="email"
               />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="reg-phone">Phone</Label>
-              <div className="relative">
-                <Input
-                  id="reg-phone"
-                  type="tel"
-                  inputMode="tel"
-                  value={form.phone}
-                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  placeholder="Your phone number"
-                  autoComplete="tel"
-                />
-              </div>
+              <Input
+                id="reg-phone"
+                type="tel"
+                inputMode="numeric"
+                value={form.phone}
+                onChange={handlePhoneChange}
+                placeholder="10-digit mobile number"
+                autoComplete="tel"
+              />
+              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="reg-password">Password</Label>
               <div className="relative">
                 <Input
@@ -151,8 +188,8 @@ export default function AuthModal() {
                   {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
-
 
             <Button className="w-full" onClick={onRegister} disabled={loading}>
               {loading ? "Creating..." : "Create account"}

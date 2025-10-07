@@ -26,6 +26,18 @@ const bookingSchema = new mongoose.Schema(
     orderId: String,
     paymentId: String,
     signature: String,
+
+    adminMeta: {
+      fullName: String,
+      phone: String,
+      govIdType: {
+        type: String,
+        enum: ["Aadhaar", "Passport", "Voter ID", "Driving License"],
+      },
+      govIdNumber: String,
+      amountPaid: Number,
+      paymentMode: { type: String, enum: ["Cash", "UPI", "Card"], default: "Cash" },
+    },
   },
   { timestamps: true }
 );
