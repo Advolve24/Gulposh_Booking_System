@@ -8,7 +8,6 @@ const rp = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-/** ✅ Utility: Calculate nights between two date-like values (ISO or Date) */
 function nightsBetween(start, end) {
   if (!start || !end) return 0;
   const s = new Date(start);
@@ -21,7 +20,6 @@ function nightsBetween(start, end) {
   return Math.max(0, Math.round(diff / (1000 * 60 * 60 * 24)));
 }
 
-/** ✅ Create Villa Order (Admin or User flow) */
 export const createVillaOrder = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -83,10 +81,10 @@ export const createVillaOrder = async (req, res) => {
   }
 };
 
-/** ✅ Verify Villa Payment & Create Booking */
+
 export const verifyVillaPayment = async (req, res) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.body.userId || req.user?.id;
     if (!userId) return res.status(401).json({ message: "Auth required" });
 
     const {
@@ -100,48 +98,66 @@ export const verifyVillaPayment = async (req, res) => {
       contactName,
       contactEmail,
       contactPhone,
+      govIdType,
+      govIdNumber,
+      paymentMode,
     } = req.body || {};
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({ message: "Invalid payment payload" });
+    const sDate = new Date(startDate);
+    const eDate = new Date(endDate);
+    const nights = Math.max(1, Math.round((eDate - sDate) / (1000 * 60 * 60 * 24)));
+    const amountINR = nights * Number(customAmount);
+
+    if (paymentMode === "Cash") {
+      const booking = await Booking.create({
+        user: userId,
+        startDate: sDate,
+        endDate: eDate,
+        guests,
+        withMeal: false,
+        contactName,
+        contactEmail,
+        contactPhone,
+        currency: "INR",
+        pricePerNight: Number(customAmount),
+        nights,
+        amount: amountINR,
+        status: "confirmed",
+        paymentProvider: "offline",
+        isVilla: true,
+        adminMeta: {
+          fullName: contactName,
+          phone: contactPhone,
+          govIdType,
+          govIdNumber,
+          amountPaid: amountINR,
+          paymentMode: "Cash",
+        },
+      });
+      return res.json({ ok: true, booking });
     }
 
-    // ✅ Verify signature
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expected = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(body)
       .digest("hex");
 
+    console.log("🔍 Signature verify:", { expected, got: razorpay_signature });
+
     if (expected !== razorpay_signature) {
       return res.status(400).json({ message: "Signature mismatch" });
     }
 
-    // ✅ Parse dates safely
-    const sDate = new Date(startDate);
-    const eDate = new Date(endDate);
-
-    if (isNaN(sDate) || isNaN(eDate)) {
-      console.error("❌ Invalid incoming dates:", startDate, endDate);
-      throw new Error(`Invalid start or end date: ${startDate}, ${endDate}`);
-    }
-
-    const nights = nightsBetween(sDate, eDate);
-    if (!nights) throw new Error("Invalid or zero-night date range");
-
-    const amountINR = nights * Number(customAmount);
-
-    // ✅ Save booking
     const booking = await Booking.create({
       user: userId,
-      room: null,
       startDate: sDate,
       endDate: eDate,
-      guests: Number(guests),
+      guests,
       withMeal: false,
-      contactName: contactName || "",
-      contactEmail: contactEmail || "",
-      contactPhone: contactPhone || "",
+      contactName,
+      contactEmail,
+      contactPhone,
       currency: "INR",
       pricePerNight: Number(customAmount),
       nights,
@@ -152,15 +168,19 @@ export const verifyVillaPayment = async (req, res) => {
       paymentId: razorpay_payment_id,
       signature: razorpay_signature,
       isVilla: true,
+      adminMeta: {
+        fullName: contactName,
+        phone: contactPhone,
+        govIdType,
+        govIdNumber,
+        amountPaid: amountINR,
+        paymentMode: paymentMode === "Cash" ? "Cash" : "Online",
+      },
     });
-
-    console.log("✅ Booking created successfully:", booking._id);
 
     res.json({ ok: true, booking });
   } catch (err) {
     console.error("verifyVillaPayment error:", err);
-    res.status(400).json({
-      message: err?.message || "Villa payment verification failed",
-    });
+    res.status(400).json({ message: err?.message || "Villa payment verification failed" });
   }
 };

@@ -2,6 +2,7 @@ import Booking from "../models/Booking.js";
 
 export const getMyBookings = async (req, res) => {
   const items = await Booking.find({ user: req.user.id })
+    .populate("user", "name email phone")
     .populate("room", "name coverImage pricePerNight priceWithMeal")
     .sort({ startDate: 1 });
   res.json(items);

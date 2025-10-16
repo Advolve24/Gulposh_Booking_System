@@ -3,10 +3,9 @@ const CROSS_SITE = process.env.CROSS_SITE === "true";
 
 export const COOKIE_BASE = {
   httpOnly: true,
-  secure: IS_PROD,                
+  secure: IS_PROD,
   sameSite: CROSS_SITE ? "none" : "lax",
 };
-
 
 export function setSessionCookie(
   res,

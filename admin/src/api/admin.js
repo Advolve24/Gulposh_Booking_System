@@ -19,23 +19,19 @@ export const getUserAdminById = (id) => api.get(`/admin/users/${id}`).then(r => 
 export const updateUserAdmin = (id, payload) => api.put(`/admin/users/${id}`, payload).then(r => r.data);
 export const deleteUserAdmin = (id) => api.delete(`/admin/users/${id}`).then(r => r.data);
 
-// Create offline user by admin
 export const createUserByAdmin = (payload) =>
   api.post("/admin/users", payload).then(r => r.data);
 
-// --- Bookings ---
 export const listUserBookingsAdmin = (id) => api.get(`/admin/users/${id}/bookings`).then(r => r.data);
 export const listBookingsAdmin = (params) => api.get("/admin/bookings", { params }).then(r => r.data);
 export const cancelBookingAdmin = (bookingId) => api.post(`/admin/bookings/${bookingId}/cancel`).then(r => r.data);
 
-// --- Blackouts ---
 export const listBlackouts = () => api.get("/admin/blackouts").then(r => r.data);
 export const addBlackout = ({ from, to, note }) =>
   api.post("/admin/blackouts", { from, to, note }).then(r => r.data);
 export const removeBlackout = (id) =>
   api.delete(`/admin/blackouts/${id}`).then(r => r.data);
 
-// --- Uploads ---
 export const uploadImage = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
@@ -54,7 +50,6 @@ export const uploadImages = async (files) => {
   return data.urls || [];
 };
 
-// --- Stats ---
 export const getStats = () => api.get("/admin/stats").then(r => r.data);
 
 export const updateBookingAdmin = (id, payload) =>

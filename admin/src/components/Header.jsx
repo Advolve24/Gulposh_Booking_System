@@ -39,7 +39,7 @@ export default function Header() {
           <Link to="/rooms/new" className="text-sm">Add Room</Link>
           <Link to="/bookings" className="text-sm">Bookings</Link>
           <Link to="/users" className="text-sm">Users</Link>
-          <Link to="/customize-bookings" className="text-sm">Customize</Link>
+          <Link to="/villa-booking" className="text-sm">Customize</Link>
           <Link to="/logout" className="text-sm">Logout</Link>
         </nav>
 

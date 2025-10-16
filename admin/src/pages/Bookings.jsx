@@ -198,7 +198,7 @@ export default function Bookings() {
                     {selected && (
                         <div className="space-y-2 text-sm">
                             <div><span className="text-muted-foreground">Booking ID:</span> {selected._id}</div>
-                            <div><span className="text-muted-foreground">Room:</span> {selected.room?.name || selected.roomName || "—"}</div>
+                            <div><span className="text-muted-foreground">Room:</span> {selected.room?.name || selected.roomName || "Entire Villa"}</div>
                             <div><span className="text-muted-foreground">Dates:</span> {fmt(selected.startDate)} → {fmt(selected.endDate)}</div>
                             <div><span className="text-muted-foreground">Nights:</span> {diffNightsInclusive(selected.startDate, selected.endDate)}</div>
                             <div><span className="text-muted-foreground">Guests:</span> {selected.guests ?? "—"}</div>

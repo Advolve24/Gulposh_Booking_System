@@ -8,6 +8,7 @@ import { useAuth } from "./store/authStore";
 import AuthModal from "./components/AuthModal"; 
 import MyBookings from "./pages/MyBookings";
 import MyAccount from "./pages/MyAccount";
+import VillaInvoice from "./components/VillaInvoice";
 import Invoices from "./pages/Invoices";
 
 function ScrollToTop() {
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/my-account" element={<MyAccount />} />
         <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/invoices" element={<Invoices />} />
+        <Route path="/invoice-view/:id" element={<VillaInvoice />} />
       </Routes>
     </BrowserRouter>
   );

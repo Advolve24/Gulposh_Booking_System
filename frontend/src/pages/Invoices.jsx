@@ -12,9 +12,20 @@ export default function Invoices() {
       .catch(() => setBookings([]));
   }, []);
 
-  const downloadInvoice = (id) => {
-    window.open(`${import.meta.env.VITE_API_URL}/invoice/${id}`, "_blank");
-  };
+ const downloadInvoice = async (id) => {
+  const invoiceEl = document.getElementById("tm_download_section");
+  if (!invoiceEl) {
+    window.open(`/invoice-view/${id}`, "_blank"); 
+    return;
+  }
+  const canvas = await html2canvas(invoiceEl, { scale: 2, useCORS: true });
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("p", "pt", "a4");
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+  pdf.save(`invoice-${id}.pdf`);
+};
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">

@@ -6,20 +6,25 @@ const DEFAULT_API = import.meta.env.DEV
 
 const baseURL = (import.meta.env.VITE_API_URL || DEFAULT_API).replace(/\/$/, "");
 
-export const api = axios.create({
-  baseURL,
-  withCredentials: true,   
-  timeout: 15000,
-});
 
-if (import.meta.env.PROD) {
-  console.log("API baseURL:", baseURL);
-}
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
+});
 
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    console.error(err.response?.data || err.message);
-    return Promise.reject(err);
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.message === "TokenExpired" &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
+      await api.post("/auth/refresh");
+      return api(originalRequest);
+    }
+    return Promise.reject(error);
   }
 );

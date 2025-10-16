@@ -19,6 +19,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { updateBookingAdmin, updateUserAdmin } from "../api/admin";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import AdminBookingPrint from "./AdminBookingPrint";
+import { createRoot } from "react-dom/client";
+
 
 const GOV_ID_TYPES = ["Aadhaar", "Passport", "Voter ID", "Driving License"];
 
@@ -91,141 +95,37 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
 };
 
  const handlePrint = async () => {
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
+  // Create a temporary container
+  const container = document.createElement("div");
+  container.style.position = "absolute";
+  container.style.left = "-9999px";
+  document.body.appendChild(container);
+
+  // Render our JSX template into it
+  const root = createRoot(container);
+  root.render(<AdminBookingPrint booking={booking} form={form} />);
+
+  // Wait for rendering
+  await new Promise((r) => setTimeout(r, 300));
+
+  // Capture as canvas
+  const canvas = await html2canvas(container.firstChild, {
+    scale: 2,
+    useCORS: true,
+    scrollY: -window.scrollY,
   });
 
-  // === LOGO ===
-  const logoUrl =
-    "https://res.cloudinary.com/dmbpfgpt4/image/upload/v1759811127/Group_18_2_k0qxpv.png";
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("p", "pt", "a4");
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-  // Load logo preserving aspect ratio
-  const loadImage = (url) =>
-    new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = url;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL("image/png"));
-      };
-      img.onerror = reject;
-    });
+  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+  pdf.save(`booking_${booking._id}.pdf`);
 
-  const logoBase64 = await loadImage(logoUrl);
-
-  // === HEADER BAR ===
-  doc.setFillColor(245, 245, 245);
-  doc.rect(0, 0, 210, 30, "F");
-
-  // Logo (kept full, not squished)
-  doc.addImage(logoBase64, "PNG", 14, 5, 55, 20);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(90);
-  doc.text("Villa Gulposh", 200, 12, { align: "right" });
-  doc.text("www.villagulposh.com", 200, 17, { align: "right" });
-  doc.text("stay@villagulposh.com", 200, 22, { align: "right" });
-
-  // === COMMON UTIL ===
-  const addLine = (label, value) => {
-  const startX = 18;
-  const valueX = 80;
-
-  // Draw label normally (no kerning distortion)
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text(`${label}:`, startX, y);
-
-  // Draw value aligned beside it
-  doc.setFont("helvetica", "normal");
-  doc.text(String(value || "—"), valueX, y);
-  y += 8;
-};
-
-  // === SECTION 1: Guest Details ===
-  let y = 55;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(0);
-  doc.text("Guest Details", 14, y);
-  y += 5;
-  doc.setDrawColor(180);
-  doc.line(14, y, 196, y);
-  y += 8;
-
-  addLine("Full Name", form.fullName);
-  addLine("Phone Number", form.phone);
-  addLine("Government ID Type", form.govIdType || "—");
-  addLine("Government ID Number", form.govIdNumber || "—");
-
-  // === SECTION 2: Stay Details ===
-  y += 6;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text("Stay Details", 14, y);
-  y += 5;
-  doc.line(14, y, 196, y);
-  y += 8;
-
-  addLine("Check-in Date", new Date(booking.startDate).toLocaleDateString());
-  addLine("Check-out Date", new Date(booking.endDate).toLocaleDateString());
-  addLine("Number of Guests", booking.guests ?? "—");
-  addLine("Room Assigned", booking.room?.name || "—");
-
-  // === SECTION 3: Payment Information ===
-  y += 6;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text("Payment Information", 14, y);
-  y += 5;
-  doc.line(14, y, 196, y);
-  y += 8;
-
-  addLine("Amount Paid", form.amountPaid ? `Rs. ${form.amountPaid}` : "—");
-
-  addLine("Payment Mode", form.paymentMode || "—");
-
-  // === SECTION 4: Guest Consent ===
-  y += 6;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text("Guest Consent", 14, y);
-  y += 5;
-  doc.line(14, y, 196, y);
-  y += 10;
-
-  // Checkbox outline
-  doc.setDrawColor(0);
-  doc.rect(18, y - 4, 5, 5);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text("I confirm the above details are true and correct.", 26, y);
-  y += 15;
-
-  doc.text("Guest Signature: ____________________________", 18, y);
-  y += 25;
-
-  // === FOOTER ===
-  doc.setFontSize(10);
-  doc.setTextColor(80);
-  doc.text("We hope you had a pleasant stay!", 14, y);
-  y += 5;
-  doc.text("For any support, contact us at stay@villagulposh.com", 14, y);
-
-  doc.setFontSize(9);
-  doc.setTextColor(150);
-  doc.text("Generated on " + new Date().toLocaleString(), 14, 285);
-
-  // === SAVE ===
-  doc.save(`booking_${booking._id}.pdf`);
+  // Cleanup
+  root.unmount();
+  document.body.removeChild(container);
 };
 
 
@@ -314,7 +214,7 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
           {/* Room Assigned */}
           <div>
             <Label>Room Assigned</Label>
-            <Input value={booking.room?.name || "—"} disabled />
+            <Input value={booking.room?.name || "Entire Villa"} disabled />
           </div>
 
           {/* Amount Paid */}
