@@ -2,7 +2,7 @@ import axios from "axios";
 
 const DEFAULT_API = import.meta.env.DEV
   ? "http://localhost:5000/api"
-  : "https://villa-gulposh.onrender.com/api";
+  : "https://gulposh-booking-system.onrender.com/api";
 
 const baseURL = (import.meta.env.VITE_API_URL || DEFAULT_API).replace(/\/$/, "");
 
