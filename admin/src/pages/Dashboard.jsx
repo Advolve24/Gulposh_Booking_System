@@ -25,16 +25,16 @@ export default function Dashboard() {
   const [disabled, setDisabled] = useState(() => [{ before: todayDateOnlyUTC() }]);
   const navigate = useNavigate();
 
- const reload = async () => {
-  try {
-    const [s, b, r] = await Promise.all([getStats(), listBlackouts(), listRooms()]);
-    setStats(s);
-    setBlackouts(b);
-    setRooms(r.filter(room => room.name?.toLowerCase() !== "entire villa"));
-  } catch (e) {
-    toast.error(e?.response?.data?.message || "Failed to load dashboard");
-  }
-};
+  const reload = async () => {
+    try {
+      const [s, b, r] = await Promise.all([getStats(), listBlackouts(), listRooms()]);
+      setStats(s);
+      setBlackouts(b);
+      setRooms(r.filter(room => room.name?.toLowerCase() !== "entire villa"));
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to load dashboard");
+    }
+  };
 
   useEffect(() => { reload(); }, []);
 
@@ -108,8 +108,13 @@ export default function Dashboard() {
     }
   };
 
-  const statCard = (icon, label, value) => (
-    <Card className="w-[48%] md:w-full">
+  // inside Dashboard component
+
+  const statCard = (icon, label, value, path) => (
+    <Card
+      onClick={() => navigate(path)}
+      className="w-[48%] md:w-full cursor-pointer hover:shadow-md transition-shadow"
+    >
       <CardHeader className="p-0 md:p-4">
         <CardTitle className="text-sm text-muted-foreground md:flex items-center gap-2">
           <div className="p-4 bg-primary md:rounded-[10px] rounded-t-[10px] text-white flex justify-center">
@@ -124,14 +129,23 @@ export default function Dashboard() {
     </Card>
   );
 
+
   return (
     <div className="max-w-6xl p-6 mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-1 flex flex-row md:flex-col gap-3 justify-start flex-wrap">
-        {statCard(<Users2 className="h-6 w-6" />, "Users", stats.users)}
-        {statCard(<ClipboardList className="h-6 w-6" />, "Active bookings", stats.bookings)}
-        {statCard(<BedSingle className="h-6 w-6" />, "Rooms", stats.rooms)}
-        {statCard(<CalendarRangeIcon className="h-6 w-6" />, "Upcoming stays", stats.upcoming)}
+        {statCard(<Users2 className="h-6 w-6" />, "Users", stats.users, "/users")}
+        {statCard(<ClipboardList className="h-6 w-6" />, "Active bookings", stats.bookings, "/bookings")}
+        {statCard(<BedSingle className="h-6 w-6" />, "Rooms", stats.rooms, "/rooms/new")}
+        {statCard(<CalendarRangeIcon className="h-6 w-6" />, "Upcoming stays", stats.upcoming, "/bookings")}
+        <div>
+          <Button className="w-full h-[85px] text-[18px] rounded-[12px]">
+            <a href="/villa-booking" rel="noopener noreferrer">
+            Book Entire Villa
+            </a>
+          </Button>
+        </div>
       </div>
+
 
       <div className="md:col-span-2 flex flex-col gap-6">
         <Card>

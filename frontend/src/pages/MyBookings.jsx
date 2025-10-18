@@ -6,8 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const fmt = (d) =>
-    new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  new Date(d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "2-digit", 
+  });
+
 const isFuture = (d) => new Date(d) > new Date();
+
+const calcNights = (start, end) => {
+    const s = new Date(start);
+    const e = new Date(end);
+    const diff = Math.round((e - s) / (1000 * 60 * 60 * 24));
+    return Math.max(1, diff); 
+};
 
 export default function MyBookings() {
     const [items, setItems] = useState([]);
@@ -23,10 +35,18 @@ export default function MyBookings() {
             setLoading(false);
         }
     };
-    useEffect(() => { reload(); }, []);
+    useEffect(() => {
+        reload();
+    }, []);
 
-    const upcoming = useMemo(() => items.filter((b) => isFuture(b.startDate)), [items]);
-    const past = useMemo(() => items.filter((b) => !isFuture(b.startDate)), [items]);
+    const upcoming = useMemo(
+        () => items.filter((b) => isFuture(b.startDate)),
+        [items]
+    );
+    const past = useMemo(
+        () => items.filter((b) => !isFuture(b.startDate)),
+        [items]
+    );
 
     const onCancel = async (id) => {
         if (!confirm("Cancel this booking?")) return;
@@ -46,58 +66,83 @@ export default function MyBookings() {
                 <p className="text-sm text-muted-foreground">No bookings.</p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {data.map((b) => (
-                        <Card key={b._id} className="overflow-hidden">
-                            <div className="flex flex-col sm:flex-row items-stretch">
-                                {/* LEFT: text/content */}
-                                <div className="flex-1">
-                                    <CardHeader className="flex items-start justify-between pb-2">
-                                        <CardTitle className="text-base">{b.room?.name || "Room"}</CardTitle>
-                                        <Badge variant={b.status === "confirmed" ? "default" : "secondary"}>
-                                            {b.status}
-                                        </Badge>
-                                    </CardHeader>
+                    {data.map((b) => {
+                        const nights = calcNights(b.startDate, b.endDate);
+                        return (
+                            <Card key={b._id} className="overflow-hidden">
+                                <div className="flex flex-col sm:flex-row items-stretch">
+                                    {/* LEFT: text/content */}
+                                    <div className="flex-1">
+                                        <CardHeader className="flex items-start justify-between pb-2">
+                                            <CardTitle className="text-base">
+                                                {b.room?.name || "Room"}
+                                            </CardTitle>
+                                            <Badge
+                                                variant={
+                                                    b.status === "confirmed" ? "default" : "secondary"
+                                                }
+                                            >
+                                                {b.status}
+                                            </Badge>
+                                        </CardHeader>
 
-                                    <CardContent className="space-y-2 pt-0">
-                                        <div className="text-sm">
-                                            <span className="font-medium">Dates: </span>
-                                            {fmt(b.startDate)} → {fmt(b.endDate)}
-                                        </div>
-                                        <div className="text-sm">
-                                            <span className="font-medium">Guests: </span>{b.guests}
-                                        </div>
-                                        <div className="text-sm">
-                                            <span className="font-medium">Total: </span>₹{b.amount}
-                                        </div>
+                                        <CardContent className="space-y-2 pt-0">
+                                            <div className="text-sm">
+                                                <span className="font-medium">Dates: </span>
+                                                {fmt(b.startDate)} → {fmt(b.endDate)}
+                                            </div>
+                                            <div className="text-sm flex gap-4">
+                                                <div>
+                                                    <span className="font-medium">Nights: </span>
+                                                    {nights}
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">Guests: </span>
+                                                    {b.guests}
+                                                </div>
+                                            </div>
+                                            <div className="text-sm">
+                                                <span className="font-medium">Total: </span>₹{b.amount}
+                                            </div>
 
-                                        <div className="pt-2 flex gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => window.open(`/room/${b.room?._id}`, "_blank")}>
-                                                View
-                                            </Button>
-                                            {isFuture(b.startDate) && b.status === "confirmed" && (
-                                                <Button size="sm" variant="destructive" onClick={() => onCancel(b._id)}>
-                                                    Cancel
+                                            <div className="pt-2 flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        window.open(`/room/${b.room?._id}`, "_blank")
+                                                    }
+                                                >
+                                                    View
                                                 </Button>
-                                            )}
-                                        </div>
-                                    </CardContent>
-                                </div>
+                                                {isFuture(b.startDate) && b.status === "confirmed" && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        onClick={() => onCancel(b._id)}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </div>
 
-                                {/* RIGHT: image */}
-                                <div className="sm:w-56 w-full sm:border-l p-4 sm:p-4 pt-0 sm:pt-4">
-                                    <div className="relative w-full h-32 sm:h-52">
-                                        <img
-                                            src={b.room?.coverImage || "/placeholder.jpg"}
-                                            alt={b.room?.name || "Room"}
-                                            className="w-full h-full object-cover rounded-md border"
-                                            loading="lazy"
-                                        />
+                                    {/* RIGHT: image */}
+                                    <div className="sm:w-56 w-full sm:border-l p-4 sm:p-4 pt-0 sm:pt-4">
+                                        <div className="relative w-full h-32 sm:h-52">
+                                            <img
+                                                src={b.room?.coverImage || "/placeholder.jpg"}
+                                                alt={b.room?.name || "Room"}
+                                                className="w-full h-full object-cover rounded-md border"
+                                                loading="lazy"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </Card>
-
-                    ))}
+                            </Card>
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -106,7 +151,9 @@ export default function MyBookings() {
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-6">
             <h1 className="text-2xl font-heading">My bookings</h1>
-            {loading ? <p className="text-sm">Loading…</p> : (
+            {loading ? (
+                <p className="text-sm">Loading…</p>
+            ) : (
                 <>
                     <Section title="Upcoming" data={upcoming} />
                     <Section title="Past" data={past} />
