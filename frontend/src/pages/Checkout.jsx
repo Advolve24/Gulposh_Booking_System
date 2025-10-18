@@ -12,7 +12,14 @@ import { toast } from "sonner";
 import CalendarRange from "../components/CalendarRange";
 import { Eye, EyeOff } from "lucide-react";
 import { format } from "date-fns";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 
 // Helpers
 function toDateOnly(d) {
@@ -34,6 +41,7 @@ export default function Checkout() {
   const [room, setRoom] = useState(null);
   const [withMeal, setWithMeal] = useState(false);
   const [errors, setErrors] = useState({});
+  const [disabledAll, setDisabledAll] = useState([]); 
 
   const roomId = state?.roomId;
   const startDate = state?.startDate ? new Date(state.startDate) : null;
@@ -62,6 +70,33 @@ export default function Checkout() {
   }, [roomId]);
 
   useEffect(() => {
+    if (!roomId) return;
+    (async () => {
+      try {
+        const [bookingsRes, blackoutsRes] = await Promise.all([
+          api.get("/rooms/disabled/all"),
+          api.get("/blackouts"),
+        ]);
+
+        const bookings = (bookingsRes.data || []).map((b) => ({
+          from: toDateOnlyFromAPIUTC(b.from || b.startDate),
+          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
+        }));
+
+        const blackouts = (blackoutsRes.data || []).map((b) => ({
+          from: toDateOnlyFromAPI(b.from),
+          to: toDateOnlyFromAPI(b.to),
+        }));
+
+        setDisabledAll([...bookings, ...blackouts]);
+      } catch (err) {
+        console.error("Failed to load disabled ranges:", err);
+        setDisabledAll([]);
+      }
+    })();
+  }, [roomId]);
+
+  useEffect(() => {
     if (user) {
       setForm((f) => ({
         ...f,
@@ -71,34 +106,39 @@ export default function Checkout() {
     }
   }, [user]);
 
-  // restrict phone input
   const handlePhoneChange = (e) => {
     const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
     setForm((f) => ({ ...f, phone: digits }));
   };
 
   const nights = useMemo(() => {
-    if (!startDate || !endDate) return 0;
-    const ms = toDateOnly(endDate) - toDateOnly(startDate);
+    if (!range?.from || !range?.to) return 0;
+    const ms = toDateOnly(range.to) - toDateOnly(range.from);
     return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
-  }, [startDate, endDate]);
+  }, [range]);
 
   const pricePerNight = useMemo(() => {
-    if (!room) return 0;
-    return withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : room.pricePerNight || 0;
-  }, [room, withMeal]);
+  if (!room) return 0;
+  const base = room.pricePerNight || 0;
+  const meal = withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : 0;
+  return base + meal;
+}, [room, withMeal]);
 
-  const total = useMemo(() => (nights ? nights * pricePerNight : 0), [nights, pricePerNight]);
 
-  // --- validation ---
+  const total = useMemo(() => {
+    return nights ? nights * pricePerNight : 0;
+  }, [nights, pricePerNight]);
+
   const validateForm = () => {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = "Name is required";
     if (!form.email.trim()) newErrors.email = "Email is required";
     else if (!isValidEmail(form.email)) newErrors.email = "Invalid email format";
     if (!form.phone.trim()) newErrors.phone = "Phone number is required";
-    else if (!isValidPhone(form.phone)) newErrors.phone = "Enter a valid 10-digit phone number";
-    if (!user && !form.password.trim()) newErrors.password = "Password is required";
+    else if (!isValidPhone(form.phone))
+      newErrors.phone = "Enter a valid 10-digit phone number";
+    if (!user && !form.password.trim())
+      newErrors.password = "Password is required";
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
@@ -108,25 +148,27 @@ export default function Checkout() {
     return true;
   };
 
-
   const maxGuestsCap = useMemo(() => {
     if (!room) return 1;
-    if (typeof room.maxGuests === "number" && room.maxGuests > 0) return room.maxGuests;
+    if (typeof room.maxGuests === "number" && room.maxGuests > 0)
+      return room.maxGuests;
 
     const nums = (room.accommodation || [])
-      .flatMap((s) => Array.from(String(s).matchAll(/\d+/g)).map((m) => Number(m[0])))
+      .flatMap((s) =>
+        Array.from(String(s).matchAll(/\d+/g)).map((m) => Number(m[0]))
+      )
       .filter((n) => Number.isFinite(n) && n > 0);
 
     const sum = nums.length ? nums.reduce((a, b) => a + b, 0) : 0;
     return Math.max(1, sum || 1);
   }, [room]);
 
-
   async function ensureAuthed() {
     if (user) return;
 
     const { name, email, password, phone } = form;
-    if (!validateForm()) throw new Error("Please correct the form before proceeding.");
+    if (!validateForm())
+      throw new Error("Please correct the form before proceeding.");
 
     try {
       await api.post(
@@ -172,6 +214,13 @@ export default function Checkout() {
         return;
       }
 
+      // conflict validation
+      const conflict = disabledAll.some((b) => !(end < b.from || start > b.to));
+      if (conflict) {
+        toast.error("Selected dates include unavailable days. Please choose another range.");
+        return;
+      }
+
       const ok = await loadRazorpayScript();
       if (!ok) throw new Error("Failed to load Razorpay");
 
@@ -200,8 +249,8 @@ export default function Checkout() {
         },
         notes: {
           roomId: room._id,
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
           guests: String(guests),
           withMeal: String(!!withMeal),
         },
@@ -232,7 +281,9 @@ export default function Checkout() {
 
       rzp.open();
     } catch (err) {
-      toast.error(err?.response?.data?.message || err.message || "Could not start payment");
+      toast.error(
+        err?.response?.data?.message || err.message || "Could not start payment"
+      );
     }
   };
 
@@ -250,6 +301,7 @@ export default function Checkout() {
       </div>
 
       <div className="rounded-xl border p-4 sm:p-6 space-y-5">
+        {/* User Info */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div className="space-y-1 sm:col-span-2">
             <Label>Name</Label>
@@ -266,7 +318,9 @@ export default function Checkout() {
             <Input
               type="email"
               value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, email: e.target.value }))
+              }
               placeholder="you@example.com"
             />
             {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
@@ -290,7 +344,9 @@ export default function Checkout() {
                 <Input
                   type={showPassword ? "text" : "password"}
                   value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, password: e.target.value }))
+                  }
                   placeholder="Create a password"
                   className="pr-10"
                 />
@@ -302,7 +358,9 @@ export default function Checkout() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
+              {errors.password && (
+                <p className="text-red-500 text-xs">{errors.password}</p>
+              )}
               <p className="text-xs text-muted-foreground">
                 We’ll create your account or sign you in if it already exists.
               </p>
@@ -314,7 +372,12 @@ export default function Checkout() {
         <div className="grid w-full grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1 sm:col-span-2">
             <Label>Check-in / Check-out</Label>
-            <CalendarRange value={range} onChange={setRange} numberOfMonths={1} disabledRanges={[]} />
+            <CalendarRange
+              value={range}
+              onChange={setRange}
+              numberOfMonths={1}
+              disabledRanges={disabledAll}
+            />
           </div>
 
           <div className="space-y-1 sm:col-span-1">
@@ -331,13 +394,16 @@ export default function Checkout() {
                 ))}
               </SelectContent>
             </Select>
-
           </div>
         </div>
 
         {/* With meal */}
         <div className="flex items-center gap-3 pt-2">
-          <Checkbox id="withMeal" checked={withMeal} onCheckedChange={(v) => setWithMeal(Boolean(v))} />
+          <Checkbox
+            id="withMeal"
+            checked={withMeal}
+            onCheckedChange={(v) => setWithMeal(Boolean(v))}
+          />
           <Label htmlFor="withMeal" className="cursor-pointer">
             Include meals (₹{room.priceWithMeal}/night)
           </Label>

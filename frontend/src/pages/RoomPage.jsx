@@ -18,7 +18,7 @@ function mergeRanges(ranges) {
   const out = [sorted[0]];
   for (let i = 1; i < sorted.length; i++) {
     const last = out[out.length - 1];
-    const cur  = sorted[i];
+    const cur = sorted[i];
     const dayAfterLast = new Date(
       last.to.getFullYear(),
       last.to.getMonth(),
@@ -41,7 +41,7 @@ export default function RoomPage() {
 
   const [room, setRoom] = useState(null);
 
-  const [range, setRange]   = useState();
+  const [range, setRange] = useState();
   const [guests, setGuests] = useState("");
 
   // Global disabled ranges
@@ -66,7 +66,7 @@ export default function RoomPage() {
         // change "to" to: addDays(toDateOnlyFromAPIUTC(b.endDate), -1)
         return list.map(b => ({
           from: toDateOnlyFromAPIUTC(b.from || b.startDate),
-          to:   toDateOnlyFromAPIUTC(b.to   || b.endDate),
+          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
         }));
       }
     } catch (_) {
@@ -84,7 +84,7 @@ export default function RoomPage() {
       const flat = entries.flat();
       return flat.map(b => ({
         from: toDateOnlyFromAPIUTC(b.startDate),
-        to:   toDateOnlyFromAPIUTC(b.endDate), // INCLUSIVE
+        to: toDateOnlyFromAPIUTC(b.endDate), // INCLUSIVE
         // For checkout-exclusive, use: to: addDays(toDateOnlyFromAPIUTC(b.endDate), -1)
       }));
     } catch {
@@ -106,7 +106,7 @@ export default function RoomPage() {
     api.get("/blackouts").then(({ data }) => {
       const ranges = (data || []).map(b => ({
         from: toDateOnlyFromAPI(b.from),
-        to:   toDateOnlyFromAPI(b.to),
+        to: toDateOnlyFromAPI(b.to),
       }));
       setBlackoutRanges(ranges);
     });
@@ -123,11 +123,11 @@ export default function RoomPage() {
     const qpGuests = searchParams.get("guests");
 
     const fromISO = stateFrom || qpFrom;
-    const toISO   = stateTo   || qpTo;
+    const toISO = stateTo || qpTo;
 
     if (fromISO && toISO) {
       const from = new Date(fromISO);
-      const to   = new Date(toISO);
+      const to = new Date(toISO);
       if (!isNaN(from) && !isNaN(to)) setRange({ from, to });
     }
 
@@ -184,8 +184,21 @@ export default function RoomPage() {
   );
 
   const goToCheckout = () => {
-    if (!range?.from || !range?.to) return alert("Select dates first");
-    if (!guests) return alert("Select number of guests");
+    if (!range?.from || !range?.to)
+      return alert("Please select dates first");
+    if (!guests)
+      return alert("Please select number of guests");
+    const s = new Date(range.from);
+    const e = new Date(range.to);
+
+    const conflict = disabledAll.some(
+      (b) => !(e < b.from || s > b.to)
+    );
+
+    if (conflict) {
+      alert("⚠️ The selected dates include already booked days. Please choose different dates.");
+      return;
+    }
     navigate("/checkout", {
       state: {
         roomId: room._id,
@@ -195,6 +208,7 @@ export default function RoomPage() {
       },
     });
   };
+
 
   const allImages = useMemo(() => {
     if (!room) return [];

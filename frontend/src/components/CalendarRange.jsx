@@ -37,7 +37,8 @@ export default function CalendarRange({ roomId, value, onChange, disabledRanges 
     })();
   }, [roomId, disabledRanges]);
 
-  // Admin blackouts (global)
+  
+
   useEffect(() => {
     if (disabledRanges) return;
     (async () => {
