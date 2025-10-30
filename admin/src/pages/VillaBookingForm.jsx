@@ -83,38 +83,41 @@ export default function VillaBookingForm() {
     }
   }
 
+
+
+  function isOverlapping(selectedRange, disabledRanges) {
+    if (!selectedRange?.from || !selectedRange?.to) return false;
+
+    const sStart = new Date(selectedRange.from);
+    const sEnd = new Date(selectedRange.to);
+
+    return disabledRanges.some(({ from, to }) => {
+      const dStart = new Date(from);
+      const dEnd = new Date(to);
+      return sStart <= dEnd && sEnd >= dStart;
+    });
+  }
+
+
   const submit = async () => {
-    try {
-      setLoading(true);
-      validateForm();
-      await ensureUserExists();
+  try {
+    setLoading(true);
+    validateForm();
 
-      const start = toDateOnlyUTC(range?.from);
-      const end = toDateOnlyUTC(range?.to);
+    if (isOverlapping(range, disabled)) {
+      toast.error("Selected dates include unavailable or blocked days. Please choose another range.");
+      setLoading(false);
+      return;
+    }
 
-      // ✅ Cash booking (direct confirm)
-      if (form.paymentMode === "Cash") {
-        await api.post("/admin/villa-verify", {
-          startDate: start,
-          endDate: end,
-          guests: form.guests,
-          customAmount: form.customAmount,
-          contactName: form.name,
-          contactEmail: form.email,
-          contactPhone: form.phone,
-          govIdType: form.govIdType,
-          govIdNumber: form.govIdNumber,
-          paymentMode: "Cash",
-        });
-        toast.success("Villa booked successfully (Cash)");
-        return navigate("/dashboard");
-      }
+    await ensureUserExists();
 
-      // ✅ Online booking (Razorpay)
-      const ok = await loadRazorpayScript();
-      if (!ok) throw new Error("Razorpay script failed to load");
+    const start = toDateOnlyUTC(range?.from);
+    const end = toDateOnlyUTC(range?.to);
 
-      const { data: order } = await api.post("/admin/villa-order", {
+    // ✅ Cash booking (direct confirm)
+    if (form.paymentMode === "Cash") {
+      await api.post("/admin/villa-verify", {
         startDate: start,
         endDate: end,
         guests: form.guests,
@@ -122,54 +125,75 @@ export default function VillaBookingForm() {
         contactName: form.name,
         contactEmail: form.email,
         contactPhone: form.phone,
+        govIdType: form.govIdType,
+        govIdNumber: form.govIdNumber,
+        paymentMode: "Cash",
       });
-
-      const rzp = new window.Razorpay({
-        key: order.key,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Villa Gulposh",
-        description: "Entire Villa Booking",
-        order_id: order.orderId,
-        prefill: {
-          name: form.name,
-          email: form.email,
-          contact: form.phone,
-        },
-        handler: async (resp) => {
-          try {
-            await api.post("/admin/villa-verify", {
-              userId: order.userId, 
-              startDate: start,
-              endDate: end,
-              guests: form.guests,
-              customAmount: form.customAmount,
-              contactName: form.name,
-              contactEmail: form.email,
-              contactPhone: form.phone,
-              govIdType: form.govIdType,
-              govIdNumber: form.govIdNumber,
-              paymentMode: form.paymentMode,
-              razorpay_order_id: resp.razorpay_order_id,
-              razorpay_payment_id: resp.razorpay_payment_id,
-              razorpay_signature: resp.razorpay_signature,
-            });
-            toast.success("Booking confirmed successfully!");
-            navigate("/dashboard");
-          } catch (err) {
-            toast.error(err?.response?.data?.message || "Payment verification failed");
-          }
-        },
-        modal: { ondismiss: () => toast("Payment cancelled") },
-      });
-
-      rzp.open();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || err.message || "Could not process booking");
-    } finally {
-      setLoading(false);
+      toast.success("Villa booked successfully (Cash)");
+      return navigate("/dashboard");
     }
-  };
+
+    // ✅ Online booking (Razorpay)
+    const ok = await loadRazorpayScript();
+    if (!ok) throw new Error("Razorpay script failed to load");
+
+    const { data: order } = await api.post("/admin/villa-order", {
+      startDate: start,
+      endDate: end,
+      guests: form.guests,
+      customAmount: form.customAmount,
+      contactName: form.name,
+      contactEmail: form.email,
+      contactPhone: form.phone,
+    });
+
+    const rzp = new window.Razorpay({
+      key: order.key,
+      amount: order.amount,
+      currency: order.currency,
+      name: "Villa Gulposh",
+      description: "Entire Villa Booking",
+      order_id: order.orderId,
+      prefill: {
+        name: form.name,
+        email: form.email,
+        contact: form.phone,
+      },
+      handler: async (resp) => {
+        try {
+          await api.post("/admin/villa-verify", {
+            userId: order.userId,
+            startDate: start,
+            endDate: end,
+            guests: form.guests,
+            customAmount: form.customAmount,
+            contactName: form.name,
+            contactEmail: form.email,
+            contactPhone: form.phone,
+            govIdType: form.govIdType,
+            govIdNumber: form.govIdNumber,
+            paymentMode: form.paymentMode,
+            razorpay_order_id: resp.razorpay_order_id,
+            razorpay_payment_id: resp.razorpay_payment_id,
+            razorpay_signature: resp.razorpay_signature,
+          });
+          toast.success("Booking confirmed successfully!");
+          navigate("/dashboard");
+        } catch (err) {
+          toast.error(err?.response?.data?.message || "Payment verification failed");
+        }
+      },
+      modal: { ondismiss: () => toast("Payment cancelled") },
+    });
+
+    rzp.open();
+  } catch (err) {
+    toast.error(err?.response?.data?.message || err.message || "Could not process booking");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="max-w-6xl mx-auto bg-white shadow-md rounded-2xl p-8 mt-6 mb-6">
