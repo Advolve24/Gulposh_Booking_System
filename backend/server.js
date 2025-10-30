@@ -12,6 +12,7 @@ import blackoutRoutes from "./routes/blackout.routes.js";
 import adminBlackoutRoutes from "./routes/admin.blackout.routes.js";
 import adminUploadRoutes from "./routes/admin.upload.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js"
+import mailRoutes from "./routes/mail.js";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -66,6 +67,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/blackouts", blackoutRoutes);
 app.use("/api/admin/blackouts", adminBlackoutRoutes);
 app.use("/api/invoice", invoiceRoutes);
+app.use("/api/mail", mailRoutes);
 
 // ——— DB + start ———
 mongoose

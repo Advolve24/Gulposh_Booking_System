@@ -115,14 +115,13 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "Signature mismatch" });
     }
 
-    // Parse booking dates as YYYY-MM-DD UTC
     const sDate = parseYMD(startDate);
     const eDate = parseYMD(endDate);
 
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "Room not found" });
 
-    const nights = (eDate - sDate) / (1000 * 60 * 60 * 24); // diff in days
+    const nights = (eDate - sDate) / (1000 * 60 * 60 * 24);
     if (nights <= 0) return res.status(400).json({ message: "Invalid date range" });
 
     const pricePerNight = withMeal && room.priceWithMeal > 0
@@ -133,8 +132,8 @@ export const verifyPayment = async (req, res) => {
     const booking = await Booking.create({
       user: userId,
       room: room._id,
-      startDate: sDate,   // ✅ stored as UTC midnight
-      endDate: eDate,     // ✅ stored as UTC midnight
+      startDate: sDate,
+      endDate: eDate,
       guests,
       withMeal: !!withMeal,
       contactName: contactName || "",
@@ -149,9 +148,15 @@ export const verifyPayment = async (req, res) => {
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       signature: razorpay_signature,
+      addressInfo: {
+        address: req.body.address,
+        country: req.body.country,
+        state: req.body.state,
+        city: req.body.city,
+        pincode: req.body.pincode,
+      },
     });
 
-    // WhatsApp message
     const msg = `✅ Hi ${contactName}, your booking is confirmed!
 🏠 Room: ${room.name}
 📅 ${startDate} → ${endDate}

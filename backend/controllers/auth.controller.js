@@ -22,10 +22,10 @@ function createRefreshToken(user) {
   );
 }
 
-// --- REGISTER ---
+
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, remember } = req.body || {};
+    const { name, email, password, phone, remember, dob } = req.body || {};
     if (!name || !email || !password || !phone) {
       return res.status(400).json({ message: "Name, email, password, and phone are required" });
     }
@@ -40,6 +40,7 @@ export const register = async (req, res) => {
       email: normalizedEmail,
       passwordHash,
       phone: normalizePhone(phone),
+      dob: dob ? new Date(dob) : undefined,
     });
 
     const accessToken = createAccessToken(user);
@@ -53,6 +54,7 @@ export const register = async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      dob: user.dob || null,
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
@@ -61,7 +63,7 @@ export const register = async (req, res) => {
   }
 };
 
-// --- LOGIN ---
+
 export const login = async (req, res) => {
   try {
     const { email, password, remember } = req.body || {};
@@ -84,6 +86,7 @@ export const login = async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      dob: user.dob || null,
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
@@ -92,7 +95,7 @@ export const login = async (req, res) => {
   }
 };
 
-// --- REFRESH TOKEN ---
+
 export const refreshSession = async (req, res) => {
   try {
     const token = req.cookies?.refresh_token;
@@ -112,24 +115,24 @@ export const refreshSession = async (req, res) => {
   }
 };
 
-// --- LOGOUT ---
+
 export const logout = (_req, res) => {
   clearSessionCookie(res, "token", { path: "/" });
   clearSessionCookie(res, "refresh_token", { path: "/" });
   res.json({ message: "Logged out" });
 };
 
-// --- CURRENT USER ---
+
 export const me = async (req, res) => {
-  const u = await User.findById(req.user.id).select("name email phone isAdmin");
+  const u = await User.findById(req.user.id).select("name email phone dob isAdmin");
   if (!u) return res.status(401).json({ message: "Unauthorized" });
-  res.json({ id: u._id, name: u.name, email: u.email, phone: u.phone, isAdmin: !!u.isAdmin });
+  res.json({ id: u._id, name: u.name, email: u.email, phone: u.phone, dob: u.dob || null, isAdmin: !!u.isAdmin });
 };
 
-// --- UPDATE PROFILE ---
+
 export const updateMe = async (req, res) => {
   try {
-    const { name, email, phone } = req.body || {};
+    const { name, email, phone, dob } = req.body || {};
     const user = await User.findById(req.user.id);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
@@ -146,6 +149,7 @@ export const updateMe = async (req, res) => {
 
     if (name !== undefined) user.name = String(name).trim();
     if (phone !== undefined) user.phone = String(phone).trim();
+    if (dob !== undefined) user.dob = dob ? new Date(dob) : null; // 👈 Added line
 
     await user.save();
 
@@ -159,6 +163,7 @@ export const updateMe = async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      dob: user.dob || null, 
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
@@ -167,7 +172,8 @@ export const updateMe = async (req, res) => {
   }
 };
 
-// --- CHANGE PASSWORD ---
+
+
 export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body || {};

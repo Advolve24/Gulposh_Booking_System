@@ -16,9 +16,17 @@ const bookingSchema = new mongoose.Schema(
     contactPhone: String,
 
     currency: { type: String, default: "INR" },
-    pricePerNight: { type: Number, required: true }, 
+    pricePerNight: { type: Number, required: true },
     nights: { type: Number, required: true },
-    amount: { type: Number, required: true }, 
+    amount: { type: Number, required: true },
+
+    addressInfo: {
+      address: String,
+      country: String,
+      state: String,
+      city: String,
+      pincode: String,
+    },
 
     status: { type: String, enum: ["pending", "confirmed", "cancelled"], default: "confirmed" },
 
