@@ -2,6 +2,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
+import User from "../models/User.js";
 
 const rp = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -22,9 +23,7 @@ function nightsBetween(start, end) {
 
 export const createVillaOrder = async (req, res) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ message: "Auth required" });
-
+    // ⚠️ Admin is booking for a user, not themselves
     const {
       startDate,
       endDate,
@@ -36,9 +35,21 @@ export const createVillaOrder = async (req, res) => {
     } = req.body || {};
 
     if (!startDate || !endDate || !guests || !customAmount) {
-      return res
-        .status(400)
-        .json({ message: "startDate, endDate, guests, customAmount are required" });
+      return res.status(400).json({
+        message: "startDate, endDate, guests, customAmount are required",
+      });
+    }
+
+    // ✅ Find or create the user based on email/phone
+    let user = await User.findOne({ email: contactEmail });
+    if (!user) {
+      user = await User.create({
+        name: contactName,
+        email: contactEmail,
+        phone: contactPhone,
+        password: Math.random().toString(36).slice(-8),
+      });
+      console.log("👤 New user created by admin:", user._id);
     }
 
     const nights = nightsBetween(startDate, endDate);
@@ -46,23 +57,22 @@ export const createVillaOrder = async (req, res) => {
 
     const amountINR = nights * Number(customAmount);
     const amountPaise = Math.round(amountINR * 100);
-
-    const receipt = `villa_${Date.now().toString(36)}`;
+    const receipt = `villa_admin_${Date.now().toString(36)}`;
 
     const order = await rp.orders.create({
       amount: amountPaise,
       currency: "INR",
       receipt,
       notes: {
-        userId: String(userId),
-        isVilla: "true",
+        userId: String(user._id),
+        bookedByAdmin: "true",
         startDate,
         endDate,
         guests: String(guests),
         customAmount: String(customAmount),
-        contactName: contactName || "",
-        contactEmail: contactEmail || "",
-        contactPhone: contactPhone || "",
+        contactName,
+        contactEmail,
+        contactPhone,
       },
     });
 
@@ -72,21 +82,20 @@ export const createVillaOrder = async (req, res) => {
       amount: order.amount,
       currency: order.currency,
       computed: { nights, customAmount, amountINR },
+      userId: user._id, // 👈 send it back to frontend
     });
   } catch (err) {
     console.error("createVillaOrder error:", err);
-    res
-      .status(400)
-      .json({ message: err?.error?.description || err?.message || "Failed to create villa order" });
+    res.status(400).json({
+      message: err?.error?.description || err?.message || "Failed to create villa order",
+    });
   }
 };
 
 
+
 export const verifyVillaPayment = async (req, res) => {
   try {
-    const userId = req.body.userId || req.user?.id;
-    if (!userId) return res.status(401).json({ message: "Auth required" });
-
     const {
       razorpay_order_id,
       razorpay_payment_id,
@@ -101,7 +110,24 @@ export const verifyVillaPayment = async (req, res) => {
       govIdType,
       govIdNumber,
       paymentMode,
+      userId, // passed from frontend
     } = req.body || {};
+
+    if (!userId && !contactEmail) {
+      return res.status(400).json({ message: "User information missing" });
+    }
+
+    // ✅ Ensure user exists
+    let user = userId ? await User.findById(userId) : await User.findOne({ email: contactEmail });
+    if (!user) {
+      user = await User.create({
+        name: contactName,
+        email: contactEmail,
+        phone: contactPhone,
+        password: Math.random().toString(36).slice(-8),
+      });
+      console.log("👤 User created during verification:", user._id);
+    }
 
     const sDate = new Date(startDate);
     const eDate = new Date(endDate);
@@ -110,7 +136,7 @@ export const verifyVillaPayment = async (req, res) => {
 
     if (paymentMode === "Cash") {
       const booking = await Booking.create({
-        user: userId,
+        user: user._id,
         startDate: sDate,
         endDate: eDate,
         guests,
@@ -137,20 +163,21 @@ export const verifyVillaPayment = async (req, res) => {
       return res.json({ ok: true, booking });
     }
 
+    // ✅ Verify Razorpay Signature
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expected = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(body)
       .digest("hex");
 
-    console.log("🔍 Signature verify:", { expected, got: razorpay_signature });
-
     if (expected !== razorpay_signature) {
+      console.log("❌ Signature mismatch");
       return res.status(400).json({ message: "Signature mismatch" });
     }
 
+    // ✅ Create Booking
     const booking = await Booking.create({
-      user: userId,
+      user: user._id,
       startDate: sDate,
       endDate: eDate,
       guests,
@@ -174,11 +201,11 @@ export const verifyVillaPayment = async (req, res) => {
         govIdType,
         govIdNumber,
         amountPaid: amountINR,
-        paymentMode: paymentMode === "Cash" ? "Cash" : "Online",
+        paymentMode: "Online",
       },
     });
 
-    res.json({ ok: true, booking });
+    return res.json({ ok: true, booking });
   } catch (err) {
     console.error("verifyVillaPayment error:", err);
     res.status(400).json({ message: err?.message || "Villa payment verification failed" });
