@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { loadRazorpayScript } from "../lib/loadRazorpay";
 import { toast } from "sonner";
 import CalendarRange from "../components/CalendarRange";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import {
   Select,
@@ -19,7 +19,10 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
+import { getAllCountries, getStatesByCountry, getCitiesByState } from "../lib/location";
 
 // Helpers
 function toDateOnly(d) {
@@ -41,7 +44,43 @@ export default function Checkout() {
   const [room, setRoom] = useState(null);
   const [withMeal, setWithMeal] = useState(false);
   const [errors, setErrors] = useState({});
-  const [disabledAll, setDisabledAll] = useState([]); 
+  const [disabledAll, setDisabledAll] = useState([]);
+
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+
+  const [addressInfo, setAddressInfo] = useState({
+    address: "",
+    country: "",
+    state: "",
+    city: "",
+    pincode: "",
+  });
+
+  useEffect(() => {
+    const c = getAllCountries();
+    setCountries(c);
+  }, []);
+
+  useEffect(() => {
+    if (addressInfo.country) {
+      const s = getStatesByCountry(addressInfo.country);
+      setStates(s);
+    } else {
+      setStates([]);
+    }
+    setCities([]);
+  }, [addressInfo.country]);
+
+  useEffect(() => {
+    if (addressInfo.state && addressInfo.country) {
+      const c = getCitiesByState(addressInfo.country, addressInfo.state);
+      setCities(c);
+    } else {
+      setCities([]);
+    }
+  }, [addressInfo.state, addressInfo.country]);
 
   const roomId = state?.roomId;
   const startDate = state?.startDate ? new Date(state.startDate) : null;
@@ -53,8 +92,9 @@ export default function Checkout() {
   const [form, setForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
-    phone: "",
+    phone: user?.phone || "",
     password: "",
+    dob: user?.dob ? new Date(user.dob) : null,
   });
 
   useEffect(() => {
@@ -102,6 +142,8 @@ export default function Checkout() {
         ...f,
         name: user.name || f.name,
         email: user.email || f.email,
+        phone: user.phone || f.phone,
+        dob: user.dob ? new Date(user.dob) : f.dob,
       }));
     }
   }, [user]);
@@ -118,12 +160,11 @@ export default function Checkout() {
   }, [range]);
 
   const pricePerNight = useMemo(() => {
-  if (!room) return 0;
-  const base = room.pricePerNight || 0;
-  const meal = withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : 0;
-  return base + meal;
-}, [room, withMeal]);
-
+    if (!room) return 0;
+    const base = room.pricePerNight || 0;
+    const meal = withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : 0;
+    return base + meal;
+  }, [room, withMeal]);
 
   const total = useMemo(() => {
     return nights ? nights * pricePerNight : 0;
@@ -139,6 +180,8 @@ export default function Checkout() {
       newErrors.phone = "Enter a valid 10-digit phone number";
     if (!user && !form.password.trim())
       newErrors.password = "Password is required";
+    if (!form.dob) newErrors.dob = "Date of birth is required";
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
@@ -166,7 +209,7 @@ export default function Checkout() {
   async function ensureAuthed() {
     if (user) return;
 
-    const { name, email, password, phone } = form;
+    const { name, email, password, phone, dob } = form;
     if (!validateForm())
       throw new Error("Please correct the form before proceeding.");
 
@@ -178,6 +221,7 @@ export default function Checkout() {
           email: email.trim(),
           password: password.trim(),
           phone: phone.trim(),
+          dob: dob ? dob.toISOString() : null,
         },
         { withCredentials: true }
       );
@@ -224,6 +268,8 @@ export default function Checkout() {
       const ok = await loadRazorpayScript();
       if (!ok) throw new Error("Failed to load Razorpay");
 
+      const { address, country, state, city, pincode } = addressInfo;
+
       const { data: order } = await api.post("/payments/create-order", {
         roomId: room._id,
         startDate: toYMD(start),
@@ -233,6 +279,11 @@ export default function Checkout() {
         contactName: form.name,
         contactEmail: form.email,
         contactPhone: form.phone,
+        address,
+        country,
+        state,
+        city,
+        pincode,
       });
 
       const rzp = new window.Razorpay({
@@ -326,6 +377,34 @@ export default function Checkout() {
             {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
           </div>
 
+           <div className="space-y-1 sm:col-span-2">
+            <Label>Date of Birth</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={`w-full justify-start text-left font-normal ${
+                    !form.dob && "text-muted-foreground"
+                  }`}
+                >
+                  {form.dob ? format(form.dob, "PPP") : "Select date of birth"}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={form.dob}
+                  onSelect={(date) => setForm((f) => ({ ...f, dob: date }))}
+                  captionLayout="dropdown"
+                  fromYear={1950}
+                  toYear={new Date().getFullYear()}
+                />
+              </PopoverContent>
+            </Popover>
+            {errors.dob && <p className="text-red-500 text-xs">{errors.dob}</p>}
+          </div>
+
           <div className="space-y-1 sm:col-span-2">
             <Label>Phone</Label>
             <Input
@@ -366,21 +445,101 @@ export default function Checkout() {
               </p>
             </div>
           )}
-        </div>
 
-        {/* Dates & Guests */}
-        <div className="grid w-full grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1 sm:col-span-2">
-            <Label>Check-in / Check-out</Label>
-            <CalendarRange
-              value={range}
-              onChange={setRange}
-              numberOfMonths={1}
-              disabledRanges={disabledAll}
+            <Label>Address</Label>
+            <Input
+              placeholder="Street, Apartment, Landmark"
+              value={addressInfo.address}
+              onChange={(e) =>
+                setAddressInfo((f) => ({ ...f, address: e.target.value }))
+              }
             />
           </div>
 
-          <div className="space-y-1 sm:col-span-1">
+          <div className="space-y-1">
+            <Label>Country</Label>
+            <Select
+              value={addressInfo.country}
+              onValueChange={(v) =>
+                setAddressInfo((f) => ({
+                  ...f,
+                  country: v,
+                  state: "",
+                  city: "",
+                }))
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select country" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {countries.map((c) => (
+                  <SelectItem key={c.isoCode} value={c.isoCode}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label>State / Province</Label>
+            <Select
+              value={addressInfo.state}
+              onValueChange={(v) =>
+                setAddressInfo((f) => ({ ...f, state: v, city: "" }))
+              }
+              disabled={!addressInfo.country}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {states.map((s) => (
+                  <SelectItem key={s.isoCode} value={s.isoCode}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* City */}
+          <div className="space-y-1">
+            <Label>City</Label>
+            <Select
+              value={addressInfo.city}
+              onValueChange={(v) =>
+                setAddressInfo((f) => ({ ...f, city: v }))
+              }
+              disabled={!addressInfo.state}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select city" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {cities.map((c) => (
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label>Postal / Zip Code</Label>
+            <Input
+              placeholder="Enter postal code"
+              value={addressInfo.pincode}
+              onChange={(e) =>
+                setAddressInfo((f) => ({ ...f, pincode: e.target.value }))
+              }
+            />
+          </div>
+
+           <div className="space-y-1 sm:col-span-2">
             <Label>Guests</Label>
             <Select value={guestsState} onValueChange={onGuestsChange}>
               <SelectTrigger className="w-full">
@@ -394,6 +553,24 @@ export default function Checkout() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+
+        </div>
+
+
+
+
+        {/* Dates & Guests */}
+        <div className="grid w-full grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1 sm:col-span-2">
+            <Label>Check-in / Check-out</Label>
+            <CalendarRange
+              value={range}
+              onChange={setRange}
+              numberOfMonths={1}
+              disabledRanges={disabledAll}
+            />
           </div>
         </div>
 

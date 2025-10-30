@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import ImageSlider from "../components/ImageSlider";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC /*, addDays */ } from "../lib/date";
+import { Link } from "react-router-dom";
 
 function mergeRanges(ranges) {
   if (!ranges || !ranges.length) return [];
@@ -44,36 +45,28 @@ export default function RoomPage() {
   const [range, setRange] = useState();
   const [guests, setGuests] = useState("");
 
-  // Global disabled ranges
-  const [bookedAll, setBookedAll] = useState([]);     // all rooms' bookings
-  const [blackoutRanges, setBlackoutRanges] = useState([]); // admin blackouts
+  const [bookedAll, setBookedAll] = useState([]);    
+  const [blackoutRanges, setBlackoutRanges] = useState([]); 
 
-  // ---------- Fetch helpers ----------
   const fetchAllBookedRanges = async () => {
     try {
-      // Try new endpoint
       let res = await api.get("/rooms/disabled/all");
       let list = Array.isArray(res.data) ? res.data : [];
 
-      // Fallback to older endpoint
       if (!list.length) {
         res = await api.get("/rooms/blocked/all");
         list = Array.isArray(res.data) ? res.data : [];
       }
 
       if (list.length) {
-        // Treat start & end as INCLUSIVE. If your DB stores checkout (exclusive),
-        // change "to" to: addDays(toDateOnlyFromAPIUTC(b.endDate), -1)
         return list.map(b => ({
           from: toDateOnlyFromAPIUTC(b.from || b.startDate),
           to: toDateOnlyFromAPIUTC(b.to || b.endDate),
         }));
       }
     } catch (_) {
-      // fall through to full fallback below
     }
 
-    // Final fallback: fetch all rooms and merge their /blocked ranges
     try {
       const { data: rooms } = await api.get("/rooms");
       const entries = await Promise.all(
@@ -84,25 +77,21 @@ export default function RoomPage() {
       const flat = entries.flat();
       return flat.map(b => ({
         from: toDateOnlyFromAPIUTC(b.startDate),
-        to: toDateOnlyFromAPIUTC(b.endDate), // INCLUSIVE
-        // For checkout-exclusive, use: to: addDays(toDateOnlyFromAPIUTC(b.endDate), -1)
+        to: toDateOnlyFromAPIUTC(b.endDate), 
       }));
     } catch {
       return [];
     }
   };
 
-  // ---------- Load room + global disabled ranges ----------
   useEffect(() => {
     api.get(`/rooms/${id}`).then(({ data }) => setRoom(data)).catch(() => setRoom(null));
 
-    // All bookings across all rooms
     (async () => {
       const all = await fetchAllBookedRanges();
       setBookedAll(all);
     })();
 
-    // Admin blackouts (inclusive)
     api.get("/blackouts").then(({ data }) => {
       const ranges = (data || []).map(b => ({
         from: toDateOnlyFromAPI(b.from),
@@ -112,7 +101,6 @@ export default function RoomPage() {
     });
   }, [id]);
 
-  // Seed dates + guests from state / query (once)
   useEffect(() => {
     const stateFrom = location.state?.from;
     const stateTo = location.state?.to;
@@ -133,10 +121,8 @@ export default function RoomPage() {
 
     const g = stateGuests || qpGuests;
     if (g) setGuests(String(g));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // keep query params in sync
   useEffect(() => {
     const sp = new URLSearchParams(searchParams);
     if (range?.from && range?.to) {
@@ -146,7 +132,6 @@ export default function RoomPage() {
       sp.delete("from"); sp.delete("to");
     }
     setSearchParams(sp, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
   const onGuestsChange = (v) => {
@@ -156,7 +141,6 @@ export default function RoomPage() {
     setSearchParams(sp, { replace: true });
   };
 
-  // per-room capacity cap
   const maxGuestsCap = useMemo(() => {
     if (!room) return null;
     if (typeof room.maxGuests === "number" && room.maxGuests > 0) return room.maxGuests;
@@ -177,7 +161,6 @@ export default function RoomPage() {
     }
   }, [room, maxGuestsCap, guests]);
 
-  // Disabled ranges = global blackouts + ALL-ROOMS bookings
   const disabledAll = useMemo(
     () => mergeRanges([...(blackoutRanges || []), ...(bookedAll || [])]),
     [blackoutRanges, bookedAll]
@@ -219,6 +202,9 @@ export default function RoomPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 space-y-6">
+      <Link to="/">
+      <Button className="bg-transparent text-black hover:text-white">Back</Button>
+      </Link>
       <ImageSlider images={allImages} />
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

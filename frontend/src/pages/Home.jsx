@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api/http";
 import RoomCard from "../components/RoomCard";
 import CalendarRange from "../components/CalendarRange";
@@ -16,7 +17,6 @@ import {
   toDateOnlyFromAPIUTC,
 } from "../lib/date";
 
-// Utility to merge overlapping ranges
 function mergeRanges(ranges) {
   if (!ranges || !ranges.length) return [];
   const sorted = ranges
@@ -47,13 +47,13 @@ export default function Home() {
   const [guests, setGuests] = useState("");
   const [range, setRange] = useState();
 
-  // Fetch rooms + global disabled ranges
+  const navigate = useNavigate();
+
   useEffect(() => {
     api.get("/rooms").then(({ data }) => setRooms(data));
 
     (async () => {
       try {
-        // get bookings (all rooms) + blackouts
         const [bookingsRes, blackoutsRes] = await Promise.all([
           api.get("/rooms/disabled/all"),
           api.get("/blackouts"),
@@ -79,9 +79,16 @@ export default function Home() {
   const hasValidRange = !!(range?.from && range?.to);
   const hasGuests = !!guests;
 
-  // Filter rooms by availability & capacity
+  const handleGuestChange = (value) => {
+    if (value === "upto10") {
+      navigate("/entire-villa-form");
+    } else {
+      setGuests(value);
+    }
+  };
+
   const filteredRooms = useMemo(() => {
-    if (!hasValidRange || !hasGuests) return rooms;
+    if (!hasValidRange || !hasGuests || guests === "upto10") return rooms;
     const s = toDateOnly(range.from);
     const e = toDateOnly(range.to);
     const g = Number(guests);
@@ -99,9 +106,8 @@ export default function Home() {
 
       if (cap && cap < g) return false;
 
-      // check conflict with disabled ranges
       const conflict = disabledAll.some(
-        (b) => !(e < b.from || s > b.to) // ranges overlap
+        (b) => !(e < b.from || s > b.to)
       );
       return !conflict;
     });
@@ -121,7 +127,7 @@ export default function Home() {
         </div>
 
         <div className="w-full md:w-56">
-          <Select value={guests} onValueChange={setGuests}>
+          <Select value={guests} onValueChange={handleGuestChange}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select guests" />
             </SelectTrigger>
@@ -131,6 +137,7 @@ export default function Home() {
                   {n}
                 </SelectItem>
               ))}
+              <SelectItem value="upto10">Up to 10</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -147,6 +154,23 @@ export default function Home() {
         {filteredRooms.map((r) => (
           <RoomCard key={r._id} room={r} range={range} guests={guests} />
         ))}
+      </div>
+
+      {/* 🔹 Entire Villa Section */}
+      <div
+        className="relative rounded-xl overflow-hidden cursor-pointer group"
+        onClick={() => navigate("/entire-villa-form")}
+      >
+        <img
+          src="/EntireVilla.webp"
+          alt="Entire Villa"
+          className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+          <button className="bg-[#fff] text-black px-10 py-4 rounded-md text-lg font-semibold shadow-lg  transition">
+            Book Entire Villa
+          </button>
+        </div>
       </div>
     </div>
   );

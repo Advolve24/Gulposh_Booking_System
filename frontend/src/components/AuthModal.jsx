@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../store/authStore";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
@@ -8,21 +8,26 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Eye, EyeOff } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 
-// --- validation helpers ---
+
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 const isValidGmail = (email) => /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email.trim());
 const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone.trim());
 
 export default function AuthModal() {
   const { showAuthModal, closeAuth, login, register } = useAuth();
-  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", dob: null, });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const user = useAuth((state) => state.user);
 
-  // --- common validation ---
+
   const validate = (mode) => {
     const newErrors = {};
     if (mode === "login") {
@@ -58,7 +63,7 @@ export default function AuthModal() {
     const phone = form.phone.replace(/[^\d]/g, "").trim();
     setLoading(true);
     try {
-      await register(form.name.trim(), form.email.trim(), form.password, phone);
+      await register(form.name.trim(), form.email.trim(), form.password, phone, form.dob);
     } finally {
       setLoading(false);
     }
@@ -70,6 +75,17 @@ export default function AuthModal() {
     setForm((f) => ({ ...f, phone: digitsOnly }));
   };
 
+  useEffect(() => {
+    if (user?.name || user?.email || user?.phone || user?.dob) {
+      setForm((f) => ({
+        ...f,
+        name: user?.name || f.name,
+        email: user?.email || f.email,
+        phone: user?.phone || f.phone,
+        dob: user?.dob ? new Date(user.dob) : f.dob || "",
+      }));
+    }
+  }, [user]);
   return (
     <Dialog open={showAuthModal} onOpenChange={(open) => !open && closeAuth()}>
       <DialogContent className="sm:max-w-md">
@@ -189,6 +205,33 @@ export default function AuthModal() {
                 </button>
               </div>
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="reg-dob">Date of Birth</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={`w-full justify-start text-left font-normal ${!form.dob && "text-muted-foreground"
+                      }`}
+                  >
+                    {form.dob ? format(form.dob, "PPP") : "Select your date of birth"}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.dob}
+                    onSelect={(date) => setForm((f) => ({ ...f, dob: date }))}
+                    captionLayout="dropdown"
+                    fromYear={1950}
+                    toYear={new Date().getFullYear()}
+                  />
+                </PopoverContent>
+              </Popover>
+              {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
             </div>
 
             <Button className="w-full" onClick={onRegister} disabled={loading}>
