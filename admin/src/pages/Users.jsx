@@ -22,6 +22,9 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
 
 const fmt = (d) => (d ? format(new Date(d), "dd MMM yy") : "—");
 
@@ -40,6 +43,7 @@ export default function Users() {
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editDob, setEditDob] = useState(null);
 
   const onOpenUser = (u) => {
     setSelected(u);
@@ -47,6 +51,7 @@ export default function Users() {
     setEditName(u?.name || "");
     setEditEmail(u?.email || "");
     setEditPhone(u?.phone || "");
+    setEditDob(u?.dob ? new Date(u.dob) : null);
     setOpen(true);
   };
 
@@ -58,6 +63,7 @@ export default function Users() {
         name: editName,
         email: editEmail,
         phone: editPhone,
+        dob: editDob ? editDob.toISOString() : null,
       });
       const updated = {
         ...apiRes,
@@ -73,6 +79,7 @@ export default function Users() {
                 name: updated.name ?? u.name,
                 email: updated.email ?? u.email,
                 phone: updated.phone ?? u.phone,
+                dob: updated.dob ?? u.dob,
               }
             : u
         )
@@ -141,6 +148,7 @@ export default function Users() {
       setEditName(u?.name || "");
       setEditEmail(u?.email || "");
       setEditPhone(u?.phone ?? u?.mobile ?? "");
+      setEditDob(u?.dob ? new Date(u.dob) : null);
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to load user");
     }
@@ -177,7 +185,8 @@ export default function Users() {
                     <th className="py-2 pr-4">Name</th>
                     <th className="py-2 pr-4">Email</th>
                     <th className="py-2 pr-4">Phone</th>
-                    <th className="py-2 pr-4">CreatedAt</th>
+                    <th className="py-2 pr-4">DOB</th>
+                    <th className="py-2 pr-4">Created At</th>
                     <th className="py-2 pr-4">Actions</th>
                   </tr>
                 </thead>
@@ -186,9 +195,8 @@ export default function Users() {
                     <tr key={u._id} className="border-t">
                       <td className="py-2 pr-4">{u.name || "—"}</td>
                       <td className="py-2 pr-4">{u.email || "—"}</td>
-                      <td className="py-2 pr-4">
-                        {u.phone ?? u.mobile ?? "—"}
-                      </td>
+                      <td className="py-2 pr-4">{u.phone ?? u.mobile ?? "—"}</td>
+                      <td className="py-2 pr-4">{u.dob ? fmt(u.dob) : "—"}</td>
                       <td className="py-2 pr-4">{fmt(u.createdAt)}</td>
                       <td className="py-2 pr-4">
                         <Button
@@ -220,10 +228,7 @@ export default function Users() {
                 </Button>
               ) : (
                 <>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setEditMode(false)}
-                  >
+                  <Button variant="secondary" onClick={() => setEditMode(false)}>
                     Cancel
                   </Button>
                   <Button onClick={saveUser} disabled={saving}>
@@ -254,6 +259,10 @@ export default function Users() {
                   {selected?.phone || "—"}
                 </div>
                 <div>
+                  <span className="text-muted-foreground">DOB:</span>{" "}
+                  {selected?.dob ? fmt(selected.dob) : "—"}
+                </div>
+                <div>
                   <span className="text-muted-foreground">CreatedAt:</span>{" "}
                   {fmt(selected?.createdAt)}
                 </div>
@@ -277,13 +286,39 @@ export default function Users() {
                   onChange={(e) => setEditEmail(e.target.value)}
                 />
               </div>
-              <div className="sm:col-span-2">
+              <div>
                 <Label>Phone</Label>
                 <Input
                   className="mt-2"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
                 />
+              </div>
+              <div>
+                <Label>Date of Birth</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`w-full justify-start text-left font-normal ${
+                        !editDob && "text-muted-foreground"
+                      }`}
+                    >
+                      {editDob ? format(editDob, "PPP") : "Select date of birth"}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editDob}
+                      onSelect={(date) => setEditDob(date)}
+                      captionLayout="dropdown"
+                      fromYear={1950}
+                      toYear={new Date().getFullYear()}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           )}

@@ -160,14 +160,6 @@ export default function Bookings() {
                                                 <Button size="sm" variant="outline" onClick={() => onOpenView(b)}>View</Button>
                                                 <Button
                                                     size="sm"
-                                                    variant="destructive"
-                                                    onClick={() => { setSelected(b); onCancel(); }}
-                                                    disabled={b.status === "cancelled"}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                                <Button
-                                                    size="sm"
                                                     variant="secondary"
                                                     onClick={() => {
                                                         setSelected(b);
@@ -175,6 +167,14 @@ export default function Bookings() {
                                                     }}
                                                 >
                                                     Edit
+                                                </Button>
+                                                 <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() => { setSelected(b); onCancel(); }}
+                                                    disabled={b.status === "cancelled"}
+                                                >
+                                                    Cancel
                                                 </Button>
                                             </div>
                                         </td>

@@ -122,7 +122,7 @@ export default function Login() {
 
         <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
           <span>© {new Date().getFullYear()} Villa Gulposh</span>
-          <Link to="/" className="hover:underline">
+          <Link to="https://gulposhbookingsystem.netlify.app/" className="hover:underline">
             Back to site
           </Link>
         </CardFooter>

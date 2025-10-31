@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { adminMe } from "../api/admin";
 import {
@@ -14,12 +14,16 @@ import { Button } from "@/components/ui/button";
 
 export default function Header() {
   const [me, setMe] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     let mounted = true;
     adminMe().then((u) => mounted && setMe(u)).catch(() => {});
     return () => { mounted = false; };
   }, []);
+
+  // helper for active link
+  const isActive = (path) => location.pathname === path;
 
   return (
     <header className="w-full border-b bg-white">
@@ -34,16 +38,30 @@ export default function Header() {
         </Link>
 
         {/* Desktop links */}
-        <nav className="hidden md:flex items-center gap-4">
-          <Link to="/dashboard" className="text-sm">Dashboard</Link>
-          <Link to="/rooms/new" className="text-sm">Add Room</Link>
-          <Link to="/bookings" className="text-sm">Bookings</Link>
-          <Link to="/users" className="text-sm">Users</Link>
-          <Link to="/villa-booking" className="text-sm">Customize</Link>
-          <Link to="/logout" className="text-sm">Logout</Link>
+        <nav className="hidden md:flex items-center gap-6">
+          {[
+            { path: "/dashboard", label: "Dashboard" },
+            { path: "/rooms/new", label: "Add Room" },
+            { path: "/bookings", label: "Bookings" },
+            { path: "/users", label: "Users" },
+            { path: "/villa-booking", label: "Book Entire Villa" },
+            { path: "/logout", label: "Logout" },
+          ].map(({ path, label }) => (
+            <Link
+              key={path}
+              to={path}
+              className={`text-sm font-medium transition-colors ${
+                isActive(path)
+                  ? "text-[#A0101C] pb-[2px]"
+                  : "text-gray-700 hover:text-[#A0101C]"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
 
-        {/* Mobile: admin name -> dropdown */}
+        {/* Mobile dropdown */}
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -63,20 +81,22 @@ export default function Header() {
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/dashboard" className="w-full">Dashboard</Link>
+                <Link to="/dashboard">Dashboard</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/rooms/new" className="w-full">Add Room</Link>
+                <Link to="/rooms/new">Add Room</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/bookings" className="w-full">Bookings</Link>
+                <Link to="/bookings">Bookings</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/users" className="w-full">Users</Link>
+                <Link to="/users">Users</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/logout" className="w-full text-red-600">Logout</Link>
+                <Link to="/logout" className="text-red-600">
+                  Logout
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

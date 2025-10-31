@@ -8,7 +8,7 @@ const { isValidObjectId } = mongoose;
 export const listUsersAdmin = async (_req, res) => {
   try {
     const users = await User.find()
-      .select("name email phone mobile createdAt") 
+      .select("name email phone mobile dob createdAt") 
       .sort({ createdAt: -1 });
 
     const counts = await Booking.aggregate([
@@ -16,6 +16,7 @@ export const listUsersAdmin = async (_req, res) => {
     ]);
 
     const byId = new Map(counts.map(c => [String(c._id), c]));
+
     const out = users.map(u => {
       const add = byId.get(String(u._id)) || {};
       return {
@@ -23,11 +24,13 @@ export const listUsersAdmin = async (_req, res) => {
         name: u.name || "",
         email: u.email || "",
         phone: u.phone ?? u.mobile ?? "",
+        dob: u.dob || null, 
         createdAt: u.createdAt,
         bookingsCount: add.count || 0,
         lastBookingAt: add.lastBookingAt || null
       };
     });
+
     res.json(out);
   } catch (err) {
     console.error("listUsersAdmin error:", err);
@@ -41,7 +44,7 @@ export const getUserAdmin = async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid user id" });
 
-    const user = await User.findById(id).select("name email phone mobile createdAt"); 
+    const user = await User.findById(id).select("name email phone mobile dob createdAt"); 
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
@@ -49,6 +52,7 @@ export const getUserAdmin = async (req, res) => {
       name: user.name || "",
       email: user.email || "",
       phone: user.phone ?? user.mobile ?? "",
+      dob: user.dob || null, 
       createdAt: user.createdAt
     });
   } catch (err) {
@@ -56,6 +60,7 @@ export const getUserAdmin = async (req, res) => {
     res.status(500).json({ message: "Failed to load user" });
   }
 };
+
 
 
 export const listUserBookingsAdmin = async (req, res) => {
@@ -173,14 +178,15 @@ export const updateUserAdmin = async (req, res) => {
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const { name, email, phone } = req.body || {};
+    const { name, email, phone, dob } = req.body || {};
     if (name  !== undefined) user.name  = String(name).trim();
     if (email !== undefined) user.email = String(email).trim();
     if (phone !== undefined) {
       const v = String(phone).trim();
-      user.phone  = v;   
+      user.phone  = v;
       user.mobile = v;
     }
+    if (dob !== undefined) user.dob = dob ? new Date(dob) : null; 
 
     await user.save();
     res.json({
@@ -188,6 +194,7 @@ export const updateUserAdmin = async (req, res) => {
       name: user.name || "",
       email: user.email || "",
       phone: user.phone ?? user.mobile ?? "",
+      dob: user.dob || null, 
       createdAt: user.createdAt,
     });
   } catch (err) {

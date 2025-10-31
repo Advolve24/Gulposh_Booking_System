@@ -120,9 +120,9 @@ export default function Dashboard() {
           <div className="p-4 bg-primary md:rounded-[10px] rounded-t-[10px] text-white flex justify-center">
             {icon}
           </div>
-          <div className="text-2xl font-semibold flex flex-col md:ml-6 mt-0 md:p-0 p-4">
-            <div>{value}</div>
-            <div className="text-[16px] font-normal">{label}</div>
+          <div className="text-3xl font-semibold flex flex-row items-center gap-2 md:ml-6 mt-0 md:p-0 p-4">
+            <div className="text-black">{value}</div>
+            <div className="text-[16px] mt-1 uppercase font-bold">{label}</div>
           </div>
         </CardTitle>
       </CardHeader>
@@ -133,10 +133,8 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl p-6 mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-1 flex flex-row md:flex-col gap-3 justify-start flex-wrap">
-        {statCard(<Users2 className="h-6 w-6" />, "Users", stats.users, "/users")}
-        {statCard(<ClipboardList className="h-6 w-6" />, "Active bookings", stats.bookings, "/bookings")}
-        {statCard(<BedSingle className="h-6 w-6" />, "Rooms", stats.rooms, "/rooms/new")}
         {statCard(<CalendarRangeIcon className="h-6 w-6" />, "Upcoming stays", stats.upcoming, "/bookings")}
+        {statCard(<Users2 className="h-6 w-6" />, "Users", stats.users, "/users")}
         <div>
           <Button className="w-full h-[85px] text-[18px] rounded-[12px]">
             <a href="/villa-booking" rel="noopener noreferrer">
