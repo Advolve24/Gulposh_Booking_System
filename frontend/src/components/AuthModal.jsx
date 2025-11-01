@@ -261,9 +261,11 @@ export default function AuthModal() {
               {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
             </div>
 
+            <div className="space-y-4">
             <Button className="w-full" onClick={onRegister} disabled={loading}>
               {loading ? "Creating..." : "Create account"}
             </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

@@ -12,19 +12,13 @@ import { toast } from "sonner";
 import CalendarRange from "../components/CalendarRange";
 import { Eye, EyeOff, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { getAllCountries, getStatesByCountry, getCitiesByState } from "../lib/location";
 
-// Helpers
+
 function toDateOnly(d) {
   const x = new Date(d);
   return new Date(x.getFullYear(), x.getMonth(), x.getDate());
@@ -152,6 +146,12 @@ export default function Checkout() {
     const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
     setForm((f) => ({ ...f, phone: digits }));
   };
+
+  const handlePincodeChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setAddressInfo((f) => ({ ...f, pincode: digits }));
+  };
+
 
   const nights = useMemo(() => {
     if (!range?.from || !range?.to) return 0;
@@ -377,15 +377,14 @@ export default function Checkout() {
             {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
           </div>
 
-           <div className="space-y-1 sm:col-span-2">
+          <div className="space-y-1 sm:col-span-2">
             <Label>Date of Birth</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={`w-full justify-start text-left font-normal ${
-                    !form.dob && "text-muted-foreground"
-                  }`}
+                  className={`w-full justify-start text-left font-normal ${!form.dob && "text-muted-foreground"
+                    }`}
                 >
                   {form.dob ? format(form.dob, "PPP") : "Select date of birth"}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -484,7 +483,7 @@ export default function Checkout() {
           </div>
 
           <div className="space-y-1">
-            <Label>State / Province</Label>
+            <Label>State</Label>
             <Select
               value={addressInfo.state}
               onValueChange={(v) =>
@@ -531,15 +530,15 @@ export default function Checkout() {
           <div className="space-y-1">
             <Label>Postal / Zip Code</Label>
             <Input
-              placeholder="Enter postal code"
+              type="tel"
+              inputMode="numeric"
+              placeholder="Enter 6-digit postal code"
               value={addressInfo.pincode}
-              onChange={(e) =>
-                setAddressInfo((f) => ({ ...f, pincode: e.target.value }))
-              }
+              onChange={handlePincodeChange}
             />
           </div>
 
-           <div className="space-y-1 sm:col-span-2">
+          <div className="space-y-1 sm:col-span-2">
             <Label>Guests</Label>
             <Select value={guestsState} onValueChange={onGuestsChange}>
               <SelectTrigger className="w-full">
