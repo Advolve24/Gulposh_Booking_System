@@ -156,6 +156,7 @@ export default function AuthModal() {
                   autoComplete="current-password"
                   className="pr-10"
                 />
+                <div className="pt-3">
                 <button
                   type="button"
                   onClick={() => setShowLoginPassword((prev) => !prev)}
@@ -163,6 +164,7 @@ export default function AuthModal() {
                 >
                   {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+                </div>
               </div>
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
@@ -263,11 +265,12 @@ export default function AuthModal() {
               {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
             </div>
 
-            <div className="space-y-4">
+           <div className="pt-3">
             <Button className="w-full" onClick={onRegister} disabled={loading}>
               {loading ? "Creating..." : "Create account"}
             </Button>
             </div>
+            
           </TabsContent>
         </Tabs>
       </DialogContent>
