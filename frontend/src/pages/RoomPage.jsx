@@ -210,9 +210,9 @@ export default function RoomPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold">{room.name}</h1>
         <div className="flex flex-wrap items-center gap-2 text-center sm:text-left">
-          <span className="text-lg sm:text-xl">₹{room.pricePerNight}/night</span>
+          <span className="text-lg sm:text-xl">₹{Number(room.pricePerNight).toLocaleString("en-IN")}/night</span>
           <div className="hidden sm:block h-5 w-px bg-border" />
-          <span className="text-lg sm:text-xl">(₹{room.priceWithMeal}/night with meal)</span>
+          <span className="text-lg sm:text-xl">₹{Number(room.priceWithMeal).toLocaleString("en-IN")}/night with meal</span>
         </div>
       </div>
 

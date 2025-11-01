@@ -27,7 +27,7 @@ export default function RoomCard({ room , range, guests }) {
         <h3 className="text-lg font-semibold">{room.name}</h3>
         <p className="text-sm text-gray-600 line-clamp-2">{room.description}</p>
         <div className="flex items-center justify-between">
-           <span className="font-medium">₹{room.pricePerNight}/night</span>
+           <span className="font-medium">₹{Number(room.pricePerNight).toLocaleString("en-IN")}/night</span>
           <Link to={`/room/${room._id}${search}`} state={linkState} className="underline">
             View
           </Link>

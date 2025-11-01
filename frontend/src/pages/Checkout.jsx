@@ -581,7 +581,7 @@ export default function Checkout() {
             onCheckedChange={(v) => setWithMeal(Boolean(v))}
           />
           <Label htmlFor="withMeal" className="cursor-pointer">
-            Include meals (₹{room.priceWithMeal}/night)
+            Include meals (₹{Number(room.priceWithMeal).toLocaleString("en-IN")}/night)
           </Label>
         </div>
 
@@ -595,11 +595,11 @@ export default function Checkout() {
           </div>
           <div className="flex items-center justify-between">
             <span>Price per night</span>
-            <span>₹{pricePerNight}</span>
+            <span>₹{Number(room.pricePerNight).toLocaleString("en-IN")}</span>
           </div>
           <div className="flex items-center justify-between font-medium text-base pt-1">
             <span>Total</span>
-            <span>₹{total}</span>
+            <span>₹{Number(total).toLocaleString("en-IN")}</span>
           </div>
         </div>
 
