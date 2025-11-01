@@ -12,6 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import { toast } from "sonner";
 
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -49,27 +50,53 @@ export default function AuthModal() {
   };
 
   const onLogin = async () => {
-    if (!validate("login")) return;
-    setLoading(true);
-    try {
-      await login(form.email.trim(), form.password);
-    } finally {
-      setLoading(false);
+  if (!validate("login")) return;
+  setLoading(true);
+  try {
+    await login(form.email.trim(), form.password);
+    toast.success("Signed in successfully 🎉"); 
+    closeAuth(); 
+  } catch (err) {
+    if (err.response && err.response.status === 400 && err.response.data?.message) {
+      const msg = err.response.data.message;
+      if (msg.includes("Invalid credentials")) {
+        toast.error("Invalid email or password");
+      } else {
+        toast.error(msg);
+      }
+    } else {
+      toast.error("Failed to sign in. Please try again.");
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const onRegister = async () => {
-    if (!validate("register")) return;
-    const phone = form.phone.replace(/[^\d]/g, "").trim();
-    setLoading(true);
-    try {
-      await register(form.name.trim(), form.email.trim(), form.password, phone, form.dob);
-    } finally {
-      setLoading(false);
+  if (!validate("register")) return;
+  const phone = form.phone.replace(/[^\d]/g, "").trim();
+  setLoading(true);
+  try {
+    await register(form.name.trim(), form.email.trim(), form.password, phone, form.dob);
+    toast.success("Account created successfully 🎉");
+    closeAuth(); 
+  } catch (err) {
+    if (err.response && err.response.status === 400 && err.response.data?.message) {
+      const msg = err.response.data.message;
+      if (msg.includes("Email already registered")) {
+        toast.error("Email is already in use, please enter another one");
+      } else {
+        toast.error(msg);
+      }
+    } else {
+      toast.error("Failed to create account. Please try again.");
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
-  // restrict phone input to 10 digits
+
   const handlePhoneChange = (e) => {
     const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 10);
     setForm((f) => ({ ...f, phone: digitsOnly }));
