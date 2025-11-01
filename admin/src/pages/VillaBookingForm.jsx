@@ -115,7 +115,6 @@ export default function VillaBookingForm() {
     const start = toDateOnlyUTC(range?.from);
     const end = toDateOnlyUTC(range?.to);
 
-    // ✅ Cash booking (direct confirm)
     if (form.paymentMode === "Cash") {
       await api.post("/admin/villa-verify", {
         startDate: start,
@@ -133,7 +132,6 @@ export default function VillaBookingForm() {
       return navigate("/dashboard");
     }
 
-    // ✅ Online booking (Razorpay)
     const ok = await loadRazorpayScript();
     if (!ok) throw new Error("Razorpay script failed to load");
 
@@ -217,10 +215,11 @@ export default function VillaBookingForm() {
         <div className="w-full md:w-[58%] space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Guests</Label>
+             <Label>Guests</Label>
               <Input
                 type="number"
                 min="1"
+                className="mt-1"
                 value={form.guests}
                 onChange={(e) => setForm((f) => ({ ...f, guests: e.target.value }))}
               />
@@ -230,6 +229,7 @@ export default function VillaBookingForm() {
               <Input
                 type="number"
                 min="0"
+                className="mt-1"
                 value={form.customAmount}
                 onChange={(e) => setForm((f) => ({ ...f, customAmount: e.target.value }))}
               />
@@ -242,6 +242,7 @@ export default function VillaBookingForm() {
               <Label>Full Name</Label>
               <Input
                 placeholder="Enter full name"
+                className="mt-1"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
@@ -250,6 +251,7 @@ export default function VillaBookingForm() {
               <Label>Email</Label>
               <Input
                 placeholder="Enter email"
+                className="mt-1"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -259,6 +261,7 @@ export default function VillaBookingForm() {
               <Label>Phone</Label>
               <Input
                 placeholder="10-digit number"
+                className="mt-1"
                 maxLength={10}
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
@@ -268,6 +271,7 @@ export default function VillaBookingForm() {
               <Label>Password</Label>
               <Input
                 placeholder="Set password"
+                className="mt-1"
                 type={showPass ? "text" : "password"}
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
@@ -276,7 +280,7 @@ export default function VillaBookingForm() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute right-1 top-[28px] text-gray-500 hover:text-gray-700"
+                className="mt-1 absolute right-1 top-[28px] text-gray-500 hover:text-gray-700"
                 onClick={() => setShowPass((p) => !p)}
               >
                 {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -291,7 +295,7 @@ export default function VillaBookingForm() {
               <Select
                 value={form.govIdType}
                 onValueChange={(v) => setForm((f) => ({ ...f, govIdType: v }))}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select ID Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -307,6 +311,7 @@ export default function VillaBookingForm() {
               <Label>Government ID Number</Label>
               <Input
                 placeholder="Enter ID number"
+                className="mt-1"
                 value={form.govIdNumber}
                 onChange={(e) => setForm((f) => ({ ...f, govIdNumber: e.target.value }))}
               />
@@ -319,7 +324,7 @@ export default function VillaBookingForm() {
             <Select
               value={form.paymentMode}
               onValueChange={(v) => setForm((f) => ({ ...f, paymentMode: v }))}>
-              <SelectTrigger>
+              <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select Payment Mode" />
               </SelectTrigger>
               <SelectContent>
@@ -331,12 +336,14 @@ export default function VillaBookingForm() {
             </Select>
           </div>
 
+         <div className="pt-3">
           <Button
             onClick={submit}
             disabled={loading}
-            className="w-full text-lg mt-6 py-5 font-semibold rounded-xl">
+            className="w-full text-lg py-5 font-semibold rounded-xl">
             {loading ? "Processing..." : "Confirm Booking"}
           </Button>
+          </div>
         </div>
       </div>
     </div>
