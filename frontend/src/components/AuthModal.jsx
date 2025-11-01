@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../store/authStore";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -72,14 +70,17 @@ export default function AuthModal() {
   }
 };
 
-  const onRegister = async () => {
+ const onRegister = async () => {
   if (!validate("register")) return;
   const phone = form.phone.replace(/[^\d]/g, "").trim();
   setLoading(true);
   try {
     await register(form.name.trim(), form.email.trim(), form.password, phone, form.dob);
     toast.success("Account created successfully 🎉");
-    closeAuth(); 
+
+    setForm({ name: "", email: "", password: "", phone: "", dob: null });
+
+    closeAuth();
   } catch (err) {
     if (err.response && err.response.status === 400 && err.response.data?.message) {
       const msg = err.response.data.message;
@@ -95,6 +96,7 @@ export default function AuthModal() {
     setLoading(false);
   }
 };
+
 
 
   const handlePhoneChange = (e) => {
