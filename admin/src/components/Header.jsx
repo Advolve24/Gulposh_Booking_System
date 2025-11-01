@@ -52,7 +52,7 @@ export default function Header() {
               to={path}
               className={`text-sm font-medium transition-colors ${
                 isActive(path)
-                  ? "text-[#A0101C] pb-[2px]"
+                  ? "text-[#A0101C] h-8 flex items-center border rounded px-3 border-[#A0101C]"
                   : "text-gray-700 hover:text-[#A0101C]"
               }`}
             >

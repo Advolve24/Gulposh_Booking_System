@@ -212,7 +212,7 @@ export default function RoomPage() {
         <div className="flex flex-wrap items-center gap-2 text-center sm:text-left">
           <span className="text-lg sm:text-xl">₹{Number(room.pricePerNight).toLocaleString("en-IN")}/night</span>
           <div className="hidden sm:block h-5 w-px bg-border" />
-          <span className="text-lg sm:text-xl">₹{Number(room.priceWithMeal).toLocaleString("en-IN")}/night with meal</span>
+          <span className="text-lg sm:text-xl">₹{(Number(room.pricePerNight) + Number(room.priceWithMeal)).toLocaleString("en-IN")}/night with meal</span>
         </div>
       </div>
 

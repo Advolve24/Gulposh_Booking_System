@@ -347,7 +347,7 @@ export default function Checkout() {
         <div className="flex items-center gap-3 text-sm sm:text-base">
           <span>₹{room.pricePerNight}/night</span>
           <span className="opacity-70">|</span>
-          <span>₹{room.priceWithMeal}/night with meal</span>
+          <span>₹{(Number(room.pricePerNight) + Number(room.priceWithMeal)).toLocaleString("en-IN")}/night with meal</span>
         </div>
       </div>
 

@@ -108,7 +108,6 @@ export default function Dashboard() {
     }
   };
 
-  // inside Dashboard component
 
   const statCard = (icon, label, value, path) => (
     <Card
