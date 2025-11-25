@@ -175,7 +175,7 @@ export default function Dashboard() {
         )}
         {statCard(
           <ClipboardList className="h-6 w-6" />,
-          "Cancelled bookings",
+          "Cancelled",
           stats.cancelled,
           "/bookings?filter=cancelled"
         )}
@@ -239,7 +239,7 @@ export default function Dashboard() {
                   <div className="text-sm font-medium mb-2">
                     Current blackouts
                   </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
                     {blackouts.length === 0 && (
                       <span className="text-sm text-muted-foreground">
                         None
@@ -249,13 +249,13 @@ export default function Dashboard() {
                       <Badge
                         key={b._id}
                         variant="secondary"
-                        className="gap-2 justify-between"
+                        className="gap-2 justify-between p-2"
                       >
                         <span>
                           {fmt(b.from)} – {fmt(b.to)}
                         </span>
                         <button
-                          className="ml-1 text-red-600 hover:underline"
+                          className="ml-1 text-[14px] text-red-600 hover:underline"
                           onClick={() => removeBlk(b._id)}
                         >
                           Remove

@@ -7,6 +7,8 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { format } from "date-fns";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { CheckCircle, XCircle } from "lucide-react";
 import EditBookingDialog from "@/components/EditBookingDialog.jsx";
@@ -31,7 +33,7 @@ export default function Bookings() {
   const [editOpen, setEditOpen] = useState(false);
   const location = useLocation();
 
-  const [status, setStatus] = useState(""); 
+  const [status, setStatus] = useState("");
   const [q, setQ] = useState("");
   const [range, setRange] = useState();
 
@@ -53,7 +55,7 @@ export default function Bookings() {
   }, [location.search]);
 
   useEffect(() => {
-    if (!status) return; 
+    if (!status) return;
     load();
   }, [status, roomId, range, q]);
 
@@ -116,7 +118,7 @@ export default function Bookings() {
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle>Bookings</CardTitle>
           <div className="flex justify-end w-[70%] gap-2">
-            <div className="w-[40%] -mt-6">
+            <div className="w-[60%] md:w-[40%] -mt-6">
               <label className="text-sm block mb-1">Status</label>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
@@ -159,31 +161,67 @@ export default function Bookings() {
                         <span className="text-xs text-muted-foreground">{b.user?.email || b.guestEmail || "—"}</span>
                       </div>
                     </td>
-                    <td className="py-2 pr-4">{b.room?.name || b.roomName || (b.isVilla ? "-" : "Entire Villa")}</td>
-                    <td className="py-2 pr-4">{fmt(b.startDate)} → {fmt(b.endDate)}</td>
+                    <td className="py-2 pr-4 min-w-[120px] sm:min-w-0 whitespace-nowrap">{b.room?.name || b.roomName || (b.isVilla ? "-" : "Entire Villa")}</td>
+                    <td className="py-2 pr-4 min-w-[120px] sm:min-w-0 whitespace-nowrap">
+                      {fmt(b.startDate)} → {fmt(b.endDate)}
+                    </td>
                     <td className="py-2 pr-4">{nights}</td>
                     <td className="py-2 pr-4">{b.guests ?? "—"}</td>
-                    <td className="py-2 pr-4"><StatusBadge status={b.status} /></td>
-                    <td className="py-2 pr-4">{fmt(b.createdAt)}</td>
                     <td className="py-2 pr-4">
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => onOpenView(b)}>View</Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => { setSelected(b); setEditOpen(true); }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => { setSelected(b); onCancel(); }}
-                          disabled={b.status === "cancelled"}
-                        >
-                          Cancel
-                        </Button>
+                      <div className="sm:hidden flex items-center gap-2">
+                        <span
+                          className={`
+        inline-block w-2 h-2 rounded-full
+        ${b.status === "confirmed" ? "bg-green-600 w-3 h-3" : ""}
+        ${b.status === "pending" ? "bg-yellow-500" : ""}
+        ${b.status === "cancelled" ? "bg-red-600" : ""}
+      `}
+                        ></span>
                       </div>
+                      <div className="hidden sm:block">
+                        <StatusBadge status={b.status} />
+                      </div>
+                    </td>
+
+                    <td className="py-2 pr-4 min-w-[100px] sm:min-w-0 whitespace-nowrap">{fmt(b.createdAt)}</td>
+                    <td className="py-2 pr-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-5 w-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+
+                        <DropdownMenuContent align="end" className="w-32">
+                          <DropdownMenuItem
+                            onClick={() => onOpenView(b)}
+                            className="cursor-pointer"
+                          >
+                            View
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelected(b);
+                              setEditOpen(true);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            Edit
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelected(b);
+                              onCancel();
+                            }}
+                            className={`cursor-pointer text-red-600 ${b.status === "cancelled" ? "opacity-50 pointer-events-none" : ""
+                              }`}
+                          >
+                            Cancel
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 );

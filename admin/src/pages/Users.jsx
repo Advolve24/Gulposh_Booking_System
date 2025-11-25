@@ -193,11 +193,11 @@ export default function Users() {
                 <tbody>
                   {filtered.map((u) => (
                     <tr key={u._id} className="border-t">
-                      <td className="py-2 pr-4">{u.name || "—"}</td>
+                      <td className="py-2 pr-4 min-w-[120px] sm:min-w-0 whitespace-nowrap">{u.name || "—"}</td>
                       <td className="py-2 pr-4">{u.email || "—"}</td>
-                      <td className="py-2 pr-4">{u.phone ?? u.mobile ?? "—"}</td>
-                      <td className="py-2 pr-4">{u.dob ? fmt(u.dob) : "—"}</td>
-                      <td className="py-2 pr-4">{fmt(u.createdAt)}</td>
+                      <td className="py-2 pr-8">{u.phone ?? u.mobile ?? "—"}</td>
+                      <td className="py-2 pr-4 min-w-[100px] sm:min-w-0 whitespace-nowrap">{u.dob ? fmt(u.dob) : "—"}</td>
+                      <td className="py-2 pr-4 min-w-[120px] sm:min-w-0 whitespace-nowrap">{fmt(u.createdAt)}</td>
                       <td className="py-2 pr-4">
                         <Button
                           size="sm"
