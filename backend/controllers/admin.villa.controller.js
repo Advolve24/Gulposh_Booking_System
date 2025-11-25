@@ -23,7 +23,6 @@ function nightsBetween(start, end) {
 
 export const createVillaOrder = async (req, res) => {
   try {
-    // ⚠️ Admin is booking for a user, not themselves
     const {
       startDate,
       endDate,
@@ -32,6 +31,7 @@ export const createVillaOrder = async (req, res) => {
       contactName,
       contactEmail,
       contactPhone,
+      dob,
     } = req.body || {};
 
     if (!startDate || !endDate || !guests || !customAmount) {
@@ -40,13 +40,13 @@ export const createVillaOrder = async (req, res) => {
       });
     }
 
-    // ✅ Find or create the user based on email/phone
     let user = await User.findOne({ email: contactEmail });
     if (!user) {
       user = await User.create({
         name: contactName,
         email: contactEmail,
         phone: contactPhone,
+        dob: dob ? new Date(dob) : null,
         password: Math.random().toString(36).slice(-8),
       });
       console.log("👤 New user created by admin:", user._id);
@@ -73,6 +73,7 @@ export const createVillaOrder = async (req, res) => {
         contactName,
         contactEmail,
         contactPhone,
+        dob,
       },
     });
 
@@ -82,7 +83,7 @@ export const createVillaOrder = async (req, res) => {
       amount: order.amount,
       currency: order.currency,
       computed: { nights, customAmount, amountINR },
-      userId: user._id, // 👈 send it back to frontend
+      userId: user._id,
     });
   } catch (err) {
     console.error("createVillaOrder error:", err);
@@ -110,14 +111,14 @@ export const verifyVillaPayment = async (req, res) => {
       govIdType,
       govIdNumber,
       paymentMode,
-      userId, // passed from frontend
+      dob,
+      userId,
     } = req.body || {};
 
     if (!userId && !contactEmail) {
       return res.status(400).json({ message: "User information missing" });
     }
 
-    // ✅ Ensure user exists
     let user = userId ? await User.findById(userId) : await User.findOne({ email: contactEmail });
     if (!user) {
       user = await User.create({
@@ -163,7 +164,6 @@ export const verifyVillaPayment = async (req, res) => {
       return res.json({ ok: true, booking });
     }
 
-    // ✅ Verify Razorpay Signature
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expected = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -175,7 +175,6 @@ export const verifyVillaPayment = async (req, res) => {
       return res.status(400).json({ message: "Signature mismatch" });
     }
 
-    // ✅ Create Booking
     const booking = await Booking.create({
       user: user._id,
       startDate: sDate,

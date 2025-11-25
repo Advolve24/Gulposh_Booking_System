@@ -10,6 +10,9 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { loadRazorpayScript } from "../lib/loadRazorpay";
 import { toDateOnlyUTC, todayDateOnlyUTC, toDateOnlyFromAPIUTC } from "../lib/date";
 import { useNavigate } from "react-router-dom";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, Eye, EyeOff } from "lucide-react";
+import { format } from "date-fns";
 
 export default function VillaBookingForm() {
   const [range, setRange] = useState();
@@ -28,9 +31,9 @@ export default function VillaBookingForm() {
     govIdType: "",
     govIdNumber: "",
     paymentMode: "Online",
+    dob: "",
   });
 
-  // ✅ Fetch disabled booking ranges
   useEffect(() => {
     (async () => {
       try {
@@ -53,7 +56,6 @@ export default function VillaBookingForm() {
     })();
   }, []);
 
-  // ✅ Input validations
   const validateForm = () => {
     if (!form.name.trim() || form.name.length < 3)
       throw new Error("Please enter a valid name (min 3 characters)");
@@ -72,7 +74,7 @@ export default function VillaBookingForm() {
   async function ensureUserExists() {
     const { name, email, phone, password } = form;
     try {
-      await api.post("/auth/register", { name, email, phone, password });
+      await api.post("/auth/register", { name, email, phone, password, dob });
     } catch (e) {
       const msg = e?.response?.data?.message || "";
       if (/already/i.test(msg)) {
@@ -100,23 +102,42 @@ export default function VillaBookingForm() {
 
 
   const submit = async () => {
-  try {
-    setLoading(true);
-    validateForm();
+    try {
+      setLoading(true);
+      validateForm();
 
-    if (isOverlapping(range, disabled)) {
-      toast.error("Selected dates include unavailable or blocked days. Please choose another range.");
-      setLoading(false);
-      return;
-    }
+      if (isOverlapping(range, disabled)) {
+        toast.error("Selected dates include unavailable or blocked days. Please choose another range.");
+        setLoading(false);
+        return;
+      }
 
-    await ensureUserExists();
+      await ensureUserExists();
 
-    const start = toDateOnlyUTC(range?.from);
-    const end = toDateOnlyUTC(range?.to);
+      const start = toDateOnlyUTC(range?.from);
+      const end = toDateOnlyUTC(range?.to);
 
-    if (form.paymentMode === "Cash") {
-      await api.post("/admin/villa-verify", {
+      if (form.paymentMode === "Cash") {
+        await api.post("/admin/villa-verify", {
+          startDate: start,
+          endDate: end,
+          guests: form.guests,
+          customAmount: form.customAmount,
+          contactName: form.name,
+          contactEmail: form.email,
+          contactPhone: form.phone,
+          govIdType: form.govIdType,
+          govIdNumber: form.govIdNumber,
+          paymentMode: "Cash",
+        });
+        toast.success("Villa booked successfully (Cash)");
+        return navigate("/dashboard");
+      }
+
+      const ok = await loadRazorpayScript();
+      if (!ok) throw new Error("Razorpay script failed to load");
+
+      const { data: order } = await api.post("/admin/villa-order", {
         startDate: start,
         endDate: end,
         guests: form.guests,
@@ -124,73 +145,54 @@ export default function VillaBookingForm() {
         contactName: form.name,
         contactEmail: form.email,
         contactPhone: form.phone,
-        govIdType: form.govIdType,
-        govIdNumber: form.govIdNumber,
-        paymentMode: "Cash",
       });
-      toast.success("Villa booked successfully (Cash)");
-      return navigate("/dashboard");
+
+      const rzp = new window.Razorpay({
+        key: order.key,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Villa Gulposh",
+        description: "Entire Villa Booking",
+        order_id: order.orderId,
+        prefill: {
+          name: form.name,
+          email: form.email,
+          contact: form.phone,
+        },
+        handler: async (resp) => {
+          try {
+            await api.post("/admin/villa-verify", {
+              userId: order.userId,
+              startDate: start,
+              endDate: end,
+              guests: form.guests,
+              customAmount: form.customAmount,
+              contactName: form.name,
+              contactEmail: form.email,
+              contactPhone: form.phone,
+              govIdType: form.govIdType,
+              govIdNumber: form.govIdNumber,
+              paymentMode: form.paymentMode,
+              razorpay_order_id: resp.razorpay_order_id,
+              razorpay_payment_id: resp.razorpay_payment_id,
+              razorpay_signature: resp.razorpay_signature,
+            });
+            toast.success("Booking confirmed successfully!");
+            navigate("/dashboard");
+          } catch (err) {
+            toast.error(err?.response?.data?.message || "Payment verification failed");
+          }
+        },
+        modal: { ondismiss: () => toast("Payment cancelled") },
+      });
+
+      rzp.open();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || "Could not process booking");
+    } finally {
+      setLoading(false);
     }
-
-    const ok = await loadRazorpayScript();
-    if (!ok) throw new Error("Razorpay script failed to load");
-
-    const { data: order } = await api.post("/admin/villa-order", {
-      startDate: start,
-      endDate: end,
-      guests: form.guests,
-      customAmount: form.customAmount,
-      contactName: form.name,
-      contactEmail: form.email,
-      contactPhone: form.phone,
-    });
-
-    const rzp = new window.Razorpay({
-      key: order.key,
-      amount: order.amount,
-      currency: order.currency,
-      name: "Villa Gulposh",
-      description: "Entire Villa Booking",
-      order_id: order.orderId,
-      prefill: {
-        name: form.name,
-        email: form.email,
-        contact: form.phone,
-      },
-      handler: async (resp) => {
-        try {
-          await api.post("/admin/villa-verify", {
-            userId: order.userId,
-            startDate: start,
-            endDate: end,
-            guests: form.guests,
-            customAmount: form.customAmount,
-            contactName: form.name,
-            contactEmail: form.email,
-            contactPhone: form.phone,
-            govIdType: form.govIdType,
-            govIdNumber: form.govIdNumber,
-            paymentMode: form.paymentMode,
-            razorpay_order_id: resp.razorpay_order_id,
-            razorpay_payment_id: resp.razorpay_payment_id,
-            razorpay_signature: resp.razorpay_signature,
-          });
-          toast.success("Booking confirmed successfully!");
-          navigate("/dashboard");
-        } catch (err) {
-          toast.error(err?.response?.data?.message || "Payment verification failed");
-        }
-      },
-      modal: { ondismiss: () => toast("Payment cancelled") },
-    });
-
-    rzp.open();
-  } catch (err) {
-    toast.error(err?.response?.data?.message || err.message || "Could not process booking");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   return (
@@ -215,7 +217,7 @@ export default function VillaBookingForm() {
         <div className="w-full md:w-[58%] space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-             <Label>Guests</Label>
+              <Label>Guests</Label>
               <Input
                 type="number"
                 min="1"
@@ -266,6 +268,37 @@ export default function VillaBookingForm() {
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Date of Birth</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`w-full justify-between text-left font-normal ${!form.dob ? "text-muted-foreground" : ""
+                      }`}
+                  >
+                    {form.dob ? (
+                      format(form.dob, "dd MMM yyyy")
+                    ) : (
+                      <span>Select date</span>
+                    )}
+                    <CalendarIcon className="h-4 w-4 opacity-60" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.dob}
+                    onSelect={(date) => setForm((f) => ({ ...f, dob: date }))}
+                    captionLayout="dropdown"
+                    fromYear={1950}
+                    toYear={new Date().getFullYear()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="relative">
               <Label>Password</Label>
@@ -336,13 +369,13 @@ export default function VillaBookingForm() {
             </Select>
           </div>
 
-         <div className="pt-3">
-          <Button
-            onClick={submit}
-            disabled={loading}
-            className="w-full text-lg py-5 font-semibold rounded-xl">
-            {loading ? "Processing..." : "Confirm Booking"}
-          </Button>
+          <div className="pt-3">
+            <Button
+              onClick={submit}
+              disabled={loading}
+              className="w-full text-lg py-5 font-semibold rounded-xl">
+              {loading ? "Processing..." : "Confirm Booking"}
+            </Button>
           </div>
         </div>
       </div>
