@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { loadRazorpayScript } from "../lib/loadRazorpay";
 import { toDateOnlyUTC, todayDateOnlyUTC, toDateOnlyFromAPIUTC } from "../lib/date";
@@ -72,18 +71,26 @@ export default function VillaBookingForm() {
   };
 
   async function ensureUserExists() {
-    const { name, email, phone, password } = form;
-    try {
-      await api.post("/auth/register", { name, email, phone, password, dob });
-    } catch (e) {
-      const msg = e?.response?.data?.message || "";
-      if (/already/i.test(msg)) {
-        toast.info("User already exists, proceeding...");
-        return;
-      }
-      throw e;
+  const { name, email, phone, password, dob } = form;
+
+  try {
+    await api.post("/auth/register", {
+      name,
+      email,
+      phone,
+      password,
+      dob: dob ? dob.toISOString().split("T")[0] : null,
+    });
+  } catch (e) {
+    const msg = e?.response?.data?.message || "";
+    if (/already/i.test(msg)) {
+      toast.info("User already exists, proceeding...");
+      return;
     }
+    throw e;
   }
+}
+
 
 
 
@@ -269,7 +276,7 @@ export default function VillaBookingForm() {
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               />
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 mt-2">
               <Label>Date of Birth</Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -319,11 +326,7 @@ export default function VillaBookingForm() {
                 {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
               </Button>
             </div>
-          </div>
-
-          {/* ID Details */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+             <div>
               <Label>Government ID Type</Label>
               <Select
                 value={form.govIdType}
@@ -339,7 +342,10 @@ export default function VillaBookingForm() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
+          {/* ID Details */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Government ID Number</Label>
               <Input
@@ -349,10 +355,7 @@ export default function VillaBookingForm() {
                 onChange={(e) => setForm((f) => ({ ...f, govIdNumber: e.target.value }))}
               />
             </div>
-          </div>
-
-          {/* Payment Mode */}
-          <div>
+            <div>
             <Label>Payment Mode</Label>
             <Select
               value={form.paymentMode}
@@ -368,12 +371,13 @@ export default function VillaBookingForm() {
               </SelectContent>
             </Select>
           </div>
+          </div>
 
           <div className="pt-3">
             <Button
               onClick={submit}
               disabled={loading}
-              className="w-full text-lg py-5 font-semibold rounded-xl">
+              className="w-full text-lg py-5 font-semibold rounded-[10px]">
               {loading ? "Processing..." : "Confirm Booking"}
             </Button>
           </div>

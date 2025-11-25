@@ -300,7 +300,7 @@ export default function Users() {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className={`w-full justify-start text-left font-normal ${
+                      className={`w-full mt-2 justify-start text-left font-normal ${
                         !editDob && "text-muted-foreground"
                       }`}
                     >

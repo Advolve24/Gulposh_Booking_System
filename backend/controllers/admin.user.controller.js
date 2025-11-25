@@ -8,7 +8,7 @@ const { isValidObjectId } = mongoose;
 export const listUsersAdmin = async (_req, res) => {
   try {
     const users = await User.find()
-      .select("name email phone mobile dob createdAt") 
+      .select("name email phone mobile dob createdAt")
       .sort({ createdAt: -1 });
 
     const counts = await Booking.aggregate([
@@ -24,7 +24,7 @@ export const listUsersAdmin = async (_req, res) => {
         name: u.name || "",
         email: u.email || "",
         phone: u.phone ?? u.mobile ?? "",
-        dob: u.dob || null, 
+        dob: u.dob || null,
         createdAt: u.createdAt,
         bookingsCount: add.count || 0,
         lastBookingAt: add.lastBookingAt || null
@@ -44,7 +44,7 @@ export const getUserAdmin = async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid user id" });
 
-    const user = await User.findById(id).select("name email phone mobile dob createdAt"); 
+    const user = await User.findById(id).select("name email phone mobile dob createdAt");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
@@ -52,7 +52,7 @@ export const getUserAdmin = async (req, res) => {
       name: user.name || "",
       email: user.email || "",
       phone: user.phone ?? user.mobile ?? "",
-      dob: user.dob || null, 
+      dob: user.dob || null,
       createdAt: user.createdAt
     });
   } catch (err) {
@@ -100,14 +100,14 @@ export const listBookingsAdmin = async (req, res) => {
 
     if (from || to) {
       const fromD = from ? new Date(from) : null;
-      const toD   = to   ? new Date(to)   : null;
-      if (fromD && !isNaN(fromD)) filter.endDate   = { ...(filter.endDate || {}),   $gte: fromD };
-      if (toD   && !isNaN(toD))   filter.startDate = { ...(filter.startDate || {}), $lte: toD };
+      const toD = to ? new Date(to) : null;
+      if (fromD && !isNaN(fromD)) filter.endDate = { ...(filter.endDate || {}), $gte: fromD };
+      if (toD && !isNaN(toD)) filter.startDate = { ...(filter.startDate || {}), $lte: toD };
     }
 
     let items = await Booking.find(filter)
       .select("user room startDate endDate guests status createdAt amount note withMeal adminMeta total")
-      .populate("user", "name email")
+      .populate("user", "name email phone")
       .populate("room", "name")
       .sort({ createdAt: -1 })
       .lean();
@@ -126,7 +126,7 @@ export const listBookingsAdmin = async (req, res) => {
 
     res.json(items.map(b => ({
       _id: b._id,
-      user: b.user ? { _id: b.user._id, name: b.user.name, email: b.user.email } : null,
+      user: b.user ? { _id: b.user._id, name: b.user.name, email: b.user.email, phone: b.user.phone, } : null,
       room: b.room ? { _id: b.room._id, name: b.room.name } : null,
       startDate: b.startDate,
       endDate: b.endDate,
@@ -137,7 +137,7 @@ export const listBookingsAdmin = async (req, res) => {
       total: b.total ?? null,
       createdAt: b.createdAt,
       note: b.note ?? null,
-      withMeal: !!b.withMeal, 
+      withMeal: !!b.withMeal,
     })));
   } catch (err) {
     console.error("listBookingsAdmin error:", err);
@@ -148,7 +148,7 @@ export const listBookingsAdmin = async (req, res) => {
 
 export const cancelBookingAdmin = async (req, res) => {
   try {
-    const { id } = req.params; 
+    const { id } = req.params;
     if (!mongoose.isValidObjectId(id)) {
       return res.status(400).json({ message: "Invalid booking id" });
     }
@@ -179,14 +179,14 @@ export const updateUserAdmin = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const { name, email, phone, dob } = req.body || {};
-    if (name  !== undefined) user.name  = String(name).trim();
+    if (name !== undefined) user.name = String(name).trim();
     if (email !== undefined) user.email = String(email).trim();
     if (phone !== undefined) {
       const v = String(phone).trim();
-      user.phone  = v;
+      user.phone = v;
       user.mobile = v;
     }
-    if (dob !== undefined) user.dob = dob ? new Date(dob) : null; 
+    if (dob !== undefined) user.dob = dob ? new Date(dob) : null;
 
     await user.save();
     res.json({
@@ -194,7 +194,7 @@ export const updateUserAdmin = async (req, res) => {
       name: user.name || "",
       email: user.email || "",
       phone: user.phone ?? user.mobile ?? "",
-      dob: user.dob || null, 
+      dob: user.dob || null,
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -280,6 +280,9 @@ export const updateBookingAdmin = async (req, res) => {
       paymentMode: paymentMode || booking.adminMeta?.paymentMode,
     };
 
+    if (phone) {
+      booking.contactPhone = phone;
+    }
     await booking.save();
     res.json({ ok: true, booking });
   } catch (err) {

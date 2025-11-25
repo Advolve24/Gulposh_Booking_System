@@ -38,6 +38,7 @@ api.interceptors.response.use(
       if (window.location.pathname !== "/login") {
         toast.error("Session expired. Please log in again.");
         window.location.replace("/login");
+        isRedirecting = false;
       }
     } else if (status) {
       console.error("API error:", status, msg);

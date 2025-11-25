@@ -53,7 +53,7 @@ export default function Login() {
         <CardHeader className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-              <Shield className="h-5 w-5 text-primary" />
+              <img src="/logo1.png" alt="Logo" className="h-4 w-5" />
             </div>
             <div className="text-sm text-muted-foreground">Admin</div>
           </div>

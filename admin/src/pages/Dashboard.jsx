@@ -1,48 +1,72 @@
 import { useEffect, useState } from "react";
-import { getStats, listBlackouts, addBlackout, removeBlackout, listRooms, deleteRoom } from "../api/admin";
+import { getStats, listBlackouts, addBlackout, removeBlackout, listRooms,deleteRoom,} from "../api/admin";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { CalendarRangeIcon, Users2, BedSingle, ClipboardList, Trash2, Eye, Pencil } from "lucide-react";
+import { CalendarRangeIcon, Users2, BedSingle, ClipboardList,
+  Trash2, Eye, Pencil} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-import { toDateOnlyUTC, todayDateOnlyUTC, toDateOnlyFromAPIUTC } from "../lib/date";
+import { toDateOnlyUTC, todayDateOnlyUTC, toDateOnlyFromAPIUTC} from "../lib/date";
 
 const API_ROOT = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const toYMD = (d) =>
-  `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(d.getUTCDate()).padStart(2, "0")}`;
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ users: 0, rooms: 0, bookings: 0, upcoming: 0, cancelled: 0, });
+  const [stats, setStats] = useState({
+    users: 0,
+    rooms: 0,
+    bookings: 0,
+    upcoming: 0,
+    cancelled: 0,
+  });
   const [range, setRange] = useState();
   const [blackouts, setBlackouts] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loadingBlk, setLoadingBlk] = useState(false);
-  const [disabled, setDisabled] = useState(() => [{ before: todayDateOnlyUTC() }]);
+  const [disabled, setDisabled] = useState(() => [
+    { before: todayDateOnlyUTC() },
+  ]);
   const navigate = useNavigate();
 
   const reload = async () => {
     try {
-      const [s, b, r] = await Promise.all([getStats(), listBlackouts(), listRooms()]);
+      const [s, b, r] = await Promise.all([
+        getStats(),
+        listBlackouts(),
+        listRooms(),
+      ]);
       setStats(s);
       setBlackouts(b);
-      setRooms(r.filter(room => room.name?.toLowerCase() !== "entire villa"));
+      setRooms(
+        r.filter((room) => room.name?.toLowerCase() !== "entire villa")
+      );
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to load dashboard");
     }
   };
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => {
+    reload();
+  }, []);
 
   useEffect(() => {
     (async () => {
       try {
-        let res = await fetch(`${API_ROOT}/rooms/disabled/all`, { credentials: "include" });
-        if (!res.ok) res = await fetch(`${API_ROOT}/rooms/blocked/all`, { credentials: "include" });
+        let res = await fetch(`${API_ROOT}/rooms/disabled/all`, {
+          credentials: "include",
+        });
+        if (!res.ok)
+          res = await fetch(`${API_ROOT}/rooms/blocked/all`, {
+            credentials: "include",
+          });
         const bookedJson = res.ok ? await res.json() : [];
 
         const booked = (bookedJson || []).map((r) => ({
@@ -65,14 +89,19 @@ export default function Dashboard() {
   const fmt = (d) => format(new Date(d), "dd MMM yyyy");
 
   const picked =
-    range?.from && range?.to ? { from: toDateOnlyUTC(range.from), to: toDateOnlyUTC(range.to) } : null;
+    range?.from && range?.to
+      ? { from: toDateOnlyUTC(range.from), to: toDateOnlyUTC(range.to) }
+      : null;
   const blocks = disabled.filter((d) => d.from && d.to);
   const overlaps = (a, b) => !(a.to < b.from || a.from > b.to);
   const hasConflict = !!(picked && blocks.some((b) => overlaps(picked, b)));
 
   const blockSelected = async () => {
     if (!picked) return toast.error("Select a start and end date");
-    if (hasConflict) return toast.error("Selected dates overlap an existing booking/blackout.");
+    if (hasConflict)
+      return toast.error(
+        "Selected dates overlap an existing booking/blackout."
+      );
     setLoadingBlk(true);
     try {
       await addBlackout({ from: toYMD(picked.from), to: toYMD(picked.to) });
@@ -108,35 +137,51 @@ export default function Dashboard() {
     }
   };
 
-
   const statCard = (icon, label, value, path) => (
     <Card
       onClick={() => navigate(path)}
-      className="w-[48%] md:w-full cursor-pointer hover:shadow-md transition-shadow"
+      className="w-full cursor-pointer hover:shadow-md transition-shadow"
     >
       <CardHeader className="p-0 md:p-4">
         <CardTitle className="text-sm text-muted-foreground md:flex items-center gap-2">
           <div className="p-4 bg-primary md:rounded-[10px] rounded-t-[10px] text-white flex justify-center">
             {icon}
           </div>
-          <div className="text-3xl font-semibold flex flex-row items-center gap-2 md:ml-6 mt-0 md:p-0 p-4">
+          <div className="text-3xl font-semibold flex flex-col md:flex-row items-center gap-0 md:gap-2 md:ml-6 mt-0 md:p-0 p-4">
             <div className="text-black">{value}</div>
-            <div className="text-[16px] mt-1 uppercase font-bold">{label}</div>
+            <div className="text-[14px] md:text-[16px] mt-1 uppercase font-bold text-center md:text-left">
+              {label}
+            </div>
           </div>
         </CardTitle>
       </CardHeader>
     </Card>
   );
 
-
   return (
-    <div className="max-w-6xl p-6 mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="md:col-span-1 flex flex-row md:flex-col gap-3 justify-start flex-wrap">
-        {statCard(<CalendarRangeIcon className="h-6 w-6" />, "Upcoming stays", stats.upcoming, "/bookings")}
-        {statCard(<Users2 className="h-6 w-6" />, "Users", stats.users, "/users")}
-        {statCard(<ClipboardList className="h-6 w-6" />, "Cancelled bookings", stats.cancelled, "/bookings?filter=cancelled")}
-        <div>
-          <Button className="w-full h-[85px] text-[18px] rounded-[12px]">
+    <div className="max-w-6xl mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-1 grid grid-cols-2 gap-3 md:flex md:flex-col md:gap-3">
+        {statCard(
+          <CalendarRangeIcon className="h-6 w-6" />,
+          "Upcoming stays",
+          stats.upcoming,
+          "/bookings"
+        )}
+        {statCard(
+          <Users2 className="h-6 w-6" />,
+          "Users",
+          stats.users,
+          "/users"
+        )}
+        {statCard(
+          <ClipboardList className="h-6 w-6" />,
+          "Cancelled bookings",
+          stats.cancelled,
+          "/bookings?filter=cancelled"
+        )}
+
+        <div className="w-full">
+          <Button className="w-full h-[165px] md:h-[85px] text-[18px] rounded-[12px]">
             <a href="/villa-booking" rel="noopener noreferrer">
               Book Entire Villa
             </a>
@@ -144,21 +189,20 @@ export default function Dashboard() {
         </div>
       </div>
 
-
       <div className="md:col-span-2 flex flex-col gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Block / Unblock Dates</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4 sm:items-start">
+            <div className="flex flex-col lg:flex-row gap-6">
               <Calendar
                 mode="range"
                 numberOfMonths={1}
                 selected={range}
                 onSelect={setRange}
                 disabled={disabled}
-                className="rounded-md border md:w-[400px] w-full [--cell-size:32px] bg-white"
+                className="rounded-md border w-full md:w-[400px] [--cell-size:32px] bg-white"
               />
 
               <div className="flex-1 space-y-3">
@@ -168,14 +212,19 @@ export default function Dashboard() {
                     {range?.from ? fmt(range.from) : "—"}
                   </div>
                   <div>
-                    <span className="text-muted-foreground">To:&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    <span className="text-muted-foreground">
+                      To:&nbsp;&nbsp;&nbsp;&nbsp;
+                    </span>
                     {range?.to ? fmt(range.to) : "—"}
                   </div>
                 </div>
 
                 <Button
                   onClick={blockSelected}
-                  disabled={loadingBlk || !range?.from || !range?.to || hasConflict}
+                  disabled={
+                    loadingBlk || !range?.from || !range?.to || hasConflict
+                  }
+                  className="w-full sm:w-auto"
                 >
                   Block selected dates
                 </Button>
@@ -187,14 +236,24 @@ export default function Dashboard() {
                 )}
 
                 <div className="pt-2">
-                  <div className="text-sm font-medium mb-2">Current blackouts</div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="text-sm font-medium mb-2">
+                    Current blackouts
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     {blackouts.length === 0 && (
-                      <span className="text-sm text-muted-foreground">None</span>
+                      <span className="text-sm text-muted-foreground">
+                        None
+                      </span>
                     )}
                     {blackouts.map((b) => (
-                      <Badge key={b._id} variant="secondary" className="gap-2">
-                        {fmt(b.from)} – {fmt(b.to)}
+                      <Badge
+                        key={b._id}
+                        variant="secondary"
+                        className="gap-2 justify-between"
+                      >
+                        <span>
+                          {fmt(b.from)} – {fmt(b.to)}
+                        </span>
                         <button
                           className="ml-1 text-red-600 hover:underline"
                           onClick={() => removeBlk(b._id)}
@@ -210,6 +269,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* Rooms */}
         <Card>
           <CardHeader>
             <CardTitle>Rooms</CardTitle>
@@ -222,8 +282,9 @@ export default function Dashboard() {
               </Button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full text-sm table-auto">
                 <thead className="text-left text-muted-foreground">
                   <tr>
                     <th className="py-2 pr-4">Room</th>
@@ -235,8 +296,8 @@ export default function Dashboard() {
                 <tbody>
                   {rooms.map((r) => (
                     <tr key={r._id} className="border-t">
-                      <td className="py-2 pr-4">
-                        <div className="flex items-center gap-2">
+                      <td className="py-4 pr-4">
+                        <div className="flex items-center gap-4">
                           {r.coverImage ? (
                             <img
                               src={r.coverImage}
@@ -249,20 +310,22 @@ export default function Dashboard() {
                           <div className="font-medium">{r.name}</div>
                         </div>
                       </td>
-                      <td className="py-2 pr-4">
+                      <td className="py-4 pr-4">
                         ₹{Number(r.pricePerNight).toLocaleString("en-IN")}
                       </td>
-                      <td className="py-2 pr-4">
+                      <td className="py-4 pr-4">
                         ₹{Number(r.priceWithMeal).toLocaleString("en-IN")}
                       </td>
-                      <td className="py-2 pr-4">
+                      <td className="py-4 pr-4">
                         <div className="flex items-center gap-2">
                           <Button
                             size="icon"
                             variant="outline"
                             onClick={() =>
                               window.open(
-                                `${import.meta.env.VITE_PUBLIC_URL || ""}/room/${r._id}`,
+                                `${import.meta.env.VITE_PUBLIC_URL || ""}/room/${
+                                  r._id
+                                }`,
                                 "_blank"
                               )
                             }
@@ -272,7 +335,9 @@ export default function Dashboard() {
                           <Button
                             size="icon"
                             variant="outline"
-                            onClick={() => navigate(`/rooms/new?id=${r._id}`)}
+                            onClick={() =>
+                              navigate(`/rooms/new?id=${r._id}`)
+                            }
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -301,9 +366,85 @@ export default function Dashboard() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile cards */}
+            <div className="space-y-3 md:hidden">
+              {rooms.length === 0 && (
+                <div className="py-4 text-center text-muted-foreground text-sm">
+                  No rooms yet.
+                </div>
+              )}
+
+              {rooms.map((r) => (
+                <div
+                  key={r._id}
+                  className="border rounded-2xl p-3 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
+                >
+                  <div className="flex gap-3">
+                    {r.coverImage ? (
+                      <img
+                        src={r.coverImage}
+                        alt=""
+                        className="h-16 w-24 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="h-16 w-24 bg-muted rounded-lg" />
+                    )}
+                    <div className="flex-1 flex flex-col justify-center">
+                      <div className="font-semibold text-sm mb-1">
+                        {r.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Price:{" "}
+                        <span className="font-medium text-black">
+                          ₹{Number(r.pricePerNight).toLocaleString("en-IN")}
+                        </span>
+                        &nbsp;&nbsp; Meal:{" "}
+                        <span className="font-medium text-black">
+                          ₹{Number(r.priceWithMeal).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() =>
+                        window.open(
+                          `${import.meta.env.VITE_PUBLIC_URL || ""}/room/${
+                            r._id
+                          }`,
+                          "_blank"
+                        )
+                      }
+                    >
+                      <Eye className="h-4 w-4 mr-1.5" />
+                      
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => navigate(`/rooms/new?id=${r._id}`)}
+                    >
+                      <Pencil className="h-4 w-4 mr-1.5" />
+                      
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      variant="destructive"
+                      onClick={() => onDeleteRoom(r._id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1.5" />
+                      
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );

@@ -1,20 +1,8 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { updateBookingAdmin, updateUserAdmin } from "../api/admin";
@@ -23,11 +11,11 @@ import html2canvas from "html2canvas";
 import AdminBookingPrint from "./AdminBookingPrint";
 import { createRoot } from "react-dom/client";
 
-
 const GOV_ID_TYPES = ["Aadhaar", "Passport", "Voter ID", "Driving License"];
 
 export default function EditBookingDialog({ open, onOpenChange, booking, reload }) {
   const [saving, setSaving] = useState(false);
+
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -39,6 +27,7 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
 
   useEffect(() => {
     if (!booking) return;
+
     setForm({
       fullName:
         booking?.adminMeta?.fullName ||
@@ -58,6 +47,7 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
           : booking?.amount != null
           ? String(booking.amount)
           : "",
+
       paymentMode: booking?.adminMeta?.paymentMode || "Cash",
     });
   }, [booking, open]);
@@ -65,80 +55,75 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
   if (!booking) return null;
 
   const handleSave = async () => {
-  try {
-    setSaving(true);
+    try {
+      setSaving(true);
 
-    const payload = {
-      ...form,
-      amountPaid: form.amountPaid === "" ? null : Number(form.amountPaid),
-    };
+      const payload = {
+        adminMeta: {
+          fullName: form.fullName,
+          phone: form.phone,
+          govIdType: form.govIdType,
+          govIdNumber: form.govIdNumber,
+          amountPaid: form.amountPaid ? Number(form.amountPaid) : null,
+          paymentMode: form.paymentMode,
+        },
 
-    // update booking
-    await updateBookingAdmin(booking._id, payload);
+        amount: form.amountPaid ? Number(form.amountPaid) : booking.amount,
+      };
 
-    // update user details if name or phone changed
-    if (booking.user?._id) {
-      await updateUserAdmin(booking.user._id, {
-        name: form.fullName,
-        phone: form.phone,
-      });
+      await updateBookingAdmin(booking._id, payload);
+
+      if (booking.user?._id) {
+        await updateUserAdmin(booking.user._id, {
+          name: form.fullName,
+          phone: form.phone,
+        });
+      }
+
+      toast.success("Booking updated");
+      reload?.();
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Update failed");
+    } finally {
+      setSaving(false);
     }
+  };
 
-    toast.success("Booking & User updated");
-    reload?.();
-    onOpenChange(false);
-  } catch (e) {
-    toast.error(e?.response?.data?.message || "Update failed");
-  } finally {
-    setSaving(false);
-  }
-};
+  const handlePrint = async () => {
+    const container = document.createElement("div");
+    container.style.position = "absolute";
+    container.style.left = "-9999px";
+    document.body.appendChild(container);
 
- const handlePrint = async () => {
-  // Create a temporary container
-  const container = document.createElement("div");
-  container.style.position = "absolute";
-  container.style.left = "-9999px";
-  document.body.appendChild(container);
-
-  // Render our JSX template into it
-  const root = createRoot(container);
-  root.render(<AdminBookingPrint booking={booking} form={form} />);
-
-  // Wait for rendering
-  await new Promise((r) => setTimeout(r, 300));
-
-  // Capture as canvas
-  const canvas = await html2canvas(container.firstChild, {
-    scale: 2,
-    useCORS: true,
-    scrollY: -window.scrollY,
-  });
-
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF("p", "pt", "a4");
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-  pdf.save(`booking_${booking._id}.pdf`);
-
-  // Cleanup
-  root.unmount();
-  document.body.removeChild(container);
-};
+    const root = createRoot(container);
+    root.render(<AdminBookingPrint booking={booking} adminMeta={form} />);
 
 
+    await new Promise((r) => setTimeout(r, 300));
+
+    const canvas = await html2canvas(container.firstChild, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "pt", "a4");
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`booking_${booking._id}.pdf`);
+
+    root.unmount();
+    document.body.removeChild(container);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl"> {/* Increased width */}
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit Booking</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Full Name */}
           <div>
             <Label>Full Name</Label>
             <Input
@@ -147,7 +132,6 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             />
           </div>
 
-          {/* Phone */}
           <div>
             <Label>Phone</Label>
             <Input
@@ -156,7 +140,6 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             />
           </div>
 
-          {/* Gov ID Type */}
           <div>
             <Label>Government ID Type</Label>
             <Select
@@ -176,7 +159,6 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             </Select>
           </div>
 
-          {/* Gov ID Number */}
           <div>
             <Label>Government ID Number</Label>
             <Input
@@ -187,58 +169,41 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             />
           </div>
 
-          {/* Check-in */}
           <div>
             <Label>Check-in</Label>
-            <Input
-              value={new Date(booking.startDate).toLocaleDateString()}
-              disabled
-            />
+            <Input value={new Date(booking.startDate).toLocaleDateString()} disabled />
           </div>
 
-          {/* Check-out */}
           <div>
             <Label>Check-out</Label>
-            <Input
-              value={new Date(booking.endDate).toLocaleDateString()}
-              disabled
-            />
+            <Input value={new Date(booking.endDate).toLocaleDateString()} disabled />
           </div>
 
-          {/* Guests */}
           <div>
             <Label>Guests</Label>
             <Input value={String(booking.guests ?? "")} disabled />
           </div>
 
-          {/* Room Assigned */}
           <div>
             <Label>Room Assigned</Label>
             <Input value={booking.room?.name || "Entire Villa"} disabled />
           </div>
 
-          {/* Amount Paid */}
           <div>
             <Label>Amount Paid (₹)</Label>
             <Input
               type="number"
               inputMode="decimal"
               value={form.amountPaid}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, amountPaid: e.target.value }))
-              }
-              disabled
+              onChange={(e) => setForm((f) => ({ ...f, amountPaid: e.target.value }))}
             />
           </div>
 
-          {/* Payment Mode */}
           <div>
             <Label>Payment Mode</Label>
             <Select
               value={form.paymentMode}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, paymentMode: v }))
-              }
+              onValueChange={(v) => setForm((f) => ({ ...f, paymentMode: v }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select mode" />
@@ -247,6 +212,7 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
                 <SelectItem value="Cash">Cash</SelectItem>
                 <SelectItem value="UPI">UPI</SelectItem>
                 <SelectItem value="Card">Card</SelectItem>
+                <SelectItem value="Online">Online</SelectItem>
               </SelectContent>
             </Select>
           </div>

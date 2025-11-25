@@ -26,8 +26,11 @@ export const useAuth = create((set) => ({
 
 
   logout: async () => {
-    try { await adminLogout(); } catch { }
-    set({ user: null });
-    sessionStorage.removeItem("adminUser");
-  },
+  try { await adminLogout(); } catch {}
+  set({ user: null });
+  localStorage.removeItem("admin_token");
+  localStorage.removeItem("admin_user");
+  sessionStorage.removeItem("admin_user"); 
+},
+
 }));

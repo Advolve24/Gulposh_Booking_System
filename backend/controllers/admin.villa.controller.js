@@ -3,6 +3,7 @@ import crypto from "crypto";
 import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
 import User from "../models/User.js";
+import bcrypt from "bcryptjs";
 
 const rp = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -47,7 +48,7 @@ export const createVillaOrder = async (req, res) => {
         email: contactEmail,
         phone: contactPhone,
         dob: dob ? new Date(dob) : null,
-        password: Math.random().toString(36).slice(-8),
+        passwordHash: await bcrypt.hash(Math.random().toString(36).slice(-8), 10),
       });
       console.log("👤 New user created by admin:", user._id);
     }

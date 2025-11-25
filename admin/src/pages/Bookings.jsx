@@ -31,7 +31,7 @@ export default function Bookings() {
   const [editOpen, setEditOpen] = useState(false);
   const location = useLocation();
 
-  const [status, setStatus] = useState(""); // initially blank until URL parsed
+  const [status, setStatus] = useState(""); 
   const [q, setQ] = useState("");
   const [range, setRange] = useState();
 
@@ -39,12 +39,10 @@ export default function Bookings() {
   const [selected, setSelected] = useState(null);
   const [cancelling, setCancelling] = useState(false);
 
-  // 🔹 Load rooms on mount
   useEffect(() => {
     listRooms().then(setRooms).catch(() => setRooms([]));
   }, []);
 
-  // 🔹 Read ?filter=cancelled or ?filter=pending etc. from URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const f = params.get("filter");
@@ -54,13 +52,11 @@ export default function Bookings() {
     else setStatus("all");
   }, [location.search]);
 
-  // 🔹 Fetch bookings when filters change (after status is ready)
   useEffect(() => {
-    if (!status) return; // wait until parsed from URL
+    if (!status) return; 
     load();
   }, [status, roomId, range, q]);
 
-  // 🔹 API call
   const load = async () => {
     setLoading(true);
     try {
@@ -217,6 +213,8 @@ export default function Bookings() {
               <div><span className="text-muted-foreground">Dates:</span> {fmt(selected.startDate)} → {fmt(selected.endDate)}</div>
               <div><span className="text-muted-foreground">Nights:</span> {diffNightsInclusive(selected.startDate, selected.endDate)}</div>
               <div><span className="text-muted-foreground">Guests:</span> {selected.guests ?? "—"}</div>
+              <div><span className="text-muted-foreground">Amount Paid:</span> ₹{selected.amount ?? "—"}</div>
+
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">With meal:</span>
                 {selected.withMeal ? (

@@ -13,6 +13,7 @@ const AdminInvoiceTemplate = forwardRef(({ booking, adminMeta }, ref) => {
     const taxPercent = 10;
     const taxAmount = ((subTotal - discountAmount) * taxPercent) / 100;
     const grandTotal = subTotal - discountAmount + taxAmount;
+    const safe = (v1, v2, v3 = "—") => v1 || v2 || v3;
 
     return (
         <div
@@ -39,24 +40,22 @@ const AdminInvoiceTemplate = forwardRef(({ booking, adminMeta }, ref) => {
                     <ul className="list-disc list-inside text-gray-700 text-sm leading-relaxed space-y-1">
                         <li>
                             <span className="font-medium text-gray-800">Full Name:</span>{" "}
-                            {adminMeta?.fullName || booking.contactName || "-"}
+                            {safe(adminMeta?.fullName, booking.contactName)}
                         </li>
                         <li>
                             <span className="font-medium text-gray-800">Phone Number:</span>{" "}
-                            {adminMeta?.phone || booking.contactPhone || "-"}
+                            {safe(adminMeta?.phone, booking.contactPhone)}
                         </li>
                         <li>
                             <span className="font-medium text-gray-800">Government ID Type:</span>{" "}
-                            {adminMeta?.govIdType || "—"}
+                            {safe(adminMeta?.govIdType, booking.adminMeta?.govIdType)}
                         </li>
                         <li>
                             <span className="font-medium text-gray-800">Government ID Number:</span>{" "}
-                            {adminMeta?.govIdNumber || "—"}
+                            {safe(adminMeta?.govIdNumber, booking.adminMeta?.govIdNumber)}
                         </li>
                     </ul>
                 </div>
-
-
             </div>
 
             {/* Stay Info */}
@@ -95,11 +94,11 @@ const AdminInvoiceTemplate = forwardRef(({ booking, adminMeta }, ref) => {
                     <ul className="list-disc list-inside text-gray-700 text-sm leading-relaxed space-y-1">
                         <li>
                             <span className="font-medium text-gray-800">Amount Paid:</span>{" "}
-                            ₹{adminMeta?.amountPaid ?? booking.amount ?? 0}
+                            ₹{safe(adminMeta?.amountPaid, booking.amount, 0)}
                         </li>
                         <li>
                             <span className="font-medium text-gray-800">Payment Mode:</span>{" "}
-                            {adminMeta?.paymentMode || booking.paymentProvider || "Cash"}
+                            {safe(adminMeta?.paymentMode, booking.paymentProvider, "Cash")}
                         </li>
                         <li>
                             <span className="font-medium text-gray-800">Transaction ID:</span>{" "}
