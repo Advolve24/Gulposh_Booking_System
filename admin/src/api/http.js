@@ -7,8 +7,22 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+/* -------------------------
+   REQUEST INTERCEPTOR
+------------------------- */
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("admin_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 let isRedirecting = false;
 
+/* -------------------------
+   RESPONSE INTERCEPTOR
+------------------------- */
 api.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -21,8 +35,10 @@ api.interceptors.response.use(
       const { setUser } = useAuth.getState();
       setUser(null);
 
-      sessionStorage.removeItem("adminUser");
-      localStorage.removeItem("adminUser");
+      // Clear admin auth
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin_user");
+      sessionStorage.removeItem("admin_user");
 
       if (window.location.pathname !== "/login") {
         toast.error("Session expired. Please log in again.");

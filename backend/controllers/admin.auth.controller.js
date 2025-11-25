@@ -23,7 +23,15 @@ export const adminLogin = async (req, res) => {
 
   setSessionCookie(res, "admin_token", token, { path: "/api/admin", persistent: !!remember, days: 7 });
 
-  res.json({ id: user._id, name: user.name, email: user.email, isAdmin: true });
+  res.json({
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      isAdmin: true
+    }
+  });
 };
 
 export const adminLogout = (_req, res) => {
