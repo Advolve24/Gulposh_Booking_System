@@ -108,9 +108,9 @@ export default function Bookings() {
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Total</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{totals.total}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Confirmed</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{totals.confirmed}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Cancelled</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{totals.cancelled}</CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-[#818181]">Total</CardTitle></CardHeader><CardContent className="text-3xl font-semibold">{totals.total}</CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-[#818181]">Confirmed</CardTitle></CardHeader><CardContent className="text-3xl font-semibold">{totals.confirmed}</CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-[#818181]">Cancelled</CardTitle></CardHeader><CardContent className="text-3xl font-semibold">{totals.cancelled}</CardContent></Card>
       </div>
 
       {/* Table */}
@@ -192,10 +192,10 @@ export default function Bookings() {
                           </Button>
                         </DropdownMenuTrigger>
 
-                        <DropdownMenuContent align="end" className="w-32">
+                        <DropdownMenuContent align="end" className="w-[200px]">
                           <DropdownMenuItem
                             onClick={() => onOpenView(b)}
-                            className="cursor-pointer"
+                            className="cursor-pointer mt-1"
                           >
                             View
                           </DropdownMenuItem>
@@ -205,7 +205,7 @@ export default function Bookings() {
                               setSelected(b);
                               setEditOpen(true);
                             }}
-                            className="cursor-pointer"
+                            className="cursor-pointer mt-2"
                           >
                             Edit
                           </DropdownMenuItem>
@@ -215,7 +215,7 @@ export default function Bookings() {
                               setSelected(b);
                               onCancel();
                             }}
-                            className={`cursor-pointer text-red-600 ${b.status === "cancelled" ? "opacity-50 pointer-events-none" : ""
+                            className={`cursor-pointer text-red-600 mt-2 ${b.status === "cancelled" ? "opacity-50 pointer-events-none" : ""
                               }`}
                           >
                             Cancel

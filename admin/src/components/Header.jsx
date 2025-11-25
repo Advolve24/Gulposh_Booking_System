@@ -72,7 +72,7 @@ export default function Header() {
                 <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-[300px]">
               <DropdownMenuLabel className="text-xs text-muted-foreground">
                 Signed in as
               </DropdownMenuLabel>
@@ -81,20 +81,20 @@ export default function Header() {
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/dashboard">Dashboard</Link>
+                <Link to="/dashboard" className="mt-2">Dashboard</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/rooms/new">Add Room</Link>
+                <Link to="/rooms/new" className="mt-2">Add Room</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/bookings">Bookings</Link>
+                <Link to="/bookings" className="mt-2">Bookings</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/users">Users</Link>
+                <Link to="/users" className="mt-2">Users</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/logout" className="text-red-600">
+                <Link to="/logout" className="text-red-600 mt-2">
                   Logout
                 </Link>
               </DropdownMenuItem>
