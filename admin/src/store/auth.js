@@ -17,11 +17,13 @@ export const useAuth = create((set) => ({
   },
 
   login: async (email, password) => {
-    const { user, token } = await adminLogin(email, password);
-    localStorage.setItem("admin_token", token);
-    set({ user });
-    return me;
-  },
+  const { user, token } = await adminLogin(email, password);
+  localStorage.setItem("admin_token", token);
+  localStorage.setItem("admin_user", JSON.stringify(user));
+  set({ user });
+  return user;   
+},
+
 
   logout: async () => {
     try { await adminLogout(); } catch { }

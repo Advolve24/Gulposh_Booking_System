@@ -4,12 +4,10 @@ import { useAuth } from "../store/auth";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
-  withCredentials: true,
+  withCredentials: false,
 });
 
-/* -------------------------
-   REQUEST INTERCEPTOR
-------------------------- */
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("admin_token");
   if (token) {
@@ -20,9 +18,7 @@ api.interceptors.request.use((config) => {
 
 let isRedirecting = false;
 
-/* -------------------------
-   RESPONSE INTERCEPTOR
-------------------------- */
+
 api.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -35,7 +31,6 @@ api.interceptors.response.use(
       const { setUser } = useAuth.getState();
       setUser(null);
 
-      // Clear admin auth
       localStorage.removeItem("admin_token");
       localStorage.removeItem("admin_user");
       sessionStorage.removeItem("admin_user");
