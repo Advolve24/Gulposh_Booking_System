@@ -1,4 +1,3 @@
-// admin/src/pages/RoomsNew.jsx
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -14,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import  MultiSelectDropdown  from "../components/MultiSelectDropdown";
 
 function Chip({ text, onRemove }) {
   return (
@@ -25,6 +25,38 @@ function Chip({ text, onRemove }) {
     </span>
   );
 }
+
+export const SERVICE_OPTIONS = [
+  "Wifi",
+  "AC",
+  "Parking",
+  "Pool",
+  "TV",
+  "Breakfast",
+  "Heater",
+  "Kitchen",
+  "Balcony",
+  "Mountain View",
+  "Sea View",
+  "Garden View",
+];
+export const ACCOM_OPTIONS = [
+  "2 Guests",
+  "3 Guests",
+  "4 Guests",
+  "5 Guests",
+  "6 Guests",
+  "Double Bed",
+  "Queen Bed",
+  "King Bed",
+  "Private Bathroom",
+  "1 BHK Villa",
+  "2 BHK Villa",
+  "3 BHK Villa",
+];
+
+
+
 
 export default function RoomsNew() {
   const [loading, setLoading] = useState(false);
@@ -39,13 +71,11 @@ export default function RoomsNew() {
   const [priceWithMeal, setPriceWithMeal] = useState("");
   const [description, setDescription] = useState("");
 
-  // cover: either a URL string (existing) OR a File
-  const [coverImage, setCoverImage] = useState(""); // existing URL (edit)
-  const [coverFile, setCoverFile] = useState(null); // newly selected file
+  const [coverImage, setCoverImage] = useState("");
+  const [coverFile, setCoverFile] = useState(null);
 
-  // gallery:
-  const [galleryUrls, setGalleryUrls] = useState([]); // existing URLs (edit)
-  const [galleryFiles, setGalleryFiles] = useState([]); // newly selected files
+  const [galleryUrls, setGalleryUrls] = useState([]);
+  const [galleryFiles, setGalleryFiles] = useState([]);
 
   const [services, setServices] = useState([]);
   const [serviceInput, setServiceInput] = useState("");
@@ -92,7 +122,6 @@ export default function RoomsNew() {
     const f = e.target.files?.[0];
     if (f) {
       setCoverFile(f);
-      // if picking a new file, ignore old URL preview
       setCoverImage("");
     }
   };
@@ -118,19 +147,16 @@ export default function RoomsNew() {
     try {
       setUploading(true);
 
-      // 1) Upload cover if needed
       let coverUrl = coverImage;
       if (coverFile instanceof File) {
         coverUrl = await uploadImage(coverFile);
       }
 
-      // 2) Upload any new gallery files
       let newGalleryUrls = [];
       if (galleryFiles.length > 0) {
         newGalleryUrls = await uploadImages(galleryFiles);
       }
 
-      // 3) Compose payload
       const payload = {
         name: name.trim(),
         pricePerNight: Number(pricePerNight) || 0,
@@ -160,7 +186,6 @@ export default function RoomsNew() {
             err?.response?.data?.message || err.message || "Failed to create room",
         });
 
-        // Reset after create
         setName("");
         setPricePerNight("");
         setPriceWithMeal("");
@@ -202,7 +227,7 @@ export default function RoomsNew() {
         success: "Room deleted",
         error: (err) => err?.response?.data?.message || "Delete failed",
       });
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -260,64 +285,64 @@ export default function RoomsNew() {
 
         {/* Cover image upload */}
         <div className="md:flex justify-between md:col-span-3">
-        <div className="md:w-[49%]">
-          <Label>Cover image</Label>
-          <div className="mt-2 flex flex-col sm:flex-row items-start gap-4">
-            <Input type="file" accept="image/*" onChange={onCoverPick} className="" />
-            {(coverFile || coverImage) && (
-              <img
-                src={coverFile ? URL.createObjectURL(coverFile) : coverImage}
-                alt="Cover preview"
-                className="h-24 w-40 object-cover rounded"
-              />
-            )}
-            {(coverFile || coverImage) && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setCoverFile(null);
-                  setCoverImage("");
-                }}
-              >
-                Remove
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Gallery upload */}
-        <div className="md:w-[49%]">
-          <Label>Gallery images</Label>
-          <Input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={onGalleryPick}
-            className="mt-2"
-          />
-          {/* Existing gallery URLs */}
-          {galleryUrls.length > 0 && (
-            <div className="mt-3">
-              <div className="text-sm mb-2">Existing images</div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                {galleryUrls.map((url) => (
-                  <div key={url} className="relative group">
-                    <img src={url} alt="" className="h-24 w-full object-cover rounded" />
-                    <button
-                      type="button"
-                      onClick={() => removeGalleryUrl(url)}
-                      className="absolute top-1 right-1 rounded bg-black/60 text-white text-xs px-1.5 py-0.5 opacity-0 group-hover:opacity-100"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
+          <div className="md:w-[49%]">
+            <Label>Cover image</Label>
+            <div className="mt-2 flex flex-col sm:flex-row items-start gap-4">
+              <Input type="file" accept="image/*" onChange={onCoverPick} className="" />
+              {(coverFile || coverImage) && (
+                <img
+                  src={coverFile ? URL.createObjectURL(coverFile) : coverImage}
+                  alt="Cover preview"
+                  className="h-24 w-40 object-cover rounded"
+                />
+              )}
+              {(coverFile || coverImage) && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setCoverFile(null);
+                    setCoverImage("");
+                  }}
+                >
+                  Remove
+                </Button>
+              )}
             </div>
-          )}
+          </div>
 
-      </div>
+          {/* Gallery upload */}
+          <div className="md:w-[49%]">
+            <Label>Gallery images</Label>
+            <Input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={onGalleryPick}
+              className="mt-2"
+            />
+            {/* Existing gallery URLs */}
+            {galleryUrls.length > 0 && (
+              <div className="mt-3">
+                <div className="text-sm mb-2">Existing images</div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                  {galleryUrls.map((url) => (
+                    <div key={url} className="relative group">
+                      <img src={url} alt="" className="h-24 w-full object-cover rounded" />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryUrl(url)}
+                        className="absolute top-1 right-1 rounded bg-black/60 text-white text-xs px-1.5 py-0.5 opacity-0 group-hover:opacity-100"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
 
           {/* Newly selected files */}
           {galleryFiles.length > 0 && (
@@ -349,44 +374,51 @@ export default function RoomsNew() {
         <div className="md:col-span-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>Room services</Label>
-              <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                <Input
-                  value={serviceInput}
-                  onChange={(e) => setServiceInput(e.target.value)}
-                  onKeyDown={onServiceKey}
-                  placeholder="Type a service and press Enter"
+              <div>
+                <MultiSelectDropdown
+                  label="Room Services"
+                  options={SERVICE_OPTIONS}
+                  selected={services}
+                  onSelect={(opt) => {
+                    setServices((prev) =>
+                      prev.includes(opt)
+                        ? prev.filter((x) => x !== opt)
+                        : [...prev, opt]
+                    );
+                  }}
                 />
-                <Button type="button" onClick={addService} variant="secondary">
-                  Add
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {services.map((s) => (
-                  <Chip key={s} text={s} onRemove={() => removeService(s)} />
-                ))}
+
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {services.map((s) => (
+                    <Chip key={s} text={s} onRemove={() => removeService(s)} />
+                  ))}
+                </div>
               </div>
             </div>
 
             <div>
-              <Label>Accommodation</Label>
-              <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                <Input
-                  value={accomInput}
-                  onChange={(e) => setAccomInput(e.target.value)}
-                  onKeyDown={onAccomKey}
-                  placeholder="Type an accommodation and press Enter"
+              <div>
+                <MultiSelectDropdown
+                  label="Accommodation"
+                  options={ACCOM_OPTIONS}
+                  selected={accoms}
+                  onSelect={(opt) => {
+                    setAccoms((prev) =>
+                      prev.includes(opt)
+                        ? prev.filter((x) => x !== opt)
+                        : [...prev, opt]
+                    );
+                  }}
                 />
-                <Button type="button" onClick={addAccom} variant="secondary">
-                  Add
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {accoms.map((a) => (
-                  <Chip key={a} text={a} onRemove={() => removeAccom(a)} />
-                ))}
+
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {accoms.map((a) => (
+                    <Chip key={a} text={a} onRemove={() => removeAccom(a)} />
+                  ))}
+                </div>
               </div>
             </div>
+
           </div>
         </div>
 
@@ -408,12 +440,12 @@ export default function RoomsNew() {
             {uploading
               ? "Uploading images…"
               : loading
-              ? isEdit
-                ? "Updating..."
-                : "Creating..."
-              : isEdit
-              ? "Update Room"
-              : "Create Room"}
+                ? isEdit
+                  ? "Updating..."
+                  : "Creating..."
+                : isEdit
+                  ? "Update Room"
+                  : "Create Room"}
           </Button>
         </div>
       </form>

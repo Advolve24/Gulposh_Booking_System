@@ -344,6 +344,7 @@ export default function Dashboard() {
                           <Button
                             size="icon"
                             variant="destructive"
+                            className="bg-[#C70000]" 
                             onClick={() => onDeleteRoom(r._id)}
                           >
                             <Trash2 className="h-4 w-4" />
