@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { getStats, listBlackouts, addBlackout, removeBlackout, listRooms,deleteRoom,} from "../api/admin";
+import { getStats, listBlackouts, addBlackout, removeBlackout, listRooms, deleteRoom, } from "../api/admin";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { CalendarRangeIcon, Users2, BedSingle, ClipboardList,
-  Trash2, Eye, Pencil} from "lucide-react";
+import {
+  CalendarRangeIcon, Users2, BedSingle, ClipboardList,
+  Trash2, Eye, Pencil
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toDateOnlyUTC, todayDateOnlyUTC, toDateOnlyFromAPIUTC} from "../lib/date";
+import { toDateOnlyUTC, todayDateOnlyUTC, toDateOnlyFromAPIUTC } from "../lib/date";
 
 const API_ROOT = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -321,14 +323,7 @@ export default function Dashboard() {
                           <Button
                             size="icon"
                             variant="outline"
-                            onClick={() =>
-                              window.open(
-                                `${import.meta.env.VITE_PUBLIC_URL || ""}/room/${
-                                  r._id
-                                }`,
-                                "_blank"
-                              )
-                            }
+                            onClick={() => navigate(`/rooms/view/${r._id}`)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -344,7 +339,7 @@ export default function Dashboard() {
                           <Button
                             size="icon"
                             variant="destructive"
-                            className="bg-[#C70000]" 
+                            className="bg-[#C70000]"
                             onClick={() => onDeleteRoom(r._id)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -414,15 +409,14 @@ export default function Dashboard() {
                       variant="outline"
                       onClick={() =>
                         window.open(
-                          `${import.meta.env.VITE_PUBLIC_URL || ""}/room/${
-                            r._id
+                          `${import.meta.env.VITE_PUBLIC_URL || ""}/room/${r._id
                           }`,
                           "_blank"
                         )
                       }
                     >
                       <Eye className="h-4 w-4 mr-1.5" />
-                      
+
                     </Button>
                     <Button
                       className="flex-1"
@@ -430,7 +424,7 @@ export default function Dashboard() {
                       onClick={() => navigate(`/rooms/new?id=${r._id}`)}
                     >
                       <Pencil className="h-4 w-4 mr-1.5" />
-                      
+
                     </Button>
                     <Button
                       className="flex-1"
@@ -438,7 +432,7 @@ export default function Dashboard() {
                       onClick={() => onDeleteRoom(r._id)}
                     >
                       <Trash2 className="h-4 w-4 mr-1.5" />
-                      
+
                     </Button>
                   </div>
                 </div>

@@ -52,7 +52,7 @@ export default function RoomCard({ room, range, guests }) {
         </div>
       </Link>
 
-      <div className="px-1 py-4 space-y-3">
+      <div className="px-1 py-0 mt-4 space-y-3">
         <div className="flex items-start justify-between">
           <Link to={`/room/${room._id}${search}`} state={linkState}>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -70,8 +70,8 @@ export default function RoomCard({ room, range, guests }) {
         </p>
 
         <div className="flex items-center justify-between">
-          <span className="text-gray-900 text-sm mt-3 bg-gray-200 px-3 py-[10px] w-[38%] rounded-[8px]">
-            Upto {maxGuestsCap} guests
+          <span className="text-gray-900 text-sm mt-3 border border-gray/500 px-3 py-[10px] w-[38%] rounded-[8px]">
+            Upto {maxGuestsCap} Guests
           </span>
           <Link to={`/room/${room._id}${search}`} state={linkState} className="w-[60%]">
             <button className="w-full bg-primary text-white font-medium py-2 rounded-[8px] mt-3 hover:bg-primary-100 transition">

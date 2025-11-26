@@ -11,6 +11,7 @@ import Users from "./pages/Users";
 import Bookings from "./pages/Bookings";
 import RoomPage from "./pages/RoomPage";
 import VillaBookingForm from "./pages/VillaBookingForm";
+import AdminRoomView from "./pages/RoomView";
 
 function InitAuthWatcher({ children }) {
   const { init, ready } = useAuth();
@@ -59,6 +60,7 @@ export default function App() {
               <Route path="/bookings" element={<Bookings />} />
               <Route path="/room/:id" element={<RoomPage />} />
               <Route path="/villa-booking" element={<VillaBookingForm />} />
+              <Route path="/rooms/view/:id" element={<AdminRoomView />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </>
