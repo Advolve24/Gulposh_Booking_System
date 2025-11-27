@@ -3,11 +3,27 @@ import { useLocation } from "react-router-dom";
 import { listBookingsAdmin, cancelBookingAdmin, listRooms } from "../api/admin.js";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { CheckCircle, XCircle } from "lucide-react";
@@ -15,19 +31,55 @@ import EditBookingDialog from "@/components/EditBookingDialog.jsx";
 
 const fmt = (d) => (d ? format(new Date(d), "dd MMM yy") : "—");
 const diffNightsInclusive = (from, to) => {
-  const a = new Date(from), b = new Date(to);
-  a.setHours(0, 0, 0, 0); b.setHours(0, 0, 0, 0);
+  const a = new Date(from),
+    b = new Date(to);
+  a.setHours(0, 0, 0, 0);
+  b.setHours(0, 0, 0, 0);
   return Math.max(1, Math.round((b - a) / 86400000) + 1);
 };
 
 const StatusBadge = ({ status }) => {
-  const map = { cancelled: "destructive", confirmed: "default", pending: "secondary" };
-  return <Badge variant={map[status] || "outline"} className="capitalize">{status || "unknown"}</Badge>;
+  if (status === "confirmed") {
+    return (
+      <span
+        className="px-3 py-1 rounded text-white text-xs font-semibold capitalize"
+        style={{ backgroundColor: "#4BB543" }}
+      >
+        confirmed
+      </span>
+    );
+  }
+
+  if (status === "cancelled") {
+    return (
+      <span className="px-3 py-1 rounded bg-red-600 text-white text-xs font-semibold capitalize">
+        cancelled
+      </span>
+    );
+  }
+
+  if (status === "pending") {
+    return (
+      <span className="px-3 py-1 rounded bg-yellow-500 text-black text-xs font-semibold capitalize">
+        pending
+      </span>
+    );
+  }
+
+  return (
+    <span className="px-3 py-1 rounded bg-gray-300 text-black text-xs font-semibold capitalize">
+      {status || "unknown"}
+    </span>
+  );
 };
 
 export default function Bookings() {
   const [rooms, setRooms] = useState([]);
   const [roomId, setRoomId] = useState("all");
+
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(10);
+
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -41,8 +93,12 @@ export default function Bookings() {
   const [selected, setSelected] = useState(null);
   const [cancelling, setCancelling] = useState(false);
 
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+
   useEffect(() => {
-    listRooms().then(setRooms).catch(() => setRooms([]));
+    listRooms()
+      .then(setRooms)
+      .catch(() => setRooms([]));
   }, []);
 
   useEffect(() => {
@@ -71,7 +127,8 @@ export default function Bookings() {
         params.to = new Date(range.to).toISOString();
       }
       const data = await listBookingsAdmin(params);
-      setBookings(Array.isArray(data) ? data : (data?.items || []));
+      setBookings(Array.isArray(data) ? data : data?.items || []);
+      setPage(1); 
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to load bookings");
     } finally {
@@ -81,22 +138,41 @@ export default function Bookings() {
 
   const totals = useMemo(() => {
     const t = bookings.length;
-    const cancelled = bookings.filter(b => b.status === "cancelled").length;
-    const confirmed = bookings.filter(b => b.status !== "cancelled").length;
+    const cancelled = bookings.filter((b) => b.status === "cancelled").length;
+    const confirmed = bookings.filter((b) => b.status !== "cancelled").length;
     return { total: t, confirmed, cancelled };
   }, [bookings]);
 
-  const onOpenView = (b) => { setSelected(b); setOpen(true); };
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(bookings.length / perPage)),
+    [bookings.length, perPage]
+  );
 
-  const onCancel = async () => {
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const paginatedBookings = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return bookings.slice(start, start + perPage);
+  }, [bookings, page, perPage]);
+
+  const onOpenView = (b) => {
+    setSelected(b);
+    setOpen(true);
+  };
+
+  const onCancelConfirmed = async () => {
     if (!selected?._id) return;
-    if (!confirm("Cancel this booking?")) return;
     setCancelling(true);
     try {
       await cancelBookingAdmin(selected._id);
       toast.success("Booking cancelled");
       setOpen(false);
-      load();
+      setConfirmCancelOpen(false);
+      await load();
     } catch (e) {
       toast.error(e?.response?.data?.message || "Cancel failed");
     } finally {
@@ -104,13 +180,39 @@ export default function Bookings() {
     }
   };
 
+  const handleStatusChange = (v) => {
+    setStatus(v);
+    setPage(1);
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-[#818181]">Total</CardTitle></CardHeader><CardContent className="text-3xl font-semibold">{totals.total}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-[#818181]">Confirmed</CardTitle></CardHeader><CardContent className="text-3xl font-semibold">{totals.confirmed}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-[#818181]">Cancelled</CardTitle></CardHeader><CardContent className="text-3xl font-semibold">{totals.cancelled}</CardContent></Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-[#818181]">Total</CardTitle>
+          </CardHeader>
+          <CardContent className="text-3xl font-semibold">
+            {totals.total}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-[#818181]">Confirmed</CardTitle>
+          </CardHeader>
+          <CardContent className="text-3xl font-semibold">
+            {totals.confirmed}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-[#818181]">Cancelled</CardTitle>
+          </CardHeader>
+          <CardContent className="text-3xl font-semibold">
+            {totals.cancelled}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Table */}
@@ -120,8 +222,10 @@ export default function Bookings() {
           <div className="flex justify-end w-[70%] gap-2">
             <div className="w-[60%] md:w-[40%] -mt-6">
               <label className="text-sm block mb-1">Status</label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+              <Select value={status} onValueChange={handleStatusChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
@@ -151,48 +255,79 @@ export default function Bookings() {
               </tr>
             </thead>
             <tbody>
-              {bookings.map(b => {
+              {paginatedBookings.map((b) => {
                 const nights = diffNightsInclusive(b.startDate, b.endDate);
                 return (
                   <tr key={b._id} className="border-t">
                     <td className="py-2 pr-4">
                       <div className="flex flex-col">
-                        <span className="font-medium">{b.user?.name || b.guestName || "—"}</span>
-                        <span className="text-xs text-muted-foreground">{b.user?.email || b.guestEmail || "—"}</span>
+                        <span className="font-medium">
+                          {b.user?.name || b.guestName || "—"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {b.user?.email || b.guestEmail || "—"}
+                        </span>
                       </div>
                     </td>
-                    <td className="py-2 pr-4 min-w-[120px] sm:min-w-0 whitespace-nowrap">{b.room?.name || b.roomName || (b.isVilla ? "-" : "Entire Villa")}</td>
+                    <td className="py-2 pr-4 min-w-[120px] sm:min-w-0 whitespace-nowrap">
+                      {b.room?.name ||
+                        b.roomName ||
+                        (b.isVilla ? "-" : "Entire Villa")}
+                    </td>
                     <td className="py-2 pr-4 min-w-[120px] sm:min-w-0 whitespace-nowrap">
                       {fmt(b.startDate)} → {fmt(b.endDate)}
                     </td>
                     <td className="py-2 pr-4">{nights}</td>
                     <td className="py-2 pr-4">{b.guests ?? "—"}</td>
                     <td className="py-2 pr-4">
+                      {/* mobile dot */}
                       <div className="sm:hidden flex items-center gap-2">
                         <span
                           className={`
-        inline-block w-2 h-2 rounded-full
-        ${b.status === "confirmed" ? "bg-green-600 w-3 h-3" : ""}
-        ${b.status === "pending" ? "bg-yellow-500" : ""}
-        ${b.status === "cancelled" ? "bg-red-600" : ""}
-      `}
+                            inline-block w-2 h-2 rounded-full
+                            ${
+                              b.status === "confirmed"
+                                ? "bg-[#4BB543] w-3 h-3"
+                                : ""
+                            }
+                            ${
+                              b.status === "pending"
+                                ? "bg-yellow-500"
+                                : ""
+                            }
+                            ${
+                              b.status === "cancelled"
+                                ? "bg-red-600"
+                                : ""
+                            }
+                          `}
                         ></span>
                       </div>
+                      {/* desktop badge */}
                       <div className="hidden sm:block">
                         <StatusBadge status={b.status} />
                       </div>
                     </td>
 
-                    <td className="py-2 pr-4 min-w-[100px] sm:min-w-0 whitespace-nowrap">{fmt(b.createdAt)}</td>
+                    <td className="py-2 pr-4 min-w-[100px] sm:min-w-0 whitespace-nowrap">
+                      {fmt(b.createdAt)}
+                    </td>
                     <td className="py-2 pr-4 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0"
+                          >
                             <MoreHorizontal className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
 
-                        <DropdownMenuContent align="end" className="w-[200px]">
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-[200px]"
+                        >
                           <DropdownMenuItem
                             onClick={() => onOpenView(b)}
                             className="cursor-pointer mt-1"
@@ -213,10 +348,13 @@ export default function Bookings() {
                           <DropdownMenuItem
                             onClick={() => {
                               setSelected(b);
-                              onCancel();
+                              setConfirmCancelOpen(true);
                             }}
-                            className={`cursor-pointer text-red-600 mt-2 ${b.status === "cancelled" ? "opacity-50 pointer-events-none" : ""
-                              }`}
+                            className={`cursor-pointer text-red-600 mt-2 ${
+                              b.status === "cancelled"
+                                ? "opacity-50 pointer-events-none"
+                                : ""
+                            }`}
                           >
                             Cancel
                           </DropdownMenuItem>
@@ -226,15 +364,54 @@ export default function Bookings() {
                   </tr>
                 );
               })}
-              {bookings.length === 0 && (
+              {paginatedBookings.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={8}
+                    className="py-8 text-center text-muted-foreground"
+                  >
                     No bookings found.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-end gap-2 py-6">
+              <button
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`px-3 py-1 border rounded text-sm min-w-[36px] ${
+                    p === page
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-black"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+
+              <button
+                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                disabled={page === totalPages}
+                onClick={() =>
+                  setPage((p) => Math.min(totalPages, p + 1))
+                }
+              >
+                Next
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -246,12 +423,45 @@ export default function Bookings() {
           </DialogHeader>
           {selected && (
             <div className="space-y-2 text-sm">
-              <div><span className="text-muted-foreground">Booking ID:</span> {selected._id}</div>
-              <div><span className="text-muted-foreground">Room:</span> {selected.room?.name || selected.roomName || "Entire Villa"}</div>
-              <div><span className="text-muted-foreground">Dates:</span> {fmt(selected.startDate)} → {fmt(selected.endDate)}</div>
-              <div><span className="text-muted-foreground">Nights:</span> {diffNightsInclusive(selected.startDate, selected.endDate)}</div>
-              <div><span className="text-muted-foreground">Guests:</span> {selected.guests ?? "—"}</div>
-              <div><span className="text-muted-foreground">Amount Paid:</span> ₹{selected.amount ?? "—"}</div>
+              <div>
+                <span className="text-muted-foreground">Booking ID:</span>{" "}
+                {selected._id}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Guest:</span>{" "}
+                {selected.user?.name || selected.guestName || "—"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Mobile:</span>{" "}
+                {selected.user?.phone || selected.guestPhone || "—"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Room:</span>{" "}
+                {selected.room?.name ||
+                  selected.roomName ||
+                  "Entire Villa"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Dates:</span>{" "}
+                {fmt(selected.startDate)} → {fmt(selected.endDate)}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Nights:</span>{" "}
+                {diffNightsInclusive(
+                  selected.startDate,
+                  selected.endDate
+                )}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Guests:</span>{" "}
+                {selected.guests ?? "—"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">
+                  Amount Paid:
+                </span>{" "}
+                ₹{selected.amount ?? "—"}
+              </div>
 
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">With meal:</span>
@@ -265,19 +475,70 @@ export default function Bookings() {
                   </span>
                 )}
               </div>
-              <div><span className="text-muted-foreground">Status:</span> <StatusBadge status={selected.status} /></div>
-              <div><span className="text-muted-foreground">Created:</span> {fmt(selected.createdAt)}</div>
-              {selected.note && <div><span className="text-muted-foreground">Note:</span> {selected.note}</div>}
+              <div>
+                <span className="text-muted-foreground">Status:</span>{" "}
+                <StatusBadge status={selected.status} />
+              </div>
+              <div>
+                <span className="text-muted-foreground">Created:</span>{" "}
+                {fmt(selected.createdAt)}
+              </div>
+              {selected.note && (
+                <div>
+                  <span className="text-muted-foreground">Note:</span>{" "}
+                  {selected.note}
+                </div>
+              )}
             </div>
           )}
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Close
+            </Button>
             <Button
               variant="destructive"
-              onClick={onCancel}
+              onClick={() => setConfirmCancelOpen(true)}
               disabled={cancelling || selected?.status === "cancelled"}
             >
               {cancelling ? "Cancelling..." : "Cancel this booking"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm cancel dialog */}
+      <Dialog
+        open={confirmCancelOpen}
+        onOpenChange={setConfirmCancelOpen}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Cancellation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p className="font-medium">
+              Have you already discussed this cancellation with the
+              guest?
+            </p>
+            <p className="text-muted-foreground">
+              Please make sure the guest is informed and has agreed to
+              this change before cancelling the booking in the system.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 pt-3">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmCancelOpen(false)}
+              disabled={cancelling}
+            >
+              No, not yet
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={onCancelConfirmed}
+              disabled={cancelling}
+            >
+              {cancelling ? "Cancelling..." : "Yes, I have discussed"}
             </Button>
           </DialogFooter>
         </DialogContent>

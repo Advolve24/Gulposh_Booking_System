@@ -3,6 +3,7 @@ import crypto from "crypto";
 import Room from "../models/Room.js";
 import Booking from "../models/Booking.js";
 import { sendWhatsAppText, sendWhatsAppTemplate } from "../utils/whatsapp.js";
+import { sendBookingConfirmationMail } from "../utils/mailer.js";
 import { parseYMD } from "../lib/date.js";
 
 const rp = new Razorpay({
@@ -96,15 +97,20 @@ export const verifyPayment = async (req, res) => {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
-      roomId, startDate, endDate, guests, withMeal,
-      contactName, contactEmail, contactPhone,
+      roomId,
+      startDate,
+      endDate,
+      guests,
+      withMeal,
+      contactName,
+      contactEmail,
+      contactPhone,
     } = req.body || {};
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ message: "Invalid payment payload" });
     }
 
-    // Verify signature...
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expected = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -124,9 +130,10 @@ export const verifyPayment = async (req, res) => {
     const nights = (eDate - sDate) / (1000 * 60 * 60 * 24);
     if (nights <= 0) return res.status(400).json({ message: "Invalid date range" });
 
-    const pricePerNight = withMeal && room.priceWithMeal > 0
-      ? room.priceWithMeal
-      : room.pricePerNight;
+    const pricePerNight =
+      withMeal && room.priceWithMeal > 0
+        ? room.priceWithMeal
+        : room.pricePerNight;
     const amountINR = nights * pricePerNight;
 
     const booking = await Booking.create({
@@ -166,9 +173,21 @@ export const verifyPayment = async (req, res) => {
     const sent = await sendWhatsAppText(contactPhone, msg);
     if (!sent) await sendWhatsAppTemplate(contactPhone, "hello_world");
 
+    try {
+      await sendBookingConfirmationMail({
+        to: contactEmail,
+        name: contactName,
+        room,
+        booking,
+      });
+    } catch (mailErr) {
+      console.error("Booking confirmation email failed:", mailErr?.message);
+    }
+
     res.json({ ok: true, booking });
   } catch (err) {
     console.error("verifyPayment error:", err);
     res.status(400).json({ message: err?.message || "Verification failed" });
   }
 };
+

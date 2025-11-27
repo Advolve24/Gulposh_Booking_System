@@ -73,3 +73,9 @@
     font-family: var(--font-secondary), ui-serif, Georgia, "Times New Roman", serif;
   }
 }
+
+.rdp-dropdowns {
+  display: flex;
+  flex-direction: row-reverse; 
+  gap: 0.5rem;                 
+}

@@ -1,17 +1,46 @@
 import React, { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { updateBookingAdmin, updateUserAdmin } from "../api/admin";
+import { updateBookingAdmin, updateUserAdmin, listBlackouts } from "../api/admin";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import AdminBookingPrint from "./AdminBookingPrint";
 import { createRoot } from "react-dom/client";
 
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { toDateOnlyFromAPIUTC, todayDateOnlyUTC } from "../lib/date";
+
 const GOV_ID_TYPES = ["Aadhaar", "Passport", "Voter ID", "Driving License"];
+const API_ROOT = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+
+const toYMD = (d) => {
+  if (!d) return null;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;    
+};
+
 
 export default function EditBookingDialog({ open, onOpenChange, booking, reload }) {
   const [saving, setSaving] = useState(false);
@@ -23,7 +52,13 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
     govIdNumber: "",
     amountPaid: "",
     paymentMode: "Cash",
+    startDate: null,
+    endDate: null,
   });
+
+  const [disabledDates, setDisabledDates] = useState(() => [
+    { before: todayDateOnlyUTC() },
+  ]);
 
   useEffect(() => {
     if (!booking) return;
@@ -47,27 +82,75 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
           : booking?.amount != null
           ? String(booking.amount)
           : "",
-
       paymentMode: booking?.adminMeta?.paymentMode || "Cash",
+      startDate: booking?.startDate ? new Date(booking.startDate) : null,
+      endDate: booking?.endDate ? new Date(booking.endDate) : null,
     });
   }, [booking, open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    (async () => {
+      try {
+        const blk = await listBlackouts();
+
+        let res = await fetch(`${API_ROOT}/rooms/disabled/all`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          res = await fetch(`${API_ROOT}/rooms/blocked/all`, {
+            credentials: "include",
+          });
+        }
+        const bookedJson = res.ok ? await res.json() : [];
+
+        const bookedRanges = (bookedJson || []).map((r) => ({
+          from: toDateOnlyFromAPIUTC(r.from || r.startDate),
+          to: toDateOnlyFromAPIUTC(r.to || r.endDate),
+        }));
+
+        const blackoutRanges = (blk || []).map((b) => ({
+          from: toDateOnlyFromAPIUTC(b.from),
+          to: toDateOnlyFromAPIUTC(b.to),
+        }));
+
+        setDisabledDates([
+          { before: todayDateOnlyUTC() },
+          ...bookedRanges,
+          ...blackoutRanges,
+        ]);
+      } catch (err) {
+        console.error("Failed to build disabled ranges for edit dialog:", err);
+      }
+    })();
+  }, [open]);
 
   if (!booking) return null;
 
   const handleSave = async () => {
     try {
+      if (!form.startDate || !form.endDate) {
+        toast.error("Please select check-in and check-out dates");
+        return;
+      }
+
+      if (form.endDate <= form.startDate) {
+        toast.error("Check-out date must be after check-in date");
+        return;
+      }
+
       setSaving(true);
 
       const payload = {
-        adminMeta: {
-          fullName: form.fullName,
-          phone: form.phone,
-          govIdType: form.govIdType,
-          govIdNumber: form.govIdNumber,
-          amountPaid: form.amountPaid ? Number(form.amountPaid) : null,
-          paymentMode: form.paymentMode,
-        },
-
+        fullName: form.fullName,
+        phone: form.phone,
+        govIdType: form.govIdType,
+        govIdNumber: form.govIdNumber,
+        amountPaid: form.amountPaid ? Number(form.amountPaid) : null,
+        paymentMode: form.paymentMode,
+        startDate: toYMD(form.startDate),
+        endDate: toYMD(form.endDate),
         amount: form.amountPaid ? Number(form.amountPaid) : booking.amount,
       };
 
@@ -99,7 +182,6 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
     const root = createRoot(container);
     root.render(<AdminBookingPrint booking={booking} adminMeta={form} />);
 
-
     await new Promise((r) => setTimeout(r, 300));
 
     const canvas = await html2canvas(container.firstChild, { scale: 2 });
@@ -128,7 +210,9 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             <Label>Full Name</Label>
             <Input
               value={form.fullName}
-              onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, fullName: e.target.value }))
+              }
             />
           </div>
 
@@ -136,7 +220,9 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             <Label>Phone</Label>
             <Input
               value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, phone: e.target.value }))
+              }
             />
           </div>
 
@@ -144,7 +230,9 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             <Label>Government ID Type</Label>
             <Select
               value={form.govIdType}
-              onValueChange={(v) => setForm((f) => ({ ...f, govIdType: v }))}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, govIdType: v }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select ID" />
@@ -169,14 +257,66 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             />
           </div>
 
+          {/* ✅ Check-in with disabled booked/blocked dates */}
           <div>
             <Label>Check-in</Label>
-            <Input value={new Date(booking.startDate).toLocaleDateString()} disabled />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={`w-full justify-start text-left font-normal ${
+                    !form.startDate && "text-muted-foreground"
+                  }`}
+                >
+                  {form.startDate
+                    ? format(form.startDate, "PPP")
+                    : "Select check-in date"}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={form.startDate}
+                  onSelect={(date) =>
+                    setForm((f) => ({ ...f, startDate: date }))
+                  }
+                  disabled={disabledDates}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
+          {/* ✅ Check-out with disabled booked/blocked dates */}
           <div>
             <Label>Check-out</Label>
-            <Input value={new Date(booking.endDate).toLocaleDateString()} disabled />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={`w-full justify-start text-left font-normal ${
+                    !form.endDate && "text-muted-foreground"
+                  }`}
+                >
+                  {form.endDate
+                    ? format(form.endDate, "PPP")
+                    : "Select check-out date"}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={form.endDate}
+                  onSelect={(date) =>
+                    setForm((f) => ({ ...f, endDate: date }))
+                  }
+                  disabled={disabledDates}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div>
@@ -195,7 +335,9 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
               type="number"
               inputMode="decimal"
               value={form.amountPaid}
-              onChange={(e) => setForm((f) => ({ ...f, amountPaid: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, amountPaid: e.target.value }))
+              }
             />
           </div>
 
@@ -203,7 +345,9 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             <Label>Payment Mode</Label>
             <Select
               value={form.paymentMode}
-              onValueChange={(v) => setForm((f) => ({ ...f, paymentMode: v }))}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, paymentMode: v }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select mode" />

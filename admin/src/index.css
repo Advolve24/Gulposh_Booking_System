@@ -73,3 +73,14 @@ a[x-apple-data-detectors] {
   font-size: inherit !important;
   font-family: inherit !important;
 }
+
+.rdp-dropdowns {
+  display: flex;
+  flex-direction: row-reverse; 
+  gap: 0.5rem;                 
+}
+
+.dob-calendar .rdp-dropdown_month,
+.dob-calendar .rdp-dropdown_year {
+  height: 32px;
+}

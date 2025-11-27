@@ -310,6 +310,7 @@ export default function Users() {
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
+                      className="dob-calendar"
                       mode="single"
                       selected={editDob}
                       onSelect={(date) => setEditDob(date)}

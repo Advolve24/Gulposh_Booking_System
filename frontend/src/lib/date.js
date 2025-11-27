@@ -1,4 +1,3 @@
-// src/lib/date.js
 export const toDateOnly = (dLike) => {
   const d = new Date(dLike);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -9,7 +8,6 @@ export const toDateOnlyFromAPI = (s) => {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 };
 
-// NEW: use UTC parts from an ISO date string (great for bookings coming from DB)
 export const toDateOnlyFromAPIUTC = (s) => {
   if (!s) return null;
   const d = new Date(s);

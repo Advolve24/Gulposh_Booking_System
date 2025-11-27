@@ -266,7 +266,22 @@ export const createUserAdmin = async (req, res) => {
 export const updateBookingAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullName, phone, govIdType, govIdNumber, amountPaid, paymentMode } = req.body;
+
+    const {
+      fullName,
+      phone,
+      govIdType,
+      govIdNumber,
+      amountPaid,
+      paymentMode,
+      startDate,
+      endDate,
+      amount,
+    } = req.body || {};
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid booking id" });
+    }
 
     const booking = await Booking.findById(id);
     if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -276,18 +291,47 @@ export const updateBookingAdmin = async (req, res) => {
       phone: phone || booking.adminMeta?.phone,
       govIdType: govIdType || booking.adminMeta?.govIdType,
       govIdNumber: govIdNumber || booking.adminMeta?.govIdNumber,
-      amountPaid: amountPaid ?? booking.adminMeta?.amountPaid,
+      amountPaid:
+        amountPaid !== undefined
+          ? amountPaid
+          : booking.adminMeta?.amountPaid,
       paymentMode: paymentMode || booking.adminMeta?.paymentMode,
     };
 
     if (phone) {
       booking.contactPhone = phone;
     }
+
+    let datesChanged = false;
+    if (startDate) {
+      booking.startDate = new Date(startDate);
+      datesChanged = true;
+    }
+    if (endDate) {
+      booking.endDate = new Date(endDate);
+      datesChanged = true;
+    }
+
+    if (datesChanged && booking.startDate && booking.endDate) {
+      const ms =
+        new Date(booking.endDate).setHours(0, 0, 0, 0) -
+        new Date(booking.startDate).setHours(0, 0, 0, 0);
+      const nights = Math.max(
+        0,
+        Math.round(ms / (1000 * 60 * 60 * 24))
+      );
+      booking.nights = nights;
+    }
+
+    if (amount !== undefined && amount !== null) {
+      booking.amount = amount;
+    }
+
     await booking.save();
     res.json({ ok: true, booking });
   } catch (err) {
     console.error("updateBookingAdmin error:", err);
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ message: err.message || "Failed to update booking" });
   }
 };
 
