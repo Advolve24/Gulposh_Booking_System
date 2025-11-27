@@ -7,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  CalendarRangeIcon, Users2, BedSingle, ClipboardList,
+  CalendarRangeIcon, Users2, BedSingle, Wallet , ClipboardList,
   Trash2, Eye, Pencil
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +28,7 @@ export default function Dashboard() {
     bookings: 0,
     upcoming: 0,
     cancelled: 0,
+    revenue: 0,
   });
   const [range, setRange] = useState();
   const [blackouts, setBlackouts] = useState([]);
@@ -149,9 +150,9 @@ export default function Dashboard() {
           <div className="p-4 bg-primary md:rounded-[10px] rounded-t-[10px] text-white flex justify-center">
             {icon}
           </div>
-          <div className="text-3xl font-semibold flex flex-col md:flex-row items-center gap-0 md:gap-2 md:ml-6 mt-0 md:p-0 p-4">
+          <div className="text-2xl font-bold flex pl-4 flex-col md:flex-col items-start gap-0 md:gap-0 md:ml-6 mt-0 md:p-0 p-2">
             <div className="text-black">{value}</div>
-            <div className="text-[14px] md:text-[16px] mt-1 uppercase font-bold text-center md:text-left">
+            <div className="text-[14px] md:text-[15px] mt-0 capitalize font-semibold text-center md:text-left">
               {label}
             </div>
           </div>
@@ -181,13 +182,20 @@ export default function Dashboard() {
           stats.cancelled,
           "/bookings?filter=cancelled"
         )}
+        {statCard(
+          <Wallet className="h-6 w-6" />,
+          "Total Revenue",
+          `₹${Number(stats.revenue).toLocaleString("en-IN")}`,
+          "/bookings"
+        )}
 
-        <div className="w-full">
-          <Button className="w-full h-[165px] md:h-[85px] text-[18px] rounded-[12px]">
+        <div className="w-[90vw] md:w-full ">
+          <Button className="w-full h-[65px] md:h-[85px] text-[18px] rounded-[12px]">
             <a href="/villa-booking" rel="noopener noreferrer">
               Book Entire Villa
             </a>
           </Button>
+         
         </div>
       </div>
 

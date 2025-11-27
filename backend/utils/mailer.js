@@ -73,14 +73,16 @@ export async function sendBookingConfirmationMail({ to, name, room, booking }) {
               <table width="100%" cellspacing="0" cellpadding="0" role="presentation">
                 <tr>
                   <td style="vertical-align:middle;">
-                    <div style="display:flex;align-items:center;">
-                      <div style="width:40px;height:40px;border-radius:50%;background-color:#fff;display:flex;align-items:center;justify-content:center;margin-right:12px;">
-                        <img src="/logo1.png" width="24" height="24>
+                    <div style="display:flex;align-items:center;justify-content:center;">
+                      <div style="width:40px;height:40px;border-radius:50%;background-color:#fff;display:flex;align-items:center;justify-content:center;margin-right:12px;"> 
+                      <img src="https://gulposhbookingsystem.netlify.app/logo1.png"  width="24" height="24" style="display:block;">
                       </div>
                       <div>
                         <div style="font-size:20px;font-weight:bold;margin-bottom:2px;">Booking Confirmed</div>
                         <div style="font-size:12px;opacity:0.9;">${room?.name || "Luxurious Villa"}</div>
                       </div>
+                      </div>
+                    </td>
                 </tr>
               </table>
             </td>
