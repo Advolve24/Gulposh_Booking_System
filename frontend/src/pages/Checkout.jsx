@@ -12,12 +12,24 @@ import { toast } from "sonner";
 import CalendarRange from "../components/CalendarRange";
 import { Eye, EyeOff, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
-import { getAllCountries, getStatesByCountry, getCitiesByState } from "../lib/location";
-
+import {
+  toDateOnlyFromAPI,
+  toDateOnlyFromAPIUTC,
+} from "../lib/date";
+import {
+  getAllCountries,
+  getStatesByCountry,
+  getCitiesByState,
+} from "../lib/location";
 
 function toDateOnly(d) {
   const x = new Date(d);
@@ -26,7 +38,8 @@ function toDateOnly(d) {
 function toYMD(d) {
   return d ? format(new Date(d), "yyyy-MM-dd") : null;
 }
-const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e).trim());
+const isValidEmail = (e) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e).trim());
 const isValidPhone = (p) => /^[0-9]{10}$/.test(String(p).trim());
 
 export default function Checkout() {
@@ -34,12 +47,19 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { user, init } = useAuth();
 
+  /** ---------- UI State ---------- */
   const [showPassword, setShowPassword] = useState(false);
   const [room, setRoom] = useState(null);
   const [withMeal, setWithMeal] = useState(false);
   const [errors, setErrors] = useState({});
   const [disabledAll, setDisabledAll] = useState([]);
 
+  /** --------- Meal guest splits ---------- */
+  const [vegGuests, setVegGuests] = useState(0);
+  const [nonVegGuests, setNonVegGuests] = useState(0);
+  const [comboGuests, setComboGuests] = useState(0);
+
+  /** ---------- Country/State/City ---------- */
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
@@ -52,37 +72,19 @@ export default function Checkout() {
     pincode: "",
   });
 
-  useEffect(() => {
-    const c = getAllCountries();
-    setCountries(c);
-  }, []);
-
-  useEffect(() => {
-    if (addressInfo.country) {
-      const s = getStatesByCountry(addressInfo.country);
-      setStates(s);
-    } else {
-      setStates([]);
-    }
-    setCities([]);
-  }, [addressInfo.country]);
-
-  useEffect(() => {
-    if (addressInfo.state && addressInfo.country) {
-      const c = getCitiesByState(addressInfo.country, addressInfo.state);
-      setCities(c);
-    } else {
-      setCities([]);
-    }
-  }, [addressInfo.state, addressInfo.country]);
-
+  /** ---------- Location State ---------- */
   const roomId = state?.roomId;
   const startDate = state?.startDate ? new Date(state.startDate) : null;
   const endDate = state?.endDate ? new Date(state.endDate) : null;
   const guests = state?.guests ? Number(state.guests) : null;
 
-  const [range, setRange] = useState({ from: startDate || null, to: endDate || null });
+  const [range, setRange] = useState({
+    from: startDate || null,
+    to: endDate || null,
+  });
+
   const [guestsState, setGuestsState] = useState(String(guests || ""));
+
   const [form, setForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -91,6 +93,31 @@ export default function Checkout() {
     dob: user?.dob ? new Date(user.dob) : null,
   });
 
+  /** -------- Load countries -------- */
+  useEffect(() => {
+    setCountries(getAllCountries());
+  }, []);
+
+  /** -------- On country change -------- */
+  useEffect(() => {
+    if (addressInfo.country) {
+      setStates(getStatesByCountry(addressInfo.country));
+    } else {
+      setStates([]);
+    }
+    setCities([]);
+  }, [addressInfo.country]);
+
+  /** -------- On state change -------- */
+  useEffect(() => {
+    if (addressInfo.state && addressInfo.country) {
+      setCities(getCitiesByState(addressInfo.country, addressInfo.state));
+    } else {
+      setCities([]);
+    }
+  }, [addressInfo.state, addressInfo.country]);
+
+  /** -------- Validate initial selection -------- */
   useEffect(() => {
     if (!roomId || !startDate || !endDate || !guests) {
       toast.error("Please select a room, dates and guests first.");
@@ -98,11 +125,13 @@ export default function Checkout() {
     }
   }, [roomId, startDate, endDate, guests, navigate]);
 
+  /** -------- Load room -------- */
   useEffect(() => {
     if (!roomId) return;
     api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
   }, [roomId]);
 
+  /** -------- Load Disabled Dates -------- */
   useEffect(() => {
     if (!roomId) return;
     (async () => {
@@ -125,11 +154,11 @@ export default function Checkout() {
         setDisabledAll([...bookings, ...blackouts]);
       } catch (err) {
         console.error("Failed to load disabled ranges:", err);
-        setDisabledAll([]);
       }
     })();
   }, [roomId]);
 
+  /** -------- Sync user data -------- */
   useEffect(() => {
     if (user) {
       setForm((f) => ({
@@ -142,6 +171,7 @@ export default function Checkout() {
     }
   }, [user]);
 
+  /** -------- Form Handlers -------- */
   const handlePhoneChange = (e) => {
     const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
     setForm((f) => ({ ...f, phone: digits }));
@@ -152,30 +182,44 @@ export default function Checkout() {
     setAddressInfo((f) => ({ ...f, pincode: digits }));
   };
 
-
+  /** -------- Nights Calculation -------- */
   const nights = useMemo(() => {
     if (!range?.from || !range?.to) return 0;
     const ms = toDateOnly(range.to) - toDateOnly(range.from);
     return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
   }, [range]);
 
-  const pricePerNight = useMemo(() => {
+  /** -------- Room charges -------- */
+  const roomTotal = useMemo(() => {
     if (!room) return 0;
-    const base = room.pricePerNight || 0;
-    const meal = withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : 0;
-    return base + meal;
-  }, [room, withMeal]);
+    if (!nights) return 0;
+    return nights * Number(room.pricePerNight || 0);
+  }, [room, nights]);
 
-  const total = useMemo(() => {
-    return nights ? nights * pricePerNight : 0;
-  }, [nights, pricePerNight]);
+  /** -------- Meal charges -------- */
+  const mealTotal = useMemo(() => {
+    if (!room || !withMeal) return 0;
 
+    return (
+      nights *
+      (vegGuests * Number(room.mealPriceVeg || 0) +
+        nonVegGuests * Number(room.mealPriceNonVeg || 0)) +
+      comboGuests * Number(room.mealPriceCombo || 0)
+    );
+  }, [nights, withMeal, vegGuests, nonVegGuests, comboGuests, room]);
+
+  /** -------- Grand Total -------- */
+  const total = useMemo(() => roomTotal + mealTotal, [roomTotal, mealTotal]);
+
+  /** -------- Validate form -------- */
   const validateForm = () => {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = "Name is required";
     if (!form.email.trim()) newErrors.email = "Email is required";
-    else if (!isValidEmail(form.email)) newErrors.email = "Invalid email format";
-    if (!form.phone.trim()) newErrors.phone = "Phone number is required";
+    else if (!isValidEmail(form.email))
+      newErrors.email = "Invalid email format";
+    if (!form.phone.trim())
+      newErrors.phone = "Phone number is required";
     else if (!isValidPhone(form.phone))
       newErrors.phone = "Enter a valid 10-digit phone number";
     if (!user && !form.password.trim())
@@ -191,10 +235,9 @@ export default function Checkout() {
     return true;
   };
 
+  /** -------- Auto-detect max guests from accommodation -------- */
   const maxGuestsCap = useMemo(() => {
     if (!room) return 1;
-    if (typeof room.maxGuests === "number" && room.maxGuests > 0)
-      return room.maxGuests;
 
     const nums = (room.accommodation || [])
       .flatMap((s) =>
@@ -206,6 +249,7 @@ export default function Checkout() {
     return Math.max(1, sum || 1);
   }, [room]);
 
+  /** -------- Login/Register if needed -------- */
   async function ensureAuthed() {
     if (user) return;
 
@@ -242,8 +286,14 @@ export default function Checkout() {
     await init?.();
   }
 
-  const onGuestsChange = (v) => setGuestsState(v);
+  const onGuestsChange = (v) => {
+    setGuestsState(v);
+    setVegGuests(0);
+    setNonVegGuests(0);
+    setComboGuests(0);
+  };
 
+  /** -------- PROCEED TO PAYMENT -------- */
   const proceed = async () => {
     try {
       if (!validateForm()) return;
@@ -258,10 +308,16 @@ export default function Checkout() {
         return;
       }
 
-      // conflict validation
+      if (withMeal) {
+        if (vegGuests + nonVegGuests + comboGuests !== guests)
+          return toast.error("Veg + Non-Veg + Combo must match total guests.");
+      }
+
       const conflict = disabledAll.some((b) => !(end < b.from || start > b.to));
       if (conflict) {
-        toast.error("Selected dates include unavailable days. Please choose another range.");
+        toast.error(
+          "Selected dates include unavailable days. Choose another range."
+        );
         return;
       }
 
@@ -276,20 +332,23 @@ export default function Checkout() {
         endDate: toYMD(end),
         guests,
         withMeal,
-        contactName: form.name,
-        contactEmail: form.email,
-        contactPhone: form.phone,
+        vegGuests,
+        nonVegGuests,
+        comboGuests,
         address,
         country,
         state,
         city,
         pincode,
+        contactName: form.name,
+        contactEmail: form.email,
+        contactPhone: form.phone,
       });
 
       const rzp = new window.Razorpay({
         key: order.key,
         amount: order.amount,
-        currency: order.currency || "INR",
+        currency: "INR",
         name: room.name,
         description: `Booking • ${nights} night(s)`,
         order_id: order.orderId,
@@ -304,8 +363,12 @@ export default function Checkout() {
           endDate: end.toISOString(),
           guests: String(guests),
           withMeal: String(!!withMeal),
+          vegGuests: String(vegGuests),
+          nonVegGuests: String(nonVegGuests),
+          comboGuests: String(comboGuests),
         },
         theme: { color: "#BA081C" },
+
         handler: async (resp) => {
           try {
             await api.post("/payments/verify", {
@@ -317,23 +380,39 @@ export default function Checkout() {
               endDate: toYMD(end),
               guests,
               withMeal,
+              vegGuests,
+              nonVegGuests,
+              comboGuests,
               contactName: form.name,
               contactEmail: form.email,
               contactPhone: form.phone,
+              address,
+              country,
+              state,
+              city,
+              pincode,
             });
+
             toast.success("Payment successful! Booking confirmed.");
             navigate("/my-bookings", { replace: true });
           } catch (e) {
-            toast.error(e?.response?.data?.message || "Verification failed");
+            toast.error(
+              e?.response?.data?.message || "Verification failed"
+            );
           }
         },
-        modal: { ondismiss: () => toast("Payment flow was cancelled.") },
+
+        modal: {
+          ondismiss: () => toast("Payment was cancelled."),
+        },
       });
 
       rzp.open();
     } catch (err) {
       toast.error(
-        err?.response?.data?.message || err.message || "Could not start payment"
+        err?.response?.data?.message ||
+        err.message ||
+        "Could not start payment"
       );
     }
   };
@@ -346,11 +425,8 @@ export default function Checkout() {
         <div className="text-lg sm:text-xl font-semibold">{room.name}</div>
         <div className="flex items-center gap-3 text-sm sm:text-base">
           <span>₹{room.pricePerNight}/night</span>
-          <span className="opacity-70">|</span>
-          <span>₹{(Number(room.pricePerNight) + Number(room.priceWithMeal)).toLocaleString("en-IN")}/night with meal</span>
         </div>
       </div>
-
       <div className="rounded-xl border p-4 sm:p-6 space-y-5">
         {/* User Info */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -558,8 +634,6 @@ export default function Checkout() {
         </div>
 
 
-
-
         {/* Dates & Guests */}
         <div className="grid w-full grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1 sm:col-span-2">
@@ -578,12 +652,86 @@ export default function Checkout() {
           <Checkbox
             id="withMeal"
             checked={withMeal}
-            onCheckedChange={(v) => setWithMeal(Boolean(v))}
+            onCheckedChange={(v) => {
+              setWithMeal(Boolean(v));
+              if (!v) {
+                setVegGuests(0);
+                setNonVegGuests(0);
+                setComboGuests(0);
+              }
+            }}
           />
-          <Label htmlFor="withMeal" className="cursor-pointer">
-            Include meals (₹{Number(room.priceWithMeal).toLocaleString("en-IN")}/night)
+
+          <Label htmlFor="withMeal" className="cursor-pointer flex items-center gap-1">
+            Include meals
+            {room && (
+              <span className="text-xs text-muted-foreground">
+                (
+                Veg ₹{room.mealPriceVeg || 0} &nbsp;|
+                &nbsp;Non-Veg ₹{room.mealPriceNonVeg || 0} &nbsp;|
+                &nbsp;Combo ₹{room.mealPriceCombo || 0}
+                &nbsp;per guest
+                )
+              </span>
+            )}
           </Label>
         </div>
+
+        {withMeal && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
+              <div>
+                <Label>Veg Guests</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max={Number(guestsState) - nonVegGuests - comboGuests}
+                  value={vegGuests}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (val <= Number(guestsState) - nonVegGuests - comboGuests) {
+                      setVegGuests(val);
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <Label>Non-Veg Guests</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max={Number(guestsState) - vegGuests - comboGuests}
+                  value={nonVegGuests}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (val <= Number(guestsState) - vegGuests - comboGuests) {
+                      setNonVegGuests(val);
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <Label>Combo Meal Guests</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max={Number(guestsState) - vegGuests - nonVegGuests}
+                  value={comboGuests}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (val <= Number(guestsState) - vegGuests - nonVegGuests) {
+                      setComboGuests(val);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-1">
+              Veg + Non-Veg + ComboMeal must equal total guests.
+            </p>
+          </>
+        )}
 
         <Separator className="my-2" />
 
@@ -593,13 +741,22 @@ export default function Checkout() {
             <span>Nights</span>
             <span>{nights}</span>
           </div>
+
           <div className="flex items-center justify-between">
-            <span>Price per night</span>
-            <span>₹{Number(room.pricePerNight).toLocaleString("en-IN")}</span>
+            <span>Room Total</span>
+            <span>₹{roomTotal.toLocaleString("en-IN")}</span>
           </div>
+
+          {withMeal && (
+            <div className="flex items-center justify-between">
+              <span>Meal Total</span>
+              <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between font-medium text-base pt-1">
             <span>Total</span>
-            <span>₹{Number(total).toLocaleString("en-IN")}</span>
+            <span>₹{total.toLocaleString("en-IN")}</span>
           </div>
         </div>
 

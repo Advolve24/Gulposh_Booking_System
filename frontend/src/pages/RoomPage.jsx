@@ -7,80 +7,63 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import ImageSlider from "../components/ImageSlider";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Link } from "react-router-dom";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
-// Minimalistic Lucide Icons
-import {
-  Wifi,
-  AirVent,
-  Car,
-  Bath,
-  Monitor,
-  Coffee,
-  Flame,
-  Utensils,
-  Landmark,
-  Mountain,
-  Waves,
-  BedDouble,
-  BedSingle,
-  Users,
-  Home,
-} from "lucide-react";
+import { amenityCategories } from "../data/aminities"; // NEW
 
-/* ---------------- Icon Mapping ---------------- */
-const ICONS = {
-  wifi: Wifi,
-  ac: AirVent,
-  parking: Car,
-  pool: Waves,
-  tv: Monitor,
-  breakfast: Coffee,
-  heater: Flame,
-  kitchen: Utensils,
-  balcony: Landmark,
-  mountainview: Mountain,
-  seaview: Waves,
-  gardenview: Landmark,
 
-  "2 guests": Users,
-  "3 guests": Users,
-  "4 guests": Users,
-  "5 guests": Users,
-  "6 guests": Users,
+/* ---------------- Dropdown Amenities UI ---------------- */
+function AmenitiesDropdown({ amenities }) {
+  const [open, setOpen] = useState(null);
 
-  "double bed": BedDouble,
-  "queen bed": BedDouble,
-  "king bed": BedDouble,
-  "single bed": BedSingle,
-
-  "private bathroom": Bath,
-  "1 bhk villa": Home,
-  "2 bhk villa": Home,
-  "3 bhk villa": Home,
-};
-
-/* ---------------- Icon Row Component ---------------- */
-function IconRow({ title, list }) {
   return (
-    <div className="space-y-2">
-      <h3 className="font-semibold text-lg">{title}</h3>
+    <div className="space-y-4">
+      <h3 className="text-xl font-semibold mb-2">Amenities</h3>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {list.map((item, i) => {
-          const key = item.toLowerCase().trim();
-          const Icon = ICONS[key] || ICONS[key.replace(" view", "")];
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {amenityCategories.map((cat) => {
+          const isOpen = open === cat.id;
+
+          const selectedItems = cat.items.filter((i) =>
+            amenities.includes(i.id)
+          );
+
+          if (selectedItems.length === 0) return null;
 
           return (
-            <div
-              key={i}
-              className="flex items-center gap-3 border rounded-lg px-3 py-2"
-            >
-              {Icon ? (
-                <Icon className="w-5 h-5 text-gray-700" />
-              ) : (
-                <Landmark className="w-5 h-5 text-gray-700" />
+            <div key={cat.id} className="border rounded-lg bg-white">
+              {/* Header */}
+              <button
+                type="button"
+                onClick={() => setOpen(isOpen ? null : cat.id)}
+                className="w-full flex justify-between items-center p-3 font-medium"
+              >
+                <span className="flex items-center gap-2">
+                  <cat.icon className="w-4 h-4" />
+                  {cat.label}
+                </span>
+
+                {isOpen ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+
+              {/* Content */}
+              {isOpen && (
+                <div className="p-3 border-t space-y-2">
+                  {selectedItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-2 text-sm border rounded px-2 py-1"
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {item.label}
+                    </div>
+                  ))}
+                </div>
               )}
-              <span className="text-sm capitalize">{item}</span>
             </div>
           );
         })}
@@ -89,12 +72,14 @@ function IconRow({ title, list }) {
   );
 }
 
-/* ---------------- Date Utilities ---------------- */
+
+
+/* ---------------- Date Merge Utility ---------------- */
 function mergeRanges(ranges) {
   if (!ranges || !ranges.length) return [];
 
   const sorted = ranges
-    .map(r => ({ from: new Date(r.from), to: new Date(r.to) }))
+    .map((r) => ({ from: new Date(r.from), to: new Date(r.to) }))
     .sort((a, b) => a.from - b.from);
 
   if (!sorted.length) return [];
@@ -115,7 +100,8 @@ function mergeRanges(ranges) {
   return out;
 }
 
-/* ---------------- Main Component ---------------- */
+
+/* ---------------- MAIN PAGE ---------------- */
 export default function RoomPage() {
   const { id } = useParams();
   const location = useLocation();
@@ -129,7 +115,8 @@ export default function RoomPage() {
   const [bookedAll, setBookedAll] = useState([]);
   const [blackoutRanges, setBlackoutRanges] = useState([]);
 
-  /* Fetch booked + blackout ranges */
+
+  /* ---------------- Fetch Booked Dates ---------------- */
   const fetchAllBookedRanges = async () => {
     try {
       let res = await api.get("/rooms/disabled/all");
@@ -141,7 +128,7 @@ export default function RoomPage() {
       }
 
       if (list.length) {
-        return list.map(b => ({
+        return list.map((b) => ({
           from: toDateOnlyFromAPIUTC(b.from || b.startDate),
           to: toDateOnlyFromAPIUTC(b.to || b.endDate),
         }));
@@ -151,13 +138,13 @@ export default function RoomPage() {
     try {
       const { data: rooms } = await api.get("/rooms");
       const entries = await Promise.all(
-        (rooms || []).map(r =>
+        (rooms || []).map((r) =>
           api.get(`/rooms/${r._id}/blocked`).then(({ data }) => data || [])
         )
       );
       const flat = entries.flat();
 
-      return flat.map(b => ({
+      return flat.map((b) => ({
         from: toDateOnlyFromAPIUTC(b.startDate),
         to: toDateOnlyFromAPIUTC(b.endDate),
       }));
@@ -166,9 +153,14 @@ export default function RoomPage() {
     }
   };
 
-  /* Load room + booked dates */
+
+
+  /* ---------------- Load Room + Booked Ranges ---------------- */
   useEffect(() => {
-    api.get(`/rooms/${id}`).then(({ data }) => setRoom(data)).catch(() => setRoom(null));
+    api
+      .get(`/rooms/${id}`)
+      .then(({ data }) => setRoom(data))
+      .catch(() => setRoom(null));
 
     (async () => {
       const all = await fetchAllBookedRanges();
@@ -176,7 +168,7 @@ export default function RoomPage() {
     })();
 
     api.get("/blackouts").then(({ data }) => {
-      const ranges = (data || []).map(b => ({
+      const ranges = (data || []).map((b) => ({
         from: toDateOnlyFromAPI(b.from),
         to: toDateOnlyFromAPI(b.to),
       }));
@@ -184,7 +176,9 @@ export default function RoomPage() {
     });
   }, [id]);
 
-  /* Query params → state */
+
+
+  /* ---------------- Load Query Params ---------------- */
   useEffect(() => {
     const stateFrom = location.state?.from;
     const stateTo = location.state?.to;
@@ -207,7 +201,9 @@ export default function RoomPage() {
     if (g) setGuests(String(g));
   }, []);
 
-  /* Update query params */
+
+
+  /* ---------------- Update Query Params ---------------- */
   useEffect(() => {
     const sp = new URLSearchParams(searchParams);
     if (range?.from && range?.to) {
@@ -220,7 +216,9 @@ export default function RoomPage() {
     setSearchParams(sp, { replace: true });
   }, [range]);
 
-  /* Guests */
+
+
+  /* ---------------- Guests ---------------- */
   const onGuestsChange = (v) => {
     setGuests(v);
     const sp = new URLSearchParams(searchParams);
@@ -229,23 +227,32 @@ export default function RoomPage() {
     setSearchParams(sp, { replace: true });
   };
 
+
+
+  /* ---------------- Max Guests Calculation ---------------- */
   const maxGuestsCap = useMemo(() => {
     if (!room) return null;
     if (typeof room.maxGuests === "number" && room.maxGuests > 0) return room.maxGuests;
 
     const nums = (room.accommodation || [])
-      .flatMap(s => Array.from(String(s).matchAll(/\d+/g)).map(m => Number(m[0])))
-      .filter(n => Number.isFinite(n) && n > 0);
+      .flatMap((s) => Array.from(String(s).matchAll(/\d+/g)).map((m) => Number(m[0])))
+      .filter((n) => Number.isFinite(n) && n > 0);
 
     const sum = nums.length ? nums.reduce((a, b) => a + b, 0) : 0;
     return Math.max(1, sum || 1);
   }, [room]);
 
+
+
+  /* ---------------- Disable Booked Dates ---------------- */
   const disabledAll = useMemo(
     () => mergeRanges([...(blackoutRanges || []), ...(bookedAll || [])]),
     [blackoutRanges, bookedAll]
   );
 
+
+
+  /* ---------------- Go to Checkout ---------------- */
   const goToCheckout = () => {
     if (!range?.from || !range?.to) return alert("Please select dates first");
     if (!guests) return alert("Please select number of guests");
@@ -253,9 +260,9 @@ export default function RoomPage() {
     const s = new Date(range.from);
     const e = new Date(range.to);
 
-    const conflict = disabledAll.some(b => !(e < b.from || s > b.to));
+    const conflict = disabledAll.some((b) => !(e < b.from || s > b.to));
     if (conflict) {
-      alert("⚠️ The selected dates include already booked days. Choose different dates.");
+      alert("⚠️ The selected dates include already booked days.");
       return;
     }
 
@@ -269,58 +276,75 @@ export default function RoomPage() {
     });
   };
 
+
+
+  /* ---------------- All Images ---------------- */
   const allImages = useMemo(
     () => [room?.coverImage, ...(room?.galleryImages || [])].filter(Boolean),
     [room]
   );
 
+
+
   if (!room) return null;
 
+
+
+  /* ---------------- RENDER PAGE ---------------- */
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 space-y-6">
 
-      {/* Back Button */}
       <Link to="/">
-        <Button className="bg-transparent text-black hover:text-white">Back</Button>
+        <Button className="bg-transparent text-black hover:text-white">
+          Back
+        </Button>
       </Link>
 
       <ImageSlider images={allImages} />
 
-      {/* Room Title + Pricing */}
+      {/* ROOM TITLE */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold">{room.name}</h1>
-        <div className="flex flex-wrap items-center gap-2 text-center sm:text-left">
+
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-lg sm:text-xl">
             ₹{Number(room.pricePerNight).toLocaleString("en-IN")}/night
           </span>
+
           <div className="hidden sm:block h-5 w-px bg-border" />
+
           <span className="text-lg sm:text-xl">
-            ₹{(Number(room.pricePerNight) + Number(room.priceWithMeal)).toLocaleString("en-IN")}/night with meal
+            ₹{(
+              Number(room.pricePerNight) + Number(room.priceWithMeal)
+            ).toLocaleString("en-IN")}
+            /night with meal
           </span>
         </div>
       </div>
 
-      {/* Description */}
+      {/* DESCRIPTION */}
       <div className="text-gray-700 text-sm sm:text-base leading-relaxed">
         {room.description}
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
 
-        {/* LEFT SECTION: Services + Accommodation */}
-        <div className="w-full md:w-[64%] space-y-6">
 
-          {room.roomServices?.length > 0 && (
-            <IconRow title="Room Services" list={room.roomServices} />
-          )}
+      {/* MAIN CONTENT */}
+      <div className="flex flex-col md:flex-row gap-6 items-start">
 
-          {room.accommodation?.length > 0 && (
-            <IconRow title="Accommodation" list={room.accommodation} />
+        {/* LEFT SIDE */}
+        <div className="w-full md:w-[64%] space-y-6 ">
+
+          {/* AMENITIES DROPDOWN UI */}
+          {room.amenities?.length > 0 && (
+            <AmenitiesDropdown amenities={room.amenities} />
           )}
 
         </div>
 
-        {/* RIGHT SECTION: Calendar + Guests + CTA */}
+
+
+        {/* RIGHT SIDE */}
         <div className="w-full md:w-[34%] shadow-lg border p-4 rounded-xl space-y-4">
 
           <CalendarRange
@@ -341,11 +365,13 @@ export default function RoomPage() {
               </SelectTrigger>
 
               <SelectContent>
-                {Array.from({ length: Math.max(1, maxGuestsCap || 1) }, (_, i) => i + 1).map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}
-                  </SelectItem>
-                ))}
+                {Array.from({ length: Math.max(1, maxGuestsCap || 1) }, (_, i) => i + 1).map(
+                  (n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
           </div>

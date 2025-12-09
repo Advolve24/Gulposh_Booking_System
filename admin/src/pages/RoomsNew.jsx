@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import  MultiSelectDropdown  from "../components/MultiSelectDropdown";
+
+import { amenityCategories } from "../data/aminities";
 
 function Chip({ text, onRemove }) {
   return (
@@ -26,38 +27,6 @@ function Chip({ text, onRemove }) {
   );
 }
 
-export const SERVICE_OPTIONS = [
-  "Wifi",
-  "AC",
-  "Parking",
-  "Pool",
-  "TV",
-  "Breakfast",
-  "Heater",
-  "Kitchen",
-  "Balcony",
-  "Mountain View",
-  "Sea View",
-  "Garden View",
-];
-export const ACCOM_OPTIONS = [
-  "2 Guests",
-  "3 Guests",
-  "4 Guests",
-  "5 Guests",
-  "6 Guests",
-  "Double Bed",
-  "Queen Bed",
-  "King Bed",
-  "Private Bathroom",
-  "1 BHK Villa",
-  "2 BHK Villa",
-  "3 BHK Villa",
-];
-
-
-
-
 export default function RoomsNew() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -68,8 +37,13 @@ export default function RoomsNew() {
 
   const [name, setName] = useState("");
   const [pricePerNight, setPricePerNight] = useState("");
-  const [priceWithMeal, setPriceWithMeal] = useState("");
+  const [mealPriceVeg, setMealPriceVeg] = useState("");
+  const [mealPriceNonVeg, setMealPriceNonVeg] = useState("");
+  const [mealPriceCombo, setMealPriceCombo] = useState("");
   const [description, setDescription] = useState("");
+
+  const [openCat, setOpenCat] = useState(null);
+
 
   const [coverImage, setCoverImage] = useState("");
   const [coverFile, setCoverFile] = useState(null);
@@ -77,23 +51,24 @@ export default function RoomsNew() {
   const [galleryUrls, setGalleryUrls] = useState([]);
   const [galleryFiles, setGalleryFiles] = useState([]);
 
-  const [services, setServices] = useState([]);
-  const [serviceInput, setServiceInput] = useState("");
-
-  const [accoms, setAccoms] = useState([]);
-  const [accomInput, setAccomInput] = useState("");
+  // NEW: single amenities array
+  const [amenities, setAmenities] = useState([]);
 
   useEffect(() => {
     if (!isEdit) return;
     (async () => {
       try {
         const r = await getRoomAdmin(id);
+
         setName(r.name || "");
         setPricePerNight(String(r.pricePerNight ?? ""));
-        setPriceWithMeal(String(r.priceWithMeal ?? ""));
+        setMealPriceVeg(String(r.mealPriceVeg ?? ""));
+        setMealPriceNonVeg(String(r.mealPriceNonVeg ?? ""));
+        setMealPriceCombo(String(r.mealPriceCombo ?? ""));
         setDescription(r.description || "");
-        setServices(r.roomServices || []);
-        setAccoms(r.accommodation || []);
+
+        setAmenities(r.amenities || []); // <-- NEW
+
         setCoverImage(r.coverImage || "");
         setGalleryUrls((r.galleryImages || []).filter(Boolean));
       } catch (e) {
@@ -101,22 +76,6 @@ export default function RoomsNew() {
       }
     })();
   }, [id, isEdit]);
-
-  const addService = () => {
-    const v = serviceInput.trim();
-    if (!v) return;
-    setServices((arr) => (arr.includes(v) ? arr : [...arr, v]));
-    setServiceInput("");
-  };
-  const removeService = (v) => setServices((arr) => arr.filter((x) => x !== v));
-
-  const addAccom = () => {
-    const v = accomInput.trim();
-    if (!v) return;
-    setAccoms((arr) => (arr.includes(v) ? arr : [...arr, v]));
-    setAccomInput("");
-  };
-  const removeAccom = (v) => setAccoms((arr) => arr.filter((x) => x !== v));
 
   const onCoverPick = (e) => {
     const f = e.target.files?.[0];
@@ -131,17 +90,26 @@ export default function RoomsNew() {
     if (files.length) setGalleryFiles((prev) => [...prev, ...files]);
   };
 
-  const removeGalleryUrl = (url) => setGalleryUrls((arr) => arr.filter((u) => u !== url));
+  const removeGalleryUrl = (url) =>
+    setGalleryUrls((arr) => arr.filter((u) => u !== url));
+
   const removeGalleryFile = (file) =>
     setGalleryFiles((arr) => arr.filter((f) => f !== file));
+
+  // ADD / REMOVE amenities
+  const toggleAmenity = (id) => {
+    setAmenities((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
     if (loading || uploading) return;
 
     if (!name.trim()) return toast.error("Room name is required");
-    if (pricePerNight === "" || isNaN(Number(pricePerNight))) {
-      return toast.error("Enter a valid price per night");
+    if (!pricePerNight || isNaN(Number(pricePerNight))) {
+      return toast.error("Enter valid price per night");
     }
 
     try {
@@ -159,13 +127,14 @@ export default function RoomsNew() {
 
       const payload = {
         name: name.trim(),
-        pricePerNight: Number(pricePerNight) || 0,
-        priceWithMeal: Number(priceWithMeal) || 0,
-        coverImage: coverUrl || "",
+        pricePerNight: Number(pricePerNight),
+        mealPriceVeg: Number(mealPriceVeg) || 0,
+        mealPriceNonVeg: Number(mealPriceNonVeg) || 0,
+        mealPriceCombo: Number(mealPriceCombo) || 0,
+        coverImage: coverUrl,
         galleryImages: [...galleryUrls, ...newGalleryUrls],
         description,
-        roomServices: services,
-        accommodation: accoms,
+        amenities, // <-- NEW FIELD
       };
 
       setUploading(false);
@@ -173,27 +142,24 @@ export default function RoomsNew() {
 
       if (isEdit) {
         await toast.promise(updateRoom(id, payload), {
-          loading: "Updating room...",
+          loading: "Updating...",
           success: "Room updated",
-          error: (err) =>
-            err?.response?.data?.message || err.message || "Failed to update room",
+          error: (err) => err?.response?.data?.message || "Update failed",
         });
       } else {
         await toast.promise(createRoom(payload), {
-          loading: "Creating room...",
+          loading: "Creating...",
           success: "Room created",
-          error: (err) =>
-            err?.response?.data?.message || err.message || "Failed to create room",
+          error: (err) => err?.response?.data?.message || "Create failed",
         });
 
         setName("");
         setPricePerNight("");
-        setPriceWithMeal("");
+        setMealPriceVeg("");
+        setMealPriceNonVeg("");
+        setMealPriceCombo("");
         setDescription("");
-        setServices([]);
-        setServiceInput("");
-        setAccoms([]);
-        setAccomInput("");
+        setAmenities([]);
         setCoverImage("");
         setCoverFile(null);
         setGalleryUrls([]);
@@ -205,25 +171,12 @@ export default function RoomsNew() {
     }
   };
 
-  const onServiceKey = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addService();
-    }
-  };
-  const onAccomKey = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addAccom();
-    }
-  };
-
   const onDeleteHere = async () => {
     if (!isEdit) return;
     if (!confirm("Delete this room?")) return;
     try {
       await toast.promise(deleteRoom(id), {
-        loading: "Deleting room...",
+        loading: "Deleting...",
         success: "Room deleted",
         error: (err) => err?.response?.data?.message || "Delete failed",
       });
@@ -244,10 +197,10 @@ export default function RoomsNew() {
         )}
       </div>
 
-      {/* Form */}
+      {/* FORM */}
       <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Room name */}
-        <div className="md:col-span-1">
+        <div>
           <Label>Room name</Label>
           <Input
             value={name}
@@ -257,61 +210,68 @@ export default function RoomsNew() {
           />
         </div>
 
-        {/* Pricing */}
-        <div className="md:col-span-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>Price per night (₹)</Label>
-              <Input
-                type="number"
-                min="0"
-                value={pricePerNight}
-                onChange={(e) => setPricePerNight(e.target.value)}
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label>Price with meal (₹)</Label>
-              <Input
-                type="number"
-                min="0"
-                value={priceWithMeal}
-                onChange={(e) => setPriceWithMeal(e.target.value)}
-                className="mt-2"
-              />
-            </div>
+        {/* Prices */}
+        <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div>
+            <Label>Price per night (₹)</Label>
+            <Input
+              type="number"
+              min="0"
+              value={pricePerNight}
+              onChange={(e) => setPricePerNight(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Veg Meal Price (₹ per guest)</Label>
+            <Input
+              type="number"
+              min="0"
+              value={mealPriceVeg}
+              onChange={(e) => setMealPriceVeg(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Non-Veg Meal Price (₹ per guest)</Label>
+            <Input
+              type="number"
+              min="0"
+              value={mealPriceNonVeg}
+              onChange={(e) => setMealPriceNonVeg(e.target.value)}
+              className="mt-2"
+            />
+          </div>
+
+          <div>
+            <Label>Combo Meal Price (₹ per guest)</Label>
+            <Input
+              type="number"
+              min="0"
+              value={mealPriceCombo}
+              onChange={(e) => setMealPriceCombo(e.target.value)}
+              className="mt-2"
+            />
           </div>
         </div>
 
-        {/* Cover image upload */}
+        {/* IMAGES */}
         <div className="md:flex justify-between md:col-span-3">
           <div className="md:w-[49%]">
             <Label>Cover image</Label>
-            <div className="mt-2 flex flex-col sm:flex-row items-start gap-4">
-              <Input type="file" accept="image/*" onChange={onCoverPick} className="" />
+            <div className="mt-2 flex items-start gap-4">
+              <Input type="file" accept="image/*" onChange={onCoverPick} />
               {(coverFile || coverImage) && (
                 <img
                   src={coverFile ? URL.createObjectURL(coverFile) : coverImage}
-                  alt="Cover preview"
                   className="h-24 w-40 object-cover rounded"
                 />
-              )}
-              {(coverFile || coverImage) && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setCoverFile(null);
-                    setCoverImage("");
-                  }}
-                >
-                  Remove
-                </Button>
               )}
             </div>
           </div>
 
-          {/* Gallery upload */}
           <div className="md:w-[49%]">
             <Label>Gallery images</Label>
             <Input
@@ -321,108 +281,118 @@ export default function RoomsNew() {
               onChange={onGalleryPick}
               className="mt-2"
             />
-            {/* Existing gallery URLs */}
+
+            {/* Existing Images */}
             {galleryUrls.length > 0 && (
-              <div className="mt-3">
-                <div className="text-sm mb-2">Existing images</div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {galleryUrls.map((url) => (
-                    <div key={url} className="relative group">
-                      <img src={url} alt="" className="h-24 w-full object-cover rounded" />
-                      <button
-                        type="button"
-                        onClick={() => removeGalleryUrl(url)}
-                        className="absolute top-1 right-1 rounded bg-black/60 text-white text-xs px-1.5 py-0.5 opacity-0 group-hover:opacity-100"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-          </div>
-
-          {/* Newly selected files */}
-          {galleryFiles.length > 0 && (
-            <div className="mt-3">
-              <div className="text-sm mb-2">New images to upload</div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                {galleryFiles.map((file) => (
-                  <div key={file.name + file.size} className="relative group">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt=""
-                      className="h-24 w-full object-cover rounded"
-                    />
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {galleryUrls.map((url) => (
+                  <div key={url} className="relative group">
+                    <img src={url} className="h-24 w-full object-cover rounded" />
                     <button
                       type="button"
-                      onClick={() => removeGalleryFile(file)}
-                      className="absolute top-1 right-1 rounded bg-black/60 text-white text-xs px-1.5 py-0.5 opacity-0 group-hover:opacity-100"
+                      onClick={() => removeGalleryUrl(url)}
+                      className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100"
                     >
                       Remove
                     </button>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Services & Accommodation */}
-        <div className="md:col-span-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <div>
-                <MultiSelectDropdown
-                  label="Room Services"
-                  options={SERVICE_OPTIONS}
-                  selected={services}
-                  onSelect={(opt) => {
-                    setServices((prev) =>
-                      prev.includes(opt)
-                        ? prev.filter((x) => x !== opt)
-                        : [...prev, opt]
-                    );
-                  }}
-                />
-
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {services.map((s) => (
-                    <Chip key={s} text={s} onRemove={() => removeService(s)} />
-                  ))}
-                </div>
+            {/* New Images */}
+            {galleryFiles.length > 0 && (
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {galleryFiles.map((file) => (
+                  <div key={file.name} className="relative group">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      className="h-24 w-full object-cover rounded"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeGalleryFile(file)}
+                      className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            <div>
-              <div>
-                <MultiSelectDropdown
-                  label="Accommodation"
-                  options={ACCOM_OPTIONS}
-                  selected={accoms}
-                  onSelect={(opt) => {
-                    setAccoms((prev) =>
-                      prev.includes(opt)
-                        ? prev.filter((x) => x !== opt)
-                        : [...prev, opt]
-                    );
-                  }}
-                />
-
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {accoms.map((a) => (
-                    <Chip key={a} text={a} onRemove={() => removeAccom(a)} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
+            )}
           </div>
         </div>
 
-        {/* Description */}
+        {/* AMENITIES SECTION */}
+        <div className="md:col-span-3 bg-gray-50 p-4 rounded border space-y-4">
+          <Label className="text-base font-semibold">Amenities</Label>
+
+          {/* GRID: 2 PER ROW ON DESKTOP */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {amenityCategories.map((cat) => {
+              const isOpen = openCat === cat.id;
+
+              return (
+                <div className="relative">
+                  {/* Header */}
+                  <button
+                    type="button"
+                    onClick={() => setOpenCat(openCat === cat.id ? null : cat.id)}
+                    className="w-full flex items-center justify-between px-4 py-3 border rounded bg-white"
+                  >
+                    <div className="flex items-center gap-2 font-medium">
+                      <cat.icon className="h-4 w-4" />
+                      {cat.label}
+                    </div>
+
+                    <span className="text-gray-500">{openCat === cat.id ? "▲" : "▼"}</span>
+                  </button>
+
+                  {/* DROPDOWN (does NOT push layout) */}
+                  {openCat === cat.id && (
+                    <div className="absolute left-0 right-0 z-50 bg-white border mt-1 p-3 rounded shadow-lg">
+                      <div className="grid grid-cols-2 gap-2">
+                        {cat.items.map((item) => {
+                          const selected = amenities.includes(item.id);
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className={`flex items-center gap-2 border rounded px-3 py-2 text-sm ${selected ? "bg-green-100 border-green-500" : "bg-white"
+                                }`}
+                              onClick={() => toggleAmenity(item.id)}
+                            >
+                              <item.icon className="h-4 w-4" />
+                              {item.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              );
+            })}
+          </div>
+
+          {/* Selected Chips */}
+          <div className="flex flex-wrap gap-2 mt-3">
+            {amenities.map((id) => {
+              const item = amenityCategories
+                .flatMap((c) => c.items)
+                .find((i) => i.id === id);
+
+              if (!item) return null;
+
+              return (
+                <Chip key={id} text={item.label} onRemove={() => toggleAmenity(id)} />
+              );
+            })}
+          </div>
+        </div>
+
+        {/* DESCRIPTION */}
         <div className="md:col-span-3">
           <Label>Description</Label>
           <Textarea
@@ -434,7 +404,7 @@ export default function RoomsNew() {
           />
         </div>
 
-        {/* Submit */}
+        {/* SUBMIT */}
         <div className="md:col-span-3">
           <Button disabled={loading || uploading} type="submit" className="w-full mt-2">
             {uploading

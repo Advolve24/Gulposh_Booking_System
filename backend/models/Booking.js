@@ -10,6 +10,12 @@ const bookingSchema = new mongoose.Schema(
     endDate: { type: Date, required: true },
     guests: { type: Number, required: true, min: 1 },
     withMeal: { type: Boolean, default: false },
+    vegGuests: { type: Number, default: 0 },
+    nonVegGuests: { type: Number, default: 0 },
+    comboGuests: { type: Number, default: 0 },
+    mealTotal: Number,
+    roomTotal: Number,
+
 
     contactName: String,
     contactEmail: String,

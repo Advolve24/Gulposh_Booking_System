@@ -12,11 +12,15 @@ const roomSchema = new mongoose.Schema(
 
     galleryImages: { type: [String], default: [] },
 
+    mealPriceVeg: { type: Number, default: 0 },
+
+    mealPriceNonVeg: { type: Number, default: 0 },
+
+    mealPriceCombo: { type: Number, default: 0 },
+
     description: { type: String, default: "" },
 
-    roomServices: { type: [String], default: [] },
-
-    accommodation: { type: [String], default: [] },
+    amenities: { type: [String], default: [] },
 
     isVilla: { type: Boolean, default: false },
   },

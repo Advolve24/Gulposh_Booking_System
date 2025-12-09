@@ -11,16 +11,18 @@ const toArray = (v) => {
   return [];
 };
 
+
 export const createRoom = async (req, res) => {
   const {
     name,
     pricePerNight,
-    priceWithMeal,
+    mealPriceVeg,
+    mealPriceNonVeg,
+    mealPriceCombo,
     coverImage,
     galleryImages,
     description,
-    roomServices,
-    accommodation,
+    amenities,
   } = req.body || {};
 
   if (!name || pricePerNight === undefined || pricePerNight === null) {
@@ -30,16 +32,20 @@ export const createRoom = async (req, res) => {
   const room = await Room.create({
     name: String(name).trim(),
     pricePerNight: Number(pricePerNight) || 0,
-    priceWithMeal: Number(priceWithMeal) || 0,
+
+    mealPriceVeg: Number(mealPriceVeg) || 0,
+    mealPriceNonVeg: Number(mealPriceNonVeg) || 0,
+    mealPriceCombo: Number(mealPriceCombo) || 0,
+
     coverImage: coverImage || "",
     galleryImages: toArray(galleryImages),
     description: description || "",
-    roomServices: toArray(roomServices),
-    accommodation: toArray(accommodation),
+    amenities: toArray(amenities),
   });
 
   res.status(201).json(room);
 };
+
 
 
 export const listRoomsAdmin = async (_req, res) => {
@@ -47,31 +53,46 @@ export const listRoomsAdmin = async (_req, res) => {
   res.json(rooms);
 };
 
+
 export const getRoomAdmin = async (req, res) => {
   const room = await Room.findById(req.params.id);
   if (!room) return res.status(404).json({ message: "Room not found" });
   res.json(room);
 };
 
+
 export const updateRoom = async (req, res) => {
   const {
-    name, pricePerNight, priceWithMeal,
-    coverImage, galleryImages, description,
-    roomServices, accommodation,
+    name,
+    pricePerNight,
+    mealPriceVeg,
+    mealPriceNonVeg,
+    mealPriceCombo,
+    coverImage,
+    galleryImages,
+    description,
+    amenities,  
   } = req.body || {};
 
   const update = {};
+
   if (name !== undefined) update.name = String(name).trim();
   if (pricePerNight !== undefined) update.pricePerNight = Number(pricePerNight) || 0;
-  if (priceWithMeal !== undefined) update.priceWithMeal = Number(priceWithMeal) || 0;
+
+  if (mealPriceVeg !== undefined) update.mealPriceVeg = Number(mealPriceVeg) || 0;
+  if (mealPriceNonVeg !== undefined) update.mealPriceNonVeg = Number(mealPriceNonVeg) || 0;
+  if (mealPriceCombo !== undefined) update.mealPriceCombo = Number(mealPriceCombo) || 0;
+
   if (coverImage !== undefined) update.coverImage = coverImage || "";
   if (galleryImages !== undefined) update.galleryImages = toArray(galleryImages);
   if (description !== undefined) update.description = description || "";
-  if (roomServices !== undefined) update.roomServices = toArray(roomServices);
-  if (accommodation !== undefined) update.accommodation = toArray(accommodation);
+
+  if (amenities !== undefined) update.amenities = toArray(amenities); // NEW
 
   const room = await Room.findByIdAndUpdate(req.params.id, update, { new: true });
+
   if (!room) return res.status(404).json({ message: "Room not found" });
+
   res.json(room);
 };
 

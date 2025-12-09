@@ -33,26 +33,60 @@ export default function VillaInvoice() {
   }
 
   // --- Calculations ---
-  const serviceCharge = 10;
-  const roomCharges = booking.pricePerNight * booking.nights;
-  const breakfast = 30 * booking.nights; // example
-  const subTotal = roomCharges + breakfast + serviceCharge;
-  const discountPercent = 10;
-  const discountAmount = (subTotal * discountPercent) / 100;
-  const taxPercent = 10;
-  const taxAmount = ((subTotal - discountAmount) * taxPercent) / 100;
-  const grandTotal = subTotal - discountAmount + taxAmount;
+  const roomTotal = booking.pricePerNight * booking.nights;
 
-  // --- Table Data ---
+  // Meal Breakdown
+  const vegTotal = booking.vegGuests * booking.room.mealPriceVeg * booking.nights;
+  const nonVegTotal = booking.nonVegGuests * booking.room.mealPriceNonVeg * booking.nights;
+  const comboTotal = booking.comboGuests * booking.room.mealPriceCombo * booking.nights;
+
+  const mealTotal = vegTotal + nonVegTotal + comboTotal;
+
+  // Final totals
+  const subTotal = roomTotal + mealTotal;
+  const taxPercent = 12;
+  const taxAmount = (subTotal * taxPercent) / 100;
+  const grandTotal = subTotal + taxAmount;
+
+
   const tableData = [
     {
       item: "Room Charges",
-      desc: "Night",
+      desc: "Night(s)",
       price: booking.pricePerNight,
       qty: booking.nights,
     },
-    { item: "Breakfast", desc: "Day", price: 30, qty: booking.nights },
   ];
+
+  if (booking.withMeal) {
+    if (booking.vegGuests > 0) {
+      tableData.push({
+        item: "Veg Meal",
+        price: booking.room.mealPriceVeg,
+        guests: booking.vegGuests,
+        nights: booking.nights,
+      });
+    }
+
+    if (booking.nonVegGuests > 0) {
+      tableData.push({
+        item: "Non-Veg Meal",
+        desc: `${booking.nonVegGuests} guest(s)`,
+        price: booking.room.mealPriceNonVeg,
+        qty: booking.nights,
+      });
+    }
+
+    if (booking.comboGuests > 0) {
+      tableData.push({
+        item: "Combo Meal",
+        desc: `${booking.comboGuests} guest(s)`,
+        price: booking.room.mealPriceCombo,
+        qty: booking.nights,
+      });
+    }
+  }
+
 
   // --- Download PDF ---
   const downloadPDF = async () => {
@@ -196,7 +230,7 @@ export default function VillaInvoice() {
             <div className="tm_table tm_style1 mb-6">
               <div className="tm_round_border">
                 <div className="tm_table_responsive">
-                  <TableStyle13 data={tableData} serviceCharge={serviceCharge} />
+                  <TableStyle13 data={tableData} />
                 </div>
               </div>
 
@@ -215,8 +249,8 @@ export default function VillaInvoice() {
                 <div className="tm_right_footer">
                   <SubTotalStyle2
                     subTotal={subTotal}
-                    discountAmount={discountAmount}
-                    discountPersent={discountPercent}
+                    discountAmount={0}
+                    discountPersent={0}
                     taxPersent={taxPercent}
                     taxAmount={taxAmount}
                     grandTotal={grandTotal}

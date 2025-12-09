@@ -1,3 +1,5 @@
+// controllers/paymentController.js
+
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import Room from "../models/Room.js";
@@ -6,24 +8,22 @@ import { sendWhatsAppText, sendWhatsAppTemplate } from "../utils/whatsapp.js";
 import { sendBookingConfirmationMail } from "../utils/mailer.js";
 import { parseYMD } from "../lib/date.js";
 
+/* ----------------------------- Initialize Razorpay ----------------------------- */
 const rp = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+/* ----------------------------- Helper Functions ----------------------------- */
 const toDateOnly = (d) => {
   const x = new Date(d);
   return new Date(x.getFullYear(), x.getMonth(), x.getDate());
 };
+
 const nightsBetween = (start, end) => {
   const ms = toDateOnly(end) - toDateOnly(start);
   return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
 };
-
-function toUTCDateOnly(d) {
-  const x = new Date(d);
-  return new Date(Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), x.getUTCDate()));
-}
 
 
 export const createOrder = async (req, res) => {
@@ -31,9 +31,24 @@ export const createOrder = async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "Auth required" });
 
-    const { roomId, startDate, endDate, guests, withMeal, contactName, contactEmail, contactPhone } = req.body || {};
+    const {
+      roomId,
+      startDate,
+      endDate,
+      guests,
+      withMeal,
+      vegGuests,
+      nonVegGuests,
+      comboGuests,
+      contactName,
+      contactEmail,
+      contactPhone,
+    } = req.body || {};
+
     if (!roomId || !startDate || !endDate || !guests) {
-      return res.status(400).json({ message: "roomId, startDate, endDate, guests are required" });
+      return res.status(400).json({
+        message: "roomId, startDate, endDate, guests are required",
+      });
     }
 
     const room = await Room.findById(roomId);
@@ -41,15 +56,24 @@ export const createOrder = async (req, res) => {
 
     const nights = nightsBetween(startDate, endDate);
     if (!nights) return res.status(400).json({ message: "Invalid date range" });
-    const pricePerNight = withMeal && room.priceWithMeal > 0 ? room.priceWithMeal : room.pricePerNight;
-    const amountINR = nights * pricePerNight;
+
+    let mealTotal = 0;
+
+    if (withMeal) {
+      mealTotal =
+        nights *
+          (vegGuests * room.mealPriceVeg +
+            nonVegGuests * room.mealPriceNonVeg) +
+        comboGuests * room.mealPriceCombo;
+    }
+
+    const roomTotal = nights * room.pricePerNight;
+    const amountINR = roomTotal + mealTotal;
     const amountPaise = Math.round(amountINR * 100);
 
     const shortId = String(room._id).slice(-6);
     const shortTs = Date.now().toString(36);
-    const receipt = `r_${shortId}_${shortTs}`.slice(0, 40);
-
-    console.log("[rzp] receipt:", receipt, "len:", receipt.length);
+    const receipt = `r_${shortId}_${shortTs}`.substring(0, 40);
 
     const payload = {
       amount: amountPaise,
@@ -61,17 +85,19 @@ export const createOrder = async (req, res) => {
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
         guests: String(guests),
-        withMeal: String(!!withMeal),
+        vegGuests: String(vegGuests),
+        nonVegGuests: String(nonVegGuests),
+        comboGuests: String(comboGuests),
+        mealTotal: String(mealTotal),
+        roomTotal: String(roomTotal),
+        nights: String(nights),
+        pricePerNight: String(room.pricePerNight),
+        amountINR: String(amountINR),
         contactName: contactName || "",
         contactEmail: contactEmail || "",
         contactPhone: contactPhone || "",
-        pricePerNight: String(pricePerNight),
-        nights: String(nights),
-        amountINR: String(amountINR),
       },
     };
-
-    console.log("[rzp] order payload:", { ...payload, notes: "(omitted in log)" });
 
     const order = await rp.orders.create(payload);
 
@@ -80,13 +106,18 @@ export const createOrder = async (req, res) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      computed: { nights, pricePerNight, amountINR },
+      computed: { nights, pricePerNight: room.pricePerNight, amountINR },
     });
   } catch (err) {
     console.error("createOrder error:", err);
-    res.status(400).json({ message: err?.error?.description || err?.message || "Failed to create order" });
+    res.status(400).json({
+      message:
+        err?.error?.description || err?.message || "Failed to create order",
+    });
   }
 };
+
+
 
 export const verifyPayment = async (req, res) => {
   try {
@@ -102,9 +133,17 @@ export const verifyPayment = async (req, res) => {
       endDate,
       guests,
       withMeal,
+      vegGuests,
+      nonVegGuests,
+      comboGuests,
       contactName,
       contactEmail,
       contactPhone,
+      address,
+      country,
+      state,
+      city,
+      pincode,
     } = req.body || {};
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -127,14 +166,22 @@ export const verifyPayment = async (req, res) => {
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "Room not found" });
 
-    const nights = (eDate - sDate) / (1000 * 60 * 60 * 24);
-    if (nights <= 0) return res.status(400).json({ message: "Invalid date range" });
+    const nights = nightsBetween(sDate, eDate);
+    if (!nights) return res.status(400).json({ message: "Invalid date range" });
 
-    const pricePerNight =
-      withMeal && room.priceWithMeal > 0
-        ? room.priceWithMeal
-        : room.pricePerNight;
-    const amountINR = nights * pricePerNight;
+    const roomTotal = nights * room.pricePerNight;
+
+    let mealTotal = 0;
+
+    if (withMeal) {
+      mealTotal =
+        nights *
+          (vegGuests * room.mealPriceVeg +
+            nonVegGuests * room.mealPriceNonVeg) +
+        comboGuests * room.mealPriceCombo;
+    }
+
+    const amountINR = roomTotal + mealTotal;
 
     const booking = await Booking.create({
       user: userId,
@@ -143,11 +190,16 @@ export const verifyPayment = async (req, res) => {
       endDate: eDate,
       guests,
       withMeal: !!withMeal,
+      vegGuests,
+      nonVegGuests,
+      comboGuests,
+      mealTotal,
+      roomTotal,
       contactName: contactName || "",
       contactEmail: contactEmail || "",
       contactPhone: contactPhone || "",
       currency: "INR",
-      pricePerNight,
+      pricePerNight: room.pricePerNight,
       nights,
       amount: amountINR,
       status: "confirmed",
@@ -155,13 +207,7 @@ export const verifyPayment = async (req, res) => {
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       signature: razorpay_signature,
-      addressInfo: {
-        address: req.body.address,
-        country: req.body.country,
-        state: req.body.state,
-        city: req.body.city,
-        pincode: req.body.pincode,
-      },
+      addressInfo: { address, country, state, city, pincode },
     });
 
     const msg = `✅ Hi ${contactName}, your booking is confirmed!
@@ -181,13 +227,14 @@ export const verifyPayment = async (req, res) => {
         booking,
       });
     } catch (mailErr) {
-      console.error("Booking confirmation email failed:", mailErr?.message);
+      console.error("Email failed:", mailErr?.message);
     }
 
     res.json({ ok: true, booking });
   } catch (err) {
     console.error("verifyPayment error:", err);
-    res.status(400).json({ message: err?.message || "Verification failed" });
+    res
+      .status(400)
+      .json({ message: err?.message || "Verification failed" });
   }
 };
-

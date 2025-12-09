@@ -52,7 +52,7 @@ export const getDisabledRanges = async (_req, res) => {
 export const listRooms = async (_req, res) => {
   try {
     const rooms = await Room.find({ isVilla: { $ne: true } })
-      .select("name coverImage pricePerNight priceWithMeal description accommodation maxGuests")
+      .select("name coverImage pricePerNight priceWithMeal description amenities maxGuests")
       .sort({ createdAt: -1 });
     res.json(rooms);
   } catch (err) {
