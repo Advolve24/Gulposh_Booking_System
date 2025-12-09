@@ -12,10 +12,14 @@ import Bookings from "./pages/Bookings";
 import RoomPage from "./pages/RoomPage";
 import VillaBookingForm from "./pages/VillaBookingForm";
 import AdminRoomView from "./pages/RoomView";
+import AdminInvoiceTemplate from "./components/AdminBookingPrint";
 
 function InitAuthWatcher({ children }) {
   const { init, ready } = useAuth();
   const location = useLocation();
+
+
+  
 
   useEffect(() => {
     init(); 
@@ -61,6 +65,7 @@ export default function App() {
               <Route path="/room/:id" element={<RoomPage />} />
               <Route path="/villa-booking" element={<VillaBookingForm />} />
               <Route path="/rooms/view/:id" element={<AdminRoomView />} />
+              <Route path="/invoice/:bookingId" element={<AdminInvoiceTemplate />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </>

@@ -4,144 +4,169 @@ import { format } from "date-fns";
 const AdminInvoiceTemplate = forwardRef(({ booking, adminMeta }, ref) => {
     if (!booking) return null;
 
-    const serviceCharge = 10;
-    const roomCharges = booking.pricePerNight * booking.nights;
-    const breakfast = 30 * booking.nights;
-    const subTotal = roomCharges + breakfast + serviceCharge;
-    const discountPercent = 10;
-    const discountAmount = (subTotal * discountPercent) / 100;
-    const taxPercent = 10;
-    const taxAmount = ((subTotal - discountAmount) * taxPercent) / 100;
-    const grandTotal = subTotal - discountAmount + taxAmount;
     const safe = (v1, v2, v3 = "—") => v1 || v2 || v3;
 
     return (
         <div
             ref={ref}
-            className="w-[800px] bg-white rounded-xl shadow-lg p-10 mx-auto font-sans text-gray-700"
+            style={{
+                width: "800px",
+                background: "#fff",
+                borderRadius: "16px",
+                padding: "40px 50px",
+                fontFamily: "Arial, sans-serif",
+                color: "#1F2937",
+                margin: "0 auto",
+            }}
         >
+
             {/* HEADER */}
-            <div className="flex justify-between items-start border-b pb-6">
-                <div>
-                    <img src="/pdfLogo.png" alt="Logo" className="h-14" />
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                    <img src="/pdfLogo.png" alt="Logo" style={{ height: "46px", width: "46px" }} />
+                    <div>
+                        <div style={{ fontSize: "22px", fontWeight: "bold" }}>Gulposh</div>
+                        <div style={{ fontSize: "12px", marginTop: "-4px" }}>IN REPOSE</div>
+                    </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-sm text-gray-500 mt-1">
-                        Booking ID -{booking._id.toString().slice(-6).toUpperCase()}
-                    </p>
-                </div>
-            </div>
 
-            {/* Guest Info */}
-            <div className="grid grid-cols-2 gap-6 mt-2 border-b pb-6">
-                <div className="mt-0">
-                    <b className="block mb-2 text-gray-900">Guest Details:</b>
-
-                    <ul className="list-disc list-inside text-gray-700 text-sm leading-relaxed space-y-1">
-                        <li>
-                            <span className="font-medium text-gray-800">Full Name:</span>{" "}
-                            {safe(adminMeta?.fullName, booking.contactName)}
-                        </li>
-                        <li>
-                            <span className="font-medium text-gray-800">Phone Number:</span>{" "}
-                            {safe(adminMeta?.phone, booking.contactPhone)}
-                        </li>
-                        <li>
-                            <span className="font-medium text-gray-800">Government ID Type:</span>{" "}
-                            {safe(adminMeta?.govIdType, booking.adminMeta?.govIdType)}
-                        </li>
-                        <li>
-                            <span className="font-medium text-gray-800">Government ID Number:</span>{" "}
-                            {safe(adminMeta?.govIdNumber, booking.adminMeta?.govIdNumber)}
-                        </li>
-                    </ul>
+                <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "11px", marginBottom: "4px", color: "#6B7280" }}>BOOKING ID</div>
+                    <div style={{ fontWeight: "bold", fontSize: "14px" }}>
+                        {booking._id.toString().slice(-6).toUpperCase()}
+                    </div>
                 </div>
             </div>
 
-            {/* Stay Info */}
-            <div className="grid grid-cols-2 gap-6 mt-2 border-b pb-6">
-                <div className="mt-0">
-                    <b className="block mb-2 text-gray-900">Stay Information:</b>
+            {/* SECTION: Guest Details */}
+            <SectionTitle title="Guest Details" />
 
-                    <ul className="list-disc list-inside text-gray-700 text-sm leading-relaxed space-y-1">
-                        <li>
-                            <span className="font-medium text-gray-800">Check-In Date:</span>{" "}
-                            {format(new Date(booking.startDate), "dd MMM yyyy")}
-                        </li>
-                        <li>
-                            <span className="font-medium text-gray-800">Check-Out Date:</span>{" "}
-                            {format(new Date(booking.endDate), "dd MMM yyyy")}
-                        </li>
-                        <li>
-                            <span className="font-medium text-gray-800">Number Of Guests:</span>{" "}
-                            {booking.guests}
-                        </li>
-                        <li>
-                            <span className="font-medium text-gray-800">Room Assigned:</span>{" "}
-                            {booking.room?.name || "—"}
-                        </li>
-                    </ul>
+            <Row label="Full Name:" value={safe(adminMeta?.fullName, booking?.contactName)} />
+            <Row label="Phone Number:" value={safe(adminMeta?.phone, booking?.contactPhone)} />
+            <Row label="Government ID Type:" value={safe(adminMeta?.govIdType, booking?.adminMeta?.govIdType)} />
+            <Row label="Government ID Number:" value={safe(adminMeta?.govIdNumber, booking?.adminMeta?.govIdNumber)} />
 
+            {/* SECTION: Stay Information */}
+            <SectionTitle title="Stay Information" />
+
+            <Row label="Check-In Date:" value={format(new Date(booking.startDate), "dd MMM yyyy")} />
+            <Row label="Check-Out Date:" value={format(new Date(booking.endDate), "dd MMM yyyy")} />
+            <Row label="Number Of Guests:" value={booking.guests} />
+            <Row label="Room Assigned:" value={booking.room?.name || "—"} />
+
+            {/* SECTION: Payment Information */}
+            <SectionTitle title="Payment Information" />
+
+            <Row label="Amount Paid:" value={`₹${safe(adminMeta?.amountPaid, booking.amount, 0)}`} />
+            <Row
+                label="Payment Mode:"
+                value={safe(adminMeta?.paymentMode, booking.paymentProvider, "Cash")}
+            />
+            <Row label="Transaction ID:" value={booking.paymentId || booking.orderId || "N/A"} />
+
+            {/* SECTION: Guest Consent */}
+            <SectionTitle title="Guest Consent" />
+
+            <div
+                style={{
+                    border: "1px solid #E5E7EB",
+                    borderRadius: "8px",
+                    padding: "14px 18px",
+                    background: "#F9FAFB",
+                    marginBottom: "24px",
+                    display: "flex",
+                    gap: "12px",
+                    alignItems: "flex-start",
+                }}
+            >
+                <div
+                    style={{
+                        width: "18px",
+                        height: "18px",
+                        border: "2px solid #4B5563",
+                        borderRadius: "4px",
+                        marginTop: "3px",
+                    }}
+                ></div>
+                <div style={{ fontSize: "14px", lineHeight: "20px", color: "#1F2937" }}>
+                    I confirm that the above details are true and correct and I have
+                    read and agreed to the terms and conditions.
                 </div>
-
-
             </div>
-            {/* Payment Information */}
-            <div className="grid grid-cols-2 gap-6 mt-2 border-b pb-6">
-                <div className="mt-0">
-                    <b className="block mb-2 text-gray-900">Payment Information:</b>
 
-                    <ul className="list-disc list-inside text-gray-700 text-sm leading-relaxed space-y-1">
-                        <li>
-                            <span className="font-medium text-gray-800">Amount Paid:</span>{" "}
-                            ₹{safe(adminMeta?.amountPaid, booking.amount, 0)}
-                        </li>
-                        <li>
-                            <span className="font-medium text-gray-800">Payment Mode:</span>{" "}
-                            {safe(adminMeta?.paymentMode, booking.paymentProvider, "Cash")}
-                        </li>
-                        <li>
-                            <span className="font-medium text-gray-800">Transaction ID:</span>{" "}
-                            {booking.paymentId || booking.orderId || "N/A"}
-                        </li>
-                    </ul>
+            {/* Signature Box */}
+            <div style={{ marginBottom: "40px" }}>
+                <div style={{ fontWeight: "bold", marginBottom: "8px" }}>Guest Signature:</div>
 
-                </div>
-
-
-            </div>
-
-            {/* GUEST CONSENT SECTION */}
-            <div className="mt-4 pt-2 text-sm">
-                <b className="block mb-2 text-gray-900">Guest Consent:</b>
-                <div className="flex items-start gap-3">
-                    <div className="w-5 h-5 border border-gray-400 rounded-sm mt-2"></div>
-                    <p className="text-gray-600">
-                        I confirm that the above details are true and correct and I have
-                        read and agreed to the terms and conditions.
-                    </p>
-                </div>
-
-                {/* Guest Signature Line */}
-                <div className="mt-8">
-                    <p className="text-gray-700">
-                        Guest Signature: ________________________________
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                        (Please sign after verifying the details)
-                    </p>
+                <div
+                    style={{
+                        border: "1px dashed #9CA3AF",
+                        borderRadius: "8px",
+                        padding: "32px 20px",
+                        textAlign: "center",
+                        color: "#9CA3AF",
+                        fontSize: "12px",
+                    }}
+                >
+                    (Please sign after verifying the details)
                 </div>
             </div>
 
             {/* FOOTER */}
-            <div className="text-center text-sm text-gray-500 mt-10 pt-4 border-t">
-                <b className="text-gray-800 block mb-1">Terms And Conditions:</b>
-                Your use of the Website shall be deemed to constitute your understanding
-                and approval of, and agreement to be bound by, the Privacy Policy and
-                you consent to the collection.
+            <div
+                style={{
+                    textAlign: "center",
+                    fontSize: "12px",
+                    color: "#6B7280",
+                    borderTop: "1px solid #E5E7EB",
+                    paddingTop: "18px",
+                }}
+            >
+                <div style={{ fontWeight: "bold", marginBottom: "6px", color: "#1F2937" }}>
+                    Terms And Conditions:
+                </div>
+                Your use of the Website shall be deemed to constitute your understanding and
+                approval of, and agreement to be bound by, the Privacy Policy and you consent
+                to the collection.
             </div>
         </div>
     );
 });
 
 export default AdminInvoiceTemplate;
+
+/* -------- SUB COMPONENTS -------- */
+
+function SectionTitle({ title }) {
+    return (
+        <div
+            style={{
+                fontWeight: "bold",
+                marginTop: "26px",
+                marginBottom: "12px",
+                paddingBottom: "6px",
+                borderBottom: "1px solid #E5E7EB",
+                fontSize: "15px",
+            }}
+        >
+            {title}
+        </div>
+    );
+}
+
+function Row({ label, value }) {
+    return (
+        <div
+            style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "14px",
+                marginBottom: "10px",
+                lineHeight: "20px",
+            }}
+        >
+            <div style={{ color: "#374151", width: "40%" }}>{label}</div>
+            <div style={{ fontWeight: "500", width: "60%", textAlign: "right" }}>{value}</div>
+        </div>
+    );
+}
