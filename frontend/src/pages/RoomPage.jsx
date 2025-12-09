@@ -8,73 +8,10 @@ import ImageSlider from "../components/ImageSlider";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp } from "lucide-react";
-
+import AmenitiesDropdown from "@/components/AmenitiesDropdown";
 import { amenityCategories } from "../data/aminities"; // NEW
 
 
-/* ---------------- Dropdown Amenities UI ---------------- */
-function AmenitiesDropdown({ amenities }) {
-  const [open, setOpen] = useState(null);
-
-  return (
-    <div className="space-y-4">
-      <h3 className="text-xl font-semibold mb-2">Amenities</h3>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {amenityCategories.map((cat) => {
-          const isOpen = open === cat.id;
-
-          const selectedItems = cat.items.filter((i) =>
-            amenities.includes(i.id)
-          );
-
-          if (selectedItems.length === 0) return null;
-
-          return (
-            <div key={cat.id} className="border rounded-lg bg-white">
-              {/* Header */}
-              <button
-                type="button"
-                onClick={() => setOpen(isOpen ? null : cat.id)}
-                className="w-full flex justify-between items-center p-3 font-medium"
-              >
-                <span className="flex items-center gap-2">
-                  <cat.icon className="w-4 h-4" />
-                  {cat.label}
-                </span>
-
-                {isOpen ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </button>
-
-              {/* Content */}
-              {isOpen && (
-                <div className="p-3 border-t space-y-2">
-                  {selectedItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-2 text-sm border rounded px-2 py-1"
-                    >
-                      <item.icon className="w-4 h-4" />
-                      {item.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-
-
-/* ---------------- Date Merge Utility ---------------- */
 function mergeRanges(ranges) {
   if (!ranges || !ranges.length) return [];
 
