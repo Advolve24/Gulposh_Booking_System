@@ -9,7 +9,7 @@ import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import AmenitiesDropdown from "@/components/AmenitiesDropdown";
-import { amenityCategories } from "../data/aminities"; // NEW
+import { amenityCategories } from "../data/aminities"; 
 
 
 function mergeRanges(ranges) {
@@ -38,7 +38,6 @@ function mergeRanges(ranges) {
 }
 
 
-/* ---------------- MAIN PAGE ---------------- */
 export default function RoomPage() {
   const { id } = useParams();
   const location = useLocation();
@@ -53,7 +52,6 @@ export default function RoomPage() {
   const [blackoutRanges, setBlackoutRanges] = useState([]);
 
 
-  /* ---------------- Fetch Booked Dates ---------------- */
   const fetchAllBookedRanges = async () => {
     try {
       let res = await api.get("/rooms/disabled/all");
@@ -92,7 +90,6 @@ export default function RoomPage() {
 
 
 
-  /* ---------------- Load Room + Booked Ranges ---------------- */
   useEffect(() => {
     api
       .get(`/rooms/${id}`)
@@ -115,7 +112,6 @@ export default function RoomPage() {
 
 
 
-  /* ---------------- Load Query Params ---------------- */
   useEffect(() => {
     const stateFrom = location.state?.from;
     const stateTo = location.state?.to;
@@ -140,7 +136,6 @@ export default function RoomPage() {
 
 
 
-  /* ---------------- Update Query Params ---------------- */
   useEffect(() => {
     const sp = new URLSearchParams(searchParams);
     if (range?.from && range?.to) {
@@ -155,7 +150,6 @@ export default function RoomPage() {
 
 
 
-  /* ---------------- Guests ---------------- */
   const onGuestsChange = (v) => {
     setGuests(v);
     const sp = new URLSearchParams(searchParams);
@@ -166,7 +160,6 @@ export default function RoomPage() {
 
 
 
-  /* ---------------- Max Guests Calculation ---------------- */
   const maxGuestsCap = useMemo(() => {
     if (!room) return null;
     if (typeof room.maxGuests === "number" && room.maxGuests > 0) return room.maxGuests;
@@ -181,7 +174,6 @@ export default function RoomPage() {
 
 
 
-  /* ---------------- Disable Booked Dates ---------------- */
   const disabledAll = useMemo(
     () => mergeRanges([...(blackoutRanges || []), ...(bookedAll || [])]),
     [blackoutRanges, bookedAll]
@@ -189,7 +181,6 @@ export default function RoomPage() {
 
 
 
-  /* ---------------- Go to Checkout ---------------- */
   const goToCheckout = () => {
     if (!range?.from || !range?.to) return alert("Please select dates first");
     if (!guests) return alert("Please select number of guests");
@@ -215,7 +206,6 @@ export default function RoomPage() {
 
 
 
-  /* ---------------- All Images ---------------- */
   const allImages = useMemo(
     () => [room?.coverImage, ...(room?.galleryImages || [])].filter(Boolean),
     [room]
@@ -227,7 +217,6 @@ export default function RoomPage() {
 
 
 
-  /* ---------------- RENDER PAGE ---------------- */
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 space-y-6">
 
