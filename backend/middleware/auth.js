@@ -5,10 +5,18 @@ export function authRequired(req, res, next) {
     const hdr = req.headers.authorization || "";
     const bearer = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
     const token = req.cookies?.token || bearer;
-    if (!token) return res.status(401).json({ message: "Auth required" });
+
+    if (!token) {
+      return res.status(401).json({ message: "Auth required" });
+    }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: decoded.id, email: decoded.email, isAdmin: !!decoded.isAdmin };
+
+    req.user = {
+      id: decoded.id,
+      isAdmin: !!decoded.isAdmin,
+    };
+
     next();
   } catch (err) {
     if (err.name === "TokenExpiredError") {

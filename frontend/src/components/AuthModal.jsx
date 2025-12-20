@@ -1,278 +1,215 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../store/authStore";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription} from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Eye, EyeOff } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 
+import { signInWithPhoneNumber } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
-const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-const isValidGmail = (email) => /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email.trim());
-const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone.trim());
+const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
 
 export default function AuthModal() {
-  const { showAuthModal, closeAuth, login, register } = useAuth();
-  const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", dob: null, });
-  const [errors, setErrors] = useState({});
+  const { showAuthModal, closeAuth, phoneLogin, user } = useAuth();
+
+  const [step, setStep] = useState("phone"); // phone | otp
   const [loading, setLoading] = useState(false);
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
-  const user = useAuth((state) => state.user);
 
+  const [form, setForm] = useState({
+    phone: "",
+    otp: "",
+    name: "",
+    dob: null,
+  });
 
-  const validate = (mode) => {
-    const newErrors = {};
-    if (mode === "login") {
-      if (!form.email.trim()) newErrors.email = "Email is required.";
-      else if (!isValidEmail(form.email)) newErrors.email = "Enter a valid email.";
-      if (!form.password) newErrors.password = "Password is required.";
-    } else if (mode === "register") {
-      if (!form.name.trim()) newErrors.name = "Name is required.";
-      if (!form.email.trim()) newErrors.email = "Email is required.";
-      else if (!isValidEmail(form.email)) newErrors.email = "Enter a valid email address.";
-      else if (!isValidGmail(form.email)) newErrors.email = "Only Gmail addresses are allowed.";
-      if (!form.phone.trim()) newErrors.phone = "Phone number is required.";
-      else if (!isValidPhone(form.phone)) newErrors.phone = "Enter a valid 10-digit phone number.";
-      if (!form.password) newErrors.password = "Password is required.";
-      else if (form.password.length < 6) newErrors.password = "Password must be at least 6 characters.";
+  /* ================= SEND OTP ================= */
+  const sendOtp = async () => {
+    if (!isValidPhone(form.phone)) {
+      toast.error("Enter a valid 10-digit mobile number");
+      return;
     }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    try {
+      setLoading(true);
+      const appVerifier = getRecaptchaVerifier();
+
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        `+91${form.phone}`,
+        appVerifier
+      );
+
+      window.confirmationResult = confirmation;
+      setStep("otp");
+      toast.success("OTP sent successfully");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send OTP. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const onLogin = async () => {
-  if (!validate("login")) return;
-  setLoading(true);
-  try {
-    await login(form.email.trim(), form.password);
-    toast.success("Signed in successfully 🎉"); 
-    closeAuth(); 
-  } catch (err) {
-    if (err.response && err.response.status === 400 && err.response.data?.message) {
-      const msg = err.response.data.message;
-      if (msg.includes("Invalid credentials")) {
-        toast.error("Invalid email or password");
-      } else {
-        toast.error(msg);
-      }
-    } else {
-      toast.error("Failed to sign in. Please try again.");
+  /* ================= VERIFY OTP ================= */
+  const verifyOtp = async () => {
+    if (!form.otp || form.otp.length !== 6) {
+      toast.error("Enter valid 6-digit OTP");
+      return;
     }
-  } finally {
-    setLoading(false);
-  }
-};
 
- const onRegister = async () => {
-  if (!validate("register")) return;
-  const phone = form.phone.replace(/[^\d]/g, "").trim();
-  setLoading(true);
-  try {
-    await register(form.name.trim(), form.email.trim(), form.password, phone, form.dob);
-    toast.success("Account created successfully 🎉");
+    try {
+      setLoading(true);
+      await window.confirmationResult.confirm(form.otp);
 
-    setForm({ name: "", email: "", password: "", phone: "", dob: null });
+      // OTP verified → backend login / register
+      await phoneLogin({
+        phone: form.phone,
+        name: form.name,
+        dob: form.dob,
+      });
 
-    closeAuth();
-  } catch (err) {
-    if (err.response && err.response.status === 400 && err.response.data?.message) {
-      const msg = err.response.data.message;
-      if (msg.includes("Email already registered")) {
-        toast.error("Email is already in use, please enter another one");
-      } else {
-        toast.error(msg);
-      }
-    } else {
-      toast.error("Failed to create account. Please try again.");
+      toast.success("Logged in successfully 🎉");
+      closeAuth();
+    } catch (err) {
+      console.error(err);
+      toast.error("Invalid OTP. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
-  const handlePhoneChange = (e) => {
-    const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 10);
-    setForm((f) => ({ ...f, phone: digitsOnly }));
   };
 
+  /* ================= PREFILL USER ================= */
   useEffect(() => {
-    if (user?.name || user?.email || user?.phone || user?.dob) {
+    if (user?.phone) {
       setForm((f) => ({
         ...f,
-        name: user?.name || f.name,
-        email: user?.email || f.email,
-        phone: user?.phone || f.phone,
-        dob: user?.dob ? new Date(user.dob) : f.dob || "",
+        phone: user.phone,
+        name: user.name || "",
+        dob: user.dob ? new Date(user.dob) : null,
       }));
     }
   }, [user]);
+
   return (
-    <Dialog open={showAuthModal} onOpenChange={(open) => !open && closeAuth()}>
+    <Dialog open={showAuthModal} onOpenChange={(o) => !o && closeAuth()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Welcome</DialogTitle>
-          <DialogDescription>Sign in or create a new account to continue.</DialogDescription>
+          <DialogTitle>
+            {step === "phone" ? "Login with Mobile" : "Verify OTP"}
+          </DialogTitle>
+          <DialogDescription>
+            {step === "phone"
+              ? "Enter your mobile number to receive OTP"
+              : "Enter the OTP sent to your mobile"}
+          </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="login">Sign in</TabsTrigger>
-            <TabsTrigger value="register">Sign up</TabsTrigger>
-          </TabsList>
-
-          {/* LOGIN */}
-          <TabsContent value="login" className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="login-email">Email</Label>
+        {/* STEP 1: PHONE */}
+        {step === "phone" && (
+          <div className="space-y-4">
+            <div>
+              <Label>Mobile Number</Label>
               <Input
-                id="login-email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="you@gmail.com"
-                autoComplete="email"
-              />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="login-password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="login-password"
-                  type={showLoginPassword ? "text" : "password"}
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                  className="pr-10"
-                />
-                <div className="pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowLoginPassword((prev) => !prev)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
-                >
-                  {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-                </div>
-              </div>
-              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-            </div>
-
-            <Button className="w-full" onClick={onLogin} disabled={loading}>
-              {loading ? "Signing in..." : "Sign in"}
-            </Button>
-          </TabsContent>
-
-          {/* REGISTER */}
-          <TabsContent value="register" className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="reg-name">Name</Label>
-              <Input
-                id="reg-name"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Your name"
-                autoComplete="name"
-              />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="reg-email">Email</Label>
-              <Input
-                id="reg-email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="you@gmail.com"
-                autoComplete="email"
-              />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="reg-phone">Phone</Label>
-              <Input
-                id="reg-phone"
                 type="tel"
                 inputMode="numeric"
-                value={form.phone}
-                onChange={handlePhoneChange}
                 placeholder="10-digit mobile number"
-                autoComplete="tel"
+                value={form.phone}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                  }))
+                }
               />
-              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="reg-password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="reg-password"
-                  type={showRegisterPassword ? "text" : "password"}
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  placeholder="Create a strong password"
-                  autoComplete="new-password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowRegisterPassword((prev) => !prev)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
-                >
-                  {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            <div>
+              <Label>Name (optional)</Label>
+              <Input
+                placeholder="Your name"
+                value={form.name}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, name: e.target.value }))
+                }
+              />
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="reg-dob">Date of Birth</Label>
+            <div>
+              <Label>Date of Birth (optional)</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={`w-full justify-start text-left font-normal ${!form.dob && "text-muted-foreground"
-                      }`}
+                    className="w-full justify-start text-left font-normal"
                   >
-                    {form.dob ? format(form.dob, "PPP") : "Select your date of birth"}
+                    {form.dob ? format(form.dob, "PPP") : "Select date"}
                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
                     selected={form.dob}
-                    onSelect={(date) => setForm((f) => ({ ...f, dob: date }))}
-                    captionLayout="dropdown"
+                    onSelect={(date) =>
+                      setForm((f) => ({ ...f, dob: date }))
+                    }
                     fromYear={1950}
                     toYear={new Date().getFullYear()}
                   />
                 </PopoverContent>
               </Popover>
-              {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
             </div>
 
-           <div className="pt-3">
-            <Button className="w-full" onClick={onRegister} disabled={loading}>
-              {loading ? "Creating..." : "Create account"}
+            <Button className="w-full" onClick={sendOtp} disabled={loading}>
+              {loading ? "Sending OTP..." : "Send OTP"}
             </Button>
+          </div>
+        )}
+
+        {/* STEP 2: OTP */}
+        {step === "otp" && (
+          <div className="space-y-4">
+            <div>
+              <Label>Enter OTP</Label>
+              <Input
+                inputMode="numeric"
+                placeholder="6-digit OTP"
+                value={form.otp}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    otp: e.target.value.replace(/\D/g, "").slice(0, 6),
+                  }))
+                }
+              />
             </div>
-            
-          </TabsContent>
-        </Tabs>
+
+            <Button className="w-full" onClick={verifyOtp} disabled={loading}>
+              {loading ? "Verifying..." : "Verify & Continue"}
+            </Button>
+
+            <Button
+              variant="ghost"
+              className="w-full text-sm"
+              onClick={() => setStep("phone")}
+            >
+              Change mobile number
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

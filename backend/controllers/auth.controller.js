@@ -1,14 +1,12 @@
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
 
-const normalizeEmail = (e = "") => String(e).trim().toLowerCase();
 const normalizePhone = (p = "") => String(p).trim();
 
 function createAccessToken(user) {
   return jwt.sign(
-    { id: user._id, email: user.email, isAdmin: !!user.isAdmin },
+    { id: user._id, isAdmin: !!user.isAdmin },
     process.env.JWT_SECRET,
     { expiresIn: "45m" }
   );
@@ -22,80 +20,67 @@ function createRefreshToken(user) {
   );
 }
 
-
-export const register = async (req, res) => {
+/**
+ * PHONE LOGIN / AUTO REGISTER
+ * POST /auth/phone-login
+ */
+export const phoneLogin = async (req, res) => {
   try {
-    const { name, email, password, phone, remember, dob } = req.body || {};
-    if (!name || !email || !password || !phone) {
-      return res.status(400).json({ message: "Name, email, password, and phone are required" });
+    const { phone, name, email, dob } = req.body || {};
+
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number is required" });
     }
 
-    const normalizedEmail = normalizeEmail(email);
-    const existing = await User.findOne({ email: normalizedEmail });
-    if (existing) return res.status(400).json({ message: "Email already registered" });
+    const normalizedPhone = normalizePhone(phone);
 
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      name: name.trim(),
-      email: normalizedEmail,
-      passwordHash,
-      phone: normalizePhone(phone),
-      dob: dob ? new Date(dob) : undefined,
-    });
+    let user = await User.findOne({ phone: normalizedPhone });
 
-    const accessToken = createAccessToken(user);
-    const refreshToken = createRefreshToken(user);
-
-    setSessionCookie(res, "token", accessToken, { path: "/", persistent: false });
-    setSessionCookie(res, "refresh_token", refreshToken, { path: "/", persistent: true, days: 10 });
-
-    res.json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      dob: user.dob || null,
-      isAdmin: !!user.isAdmin,
-    });
-  } catch (err) {
-    console.error("Register error:", err);
-    res.status(500).json({ message: "Failed to register" });
-  }
-};
-
-
-export const login = async (req, res) => {
-  try {
-    const { email, password, remember } = req.body || {};
-    if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
-
-    const user = await User.findOne({ email: normalizeEmail(email) });
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
-
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) return res.status(400).json({ message: "Invalid credentials" });
+    if (!user) {
+      user = await User.create({
+        phone: normalizedPhone,
+        name: name || "Guest",
+        email: email || undefined,
+        dob: dob ? new Date(dob) : undefined,
+      });
+    }
 
     const accessToken = createAccessToken(user);
     const refreshToken = createRefreshToken(user);
 
     setSessionCookie(res, "token", accessToken, { path: "/", persistent: false });
-    setSessionCookie(res, "refresh_token", refreshToken, { path: "/", persistent: !!remember, days: 10 });
+    setSessionCookie(res, "refresh_token", refreshToken, {
+      path: "/",
+      persistent: true,
+      days: 10,
+    });
 
     res.json({
       id: user._id,
       name: user.name,
-      email: user.email,
       phone: user.phone,
+      email: user.email || null,
       dob: user.dob || null,
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ message: "Failed to login" });
+    console.error("phoneLogin error:", err);
+    res.status(500).json({ message: "Phone login failed" });
   }
 };
 
+/**
+ * LOGOUT
+ */
+export const logout = (_req, res) => {
+  clearSessionCookie(res, "token", { path: "/" });
+  clearSessionCookie(res, "refresh_token", { path: "/" });
+  res.json({ message: "Logged out" });
+};
 
+/**
+ * REFRESH SESSION
+ */
 export const refreshSession = async (req, res) => {
   try {
     const token = req.cookies?.refresh_token;
@@ -115,82 +100,52 @@ export const refreshSession = async (req, res) => {
   }
 };
 
-
-export const logout = (_req, res) => {
-  clearSessionCookie(res, "token", { path: "/" });
-  clearSessionCookie(res, "refresh_token", { path: "/" });
-  res.json({ message: "Logged out" });
-};
-
-
+/**
+ * GET MY PROFILE
+ */
 export const me = async (req, res) => {
-  const u = await User.findById(req.user.id).select("name email phone dob isAdmin");
-  if (!u) return res.status(401).json({ message: "Unauthorized" });
-  res.json({ id: u._id, name: u.name, email: u.email, phone: u.phone, dob: u.dob || null, isAdmin: !!u.isAdmin });
+  const user = await User.findById(req.user.id).select(
+    "name phone email dob isAdmin"
+  );
+
+  if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+  res.json({
+    id: user._id,
+    name: user.name,
+    phone: user.phone,
+    email: user.email || null,
+    dob: user.dob || null,
+    isAdmin: !!user.isAdmin,
+  });
 };
 
-
+/**
+ * UPDATE PROFILE
+ */
 export const updateMe = async (req, res) => {
   try {
-    const { name, email, phone, dob } = req.body || {};
+    const { name, email, dob } = req.body || {};
     const user = await User.findById(req.user.id);
+
     if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-    let emailChanged = false;
-    if (email !== undefined) {
-      const newEmail = normalizeEmail(email);
-      if (newEmail !== user.email) {
-        const exists = await User.findOne({ email: newEmail, _id: { $ne: user._id } }).lean();
-        if (exists) return res.status(400).json({ message: "Email already in use" });
-        user.email = newEmail;
-        emailChanged = true;
-      }
-    }
-
     if (name !== undefined) user.name = String(name).trim();
-    if (phone !== undefined) user.phone = String(phone).trim();
-    if (dob !== undefined) user.dob = dob ? new Date(dob) : null; // 👈 Added line
+    if (email !== undefined) user.email = String(email).trim();
+    if (dob !== undefined) user.dob = dob ? new Date(dob) : null;
 
     await user.save();
-
-    if (emailChanged) {
-      const accessToken = createAccessToken(user);
-      setSessionCookie(res, "token", accessToken, { path: "/", persistent: false });
-    }
 
     res.json({
       id: user._id,
       name: user.name,
-      email: user.email,
       phone: user.phone,
-      dob: user.dob || null, 
+      email: user.email || null,
+      dob: user.dob || null,
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
     console.error("updateMe error:", err);
     res.status(500).json({ message: "Failed to update profile" });
-  }
-};
-
-
-
-export const changePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body || {};
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "Both current and new password are required" });
-    }
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(401).json({ message: "Unauthorized" });
-
-    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!ok) return res.status(400).json({ message: "Current password is incorrect" });
-
-    user.passwordHash = await bcrypt.hash(newPassword, 10);
-    await user.save();
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("changePassword error:", err);
-    res.status(500).json({ message: "Failed to change password" });
   }
 };

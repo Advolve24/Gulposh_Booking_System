@@ -5,41 +5,34 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       trim: true,
-      required: [true, "Name is required"],
-      minlength: [2, "Name must be at least 2 characters long"],
-      maxlength: [50, "Name must be less than 50 characters long"],
-      match: [/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"]
+      default: "Guest",
+      minlength: 2,
+      maxlength: 50,
     },
-    email: {
-      type: String,
-      unique: true,
-      required: [true, "Email is required"],
-      lowercase: true,
-      trim: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        "Please enter a valid email address"
-      ]
-    },
+
     phone: {
       type: String,
+      required: true,
+      unique: true,
       trim: true,
-      default: "",
-      match: [/^\d{10}$/, "Phone number must be exactly 10 digits"]
+      match: [/^\d{10}$/, "Phone number must be exactly 10 digits"],
     },
-    passwordHash: {
+
+    email: {
       type: String,
-      required: [true, "Password is required"],
-      minlength: [8, "Password must be at least 8 characters long"]
+      required: false,
+      lowercase: true,
+      trim: true,
     },
+
     dob: {
       type: Date,
-      required: false, 
     },
+
     isAdmin: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   { timestamps: true }
 );
