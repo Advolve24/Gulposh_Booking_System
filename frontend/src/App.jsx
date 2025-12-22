@@ -30,20 +30,24 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      {/* 🔑 REQUIRED FOR FIREBASE PHONE AUTH */}
+      <div id="recaptcha-container"></div>
+
       <ScrollToTop />
       <Header />
       <AuthModal />
+
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/room/:id" element={<RoomPage />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/bookings" element={<MyBookings />} />
         <Route path="/my-account" element={<MyAccount />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/invoices" element={<Invoices />} />
         <Route path="/invoice-view/:id" element={<VillaInvoice />} />
         <Route path="/entire-villa-form" element={<EntireVillaform />} />
         <Route path="/thank-you" element={<ThankYou />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

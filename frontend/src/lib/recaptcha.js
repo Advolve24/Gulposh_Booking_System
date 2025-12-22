@@ -1,7 +1,7 @@
 import { RecaptchaVerifier } from "firebase/auth";
 import { auth } from "./firebase";
 
-let recaptchaVerifier = null;
+let recaptchaVerifier;
 
 export const getRecaptchaVerifier = () => {
   if (!recaptchaVerifier) {
@@ -10,8 +10,17 @@ export const getRecaptchaVerifier = () => {
       "recaptcha-container",
       {
         size: "invisible",
+        callback: () => {
+        },
       }
     );
   }
   return recaptchaVerifier;
+};
+
+export const clearRecaptchaVerifier = () => {
+  if (recaptchaVerifier) {
+    recaptchaVerifier.clear();
+    recaptchaVerifier = null;
+  }
 };

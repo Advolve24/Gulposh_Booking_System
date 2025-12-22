@@ -18,7 +18,7 @@ import { toast } from "sonner";
 
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getRecaptchaVerifier } from "@/lib/recaptcha";
+import { getRecaptchaVerifier, clearRecaptchaVerifier } from "@/lib/recaptcha";
 
 const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
 
@@ -56,9 +56,11 @@ export default function AuthModal() {
       setStep("otp");
       toast.success("OTP sent successfully");
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to send OTP. Try again.");
-    } finally {
+  console.error(err);
+  clearRecaptchaVerifier();
+  toast.error("Failed to send OTP. Try again.");
+}
+ finally {
       setLoading(false);
     }
   };
