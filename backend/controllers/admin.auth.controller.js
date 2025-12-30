@@ -6,31 +6,52 @@ import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
 const normalizeEmail = (e = "") => String(e).trim().toLowerCase();
 
 export const adminLogin = async (req, res) => {
-  const { email, password, remember } = req.body || {};
-  if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
+  try {
+    const { email, password } = req.body;
 
-  const user = await User.findOne({ email: normalizeEmail(email) });
-  if (!user || !user.isAdmin) return res.status(403).json({ message: "Admins only" });
+   const user = await User
+  .findOne({
+    email: normalizeEmail(email),
+    isAdmin: true,
+    passwordHash: { $exists: true }
+  })
+  .select("+passwordHash");
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return res.status(400).json({ message: "Invalid credentials" });
 
-  const token = jwt.sign(
-    { id: user._id, email: user.email, isAdmin: true },
-    process.env.JWT_SECRET,
-    { expiresIn: "60m" }
-  );
+    if (!user)
+  return res.status(400).json({ message: "Admin account not found" });
 
-  res.json({
-    token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      isAdmin: true
-    }
-  });
+if (!user.isAdmin)
+  return res.status(403).json({ message: "Admins only" });
+
+if (!user.passwordHash)
+  return res.status(400).json({ message: "Admin password not set" });
+
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok)
+      return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email, isAdmin: true },
+      process.env.JWT_SECRET,
+      { expiresIn: "60m" }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: true,
+      },
+    });
+  } catch (err) {
+    console.error("ADMIN LOGIN ERROR:", err);
+    res.status(500).json({ message: "Admin login failed" });
+  }
 };
+
 
 export const adminLogout = (_req, res) => {
   res.json({ message: "Logged out" });

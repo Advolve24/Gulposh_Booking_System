@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./store/auth";
 import Login from "./pages/Login";
@@ -16,18 +16,18 @@ import AdminInvoiceTemplate from "./components/AdminBookingPrint";
 
 function InitAuthWatcher({ children }) {
   const { init, ready } = useAuth();
-  const location = useLocation();
-
-
-  
+  const ran = useRef(false);
 
   useEffect(() => {
-    init(); 
-  }, [init, location.pathname]);
+    if (ran.current) return;
+    ran.current = true;
+    init();
+  }, [init]);
 
   if (!ready) return null;
   return children;
 }
+
 
 export default function App() {
   const { user } = useAuth();

@@ -4,6 +4,6 @@ import { requireAdminSession } from "../middleware/adminSession.js";
 
 const router = express.Router();
 router.post("/login", adminLogin);
-router.post("/logout", adminLogout);
+router.post("/logout", requireAdminSession, adminLogout);
 router.get("/me", requireAdminSession, adminMe);
 export default router;

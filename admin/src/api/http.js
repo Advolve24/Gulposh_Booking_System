@@ -23,25 +23,26 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     const status = err.response?.status;
-    const msg = err.response?.data?.message || err.message;
+    const url = err.config?.url;
 
-    if ((status === 401 || status === 403) && !isRedirecting) {
-      isRedirecting = true;
+    // 👇 ignore 401 for admin/me during init
+    if (
+      (status === 401 || status === 403) &&
+      url?.includes("/admin/me")
+    ) {
+      return Promise.reject(err);
+    }
 
+    if ((status === 401 || status === 403)) {
       const { setUser } = useAuth.getState();
       setUser(null);
 
       localStorage.removeItem("admin_token");
       localStorage.removeItem("admin_user");
-      sessionStorage.removeItem("admin_user");
 
       if (window.location.pathname !== "/login") {
-        toast.error("Session expired. Please log in again.");
         window.location.replace("/login");
-        isRedirecting = false;
       }
-    } else if (status) {
-      console.error("API error:", status, msg);
     }
 
     return Promise.reject(err);
