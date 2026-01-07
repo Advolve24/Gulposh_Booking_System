@@ -1,39 +1,46 @@
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import AppLayout from "@/components/layout/AppLayout";
+// import MobileRoomForm from "@/components/MobileRoomForm";
 import {
   createRoom,
   getRoomAdmin,
   updateRoom,
-  deleteRoom,
   uploadImage,
   uploadImages,
-} from "../api/admin";
+} from "@/api/admin";
 import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
-import { amenityCategories } from "../data/aminities";
+import { ArrowLeft, Upload } from "lucide-react";
+import { amenityCategories } from "@/data/aminities";
 
-function Chip({ text, onRemove }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs">
-      {text}
-      <button type="button" className="opacity-70 hover:opacity-100" onClick={onRemove}>
-        ✕
-      </button>
-    </span>
-  );
-}
+/* ====================================================== */
+
+const STEPS = [
+  { key: "basic", label: "Basic" },
+  { key: "meals", label: "Meals" },
+  { key: "images", label: "Images" },
+  { key: "amenities", label: "Amenities" },
+  { key: "rules", label: "Rules" },
+  { key: "reviews", label: "Reviews" },
+  { key: "submit", label: "Submit" },
+];
 
 export default function RoomsNew() {
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
+  const navigate = useNavigate();
   const [sp] = useSearchParams();
   const id = sp.get("id");
-  const isEdit = !!id;
+  const isEdit = Boolean(id);
+
+
+  /* ---------------- FORM STATE ---------------- */
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const [name, setName] = useState("");
   const [pricePerNight, setPricePerNight] = useState("");
@@ -42,383 +49,840 @@ export default function RoomsNew() {
   const [mealPriceCombo, setMealPriceCombo] = useState("");
   const [description, setDescription] = useState("");
 
-  const [openCat, setOpenCat] = useState(null);
-
-
   const [coverImage, setCoverImage] = useState("");
   const [coverFile, setCoverFile] = useState(null);
 
   const [galleryUrls, setGalleryUrls] = useState([]);
   const [galleryFiles, setGalleryFiles] = useState([]);
 
-  // NEW: single amenities array
   const [amenities, setAmenities] = useState([]);
+  const [openCat, setOpenCat] = useState(null);
 
+  const [houseRules, setHouseRules] = useState([]);
+  const [ruleInput, setRuleInput] = useState("");
+
+  /* ---------------- REVIEWS ---------------- */
+  const [reviews, setReviews] = useState([]);
+  const [reviewName, setReviewName] = useState("");
+  const [reviewRating, setReviewRating] = useState("5");
+  const [reviewComment, setReviewComment] = useState("");
+
+  const [step, setStep] = useState(0);
+
+  const [completedSteps, setCompletedSteps] = useState({
+    basic: false,
+    meals: false,
+    images: false,
+    amenities: false,
+    rules: false,
+    reviews: false,
+    submit: false,
+  });
+
+
+
+  /* ---------------- EDIT LOAD ---------------- */
   useEffect(() => {
     if (!isEdit) return;
+
     (async () => {
       try {
+        setLoading(true);
         const r = await getRoomAdmin(id);
 
         setName(r.name || "");
         setPricePerNight(String(r.pricePerNight ?? ""));
         setMealPriceVeg(String(r.mealPriceVeg ?? ""));
         setMealPriceNonVeg(String(r.mealPriceNonVeg ?? ""));
-        setMealPriceCombo(String(r.mealPriceCombo ?? ""));
         setDescription(r.description || "");
 
-        setAmenities(r.amenities || []); // <-- NEW
+        setAmenities(r.amenities || []);
+        setHouseRules(r.houseRules || []);
+        setReviews(r.reviews || []);
 
         setCoverImage(r.coverImage || "");
-        setGalleryUrls((r.galleryImages || []).filter(Boolean));
-      } catch (e) {
-        toast.error(e?.response?.data?.message || "Failed to load room");
+        setGalleryUrls(r.galleryImages || []);
+      } catch {
+        toast.error("Failed to load room");
+      } finally {
+        setLoading(false);
       }
     })();
   }, [id, isEdit]);
 
-  const onCoverPick = (e) => {
-    const f = e.target.files?.[0];
-    if (f) {
-      setCoverFile(f);
-      setCoverImage("");
-    }
-  };
-
-  const onGalleryPick = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length) setGalleryFiles((prev) => [...prev, ...files]);
-  };
-
-  const removeGalleryUrl = (url) =>
-    setGalleryUrls((arr) => arr.filter((u) => u !== url));
-
-  const removeGalleryFile = (file) =>
-    setGalleryFiles((arr) => arr.filter((f) => f !== file));
-
-  // ADD / REMOVE amenities
+  /* ---------------- HELPERS ---------------- */
   const toggleAmenity = (id) => {
-    setAmenities((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    setAmenities((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
     );
   };
 
+  const addHouseRule = () => {
+    const v = ruleInput.trim();
+    if (!v) return;
+    if (houseRules.includes(v)) return;
+    setHouseRules((p) => [...p, v]);
+    setRuleInput("");
+  };
+
+  const removeHouseRule = (rule) => {
+    setHouseRules((p) => p.filter((r) => r !== rule));
+  };
+
+  const addReview = () => {
+    const rating = Number(reviewRating);
+    if (!reviewName.trim()) return toast.error("Guest name required");
+    if (!rating || rating < 1 || rating > 5)
+      return toast.error("Rating must be 1–5");
+
+    setReviews((p) => [
+      ...p,
+      {
+        name: reviewName.trim(),
+        rating,
+        comment: reviewComment.trim(),
+      },
+    ]);
+
+    setReviewName("");
+    setReviewRating("5");
+    setReviewComment("");
+  };
+
+  const removeReview = (index) => {
+    setReviews((p) => p.filter((_, i) => i !== index));
+  };
+
+  const STEP_VALIDATORS = [
+    // 0️⃣ Basic
+    ({ name, pricePerNight }) =>
+      name.trim().length > 2 && Number(pricePerNight) > 0,
+
+    // 1️⃣ Meals
+    ({ mealPriceVeg, mealPriceNonVeg }) =>
+      Number(mealPriceVeg) > 0 ||
+      Number(mealPriceNonVeg) > 0 ||
+      Number(mealPriceCombo) > 0,
+
+    // 2️⃣ Images
+    ({ coverImage, coverFile, galleryUrls, galleryFiles }) =>
+      !!coverFile ||
+      !!coverImage ||
+      galleryFiles.length > 0 ||
+      galleryUrls.length > 0,
+
+    // 3️⃣ Amenities
+    ({ amenities }) => amenities.length > 0,
+
+    // 4️⃣ Rules
+    ({ houseRules }) => houseRules.length > 0,
+
+    // 5️⃣ Reviews (optional)
+    () => true,
+  ];
+
+  
+  const goBack = () => {
+    setStep((s) => Math.max(s - 1, 0));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  /* ---------------- SUBMIT ---------------- */
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (loading || uploading) return;
 
-    if (!name.trim()) return toast.error("Room name is required");
-    if (!pricePerNight || isNaN(Number(pricePerNight))) {
-      return toast.error("Enter valid price per night");
-    }
+    // ⛔ ABSOLUTE SAFETY GUARD
+    if (step !== STEPS.length - 1) return;
+
+    if (uploading || loading) return;
 
     try {
       setUploading(true);
 
       let coverUrl = coverImage;
-      if (coverFile instanceof File) {
-        coverUrl = await uploadImage(coverFile);
-      }
+      if (coverFile) coverUrl = await uploadImage(coverFile);
 
-      let newGalleryUrls = [];
-      if (galleryFiles.length > 0) {
-        newGalleryUrls = await uploadImages(galleryFiles);
-      }
+      let newGallery = [];
+      if (galleryFiles.length) newGallery = await uploadImages(galleryFiles);
 
       const payload = {
         name: name.trim(),
         pricePerNight: Number(pricePerNight),
         mealPriceVeg: Number(mealPriceVeg) || 0,
         mealPriceNonVeg: Number(mealPriceNonVeg) || 0,
-        mealPriceCombo: Number(mealPriceCombo) || 0,
-        coverImage: coverUrl,
-        galleryImages: [...galleryUrls, ...newGalleryUrls],
         description,
-        amenities, // <-- NEW FIELD
+        coverImage: coverUrl,
+        galleryImages: [...galleryUrls, ...newGallery],
+        amenities,
+        houseRules,
+        reviews,
       };
 
-      setUploading(false);
-      setLoading(true);
-
       if (isEdit) {
-        await toast.promise(updateRoom(id, payload), {
-          loading: "Updating...",
-          success: "Room updated",
-          error: (err) => err?.response?.data?.message || "Update failed",
-        });
+        await updateRoom(id, payload);
+        toast.success("Room updated");
       } else {
-        await toast.promise(createRoom(payload), {
-          loading: "Creating...",
-          success: "Room created",
-          error: (err) => err?.response?.data?.message || "Create failed",
-        });
-
-        setName("");
-        setPricePerNight("");
-        setMealPriceVeg("");
-        setMealPriceNonVeg("");
-        setMealPriceCombo("");
-        setDescription("");
-        setAmenities([]);
-        setCoverImage("");
-        setCoverFile(null);
-        setGalleryUrls([]);
-        setGalleryFiles([]);
+        await createRoom(payload);
+        toast.success("Room created");
       }
+
+      navigate("/rooms");
+    } catch {
+      toast.error("Failed to save room");
     } finally {
-      setLoading(false);
       setUploading(false);
     }
   };
 
-  const onDeleteHere = async () => {
-    if (!isEdit) return;
-    if (!confirm("Delete this room?")) return;
-    try {
-      await toast.promise(deleteRoom(id), {
-        loading: "Deleting...",
-        success: "Room deleted",
-        error: (err) => err?.response?.data?.message || "Delete failed",
-      });
-    } catch { }
+  const isStepValid = (key) => {
+    switch (key) {
+      case "basic":
+        return name.trim() && pricePerNight;
+
+      case "meals":
+        return (
+          mealPriceVeg ||
+          mealPriceNonVeg
+        );
+
+      case "images":
+        return coverImage || coverFile;
+
+      case "amenities":
+        return amenities.length > 0;
+
+      case "rules":
+        return houseRules.length > 0;
+
+      case "reviews":
+        return reviews.length > 0;
+
+      default:
+        return false;
+    }
   };
 
+  /* ---------------- NAVIGATION ---------------- */
+  const handleNext = () => {
+    const key = STEPS[step].key;
+
+    if (!isStepValid(key)) {
+      toast.error("Please complete this step");
+      return;
+    }
+
+    setCompletedSteps((p) => ({ ...p, [key]: true }));
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleBack = () => {
+    setStep((s) => Math.max(s - 1, 0));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const progress = Math.round(
+    (Object.values(completedSteps).filter(Boolean).length / STEPS.length) * 100
+  );
+
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-semibold">
-          {isEdit ? "Edit Room" : "Create Room"}
-        </h1>
-        {isEdit && (
-          <Button onClick={onDeleteHere} className="w-full sm:w-auto">
-            Delete room
-          </Button>
-        )}
-      </div>
+    <AppLayout>
+      <div
+        className="
+    mx-auto
+    w-full
+    max-w-[330px]
+    sm:max-w-[750px]
+    lg:max-w-[900px]
+    px-2
+    sm:px-2
+    space-y-6
+  "
+      >
 
-      {/* FORM */}
-      <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Room name */}
-        <div>
-          <Label>Room name</Label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., Grand Repose"
-            className="mt-2"
-          />
-        </div>
+        {/* HEADER */}
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            to="/rooms"
+            className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft size={16} /> Back
+          </Link>
 
-        {/* Prices */}
-        <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <Label>Price per night (₹)</Label>
-            <Input
-              type="number"
-              min="0"
-              value={pricePerNight}
-              onChange={(e) => setPricePerNight(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-
-          <div>
-            <Label>Veg Meal Price (₹ per guest)</Label>
-            <Input
-              type="number"
-              min="0"
-              value={mealPriceVeg}
-              onChange={(e) => setMealPriceVeg(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-
-          <div>
-            <Label>Non-Veg Meal Price (₹ per guest)</Label>
-            <Input
-              type="number"
-              min="0"
-              value={mealPriceNonVeg}
-              onChange={(e) => setMealPriceNonVeg(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-
-          <div>
-            <Label>Combo Meal Price (₹ per guest)</Label>
-            <Input
-              type="number"
-              min="0"
-              value={mealPriceCombo}
-              onChange={(e) => setMealPriceCombo(e.target.value)}
-              className="mt-2"
-            />
+          <div className="text-right">
+            <h1 className="text-base sm:text-md font-semibold">
+              {isEdit ? "Edit Room" : "Add New Room"}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Step {step + 1} of {STEPS.length} • {STEPS[step].label}
+            </p>
           </div>
         </div>
 
-        {/* IMAGES */}
-        <div className="md:flex justify-between md:col-span-3">
-          <div className="md:w-[49%]">
-            <Label>Cover image</Label>
-            <div className="mt-2 flex items-start gap-4">
-              <Input type="file" accept="image/*" onChange={onCoverPick} />
-              {(coverFile || coverImage) && (
-                <img
-                  src={coverFile ? URL.createObjectURL(coverFile) : coverImage}
-                  className="h-24 w-40 object-cover rounded"
-                />
-              )}
-            </div>
+        {/* PROGRESS */}
+        <div className="bg-card border rounded-xl p-3 sm:p-4">
+          <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
+            <span>Progress</span>
+            <span>{progress}%</span>
           </div>
 
-          <div className="md:w-[49%]">
-            <Label>Gallery images</Label>
-            <Input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={onGalleryPick}
-              className="mt-2"
+          <div className="mt-2 h-2 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${progress}%` }}
             />
-
-            {/* Existing Images */}
-            {galleryUrls.length > 0 && (
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {galleryUrls.map((url) => (
-                  <div key={url} className="relative group">
-                    <img src={url} className="h-24 w-full object-cover rounded" />
-                    <button
-                      type="button"
-                      onClick={() => removeGalleryUrl(url)}
-                      className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* New Images */}
-            {galleryFiles.length > 0 && (
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {galleryFiles.map((file) => (
-                  <div key={file.name} className="relative group">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      className="h-24 w-full object-cover rounded"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeGalleryFile(file)}
-                      className="absolute top-1 right-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded opacity-0 group-hover:opacity-100"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
-        </div>
 
-        {/* AMENITIES SECTION */}
-        <div className="md:col-span-3 bg-gray-50 p-4 rounded border space-y-4">
-          <Label className="text-base font-semibold">Amenities</Label>
-
-          {/* GRID: 2 PER ROW ON DESKTOP */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {amenityCategories.map((cat) => {
-              const isOpen = openCat === cat.id;
+          {/* STEP CHIPS (read-only indicators) */}
+          <div
+            className="mt-3 hidden sm:flex gap-2 overflow-x-auto pb-1"
+          >
+            {STEPS.map((s, idx) => {
+              const isActive = idx === step;
+              const isDone = completedSteps[s.key];
 
               return (
-                <div className="relative">
-                  {/* Header */}
-                  <button
-                    type="button"
-                    onClick={() => setOpenCat(openCat === cat.id ? null : cat.id)}
-                    className="w-full flex items-center justify-between px-4 py-3 border rounded bg-white"
-                  >
-                    <div className="flex items-center gap-2 font-medium">
-                      <cat.icon className="h-4 w-4" />
-                      {cat.label}
-                    </div>
+                <span
+                  key={s.key}
+                  className={`
+            shrink-0 rounded-full border px-3 py-1 text-[11px] sm:text-xs
+            ${isActive
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : isDone
+                        ? "bg-primary/10 text-primary border-primary/40"
+                        : "bg-muted text-muted-foreground"
+                    }
+          `}
+                >
+                  {idx + 1}. {s.label}
+                </span>
+              );
+            })}
+          </div>
+        </div>
 
-                    <span className="text-gray-500">{openCat === cat.id ? "▲" : "▼"}</span>
-                  </button>
+       <form onSubmit={onSubmit} onKeyDown={(e) => {  if (e.key === "Enter" && step !== STEPS.length - 1) { e.preventDefault(); }}}>
 
-                  {/* DROPDOWN (does NOT push layout) */}
-                  {openCat === cat.id && (
-                    <div className="absolute left-0 right-0 z-50 bg-white border mt-1 p-3 rounded shadow-lg">
-                      <div className="grid grid-cols-2 gap-2">
+
+          {/* STEP CONTENT */}
+          {step === 0 && (
+            <Section title="Basic Information">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                <Field label="Room Name *">
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Royal Heritage Suite"
+                    className="text-sm"
+                  />
+                </Field>
+
+                <Field label="Price per Night (₹) *">
+                  <Input
+                    type="number"
+                    value={pricePerNight}
+                    onChange={(e) => setPricePerNight(e.target.value)}
+                    className="text-sm"
+                  />
+                </Field>
+              </div>
+
+              <Field label="Description">
+                <Textarea
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="text-sm"
+                />
+              </Field>
+            </Section>
+          )}
+
+          {step === 1 && (
+            <Section title="Meal Pricing">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                <InputField
+                  label="Veg Meal (₹)"
+                  value={mealPriceVeg}
+                  set={setMealPriceVeg}
+                />
+                <InputField
+                  label="Non-Veg Meal (₹)"
+                  value={mealPriceNonVeg}
+                  set={setMealPriceNonVeg}
+                />
+              </div>
+            </Section>
+          )}
+
+          {step === 2 && (
+            <Section title="Images">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <UploadBox
+                  label="Cover Image"
+                  hint={coverImage ? "Existing cover loaded" : "Upload a cover image"}
+                  onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                />
+                <UploadBox
+                  label="Gallery Images"
+                  hint={`${galleryUrls.length} existing • ${galleryFiles.length} new`}
+                  multiple
+                  onChange={(e) =>
+                    setGalleryFiles(Array.from(e.target.files || []))
+                  }
+                />
+              </div>
+
+              {(coverFile || coverImage) && (
+                <div className="bg-muted rounded-xl p-3 text-xs sm:text-sm">
+                  <div className="font-medium mb-2">Cover Preview</div>
+                  <img
+                    src={coverFile ? URL.createObjectURL(coverFile) : coverImage}
+                    alt="cover"
+                    className="h-32 w-full object-cover rounded-lg"
+                  />
+                </div>
+              )}
+
+              {galleryUrls.length > 0 && (
+                <div className="bg-muted rounded-xl p-3">
+                  <div className="text-xs sm:text-sm font-medium mb-2">
+                    Existing Gallery
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {galleryUrls.map((u) => (
+                      <div key={u} className="relative">
+                        <img
+                          src={u}
+                          alt="gallery"
+                          className="h-20 w-full object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setGalleryUrls((p) => p.filter((x) => x !== u))
+                          }
+                          className="absolute top-1 right-1 rounded bg-black/60 text-white text-[10px] px-2 py-1"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {galleryFiles.length > 0 && (
+                <div className="bg-muted rounded-xl p-3">
+                  <div className="text-xs sm:text-sm font-medium mb-2">
+                    New Gallery
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {galleryFiles.map((f) => (
+                      <div key={f.name} className="relative">
+                        <img
+                          src={URL.createObjectURL(f)}
+                          alt="new"
+                          className="h-20 w-full object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setGalleryFiles((p) => p.filter((x) => x !== f))
+                          }
+                          className="absolute top-1 right-1 rounded bg-black/60 text-white text-[10px] px-2 py-1"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Section>
+          )}
+
+          {step === 3 && (
+            <Section title="Amenities">
+              {amenityCategories.map((cat) => {
+                const selectedCount = cat.items.filter((i) =>
+                  amenities.includes(i.id)
+                ).length;
+                const isOpen = openCat === cat.id;
+
+                return (
+                  <div key={cat.id} className="border-b last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => setOpenCat(isOpen ? null : cat.id)}
+                      className="w-full flex items-center justify-between py-3 text-left"
+                    >
+                      <div>
+                        <div className="text-sm sm:text-base font-medium">
+                          {cat.label}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          ({selectedCount} selected)
+                        </div>
+                      </div>
+                      <span
+                        className={`transition-transform ${isOpen ? "rotate-180" : ""
+                          }`}
+                      >
+                        ▾
+                      </span>
+                    </button>
+
+                    {isOpen && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-3 gap-x-6 pb-4">
                         {cat.items.map((item) => {
-                          const selected = amenities.includes(item.id);
+                          const active = amenities.includes(item.id);
                           return (
                             <button
                               key={item.id}
                               type="button"
-                              className={`flex items-center gap-2 border rounded px-3 py-2 text-sm ${selected ? "bg-green-100 border-green-500" : "bg-white"
-                                }`}
                               onClick={() => toggleAmenity(item.id)}
+                              className="flex items-center gap-3 text-sm text-left"
                             >
-                              <item.icon className="h-4 w-4" />
-                              {item.label}
+                              <span
+                                className={`h-4 w-4 rounded-full border flex items-center justify-center ${active
+                                  ? "border-primary bg-primary"
+                                  : "border-muted-foreground"
+                                  }`}
+                              >
+                                {active && (
+                                  <span className="h-2 w-2 rounded-full bg-white" />
+                                )}
+                              </span>
+                              <span>{item.label}</span>
                             </button>
                           );
                         })}
                       </div>
+                    )}
+                  </div>
+                );
+              })}
+            </Section>
+          )}
+
+          {step === 4 && (
+            <Section title="House Rules">
+              <div className="flex gap-2">
+                <Input
+                  value={ruleInput}
+                  onChange={(e) => setRuleInput(e.target.value)}
+                  placeholder="Type a rule..."
+                  className="text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addHouseRule();
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={addHouseRule}>
+                  Add
+                </Button>
+              </div>
+
+              {houseRules.length > 0 && (
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {houseRules.map((r) => (
+                    <div
+                      key={r}
+                      className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm"
+                    >
+                      <span className="text-muted-foreground">{r}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeHouseRule(r)}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        ✕
+                      </button>
                     </div>
-                  )}
+                  ))}
                 </div>
+              )}
+            </Section>
+          )}
 
-              );
-            })}
+          {step === 5 && (
+            <Section title="Guest Reviews">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <Input
+                  placeholder="Guest name"
+                  value={reviewName}
+                  onChange={(e) => setReviewName(e.target.value)}
+                  className="text-sm"
+                />
+                <Input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={reviewRating}
+                  onChange={(e) => setReviewRating(e.target.value)}
+                  className="text-sm"
+                />
+                <Input
+                  className="md:col-span-2 text-sm"
+                  placeholder="Comment"
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" onClick={addReview}>
+                  Add Review
+                </Button>
+              </div>
+
+              {reviews.length > 0 && (
+                <div className="space-y-3">
+                  {reviews.map((r, i) => (
+                    <div
+                      key={`${r.name}-${i}`}
+                      className="border rounded-xl p-4 flex items-start justify-between gap-4 bg-card"
+                    >
+                      <div className="space-y-1">
+                        <div className="font-medium text-sm">{r.name}</div>
+                        <div className="text-yellow-500 text-sm">
+                          {"★".repeat(Number(r.rating || 0))}
+                        </div>
+                        {r.comment ? (
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            {r.comment}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeReview(i)}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
+
+          {/* {step === 6 && (
+            <Section title="Review & Submit">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <SummaryCard title="Room">
+                  <SummaryRow label="Name" value={name || "—"} />
+                  <SummaryRow
+                    label="Per Night"
+                    value={
+                      pricePerNight
+                        ? `₹${Number(pricePerNight).toLocaleString("en-IN")}`
+                        : "—"
+                    }
+                  />
+                  <SummaryRow
+                    label="Description"
+                    value={description?.trim() ? description : "—"}
+                  />
+                </SummaryCard>
+
+                <SummaryCard title="Meals">
+                  <SummaryRow
+                    label="Veg"
+                    value={`₹${Number(mealPriceVeg || 0).toLocaleString("en-IN")}`}
+                  />
+                  <SummaryRow
+                    label="Non-Veg"
+                    value={`₹${Number(mealPriceNonVeg || 0).toLocaleString("en-IN")}`}
+                  />
+                  <SummaryRow
+                    label="Combo"
+                    value={`₹${Number(mealPriceCombo || 0).toLocaleString("en-IN")}`}
+                  />
+                </SummaryCard>
+
+                <SummaryCard title="Amenities">
+                  <div className="text-sm text-muted-foreground">
+                    Selected: <span className="text-foreground font-medium">{amenities.length}</span>
+                  </div>
+                </SummaryCard>
+
+                <SummaryCard title="House Rules">
+                  {houseRules.length ? (
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      {houseRules.slice(0, 6).map((r) => (
+                        <li key={r}>• {r}</li>
+                      ))}
+                      {houseRules.length > 6 ? (
+                        <li className="text-xs">+ {houseRules.length - 6} more</li>
+                      ) : null}
+                    </ul>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">—</div>
+                  )}
+                </SummaryCard>
+
+                <SummaryCard title="Reviews">
+                  <SummaryRow label="Count" value={`${reviews.length}`} />
+                  {reviews[0] ? (
+                    <div className="mt-2 rounded-lg border p-3 bg-card text-sm">
+                      <div className="font-medium">{reviews[0].name}</div>
+                      <div className="text-yellow-500">
+                        {"★".repeat(Number(reviews[0].rating || 0))}
+                      </div>
+                      {reviews[0].comment ? (
+                        <div className="text-muted-foreground text-xs mt-1">
+                          {reviews[0].comment}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">—</div>
+                  )}
+                </SummaryCard>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                Tip: If something is wrong, go Back and update it.
+              </div>
+            </Section>
+          )} */}
+
+          {/* NAV FOOTER */}
+          {/* STICKY FOOTER ACTION BAR */}
+          <div className="sticky bottom-0 bg-background/80 backdrop-blur border-t border-border py-3">
+            <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 px-3">
+
+              {/* BACK */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={goBack}
+                disabled={step === 0 || uploading || loading}
+                className="text-sm"
+              >
+                Back
+              </Button>
+
+              <div className="flex items-center gap-2">
+
+                {/* CANCEL */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/rooms")}
+                  disabled={uploading || loading}
+                  className="text-sm"
+                >
+                  Cancel
+                </Button>
+                
+                {/* NEXT or SUBMIT */}
+                {step < STEPS.length - 1 ? (
+                  <Button
+                    type="button"
+                    onClick={handleNext}   // ✅ SAFE
+                    disabled={!isStepValid(STEPS[step].key) || uploading || loading}
+                    className="text-sm"
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"         // ✅ ONLY place submit exists
+                    disabled={uploading || loading}
+                    className="text-sm"
+                  >
+                    {uploading
+                      ? "Uploading…"
+                      : isEdit
+                        ? "Update Room"
+                        : "Create Room"}
+                  </Button>
+                )}
+
+              </div>
+            </div>
           </div>
 
-          {/* Selected Chips */}
-          <div className="flex flex-wrap gap-2 mt-3">
-            {amenities.map((id) => {
-              const item = amenityCategories
-                .flatMap((c) => c.items)
-                .find((i) => i.id === id);
 
-              if (!item) return null;
+        </form>
+      </div>
+    </AppLayout >
+  );
+}
 
-              return (
-                <Chip key={id} text={item.label} onRemove={() => toggleAmenity(id)} />
-              );
-            })}
-          </div>
-        </div>
+/* ================= HELPERS ================= */
 
-        {/* DESCRIPTION */}
-        <div className="md:col-span-3">
-          <Label>Description</Label>
-          <Textarea
-            rows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe the room, view, amenities…"
-            className="mt-2"
-          />
-        </div>
+function Section({ title, children }) {
+  return (
+    <div className="bg-card border rounded-xl p-4 sm:p-6 space-y-4">
+      <h2 className="font-semibold text-sm sm:text-base">{title}</h2>
+      {children}
+    </div>
+  );
+}
 
-        {/* SUBMIT */}
-        <div className="md:col-span-3">
-          <Button disabled={loading || uploading} type="submit" className="w-full mt-2">
-            {uploading
-              ? "Uploading images…"
-              : loading
-                ? isEdit
-                  ? "Updating..."
-                  : "Creating..."
-                : isEdit
-                  ? "Update Room"
-                  : "Create Room"}
-          </Button>
-        </div>
-      </form>
+function Field({ label, children }) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs sm:text-sm">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function InputField({ label, value, set }) {
+  return (
+    <Field label={label}>
+      <Input
+        type="number"
+        value={value}
+        onChange={(e) => set(e.target.value)}
+        className="text-sm"
+      />
+    </Field>
+  );
+}
+
+function UploadBox({ label, hint, ...props }) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs sm:text-sm">{label}</Label>
+
+      <label className="border-dashed border rounded-xl h-28 flex flex-col items-center justify-center cursor-pointer bg-card hover:bg-muted/40 transition">
+        <Upload size={18} className="text-muted-foreground" />
+        <span className="text-xs sm:text-sm text-muted-foreground">Upload</span>
+        {hint ? (
+          <span className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+            {hint}
+          </span>
+        ) : null}
+        <input type="file" hidden {...props} />
+      </label>
+    </div>
+  );
+}
+
+function SummaryCard({ title, children }) {
+  return (
+    <div className="bg-card border rounded-xl p-4">
+      <div className="font-semibold text-sm mb-2">{title}</div>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-xs sm:text-sm text-right">{String(value)}</div>
     </div>
   );
 }

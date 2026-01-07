@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { listBookingsAdmin, cancelBookingAdmin, listRooms } from "../api/admin.js";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import AppLayout from "@/components/layout/AppLayout";
+import InvoicePage from "@/pages/InvoicePage";
+import {
+  MoreHorizontal,
+  Calendar,
+  Users,
+  Moon,
+  RotateCcw,
+  CheckCircle, XCircle,
+} from "lucide-react";
+import { toast } from "sonner";
 import {
   Select,
   SelectTrigger,
@@ -11,548 +20,584 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { format } from "date-fns";
-import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
-import { toast } from "sonner";
-import { CheckCircle, XCircle } from "lucide-react";
-import EditBookingDialog from "@/components/EditBookingDialog.jsx";
+import ViewBookingDialog from "@/components/ViewBookingDialog";
+import { Filter } from "lucide-react";
 
-const fmt = (d) => (d ? format(new Date(d), "dd MMM yy") : "—");
-const diffNightsInclusive = (from, to) => {
-  const a = new Date(from),
-    b = new Date(to);
+import {
+  listBookingsAdmin,
+} from "@/api/admin";
+
+/* ================= HELPERS ================= */
+
+const fmt = (d, withYear = false) =>
+  d
+    ? format(new Date(d), withYear ? "MMM dd, yyyy" : "MMM dd")
+    : "—";
+
+const nightsBetween = (from, to) => {
+  const a = new Date(from);
+  const b = new Date(to);
   a.setHours(0, 0, 0, 0);
   b.setHours(0, 0, 0, 0);
-  return Math.max(1, Math.round((b - a) / 86400000) + 1);
+  return Math.max(1, Math.round((b - a) / 86400000));
 };
 
 const StatusBadge = ({ status }) => {
-  if (status === "confirmed") {
-    return (
-      <span
-        className="px-3 py-1 rounded text-white text-xs font-semibold capitalize"
-        style={{ backgroundColor: "#4BB543" }}
-      >
-        confirmed
-      </span>
-    );
-  }
-
-  if (status === "cancelled") {
-    return (
-      <span className="px-3 py-1 rounded bg-red-600 text-white text-xs font-semibold capitalize">
-        cancelled
-      </span>
-    );
-  }
-
-  if (status === "pending") {
-    return (
-      <span className="px-3 py-1 rounded bg-yellow-500 text-black text-xs font-semibold capitalize">
-        pending
-      </span>
-    );
-  }
+  const map = {
+    confirmed: "bg-green-100 text-green-700",
+    pending: "bg-yellow-100 text-yellow-700",
+    cancelled: "bg-red-100 text-red-700",
+    completed: "bg-blue-100 text-blue-700",
+  };
 
   return (
-    <span className="px-3 py-1 rounded bg-gray-300 text-black text-xs font-semibold capitalize">
-      {status || "unknown"}
+    <span
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize ${map[status] || "bg-muted text-muted-foreground"
+        }`}
+    >
+      {status}
     </span>
   );
 };
 
-export default function Bookings() {
-  const [rooms, setRooms] = useState([]);
-  const [roomId, setRoomId] = useState("all");
+/* ================= PAGE ================= */
 
-  const [page, setPage] = useState(1);
-  const [perPage] = useState(10);
-
+export default function Booking() {
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const location = useLocation();
 
-  const [status, setStatus] = useState("");
-  const [q, setQ] = useState("");
-  const [range, setRange] = useState();
+  const [viewOpen, setViewOpen] = useState(false);
 
-  const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [cancelling, setCancelling] = useState(false);
 
-  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
-  useEffect(() => {
-    listRooms()
-      .then(setRooms)
-      .catch(() => setRooms([]));
-  }, []);
+  const [status, setStatus] = useState("all");
+  const [page, setPage] = useState(1);
+  const perPage = 8;
+  const downloadInvoice = (bookingId) => {
+    navigate(`/bookings/${bookingId}/invoice?download=true`);
+  };
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const f = params.get("filter");
-    if (f === "cancelled") setStatus("cancelled");
-    else if (f === "pending") setStatus("pending");
-    else if (f === "confirmed") setStatus("confirmed");
-    else setStatus("all");
-  }, [location.search]);
+  const handleStatusChange = (value) => {
+    setStatus(value);
+    setPage(1);
+  };
 
   useEffect(() => {
-    if (!status) return;
-    load();
-  }, [status, roomId, range, q]);
+    loadBookings();
+  }, [status]);
 
-  const load = async () => {
+  const loadBookings = async () => {
     setLoading(true);
     try {
       const params = {};
-      if (status && status !== "all") params.status = status;
-      if (roomId && roomId !== "all") params.room = roomId;
-      if (q) params.q = q.trim();
-      if (range?.from && range?.to) {
-        params.from = new Date(range.from).toISOString();
-        params.to = new Date(range.to).toISOString();
-      }
+      if (status !== "all") params.status = status;
+
       const data = await listBookingsAdmin(params);
-      setBookings(Array.isArray(data) ? data : data?.items || []);
-      setPage(1); 
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load bookings");
+      setBookings(Array.isArray(data) ? data : []);
+      setPage(1);
+    } catch {
+      toast.error("Failed to load bookings");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ================= STATS ================= */
+
   const totals = useMemo(() => {
-    const t = bookings.length;
-    const cancelled = bookings.filter((b) => b.status === "cancelled").length;
-    const confirmed = bookings.filter((b) => b.status !== "cancelled").length;
-    return { total: t, confirmed, cancelled };
+    return {
+      total: bookings.length,
+      confirmed: bookings.filter((b) => b.status === "confirmed").length,
+      cancelled: bookings.filter((b) => b.status === "cancelled").length,
+    };
   }, [bookings]);
 
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(bookings.length / perPage)),
-    [bookings.length, perPage]
+  /* ================= PAGINATION ================= */
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(bookings.length / perPage)
   );
 
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
+  const visible = bookings.slice(
+    (page - 1) * perPage,
+    page * perPage
+  );
 
-  const paginatedBookings = useMemo(() => {
-    const start = (page - 1) * perPage;
-    return bookings.slice(start, start + perPage);
-  }, [bookings, page, perPage]);
+  const copyToClipboard = async (value, label = "Text") => {
+    if (!value) return;
 
-  const onOpenView = (b) => {
-    setSelected(b);
-    setOpen(true);
-  };
-
-  const onCancelConfirmed = async () => {
-    if (!selected?._id) return;
-    setCancelling(true);
     try {
-      await cancelBookingAdmin(selected._id);
-      toast.success("Booking cancelled");
-      setOpen(false);
-      setConfirmCancelOpen(false);
-      await load();
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Cancel failed");
-    } finally {
-      setCancelling(false);
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error("Failed to copy");
     }
   };
 
-  const handleStatusChange = (v) => {
-    setStatus(v);
-    setPage(1);
-  };
+  /* ================= UI ================= */
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-[#818181]">Total</CardTitle>
-          </CardHeader>
-          <CardContent className="text-3xl font-semibold">
-            {totals.total}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-[#818181]">Confirmed</CardTitle>
-          </CardHeader>
-          <CardContent className="text-3xl font-semibold">
-            {totals.confirmed}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-[#818181]">Cancelled</CardTitle>
-          </CardHeader>
-          <CardContent className="text-3xl font-semibold">
-            {totals.cancelled}
-          </CardContent>
-        </Card>
-      </div>
+    <AppLayout>
+      <div
+        className="
+        mx-auto
+        w-full
+        max-w-[320px]
+        sm:max-w-7xl
+        px-1 sm:px-6
+        py-4 sm:py-6
+        space-y-4 -mt-4
+      "
+      >
+        {/* ================= STATS ================= */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+          <StatCard
+            icon={Calendar}
+            label="Total Bookings"
+            value={totals.total}
+            iconBg="bg-primary/10"
+            iconColor="text-primary"
+          />
 
-      {/* Table */}
-      <Card className="pt-4">
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>Bookings</CardTitle>
-          <div className="flex justify-end w-[70%] gap-2">
-            <div className="w-[60%] md:w-[40%] -mt-6">
-              <label className="text-sm block mb-1">Status</label>
-              <Select value={status} onValueChange={handleStatusChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button variant="secondary" onClick={load} disabled={loading}>
-              {loading ? "Loading..." : "Refresh"}
-            </Button>
-          </div>
-        </CardHeader>
+          <StatCard
+            icon={CheckCircle}
+            label="Confirmed"
+            value={totals.confirmed}
+            iconBg="bg-green-100"
+            iconColor="text-green-600"
+          />
 
-        <CardContent className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="text-left text-muted-foreground">
+          <StatCard
+            icon={XCircle}
+            label="Cancelled"
+            value={totals.cancelled}
+            iconBg="bg-red-100"
+            iconColor="text-red-600"
+          />
+        </div>
+
+
+        {/* ================= FILTER BAR ================= */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <Select value={status} onValueChange={handleStatusChange}>
+            <SelectTrigger
+              className="
+                      h-10 w-[160px]
+                      bg-card
+                      border border-border
+                      rounded-lg
+                      text-sm
+                      focus:ring-1 focus:ring-primary
+                    "
+            >
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="All Bookings" />
+              </div>
+            </SelectTrigger>
+
+            <SelectContent
+              className="
+                        bg-card
+                        border border-border
+                        rounded-lg
+                        shadow-lg
+                      "
+            >
+              <SelectItem value="all">All Bookings</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+
+
+          <button
+            onClick={loadBookings}
+            className="
+            h-10 w-10
+            rounded-lg border
+            flex items-center justify-center
+          "
+          >
+            <RotateCcw size={16} />
+          </button>
+        </div>
+
+        {/* ================= DESKTOP TABLE ================= */}
+        <div className="hidden sm:block bg-card border rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-muted-foreground">
               <tr>
-                <th className="py-2 pr-4">Guest</th>
-                <th className="py-2 pr-4">Room</th>
-                <th className="py-2 pr-4">Dates</th>
-                <th className="py-2 pr-4">Nights</th>
-                <th className="py-2 pr-4">Guests</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2 pr-4">Created</th>
-                <th className="py-2 pr-4">Actions</th>
+                <th className="px-4 py-3 text-left">Booking ID</th>
+                <th className="px-4 py-3 text-left">Guest Details</th>
+                <th className="px-4 py-3 text-left">Room</th>
+                <th className="px-4 py-3 text-left">Dates</th>
+                <th className="px-4 py-3 text-center">Nights</th>
+                <th className="px-4 py-3 text-center">Guests</th>
+                <th className="px-4 py-3 text-right">Amount</th>
+                <th className="px-4 py-3 text-center">Status</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
+
             <tbody>
-              {paginatedBookings.map((b) => {
-                const nights = diffNightsInclusive(b.startDate, b.endDate);
-                return (
-                  <tr key={b._id} className="border-t">
-                    <td className="py-2 pr-4">
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {b.user?.name || b.guestName || "—"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {b.user?.email || b.guestEmail || "—"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-2 pr-4 min-w-[120px] sm:min-w-0 whitespace-nowrap">
-                      {b.room?.name ||
-                        b.roomName ||
-                        (b.isVilla ? "-" : "Entire Villa")}
-                    </td>
-                    <td className="py-2 pr-4 min-w-[120px] sm:min-w-0 whitespace-nowrap">
-                      {fmt(b.startDate)} → {fmt(b.endDate)}
-                    </td>
-                    <td className="py-2 pr-4">{nights}</td>
-                    <td className="py-2 pr-4">{b.guests ?? "—"}</td>
-                    <td className="py-2 pr-4">
-                      {/* mobile dot */}
-                      <div className="sm:hidden flex items-center gap-2">
-                        <span
-                          className={`
-                            inline-block w-2 h-2 rounded-full
-                            ${
-                              b.status === "confirmed"
-                                ? "bg-[#4BB543] w-3 h-3"
-                                : ""
-                            }
-                            ${
-                              b.status === "pending"
-                                ? "bg-yellow-500"
-                                : ""
-                            }
-                            ${
-                              b.status === "cancelled"
-                                ? "bg-red-600"
-                                : ""
-                            }
-                          `}
-                        ></span>
-                      </div>
-                      {/* desktop badge */}
-                      <div className="hidden sm:block">
-                        <StatusBadge status={b.status} />
-                      </div>
-                    </td>
+              {visible.map((b) => (
+                <tr key={b._id} className="border-t">
+                  <td className="px-4 py-3 font-medium text-primary">
+                    {b.bookingId || b._id?.slice(-5)}
+                  </td>
 
-                    <td className="py-2 pr-4 min-w-[100px] sm:min-w-0 whitespace-nowrap">
-                      {fmt(b.createdAt)}
-                    </td>
-                    <td className="py-2 pr-4 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreHorizontal className="h-5 w-5" />
-                          </Button>
-                        </DropdownMenuTrigger>
+                  <td className="px-4 py-3">
+                    <div className="sm:font-medium">
+                      {b.user?.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {b.user?.email}
+                    </div>
+                  </td>
 
-                        <DropdownMenuContent
-                          align="end"
-                          className="w-[200px]"
+                  <td className="px-4 py-3">
+                    {b.room?.name || "Entire Villa"}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {fmt(b.startDate, true)}
+                    <div className="text-xs text-muted-foreground">
+                      to {fmt(b.endDate, true)}
+                    </div>
+                  </td>
+
+                  <td className="px-4 py-3 text-center">
+                    {nightsBetween(b.startDate, b.endDate)}
+                  </td>
+
+                  <td className="px-4 py-3 text-center">
+                    {b.guests}
+                  </td>
+
+                  <td className="px-4 py-3 text-right font-medium">
+                    ₹{Number(b.amount || 0).toLocaleString("en-IN")}
+                  </td>
+
+                  <td className="px-4 py-3 text-center">
+                    <StatusBadge status={b.status} />
+                  </td>
+
+                  <td className="px-4 py-3 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1 rounded-md hover:bg-muted">
+                          <MoreHorizontal size={18} className="text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-52 bg-card border border-border rounded-lg shadow-lg"
+                      >
+                        {/* VIEW BOOKING */}
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedBooking(b);
+                            setViewOpen(true);
+                          }}
                         >
-                          <DropdownMenuItem
-                            onClick={() => onOpenView(b)}
-                            className="cursor-pointer mt-1"
-                          >
-                            View
-                          </DropdownMenuItem>
+                          View Booking
+                        </DropdownMenuItem>
 
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelected(b);
-                              setEditOpen(true);
-                            }}
-                            className="cursor-pointer mt-2"
-                          >
-                            Edit
-                          </DropdownMenuItem>
 
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelected(b);
-                              setConfirmCancelOpen(true);
-                            }}
-                            className={`cursor-pointer text-red-600 mt-2 ${
-                              b.status === "cancelled"
-                                ? "opacity-50 pointer-events-none"
-                                : ""
-                            }`}
-                          >
-                            Cancel
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                );
-              })}
-              {paginatedBookings.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="py-8 text-center text-muted-foreground"
-                  >
-                    No bookings found.
+                        {/* VIEW INVOICE */}
+                        <DropdownMenuItem
+                          onClick={() => navigate(`/bookings/${b._id}/invoice`)}
+                        >
+                          View Invoice
+                        </DropdownMenuItem>
+
+
+
+                        {/* DOWNLOAD INVOICE */}
+                        <DropdownMenuItem
+                          onClick={() => downloadInvoice(b._id)}
+                          className="cursor-pointer"
+                        >
+                          Download Invoice
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        {/* COPY EMAIL */}
+                        <DropdownMenuItem
+                          onClick={() =>
+                            copyToClipboard(
+                              b.user?.email || b.guestEmail,
+                              "Email"
+                            )
+                          }
+                          className="cursor-pointer"
+                        >
+                          Copy Email
+                        </DropdownMenuItem>
+
+                        {/* COPY PHONE */}
+                        <DropdownMenuItem
+                          onClick={() =>
+                            copyToClipboard(
+                              b.user?.phone || b.guestPhone,
+                              "Phone number"
+                            )
+                          }
+                          className="cursor-pointer"
+                        >
+                          Copy Phone
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
+        </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-end gap-2 py-6">
-              <button
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`px-3 py-1 border rounded text-sm min-w-[36px] ${
-                    p === page
-                      ? "bg-black text-white border-black"
-                      : "bg-white text-black"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-
-              <button
-                className="px-3 py-1 border rounded text-sm disabled:opacity-50"
-                disabled={page === totalPages}
-                onClick={() =>
-                  setPage((p) => Math.min(totalPages, p + 1))
-                }
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* View Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Booking details</DialogTitle>
-          </DialogHeader>
-          {selected && (
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="text-muted-foreground">Booking ID:</span>{" "}
-                {selected._id}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Guest:</span>{" "}
-                {selected.user?.name || selected.guestName || "—"}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Mobile:</span>{" "}
-                {selected.user?.phone || selected.guestPhone || "—"}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Room:</span>{" "}
-                {selected.room?.name ||
-                  selected.roomName ||
-                  "Entire Villa"}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Dates:</span>{" "}
-                {fmt(selected.startDate)} → {fmt(selected.endDate)}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Nights:</span>{" "}
-                {diffNightsInclusive(
-                  selected.startDate,
-                  selected.endDate
-                )}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Guests:</span>{" "}
-                {selected.guests ?? "—"}
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  Amount Paid:
-                </span>{" "}
-                ₹{selected.amount ?? "—"}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">With meal:</span>
-                {selected.withMeal ? (
-                  <span className="inline-flex items-center gap-1 text-green-600">
-                    <CheckCircle className="h-4 w-4" /> Yes
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-red-600">
-                    <XCircle className="h-4 w-4" /> No
-                  </span>
-                )}
-              </div>
-              <div>
-                <span className="text-muted-foreground">Status:</span>{" "}
-                <StatusBadge status={selected.status} />
-              </div>
-              <div>
-                <span className="text-muted-foreground">Created:</span>{" "}
-                {fmt(selected.createdAt)}
-              </div>
-              {selected.note && (
-                <div>
-                  <span className="text-muted-foreground">Note:</span>{" "}
-                  {selected.note}
+        {/* ================= MOBILE LIST ================= */}
+        <div className="sm:hidden space-y-3">
+          {visible.map((b) => (
+            <div
+              key={b._id}
+              className="bg-card border rounded-xl p-4 space-y-3"
+            >
+              <div className="flex justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-[14px] font-semibold truncate">
+                    {b.user?.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {b.user?.email}
+                  </div>
                 </div>
-              )}
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <StatusBadge status={b.status} />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-1 rounded-md hover:bg-muted">
+                        <MoreHorizontal size={18} className="text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-52 bg-card border border-border rounded-lg shadow-lg"
+                    >
+                      {/* VIEW BOOKING */}
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedBooking(b);
+                          setViewOpen(true);
+                        }}
+                      >
+                        View Booking
+                      </DropdownMenuItem>
+
+                      {/* VIEW INVOICE */}
+                      <DropdownMenuItem
+                        onClick={() => navigate(`/bookings/${b._id}/invoice`)}
+                      >
+                        View Invoice
+                      </DropdownMenuItem>
+
+
+
+                      {/* DOWNLOAD INVOICE */}
+                      <DropdownMenuItem
+                        onClick={() => downloadInvoice(b._id)}
+                        className="cursor-pointer"
+                      >
+                        Download Invoice
+                      </DropdownMenuItem>
+
+                      <DropdownMenuSeparator />
+
+                      {/* COPY EMAIL */}
+                      <DropdownMenuItem
+                        onClick={() =>
+                          copyToClipboard(
+                            b.user?.email || b.guestEmail,
+                            "Email"
+                          )
+                        }
+                        className="cursor-pointer"
+                      >
+                        Copy Email
+                      </DropdownMenuItem>
+
+                      {/* COPY PHONE */}
+                      <DropdownMenuItem
+                        onClick={() =>
+                          copyToClipboard(
+                            b.user?.phone || b.guestPhone,
+                            "Phone number"
+                          )
+                        }
+                        className="cursor-pointer"
+                      >
+                        Copy Phone
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              <div className="bg-muted rounded-lg px-3 py-2 text-sm truncate">
+                {b.room?.name || "Entire Villa"}
+              </div>
+
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Calendar size={13} />
+                  {fmt(b.startDate)}
+                </span>
+
+                <span className="flex items-center gap-1">
+                  <Moon size={13} />
+                  {nightsBetween(b.startDate, b.endDate)} nights
+                </span>
+
+                <span className="flex items-center gap-1">
+                  <Users size={13} />
+                  {b.guests} guests
+                </span>
+              </div>
             </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Close
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => setConfirmCancelOpen(true)}
-              disabled={cancelling || selected?.status === "cancelled"}
-            >
-              {cancelling ? "Cancelling..." : "Cancel this booking"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          ))}
+        </div>
 
-      {/* Confirm cancel dialog */}
-      <Dialog
-        open={confirmCancelOpen}
-        onOpenChange={setConfirmCancelOpen}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirm Cancellation</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 text-sm">
-            <p className="font-medium">
-              Have you already discussed this cancellation with the
-              guest?
-            </p>
-            <p className="text-muted-foreground">
-              Please make sure the guest is informed and has agreed to
-              this change before cancelling the booking in the system.
-            </p>
+        {/* ================= PAGINATION ================= */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
+          {/* LEFT TEXT */}
+          <div className="text-xs sm:text-sm text-muted-foreground">
+            Showing {visible.length} of {bookings.length} bookings
           </div>
-          <DialogFooter className="gap-2 pt-3">
-            <Button
-              variant="outline"
-              onClick={() => setConfirmCancelOpen(false)}
-              disabled={cancelling}
-            >
-              No, not yet
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={onCancelConfirmed}
-              disabled={cancelling}
-            >
-              {cancelling ? "Cancelling..." : "Yes, I have discussed"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Edit Booking Dialog */}
-      {selected && (
-        <EditBookingDialog
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          booking={selected}
-          reload={load}
-        />
-      )}
+          {/* PAGINATION */}
+          <div className="flex items-center gap-1">
+            {/* PREVIOUS */}
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-3 py-1 border rounded-md text-sm disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            {/* DESKTOP PAGE NUMBERS */}
+            <div className="hidden sm:flex items-center gap-1">
+              {[...Array(totalPages)].map((_, i) => {
+                const p = i + 1;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`min-w-[36px] px-3 py-1 border rounded-md text-sm
+              ${page === p
+                        ? "bg-primary text-white border-primary"
+                        : "bg-background"
+                      }
+            `}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* MOBILE CURRENT PAGE */}
+            <div className="sm:hidden">
+              <span className="px-3 py-1 border rounded-md text-sm bg-primary text-white">
+                {page}
+              </span>
+            </div>
+
+            {/* NEXT */}
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="px-3 py-1 border rounded-md text-sm disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+
+      <ViewBookingDialog
+  open={viewOpen}
+  onOpenChange={setViewOpen}
+  bookingId={selectedBooking?._id}
+/>
+
+    </AppLayout>
+
+  );
+}
+
+/* ================= COMPONENTS ================= */
+
+// ================= STAT CARD (INLINE – BOOKINGS ONLY) =================
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  iconBg = "bg-muted",
+  iconColor = "text-primary",
+}) {
+  return (
+    <div
+      className="
+        w-full
+        bg-card border border-border rounded-xl
+        p-3 sm:p-4
+        flex items-center justify-between
+        min-h-[72px] sm:min-h-[96px]
+      "
+    >
+      {/* LEFT */}
+      <div className="flex flex-col leading-tight">
+        <p className="text-[11px] sm:text-sm text-muted-foreground">
+          {label}
+        </p>
+
+        <h2 className="text-[18px] sm:text-2xl font-semibold mt-1">
+          {value}
+        </h2>
+      </div>
+
+      {/* ICON */}
+      <div
+        className={`
+          h-9 w-9 sm:h-11 sm:w-11
+          rounded-lg
+          flex items-center justify-center
+          shrink-0
+          ${iconBg}
+        `}
+      >
+        <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`} />
+      </div>
     </div>
   );
 }
+

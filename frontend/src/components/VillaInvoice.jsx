@@ -1,22 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { api } from "../api/http";
-import InvoiceToPayTo from "../components/InvoiceToPayTo";
-import PaymentInfo from "../components/PaymentInfo";
-import SubTotalStyle2 from "../components/SubTotalStyle2";
-import Signature from "../components/Signature";
-import TermsStyle5 from "../components/TermsStyle5";
-import TableStyle13 from "../components/TableStyle13";
 import { format } from "date-fns";
+import { Download, Printer, ArrowLeft } from "lucide-react";
 
 export default function VillaInvoice() {
   const { id } = useParams();
   const [booking, setBooking] = useState(null);
-  const invoiceRef = useRef();
+  const invoiceRef = useRef(null);
 
-  // Fetch booking data
+  /* ================= FETCH BOOKING ================= */
   useEffect(() => {
     api
       .get(`/bookings/${id}`)
@@ -26,72 +21,32 @@ export default function VillaInvoice() {
 
   if (!booking) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Loading invoice...
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+        Loading invoice…
       </div>
     );
   }
 
-  // --- Calculations ---
-  const roomTotal = booking.pricePerNight * booking.nights;
+  /* ================= CALCULATIONS ================= */
+  const nights = booking.nights || 1;
+  const roomTotal = booking.pricePerNight * nights;
 
-  // Meal Breakdown
-  const vegTotal = booking.vegGuests * booking.room.mealPriceVeg * booking.nights;
-  const nonVegTotal = booking.nonVegGuests * booking.room.mealPriceNonVeg * booking.nights;
-  const comboTotal = booking.comboGuests * booking.room.mealPriceCombo * booking.nights;
+  const vegTotal =
+    booking.vegGuests * booking.room?.mealPriceVeg * nights || 0;
+  const nonVegTotal =
+    booking.nonVegGuests * booking.room?.mealPriceNonVeg * nights || 0;
+  const comboTotal =
+    booking.comboGuests * booking.room?.mealPriceCombo * nights || 0;
 
   const mealTotal = vegTotal + nonVegTotal + comboTotal;
-
-  // Final totals
   const subTotal = roomTotal + mealTotal;
   const taxPercent = 12;
   const taxAmount = (subTotal * taxPercent) / 100;
   const grandTotal = subTotal + taxAmount;
 
-
-  const tableData = [
-    {
-      item: "Room Charges",
-      desc: "Night(s)",
-      price: booking.pricePerNight,
-      qty: booking.nights,
-    },
-  ];
-
-  if (booking.withMeal) {
-    if (booking.vegGuests > 0) {
-      tableData.push({
-        item: "Veg Meal",
-        price: booking.room.mealPriceVeg,
-        guests: booking.vegGuests,
-        nights: booking.nights,
-      });
-    }
-
-    if (booking.nonVegGuests > 0) {
-      tableData.push({
-        item: "Non-Veg Meal",
-        desc: `${booking.nonVegGuests} guest(s)`,
-        price: booking.room.mealPriceNonVeg,
-        qty: booking.nights,
-      });
-    }
-
-    if (booking.comboGuests > 0) {
-      tableData.push({
-        item: "Combo Meal",
-        desc: `${booking.comboGuests} guest(s)`,
-        price: booking.room.mealPriceCombo,
-        qty: booking.nights,
-      });
-    }
-  }
-
-
-  // --- Download PDF ---
-  const downloadPDF = async () => {
-    const element = invoiceRef.current;
-    const canvas = await html2canvas(element, {
+  /* ================= PDF ================= */
+  const generatePDF = async (action = "download") => {
+    const canvas = await html2canvas(invoiceRef.current, {
       scale: 2,
       useCORS: true,
       scrollY: -window.scrollY,
@@ -99,202 +54,239 @@ export default function VillaInvoice() {
 
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "pt", "a4");
+
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`invoice-${booking._id}.pdf`);
-  };
 
-  const printPDF = async () => {
-    const element = invoiceRef.current;
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      scrollY: -window.scrollY,
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "pt", "a4");
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-    const pdfBlob = pdf.output("blob");
-    const blobUrl = URL.createObjectURL(pdfBlob);
-    const printWindow = window.open(blobUrl);
-
-    if (printWindow) {
-      printWindow.onload = () => {
-        printWindow.focus();
-        printWindow.print();
-      };
+    if (action === "print") {
+      const blob = pdf.output("bloburl");
+      const win = window.open(blob);
+      win.onload = () => win.print();
+    } else {
+      pdf.save(`invoice-${booking._id}.pdf`);
     }
   };
 
-
+  /* ================= UI ================= */
   return (
-    <div className="min-h-screen bg-gray-100 flex items-start gap-8 justify-center py-10">
-      <div
-        className="tm_invoice tm_style2 bg-white rounded-2xl shadow-md p-8 w-[800px]"
-        id="tm_download_section"
-        ref={invoiceRef}
-      >
-        <div className="tm_invoice_in">
-          <div className="tm_invoice_content">
-            {/* Header */}
-            <div className="tm_invoice_head tm_mb30 flex justify-between items-start border-b pb-4 mb-4">
-              <div className="tm_invoice_left">
-                <div className="tm_logo">
-                  <img src="/pdfLogo.png" alt="Logo" className="h-14 rounded shadow p-1" />
-                </div>
-              </div>
+    <div className="min-h-screen bg-[#faf7f4] py-10 px-4">
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
 
-              <div className="tm_invoice_right text-right">
-                <b className="text-3xl font-semibold text-black">Invoice</b>
-                <p className="m-0 text-sm text-gray-500">
-                  Invoice Number - INV-{booking._id.toString().slice(-6)}
+        {/* LEFT */}
+        <div className="flex-1">
+
+          <Link
+            to="/invoices"
+            className="flex items-center gap-2 text-sm text-muted-foreground mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Invoices
+          </Link>
+
+          {/* INVOICE */}
+          <div
+            ref={invoiceRef}
+            className="bg-white rounded-2xl shadow-lg p-8 space-y-6"
+          >
+            {/* HEADER */}
+            <div className="flex justify-between items-start border-b pb-4">
+              <img src="/pdfLogo.png" alt="Gulposh" className="h-12" />
+
+              <div className="text-right">
+                <h2 className="text-3xl font-serif font-semibold">
+                  Invoice
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Invoice Number – INV-{booking._id.slice(-6).toUpperCase()}
                 </p>
               </div>
             </div>
 
-            {/* Booking info */}
-            <div className="tm_invoice_info tm_mb25 flex justify-between gap-6 w-auto">
-              <div className="tm_invoice_info_left w-[30%]">
-                <InvoiceToPayTo
-                  title="Invoma Hotel"
-                  subTitle={`Villa Gulposh Vidyasagar <br /> Properties Pvt Ltd. <br />Kirawali, Karjat - 410201<br />stay@villagulposh.com <br />+91 98200 74617`}
-                />
+            {/* INFO GRID */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <h4 className="font-semibold mb-2">Invoma Hotel:</h4>
+                <p>
+                  Villa Gulposh Vidyasagar<br />
+                  Properties Pvt Ltd.<br />
+                  Kirawali, Karjat – 410201<br />
+                  stay@villagulposh.com<br />
+                  +91 98200 74617
+                </p>
               </div>
 
-              <div className="tm_invoice_info_right w-[70%]">
-                <div className="grid grid-cols-3 gap-2 bg-gray-50 rounded-lg border border-gray-200 p-4 text-sm">
-                  <div>
-                    <span>Check In:</span>
-                    <br />
-                    <b className="text-black">
-                      {format(new Date(booking.startDate), "dd MMM yyyy")}
-                    </b>
-                  </div>
-                  <div className="-ml-6">
-                    <span>Check Out:</span>
-                    <br />
-                    <b className="text-black">
-                      {format(new Date(booking.endDate), "dd MMM yyyy")}
-                    </b>
-                  </div>
-                  <div className="-ml-10">
-                    <span>Booking ID:</span>
-                    <br />
-                    <b className="text-black">
-                      INV-{booking._id.toString().slice(-6).toUpperCase()}
-                    </b>
-                  </div>
-                  <div>
-                    <span>Nights:</span>
-                    <br />
-                    <b className="text-black">{booking.nights}</b>
-                  </div>
-                  <div className="-ml-6">
-                    <span>Rooms:</span>
-                    <br />
-                    <b className="text-black">1</b>
-                  </div>
-                  <div className="-ml-10">
-                    <span>Room Type:</span>
-                    <br />
-                    <b className="text-black">
-                      {booking.room?.name || "Single"}
-                    </b>
-                  </div>
+              <div className="md:col-span-2 bg-[#faf7f4] rounded-xl p-4 grid grid-cols-3 gap-4">
+                <div>
+                  Check In<br />
+                  <b>{format(new Date(booking.startDate), "dd MMM yyyy")}</b>
+                </div>
+                <div>
+                  Check Out<br />
+                  <b>{format(new Date(booking.endDate), "dd MMM yyyy")}</b>
+                </div>
+                <div>
+                  Booking ID<br />
+                  <b>INV-{booking._id.slice(-6).toUpperCase()}</b>
+                </div>
+                <div>
+                  Nights<br />
+                  <b>{nights}</b>
+                </div>
+                <div>
+                  Rooms<br />
+                  <b>1</b>
+                </div>
+                <div>
+                  Room Type<br />
+                  <b>{booking.room?.name}</b>
                 </div>
               </div>
             </div>
 
-            {/* Guest Info & Details */}
-            <div className="grid grid-cols-2 border border-gray-200 rounded-lg mb-6 mt-3 p-2">
-              <InvoiceToPayTo
-                varient="tm_border_right tm_border_none_sm"
-                title="Guest Info"
-                subTitle={`Name: ${booking.contactName || booking.user?.name || "-"} <br />
-  Phone: ${booking.contactPhone || booking.user?.phone || "-"} <br />
-  Email: ${booking.contactEmail || booking.user?.email || "-"}`}
-              />
-
-              <InvoiceToPayTo
-                title="Room And Service Details"
-                subTitle="Room service is a hotel service enabling guests to choose items of food and drink for delivery to their hotel room for consumption."
-              />
-            </div>
-
-            {/* Table */}
-            <div className="tm_table tm_style1 mb-6">
-              <div className="tm_round_border">
-                <div className="tm_table_responsive">
-                  <TableStyle13 data={tableData} />
-                </div>
+            {/* GUEST + SERVICE */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-xl p-4">
+              <div>
+                <h4 className="font-semibold mb-2">Guest Info:</h4>
+                <p>
+                  Name: {booking.contactName || booking.user?.name}<br />
+                  Phone: {booking.contactPhone || booking.user?.phone}<br />
+                  Email: {booking.contactEmail || booking.user?.email}
+                </p>
               </div>
 
-              <div className="flex justify-between mt-6">
-                <PaymentInfo
-                  varient="tm_left_footer"
-                  title="Payment Info"
-                  cardType={booking.paymentProvider
-                    ? booking.paymentProvider.charAt(0).toUpperCase() + booking.paymentProvider.slice(1)
-                    : "Online"}
-                  cardNumber={booking.paymentId || booking.orderId || "N/A"}
-                  amount={booking.amount || grandTotal}
-                  author={booking.contactName || booking.user?.name || "-"}
-                />
-
-                <div className="tm_right_footer">
-                  <SubTotalStyle2
-                    subTotal={subTotal}
-                    discountAmount={0}
-                    discountPersent={0}
-                    taxPersent={taxPercent}
-                    taxAmount={taxAmount}
-                    grandTotal={grandTotal}
-                    gtBg="tm_gray_bg"
-                    gtColor="tm_primary_color"
-                  />
-                </div>
-              </div>
-
-              <div className="tm_invoice_footer mt-6 flex justify-end">
-                <Signature
-                  imgUrl="/images/sign.svg"
-                  name="Jhon Donate"
-                  designation="Accounts Manager"
-                />
+              <div>
+                <h4 className="font-semibold mb-2">
+                  Room And Service Details:
+                </h4>
+                <p className="text-muted-foreground">
+                  Room service enables guests to choose food and drinks delivered
+                  directly to their room.
+                </p>
               </div>
             </div>
 
-            {/* Terms */}
-            <div className="tm_note text-center text-gray-600 text-sm">
-              <hr className="mb-3" />
-              <TermsStyle5
-                title="Terms And Condition"
-                subTitle="Your use of the Website shall be deemed to constitute your understanding and approval of, and agreement to be bound by, the Privacy Policy and you consent to the collection."
-              />
+            {/* TABLE */}
+            <table className="w-full border rounded-xl overflow-hidden text-sm">
+              <thead className="bg-[#faf7f4]">
+                <tr>
+                  <th className="p-3 text-left">Description</th>
+                  <th className="p-3 text-left">Rate</th>
+                  <th className="p-3 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t">
+                  <td className="p-3">Room Charges</td>
+                  <td className="p-3">
+                    ₹{booking.pricePerNight} × {nights} night(s)
+                  </td>
+                  <td className="p-3 text-right font-medium">
+                    ₹{roomTotal.toLocaleString("en-IN")}
+                  </td>
+                </tr>
+
+                {vegTotal > 0 && (
+                  <tr className="border-t">
+                    <td className="p-3">Veg Meal</td>
+                    <td className="p-3">
+                      ₹{booking.room.mealPriceVeg} × {booking.vegGuests} guest(s)
+                    </td>
+                    <td className="p-3 text-right">
+                      ₹{vegTotal.toLocaleString("en-IN")}
+                    </td>
+                  </tr>
+                )}
+
+                {nonVegTotal > 0 && (
+                  <tr className="border-t">
+                    <td className="p-3">Non-Veg Meal</td>
+                    <td className="p-3">
+                      ₹{booking.room.mealPriceNonVeg} × {booking.nonVegGuests} guest(s)
+                    </td>
+                    <td className="p-3 text-right">
+                      ₹{nonVegTotal.toLocaleString("en-IN")}
+                    </td>
+                  </tr>
+                )}
+
+                {comboTotal > 0 && (
+                  <tr className="border-t">
+                    <td className="p-3">Combo Meal</td>
+                    <td className="p-3">
+                      ₹{booking.room.mealPriceCombo} × {booking.comboGuests} guest(s)
+                    </td>
+                    <td className="p-3 text-right">
+                      ₹{comboTotal.toLocaleString("en-IN")}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+
+            {/* TOTALS */}
+            <div className="flex justify-between mt-6">
+              <div className="text-sm">
+                <h4 className="font-semibold mb-2">Payment Info:</h4>
+                <p>
+                  {booking.user?.name}<br />
+                  {booking.paymentProvider || "Online"} – {booking.paymentId}<br />
+                  Amount: ₹{booking.amount}
+                </p>
+              </div>
+
+              <div className="text-sm w-64">
+                <div className="flex justify-between mb-1">
+                  <span>SubTotal</span>
+                  <span>₹{subTotal.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex justify-between mb-1">
+                  <span>Tax {taxPercent}%</span>
+                  <span>+ ₹{taxAmount.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex justify-between font-semibold text-lg text-primary">
+                  <span>Grand Total</span>
+                  <span>₹{grandTotal.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* SIGN */}
+            <div className="text-center mt-10">
+              <p className="italic">Signature</p>
+              <p className="font-semibold mt-2">Jhon Donate</p>
+              <p className="text-sm text-muted-foreground">
+                Accounts Manager
+              </p>
+            </div>
+
+            {/* TERMS */}
+            <div className="text-center text-xs text-muted-foreground mt-6 border-t pt-4">
+              <b>Terms And Condition:</b><br />
+              Your use of the website constitutes agreement to our Privacy Policy.
             </div>
           </div>
         </div>
-      </div>
 
-      {/* PDF Button */}
-      <div className="flex flex-col gap-0">
-        <button
-          onClick={downloadPDF}
-          className="mt-8 bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800"
-        >
-          Download PDF
-        </button>
-        <button
-          onClick={printPDF}
-          className="mt-4 bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800"
-        >
-          Print PDF
-        </button>
+        {/* ACTIONS */}
+        <div className="w-full lg:w-60 flex flex-col gap-3">
+          <button
+            onClick={() => generatePDF("download")}
+            className="bg-primary text-white py-3 rounded-xl flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Download PDF
+          </button>
+
+          <button
+            onClick={() => generatePDF("print")}
+            className="bg-white border py-3 rounded-xl flex items-center justify-center gap-2"
+          >
+            <Printer className="w-4 h-4" />
+            Print PDF
+          </button>
+        </div>
       </div>
     </div>
   );

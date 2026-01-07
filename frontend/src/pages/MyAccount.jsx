@@ -1,163 +1,219 @@
 import { useEffect, useState } from "react";
 import { getMyProfile, updateMyProfile } from "../api/user";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Calendar } from "@/components/ui/calendar";
 import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+  User,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react";
 
 export default function MyAccount() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [dob, setDob] = useState(null);
+  const [address, setAddress] = useState("");
 
   /* ================= LOAD PROFILE ================= */
   useEffect(() => {
     (async () => {
       try {
         const me = await getMyProfile();
-        setId(me.id);
         setName(me.name || "");
         setEmail(me.email || "");
         setPhone(me.phone || "");
-        setDob(me.dob ? new Date(me.dob) : null);
+        setAddress(me.address || "Mumbai, Maharashtra, India");
       } catch (e) {
-        toast.error(e?.response?.data?.message || "Failed to load profile");
+        toast.error("Failed to load profile");
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  /* ================= SAVE PROFILE ================= */
+  /* ================= SAVE ================= */
   const onSave = async () => {
     setSaving(true);
     try {
-      const payload = {
-        name,
-        email,
-        dob: dob ? dob.toISOString() : null,
-      };
-
-      const updated = await updateMyProfile(payload);
-
-      setName(updated.name || "");
-      setEmail(updated.email || "");
-      setDob(updated.dob ? new Date(updated.dob) : null);
-
-      toast.success("Profile updated successfully");
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Update failed");
+      const payload = { name, email, address };
+      await updateMyProfile(payload);
+      toast.success("Profile updated");
+    } catch {
+      toast.error("Update failed");
     } finally {
       setSaving(false);
     }
   };
 
+  const initials =
+    name
+      ?.split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "U";
+
   if (loading) {
     return (
-      <div className="text-center py-10 text-muted-foreground">
+      <div className="py-20 text-center text-muted-foreground">
         Loading…
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-6">
-      <h1 className="text-xl sm:text-2xl font-semibold">
-        My Account
-      </h1>
+    <div className="max-w-4xl mx-auto px-4 py-10 space-y-10">
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
+      {/* PAGE HEADER */}
+      <div className="text-center">
+        <h1 className="text-3xl font-serif font-semibold">
+          My Account
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Manage your personal information and preferences
+        </p>
+      </div>
 
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>Name</Label>
-              <Input
-                className="mt-2"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-              />
-            </div>
+      {/* PROFILE CARD */}
+      <Card className="rounded-2xl border bg-white p-6 sm:p-8">
 
-            <div>
-              <Label>Email (optional)</Label>
-              <Input
-                className="mt-2"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-            </div>
+        {/* HEADER ROW */}
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-xl font-serif font-semibold">
+            Profile Information
+          </h2>
 
-            <div>
-              <Label>Phone</Label>
-              <Input
-                className="mt-2 bg-muted cursor-not-allowed"
-                value={phone}
-                disabled
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Phone number cannot be changed (OTP based login)
-              </p>
-            </div>
+          <Button
+            size="sm"
+            className="rounded-lg"
+            onClick={onSave}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Edit Profile"}
+          </Button>
+        </div>
 
-            <div>
-              <Label>Date of Birth</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={`w-full justify-start mt-2 text-left font-normal ${
-                      !dob && "text-muted-foreground"
-                    }`}
-                  >
-                    {dob ? format(dob, "PPP") : "Select date of birth"}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dob}
-                    onSelect={setDob}
-                    captionLayout="dropdown"
-                    fromYear={1950}
-                    toYear={new Date().getFullYear()}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+        {/* AVATAR ROW */}
+        <div className="mt-6 flex items-center gap-4">
+          <div className="
+            w-16 h-16
+            rounded-full
+            bg-primary
+            text-primary-foreground
+            flex items-center justify-center
+            text-xl font-semibold
+          ">
+            {initials}
           </div>
 
-          <div className="pt-3">
-            <Button onClick={onSave} disabled={saving}>
-              {saving ? "Saving..." : "Save changes"}
-            </Button>
+          <div>
+            <div className="text-lg font-semibold">
+              {name || "Your Name"}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {email || "email@example.com"}
+            </div>
           </div>
-        </CardContent>
+        </div>
+
+        <div className="my-6 border-t" />
+
+        {/* FORM GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {/* FIRST NAME */}
+          <div>
+            <Label className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              First Name
+            </Label>
+            <Input
+              className="mt-2"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          {/* LAST NAME (optional split UI) */}
+          <div>
+            <Label>Last Name</Label>
+            <Input
+              className="mt-2"
+              value=""
+              placeholder="—"
+              disabled
+            />
+          </div>
+
+          {/* EMAIL */}
+          <div>
+            <Label className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Email Address
+            </Label>
+            <Input
+              className="mt-2"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          {/* PHONE */}
+          <div>
+            <Label className="flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              Phone Number
+            </Label>
+            <Input
+              className="mt-2 bg-muted cursor-not-allowed"
+              value={phone}
+              disabled
+            />
+          </div>
+
+          {/* ADDRESS (FULL WIDTH) */}
+          <div className="sm:col-span-2">
+            <Label className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Address
+            </Label>
+            <Input
+              className="mt-2"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* DANGER ZONE */}
+      <Card className="
+        border border-red-300
+        bg-red-50
+        rounded-2xl
+        p-6
+      ">
+        <h3 className="text-lg font-semibold text-red-600 mb-1">
+          Danger Zone
+        </h3>
+
+        <p className="text-sm text-muted-foreground mb-4">
+          Permanently delete your account and all associated data
+        </p>
+
+        <Button
+          variant="destructive"
+          className="rounded-xl"
+        >
+          Delete Account
+        </Button>
       </Card>
     </div>
   );

@@ -1,29 +1,70 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getMyBookings, cancelBooking } from "../api/bookings";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+    Calendar,
+    Clock,
+    Users,
+    Eye,
+} from "lucide-react";
+
+/* ---------------- HELPERS ---------------- */
 
 const fmt = (d) =>
-  new Date(d).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "2-digit", 
-  });
+    new Date(d).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
 
 const isFuture = (d) => new Date(d) > new Date();
 
 const calcNights = (start, end) => {
     const s = new Date(start);
     const e = new Date(end);
-    const diff = Math.round((e - s) / (1000 * 60 * 60 * 24));
-    return Math.max(1, diff); 
+    return Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)));
 };
 
+/* ---------------- EMPTY STATE ---------------- */
+
+function EmptyState({ type, onExplore }) {
+    return (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
+                <Calendar className="w-8 h-8 text-muted-foreground" />
+            </div>
+
+            <h3 className="text-2xl font-serif font-semibold mb-2">
+                {type === "upcoming" ? "No Upcoming Trips" : "No Past Trips"}
+            </h3>
+
+            <p className="text-sm text-muted-foreground max-w-sm mb-6">
+                {type === "upcoming"
+                    ? "You don't have any upcoming reservations. Ready to plan your next getaway?"
+                    : "You don’t have any past reservations yet."}
+            </p>
+
+            {type === "upcoming" && (
+                <Button className="rounded-xl px-6" onClick={onExplore}>
+                    Explore Rooms
+                </Button>
+            )}
+        </div>
+    );
+}
+
+/* ---------------- PAGE ---------------- */
+
 export default function MyBookings() {
+    const navigate = useNavigate();
+
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [tab, setTab] = useState("upcoming"); // default active
+
+    /* ---------------- LOAD BOOKINGS ---------------- */
 
     const reload = async () => {
         setLoading(true);
@@ -35,18 +76,26 @@ export default function MyBookings() {
             setLoading(false);
         }
     };
+
     useEffect(() => {
         reload();
     }, []);
+
+    /* ---------------- FILTERS ---------------- */
 
     const upcoming = useMemo(
         () => items.filter((b) => isFuture(b.startDate)),
         [items]
     );
+
     const past = useMemo(
         () => items.filter((b) => !isFuture(b.startDate)),
         [items]
     );
+
+    const list = tab === "upcoming" ? upcoming : past;
+
+    /* ---------------- ACTIONS ---------------- */
 
     const onCancel = async (id) => {
         if (!confirm("Cancel this booking?")) return;
@@ -59,105 +108,187 @@ export default function MyBookings() {
         }
     };
 
-    const Section = ({ title, data }) => (
-        <div className="space-y-3">
-            <h2 className="text-lg font-semibold">{title}</h2>
-            {data.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No bookings.</p>
+    /* ---------------- UI ---------------- */
+
+    return (
+        <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
+
+            {/* HEADER */}
+            <div>
+                <h1 className="text-3xl font-serif font-semibold">
+                    My Bookings
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                    Track your journeys and relive your memories
+                </p>
+            </div>
+
+            {/* TABS */}
+            <div className="flex items-center gap-2 bg-[#faf6f2] p-2 rounded-xl w-fit">
+                <button
+                    onClick={() => setTab("upcoming")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
+            ${tab === "upcoming"
+                            ? "bg-primary text-primary-foreground shadow"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                >
+                    <Calendar className="w-4 h-4" />
+                    Upcoming
+                </button>
+
+                <button
+                    onClick={() => setTab("past")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
+            ${tab === "past"
+                            ? "bg-primary text-primary-foreground shadow"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                >
+                    <Clock className="w-4 h-4" />
+                    Past
+                    {past.length > 0 && (
+                        <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-white/40">
+                            {past.length}
+                        </span>
+                    )}
+                </button>
+            </div>
+
+            {/* CONTENT */}
+            {loading ? (
+                <p className="text-sm">Loading…</p>
+            ) : list.length === 0 ? (
+                <EmptyState type={tab} onExplore={() => navigate("/")} />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {data.map((b) => {
+                <div className="
+          grid
+          grid-cols-1
+          md:grid-cols-2
+          lg:grid-cols-3
+          gap-6
+        ">
+                    {list.map((b) => {
                         const nights = calcNights(b.startDate, b.endDate);
+
                         return (
-                            <Card key={b._id} className="overflow-hidden">
-                                <div className="flex flex-col sm:flex-row items-stretch">
-                                    {/* LEFT: text/content */}
-                                    <div className="flex-1">
-                                        <CardHeader className="flex items-start justify-between pb-2">
-                                            <CardTitle className="text-base">
-                                                {b.room?.name || "Room"}
-                                            </CardTitle>
-                                            <Badge
-                                                variant={
-                                                    b.status === "confirmed" ? "default" : "secondary"
-                                                }
-                                            >
-                                                {b.status}
-                                            </Badge>
-                                        </CardHeader>
+                            <div
+                                key={b._id}
+                                className="
+                  group
+                  bg-white
+                  rounded-2xl
+                  overflow-hidden
+                  border
+                  shadow-sm
+                  hover:shadow-xl
+                  transition
+                "
+                            >
+                                {/* IMAGE */}
+                                <div className="relative h-48 overflow-hidden">
+                                    <img
+                                        src={b.room?.coverImage || "/placeholder.jpg"}
+                                        alt={b.room?.name}
+                                        className="
+                      w-full h-full object-cover
+                      scale-110
+                      group-hover:scale-100
+                      transition-transform duration-700 ease-out
+                    "
+                                    />
 
-                                        <CardContent className="space-y-2 pt-0">
-                                            <div className="text-sm">
-                                                <span className="font-medium">Dates: </span>
-                                                {fmt(b.startDate)} → {fmt(b.endDate)}
-                                            </div>
-                                            <div className="text-sm flex gap-4">
-                                                <div>
-                                                    <span className="font-medium">Nights: </span>
-                                                    {nights}
-                                                </div>
-                                                <div>
-                                                    <span className="font-medium">Guests: </span>
-                                                    {b.guests}
-                                                </div>
-                                            </div>
-                                            <div className="text-sm">
-                                                <span className="font-medium">Total: </span>₹{b.amount}
-                                            </div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
-                                            <div className="pt-2 flex gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        window.open(`/room/${b.room?._id}`, "_blank")
-                                                    }
-                                                >
-                                                    View
-                                                </Button>
-                                                {isFuture(b.startDate) && b.status === "confirmed" && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="destructive"
-                                                        onClick={() => onCancel(b._id)}
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </div>
-
-                                    {/* RIGHT: image */}
-                                    <div className="sm:w-56 w-full sm:border-l p-4 sm:p-4 pt-0 sm:pt-4">
-                                        <div className="relative w-full h-32 sm:h-52">
-                                            <img
-                                                src={b.room?.coverImage || "/placeholder.jpg"}
-                                                alt={b.room?.name || "Room"}
-                                                className="w-full h-full object-cover rounded-md border"
-                                                loading="lazy"
-                                            />
+                                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+                                        <div>
+                                            <h3 className="text-white text-lg font-serif font-semibold">
+                                                {b.room?.name}
+                                            </h3>
+                                            <p className="text-white/80 text-sm">
+                                                Gulposh Villa
+                                            </p>
                                         </div>
+
+                                        <span className="
+                      px-3 py-1
+                      rounded-full
+                      text-xs font-medium
+                      bg-green-600/90
+                      text-white
+                    ">
+                                            {b.status}
+                                        </span>
                                     </div>
                                 </div>
-                            </Card>
+
+                                {/* CONTENT */}
+                                <div className="p-4 space-y-3">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Calendar className="w-4 h-4 text-primary" />
+                                        {fmt(b.startDate)} → {fmt(b.endDate)}
+                                    </div>
+
+                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="w-4 h-4" />
+                                            {nights} Nights
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                            <Users className="w-4 h-4" />
+                                            {b.guests} Guests
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t pt-3 flex items-center justify-between">
+                                        <div>
+                                            <div className="text-xs text-muted-foreground">
+                                                Total
+                                            </div>
+                                            <div className="text-lg font-semibold">
+                                                ₹{b.amount}
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="rounded-xl flex items-center gap-2"
+                                            onClick={() =>
+                                                window.open(`/room/${b.room?._id}`, "_blank")
+                                            }
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                            View
+                                        </Button>
+                                    </div>
+
+                                    {tab === "upcoming" && b.status === "confirmed" && (
+                                        <div className="pt-3 flex justify-center">
+                                            <Button
+                                                onClick={() => onCancel(b._id)}
+                                                className="
+                                                            w-full
+                                                            max-w-[220px]
+                                                            rounded-xl
+                                                            bg-primary
+                                                            text-primary-foreground
+                                                            hover:bg-primary/90
+                                                            active:scale-[0.98]
+                                                            transition
+                                                        "
+                                            >
+                                                Cancel Booking
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                </div>
+                            </div>
                         );
                     })}
                 </div>
-            )}
-        </div>
-    );
-
-    return (
-        <div className="max-w-6xl mx-auto p-4 space-y-6">
-            <h1 className="text-2xl font-heading">My bookings</h1>
-            {loading ? (
-                <p className="text-sm">Loading…</p>
-            ) : (
-                <>
-                    <Section title="Upcoming" data={upcoming} />
-                    <Section title="Past" data={past} />
-                </>
             )}
         </div>
     );

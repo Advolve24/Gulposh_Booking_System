@@ -23,14 +23,22 @@ export const createUserByAdmin = (payload) =>
   api.post("/admin/users", payload).then(r => r.data);
 
 export const listUserBookingsAdmin = (id) => api.get(`/admin/users/${id}/bookings`).then(r => r.data);
-export const listBookingsAdmin = (params) => api.get("/admin/bookings", { params }).then(r => r.data);
+export const listBookingsAdmin = (params) =>
+  api.get(`/admin/bookings?_ts=${Date.now()}`, { params }).then(r => r.data);
+
 export const cancelBookingAdmin = (bookingId) => api.post(`/admin/bookings/${bookingId}/cancel`).then(r => r.data);
 
-export const listBlackouts = () => api.get("/admin/blackouts").then(r => r.data);
-export const addBlackout = ({ from, to, note }) =>
-  api.post("/admin/blackouts", { from, to, note }).then(r => r.data);
-export const removeBlackout = (id) =>
-  api.delete(`/admin/blackouts/${id}`).then(r => r.data);
+export const listBlackouts = () =>
+  api.get(`/admin/blackouts?_ts=${Date.now()}`).then(r => r.data);
+
+export const createBlackout = (payload) =>
+  api.post("/admin/blackouts", payload);
+
+// export const addBlackout = ({ from, to, note }) =>
+//   api.post("/admin/blackouts", { from, to, note }).then(r => r.data);
+export const deleteBlackout = (id) =>
+  api.delete(`/admin/blackouts/${id}`);
+
 
 export const uploadImage = async (file) => {
   const fd = new FormData();
@@ -54,4 +62,9 @@ export const getStats = () => api.get("/admin/stats").then(r => r.data);
 
 export const updateBookingAdmin = (id, payload) =>
   api.put(`/admin/bookings/${id}`, payload).then(r => r.data);
+
+// --- Single Booking ---
+export const getBookingAdmin = (id) =>
+  api.get(`/admin/bookings/${id}`).then(r => r.data);
+
 
