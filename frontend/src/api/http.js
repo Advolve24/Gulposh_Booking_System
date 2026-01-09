@@ -1,11 +1,10 @@
-// utils/api.js
+// frontend/src/api/http.js
 import axios from "axios";
 
 /* ===============================
    API BASE URL
 ================================ */
 
-// Use correct env variable
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -14,10 +13,10 @@ if (import.meta.env.DEV) {
 }
 
 /* ===============================
-   AXIOS INSTANCE
+   AXIOS INSTANCE (NAMED EXPORT)
 ================================ */
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
 });
@@ -31,7 +30,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle token expiry
     if (
       error.response?.status === 401 &&
       error.response?.data?.message === "TokenExpired" &&
@@ -43,7 +41,6 @@ api.interceptors.response.use(
         await api.post("/auth/refresh");
         return api(originalRequest);
       } catch (refreshError) {
-        // Optional: logout user here
         return Promise.reject(refreshError);
       }
     }
@@ -51,5 +48,3 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export default api;
