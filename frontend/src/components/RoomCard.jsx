@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Users, ArrowRight } from "lucide-react";
 
 export default function RoomCard({ room, range, guests }) {
   const hasRange = range?.from && range?.to;
@@ -31,24 +32,26 @@ export default function RoomCard({ room, range, guests }) {
   const linkState =
     hasRange || hasGuests
       ? {
-          ...(hasRange && {
-            from: range.from.toISOString(),
-            to: range.to.toISOString(),
-          }),
-          ...(hasGuests && { guests }),
-        }
+        ...(hasRange && {
+          from: range.from.toISOString(),
+          to: range.to.toISOString(),
+        }),
+        ...(hasGuests && { guests }),
+      }
       : undefined;
 
   /* ---------------- UI ---------------- */
   return (
     <div
       className="
+        group
         bg-white
         rounded-2xl
-        shadow-md
-        hover:shadow-xl
-        transition
         overflow-hidden
+        shadow-md
+        transition-all
+        duration-300
+        hover:shadow-xl
       "
     >
       {/* IMAGE */}
@@ -61,9 +64,23 @@ export default function RoomCard({ room, range, guests }) {
               w-full
               h-full
               object-cover
+              scale-110
               transition-transform
-              duration-500
-              hover:scale-105
+              duration-700
+              ease-out
+              group-hover:scale-100
+            "
+          />
+
+          {/* subtle dark overlay */}
+          <div
+            className="
+              absolute
+              inset-0
+              bg-black/10
+              opacity-0
+              group-hover:opacity-100
+              transition
             "
           />
         </div>
@@ -74,7 +91,16 @@ export default function RoomCard({ room, range, guests }) {
         {/* TITLE + PRICE */}
         <div className="flex items-start justify-between gap-3">
           <Link to={`/room/${room._id}${search}`} state={linkState}>
-            <h3 className="text-lg font-serif font-semibold leading-tight">
+            <h3
+              className="
+                text-lg
+                font-serif
+                font-semibold
+                leading-tight
+                transition-colors
+                group-hover:text-[#9a0336]
+              "
+            >
               {room.name}
             </h3>
           </Link>
@@ -99,16 +125,19 @@ export default function RoomCard({ room, range, guests }) {
           {/* GUEST PILL */}
           <div
             className="
-              flex items-center gap-2
+              flex
+              items-center
+              gap-2
               border
-              rounded-lg
+              rounded-full
               px-3
-              py-2
+              py-1.5
               text-sm
               text-muted-foreground
             "
           >
-            👤 Upto {maxGuestsCap} Guests
+            <Users className="h-4 w-4" />
+            <span>Upto {maxGuestsCap} Guests</span>
           </div>
 
           {/* CTA */}
@@ -125,9 +154,13 @@ export default function RoomCard({ room, range, guests }) {
                 bg-primary
                 text-primary-foreground
                 font-medium
-                hover:bg-primary/90
-                active:scale-[0.98]
                 transition
+                hover:bg-primary/90
+                active:scale-[0.97]
+                flex
+                items-center
+                justify-center
+                gap-2
               "
             >
               Reserve

@@ -29,9 +29,9 @@ const ALLOWED = [
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (ALLOWED.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Vary", "Origin"); // proxies/CDN correctness
+
+  if (!origin || ALLOWED.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
       "Access-Control-Allow-Headers",
@@ -42,7 +42,11 @@ app.use((req, res, next) => {
       "GET,POST,PUT,PATCH,DELETE,OPTIONS"
     );
   }
-  if (req.method === "OPTIONS") return res.sendStatus(204);
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
   next();
 });
 

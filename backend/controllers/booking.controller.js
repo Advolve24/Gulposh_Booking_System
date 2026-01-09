@@ -5,7 +5,7 @@ export const getMyBookings = async (req, res) => {
     .populate("user", "name email phone")
     .populate(
       "room",
-      "name coverImage pricePerNight mealPriceVeg mealPriceNonVeg mealPriceCombo"
+      "name coverImage pricePerNight mealPriceVeg mealPriceNonVeg "
     )
     .sort({ startDate: 1 });
 
@@ -18,7 +18,7 @@ export const getBooking = async (req, res) => {
     user: req.user.id,
   }).populate(
     "room",
-    "name coverImage pricePerNight mealPriceVeg mealPriceNonVeg mealPriceCombo description"
+    "name coverImage pricePerNight mealPriceVeg mealPriceNonVeg  description"
   );
 
   if (!b) return res.status(404).json({ message: "Booking not found" });

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api } from "../api/http";
+import { auth } from "@/lib/firebase";
 
 export const useAuth = create((set) => ({
   user: null,
@@ -21,9 +22,27 @@ export const useAuth = create((set) => ({
     }
   },
 
-  /* ================= PHONE LOGIN (OTP VERIFIED) ================= */
+  /* ================= FIREBASE OTP LOGIN ================= */
+  firebaseLoginWithToken: async (idToken) => {
+  await api.post(
+    "/auth/firebase-login",
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+      withCredentials: true,
+    }
+  );
+
+  const { data } = await api.get("/auth/me");
+  set({ user: data, showAuthModal: false });
+  return data;
+},
+
+
+  /* ================= PHONE LOGIN (NON-FIREBASE) ================= */
   phoneLogin: async (payload) => {
-    // payload = { phone, name?, dob? }
     const { data } = await api.post("/auth/phone-login", payload);
     set({ user: data, showAuthModal: false });
     return data;

@@ -63,7 +63,6 @@ export default function Checkout() {
   /** --------- Meal guest splits ---------- */
   const [vegGuests, setVegGuests] = useState(0);
   const [nonVegGuests, setNonVegGuests] = useState(0);
-  const [comboGuests, setComboGuests] = useState(0);
 
   /** ---------- Country/State/City ---------- */
   const [countries, setCountries] = useState([]);
@@ -216,10 +215,9 @@ export default function Checkout() {
     return (
       nights *
       (vegGuests * Number(room.mealPriceVeg || 0) +
-        nonVegGuests * Number(room.mealPriceNonVeg || 0)) +
-      comboGuests * Number(room.mealPriceCombo || 0)
+        nonVegGuests * Number(room.mealPriceNonVeg || 0)) 
     );
-  }, [nights, withMeal, vegGuests, nonVegGuests, comboGuests, room]);
+  }, [nights, withMeal, vegGuests, nonVegGuests, room]);
 
   /** -------- Grand Total -------- */
   const total = useMemo(() => roomTotal + mealTotal, [roomTotal, mealTotal]);
@@ -268,7 +266,6 @@ export default function Checkout() {
     setGuestsState(v);
     setVegGuests(0);
     setNonVegGuests(0);
-    setComboGuests(0);
   };
 
   /** ================= OTP: Send ================= */
@@ -346,8 +343,8 @@ export default function Checkout() {
     }
 
     if (withMeal) {
-      if (vegGuests + nonVegGuests + comboGuests !== guests) {
-        toast.error("Veg + Non-Veg + Combo must match total guests.");
+      if (vegGuests + nonVegGuests !== guests) {
+        toast.error("Veg + Non-Veg must match total guests.");
         return;
       }
     }
@@ -371,7 +368,6 @@ export default function Checkout() {
       withMeal,
       vegGuests,
       nonVegGuests,
-      comboGuests,
       address,
       country,
       state,
@@ -402,7 +398,6 @@ export default function Checkout() {
         withMeal: String(!!withMeal),
         vegGuests: String(vegGuests),
         nonVegGuests: String(nonVegGuests),
-        comboGuests: String(comboGuests),
       },
       theme: { color: "#BA081C" },
 
@@ -419,7 +414,6 @@ export default function Checkout() {
             withMeal,
             vegGuests,
             nonVegGuests,
-            comboGuests,
             contactName: form.name,
             contactEmail: form.email || null,
             contactPhone: form.phone,
@@ -734,7 +728,6 @@ export default function Checkout() {
               if (!v) {
                 setVegGuests(0);
                 setNonVegGuests(0);
-                setComboGuests(0);
               }
             }}
           />
@@ -742,7 +735,7 @@ export default function Checkout() {
             Include meals
             {room && (
               <span className="text-xs text-muted-foreground">
-                (Veg ₹{room.mealPriceVeg || 0} | Non-Veg ₹{room.mealPriceNonVeg || 0} | Combo ₹{room.mealPriceCombo || 0} per guest)
+                (Veg ₹{room.mealPriceVeg || 0} | Non-Veg ₹{room.mealPriceNonVeg || 0} per guest)
               </span>
             )}
           </Label>
@@ -756,11 +749,11 @@ export default function Checkout() {
                 <Input
                   type="number"
                   min="0"
-                  max={Number(guestsState) - nonVegGuests - comboGuests}
+                  max={Number(guestsState) - nonVegGuests}
                   value={vegGuests}
                   onChange={(e) => {
                     const val = Number(e.target.value);
-                    if (val <= Number(guestsState) - nonVegGuests - comboGuests) {
+                    if (val <= Number(guestsState) - nonVegGuests) {
                       setVegGuests(val);
                     }
                   }}
@@ -772,28 +765,12 @@ export default function Checkout() {
                 <Input
                   type="number"
                   min="0"
-                  max={Number(guestsState) - vegGuests - comboGuests}
+                  max={Number(guestsState) - vegGuests}
                   value={nonVegGuests}
                   onChange={(e) => {
                     const val = Number(e.target.value);
-                    if (val <= Number(guestsState) - vegGuests - comboGuests) {
+                    if (val <= Number(guestsState) - vegGuests) {
                       setNonVegGuests(val);
-                    }
-                  }}
-                />
-              </div>
-
-              <div>
-                <Label>Combo Meal Guests</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max={Number(guestsState) - vegGuests - nonVegGuests}
-                  value={comboGuests}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    if (val <= Number(guestsState) - vegGuests - nonVegGuests) {
-                      setComboGuests(val);
                     }
                   }}
                 />
@@ -801,7 +778,7 @@ export default function Checkout() {
             </div>
 
             <p className="text-xs text-muted-foreground mt-1">
-              Veg + Non-Veg + ComboMeal must equal total guests.
+              Veg + Non-Veg must equal total guests.
             </p>
           </>
         )}

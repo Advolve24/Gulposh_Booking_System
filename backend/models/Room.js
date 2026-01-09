@@ -37,6 +37,8 @@ const roomSchema = new mongoose.Schema(
 
     reviews: { type: [reviewSchema], default: [] },
 
+    maxGuests: { type: Number, required: true, min: 1, default: 1 },
+
     isVilla: { type: Boolean, default: false },
   },
   { timestamps: true }

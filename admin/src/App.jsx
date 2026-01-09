@@ -15,10 +15,10 @@ import Rooms from "./pages/Rooms";           // ✅ ADDED
 import RoomsNew from "./pages/RoomsNew";
 import Users from "./pages/Users";
 import Bookings from "./pages/Bookings";
-import RoomPage from "./pages/RoomPage";
 import VillaBookingForm from "./pages/VillaBookingForm";
 import AdminRoomView from "./pages/RoomView";
-import InvoicePage from "./pages/InvoicePage";
+import InvoicePage from "./components/booking/InvoicePage";
+import BookingViewPage from "@/components/booking/BookingViewPage";
 import AdminInvoiceTemplate from "./components/AdminBookingPrint";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -105,15 +105,6 @@ export default function App() {
           />
 
           <Route
-            path="/room/:id"
-            element={
-              <ProtectedRoute>
-                <RoomPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
             path="/users"
             element={
               <ProtectedRoute>
@@ -130,6 +121,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+             <Route path="/bookings/:id" element={<BookingViewPage />} />
                     <Route
             path="/bookings/:id/invoice"
             element={

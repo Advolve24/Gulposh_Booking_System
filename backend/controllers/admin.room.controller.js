@@ -57,6 +57,7 @@ export const createRoom = async (req, res) => {
     const {
       name,
       pricePerNight,
+      maxGuests, // ✅ NEW
       mealPriceVeg,
       mealPriceNonVeg,
       mealPriceCombo,
@@ -64,19 +65,25 @@ export const createRoom = async (req, res) => {
       galleryImages,
       description,
       amenities,
-      houseRules, 
+      houseRules,
       reviews,
     } = req.body || {};
 
     if (!name || pricePerNight === undefined || pricePerNight === null) {
-      return res
-        .status(400)
-        .json({ message: "name and pricePerNight are required" });
+      return res.status(400).json({
+        message: "name and pricePerNight are required",
+      });
     }
 
     const room = await Room.create({
       name: String(name).trim(),
       pricePerNight: Number(pricePerNight) || 0,
+
+      // ✅ MAX GUESTS
+      maxGuests:
+        maxGuests !== undefined
+          ? Math.max(1, Number(maxGuests))
+          : 1,
 
       mealPriceVeg: Number(mealPriceVeg) || 0,
       mealPriceNonVeg: Number(mealPriceNonVeg) || 0,
@@ -111,7 +118,9 @@ export const listRoomsAdmin = async (_req, res) => {
 
 export const getRoomAdmin = async (req, res) => {
   const room = await Room.findById(req.params.id);
-  if (!room) return res.status(404).json({ message: "Room not found" });
+  if (!room) {
+    return res.status(404).json({ message: "Room not found" });
+  }
   res.json(room);
 };
 
@@ -124,6 +133,7 @@ export const updateRoom = async (req, res) => {
     const {
       name,
       pricePerNight,
+      maxGuests, // ✅ NEW
       mealPriceVeg,
       mealPriceNonVeg,
       mealPriceCombo,
@@ -131,35 +141,57 @@ export const updateRoom = async (req, res) => {
       galleryImages,
       description,
       amenities,
-      houseRules, 
-      reviews, 
+      houseRules,
+      reviews,
     } = req.body || {};
 
     const update = {};
 
     if (name !== undefined) update.name = String(name).trim();
-    if (pricePerNight !== undefined)
+
+    if (pricePerNight !== undefined) {
       update.pricePerNight = Number(pricePerNight) || 0;
+    }
 
-    if (mealPriceVeg !== undefined)
+    // ✅ MAX GUESTS (ONLY UPDATE IF SENT)
+    if (maxGuests !== undefined) {
+      update.maxGuests = Math.max(1, Number(maxGuests));
+    }
+
+    if (mealPriceVeg !== undefined) {
       update.mealPriceVeg = Number(mealPriceVeg) || 0;
-    if (mealPriceNonVeg !== undefined)
-      update.mealPriceNonVeg = Number(mealPriceNonVeg) || 0;
-    if (mealPriceCombo !== undefined)
-      update.mealPriceCombo = Number(mealPriceCombo) || 0;
+    }
 
-    if (coverImage !== undefined) update.coverImage = coverImage || "";
-    if (galleryImages !== undefined)
+    if (mealPriceNonVeg !== undefined) {
+      update.mealPriceNonVeg = Number(mealPriceNonVeg) || 0;
+    }
+
+    if (mealPriceCombo !== undefined) {
+      update.mealPriceCombo = Number(mealPriceCombo) || 0;
+    }
+
+    if (coverImage !== undefined) {
+      update.coverImage = coverImage || "";
+    }
+
+    if (galleryImages !== undefined) {
       update.galleryImages = toArray(galleryImages);
-    if (description !== undefined) update.description = description || "";
-    if (amenities !== undefined) update.amenities = toArray(amenities);
+    }
+
+    if (description !== undefined) {
+      update.description = description || "";
+    }
+
+    if (amenities !== undefined) {
+      update.amenities = toArray(amenities);
+    }
 
     // HOUSE RULES (ONLY UPDATE IF SENT)
     if (houseRules !== undefined) {
       update.houseRules = toArray(houseRules);
     }
 
-    // REVIEWS (only if sent)
+    // REVIEWS (ONLY UPDATE IF SENT)
     if (reviews !== undefined) {
       update.reviews = normalizeReviews(reviews);
     }
@@ -168,7 +200,9 @@ export const updateRoom = async (req, res) => {
       new: true,
     });
 
-    if (!room) return res.status(404).json({ message: "Room not found" });
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
 
     res.json(room);
   } catch (err) {

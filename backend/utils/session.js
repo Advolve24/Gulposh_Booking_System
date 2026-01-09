@@ -1,10 +1,9 @@
-const IS_PROD = process.env.NODE_ENV === "production";
-const CROSS_SITE = process.env.CROSS_SITE === "true";
+// utils/session.js
 
 export const COOKIE_BASE = {
   httpOnly: true,
-  secure: IS_PROD,
-  sameSite: CROSS_SITE ? "none" : "lax",
+  secure: false,           // localhost
+  sameSite: "none",        // REQUIRED for cross-origin
 };
 
 export function setSessionCookie(
@@ -14,9 +13,11 @@ export function setSessionCookie(
   { path = "/", persistent = false, days = 7 } = {}
 ) {
   const opts = { ...COOKIE_BASE, path };
+
   if (persistent) {
     opts.maxAge = days * 24 * 60 * 60 * 1000;
   }
+
   res.cookie(name, token, opts);
 }
 

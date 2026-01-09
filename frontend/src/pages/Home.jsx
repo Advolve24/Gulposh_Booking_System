@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/http";
 import RoomCard from "../components/RoomCard";
 import CalendarRange from "../components/CalendarRange";
+import { Search } from "lucide-react";
+
+
 import {
   Select,
   SelectTrigger,
@@ -11,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+
 import {
   toDateOnly,
   toDateOnlyFromAPI,
@@ -21,6 +25,7 @@ import {
 
 function mergeRanges(ranges) {
   if (!ranges || !ranges.length) return [];
+
   const sorted = ranges
     .map((r) => ({ from: new Date(r.from), to: new Date(r.to) }))
     .sort((a, b) => a.from - b.from);
@@ -29,11 +34,13 @@ function mergeRanges(ranges) {
   for (let i = 1; i < sorted.length; i++) {
     const last = out[out.length - 1];
     const cur = sorted[i];
+
     const dayAfterLast = new Date(
       last.to.getFullYear(),
       last.to.getMonth(),
       last.to.getDate() + 1
     );
+
     if (cur.from <= dayAfterLast) {
       if (cur.to > last.to) last.to = cur.to;
     } else {
@@ -95,38 +102,33 @@ export default function Home() {
     }
   };
 
-  const filteredRooms = useMemo(() => {
-    if (!hasValidRange || !hasGuests || guests === "upto10") return rooms;
+ const filteredRooms = useMemo(() => {
+  if (!hasValidRange || !hasGuests || guests === "upto10") return rooms;
 
-    const s = toDateOnly(range.from);
-    const e = toDateOnly(range.to);
-    const g = Number(guests);
+  const s = toDateOnly(range.from);
+  const e = toDateOnly(range.to);
+  const g = Number(guests);
 
-    return rooms.filter((r) => {
-      const cap =
-        typeof r.maxGuests === "number"
-          ? r.maxGuests
-          : (r.accommodation || [])
-              .flatMap((s) =>
-                Array.from(String(s).matchAll(/\d+/g)).map((m) => +m[0])
-              )
-              .reduce((a, b) => a + b, 0);
+  return rooms.filter((r) => {
+    // ✅ BACKEND MAX GUESTS ONLY
+    const cap = Number(r.maxGuests || 1);
 
-      if (cap && cap < g) return false;
+    if (g > cap) return false;
 
-      const conflict = disabledAll.some(
-        (b) => !(e < b.from || s > b.to)
-      );
+    // ❌ date conflict check
+    const conflict = disabledAll.some(
+      (b) => !(e < b.from || s > b.to)
+    );
 
-      return !conflict;
-    });
-  }, [rooms, disabledAll, range, guests, hasValidRange, hasGuests]);
+    return !conflict;
+  });
+}, [rooms, disabledAll, range, guests, hasValidRange, hasGuests]);
+
 
   /* ================= UI ================= */
 
   return (
     <div className="bg-[#fffaf7] min-h-screen">
-
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-10">
 
         {/* TITLE */}
@@ -135,21 +137,25 @@ export default function Home() {
         </h1>
 
         {/* SEARCH CARD */}
-        <div className="
-          bg-white
-          rounded-2xl
-          shadow-sm
-          p-4
-          grid
-          grid-cols-1
-          md:grid-cols-4
-          gap-4
-          items-end
-        ">
-          <div>
+        <div
+          className="
+            bg-white
+            rounded-2xl
+            shadow-sm
+            p-4
+            grid
+            grid-cols-1
+            md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]
+            gap-4
+            items-end
+          "
+        >
+          {/* DATE RANGE */}
+          <div className="min-w-0">
             <label className="text-xs text-muted-foreground">
-              CHECK IN
+              CHECK IN / CHECK OUT
             </label>
+
             <CalendarRange
               value={range}
               onChange={setRange}
@@ -157,25 +163,17 @@ export default function Home() {
             />
           </div>
 
-          <div>
-            <label className="text-xs text-muted-foreground">
-              CHECK OUT
-            </label>
-            <CalendarRange
-              value={range}
-              onChange={setRange}
-              disabledRanges={disabledAll}
-            />
-          </div>
-
-          <div>
+          {/* GUESTS */}
+          <div className="min-w-0">
             <label className="text-xs text-muted-foreground">
               GUESTS
             </label>
+
             <Select value={guests} onValueChange={handleGuestChange}>
-              <SelectTrigger>
+              <SelectTrigger className="h-14 rounded-xl w-full">
                 <SelectValue placeholder="Select guests" />
               </SelectTrigger>
+
               <SelectContent>
                 {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                   <SelectItem key={n} value={String(n)}>
@@ -189,17 +187,30 @@ export default function Home() {
             </Select>
           </div>
 
+          {/* SEARCH */}
           <Button
-            className="
-              h-11
-              rounded-xl
-              bg-primary
-              text-primary-foreground
-              hover:bg-primary/90
-            "
-          >
-            Search
-          </Button>
+  type="button"
+  aria-label="Search"
+  className="h-14 w-full bg-primary
+    text-primary-foreground
+    hover:bg-primary/90
+    rounded-xl shadow-md flex items-center justify-center gap-2"
+  onClick={() => {
+    if (!hasValidRange || !hasGuests) {
+      // optional UX feedback
+      alert("Please select dates and guests");
+      return;
+    }
+
+    // Search logic (even if it's just scroll / trigger state)
+    document
+      .getElementById("results")
+      ?.scrollIntoView({ behavior: "smooth" });
+  }}
+>
+  Search
+  <Search className="h-4 w-4" />
+</Button>
         </div>
 
         {/* AVAILABLE ROOMS HEADER */}
@@ -254,25 +265,23 @@ export default function Home() {
             "
           />
           <div className="
-            absolute
-            inset-0
-            bg-black/40
-            flex
-            items-center
-            justify-center
+            absolute inset-0 bg-black/40
+            flex items-center justify-center
           ">
-            <button className="
-              bg-white
-              text-black
-              px-10
-              py-4
-              rounded-xl
-              text-lg
-              font-semibold
-              shadow-lg
-              hover:scale-[1.03]
-              transition
-            ">
+            <button
+              className="
+                bg-white
+                text-black
+                px-10
+                py-4
+                rounded-xl
+                text-lg
+                font-semibold
+                shadow-lg
+                hover:scale-[1.03]
+                transition
+              "
+            >
               Book Entire Villa
             </button>
           </div>

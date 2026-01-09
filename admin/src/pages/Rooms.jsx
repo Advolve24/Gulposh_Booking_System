@@ -340,11 +340,6 @@ function RoomCard({ room, view, onDelete })
                 Non-Veg: ₹{room.mealPriceNonVeg}
               </span>
             )}
-            {room.mealPriceCombo > 0 && (
-              <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                Combo: ₹{room.mealPriceCombo}
-              </span>
-            )}
           </div>
 
           {/* MOBILE / LIST QUICK ACTIONS */}

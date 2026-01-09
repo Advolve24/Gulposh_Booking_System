@@ -29,7 +29,6 @@ export const getInvoice = async (req, res) => {
         withMeal: booking.withMeal,
         vegGuests: booking.vegGuests || 0,
         nonVegGuests: booking.nonVegGuests || 0,
-        comboGuests: booking.comboGuests || 0,
         mealTotal: booking.mealTotal || 0,
 
         amount: booking.amount,

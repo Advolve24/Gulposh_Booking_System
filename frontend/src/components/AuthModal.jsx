@@ -11,19 +11,26 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getRecaptchaVerifier, clearRecaptchaVerifier } from "@/lib/recaptcha";
+import {
+  getRecaptchaVerifier,
+  clearRecaptchaVerifier,
+} from "@/lib/recaptcha";
 
 const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
 
 export default function AuthModal() {
-  const { showAuthModal, closeAuth, phoneLogin, user } = useAuth();
+  const { showAuthModal, closeAuth, firebaseLoginWithToken, user } = useAuth();
 
   const [step, setStep] = useState("phone"); // phone | otp
   const [loading, setLoading] = useState(false);
@@ -44,6 +51,7 @@ export default function AuthModal() {
 
     try {
       setLoading(true);
+
       const appVerifier = getRecaptchaVerifier();
 
       const confirmation = await signInWithPhoneNumber(
@@ -56,11 +64,10 @@ export default function AuthModal() {
       setStep("otp");
       toast.success("OTP sent successfully");
     } catch (err) {
-  console.error(err);
-  clearRecaptchaVerifier();
-  toast.error("Failed to send OTP. Try again.");
-}
- finally {
+      console.error(err);
+      toast.error("Failed to send OTP. Try again.");
+      // ❌ DO NOT clear reCAPTCHA here (breaks test OTP)
+    } finally {
       setLoading(false);
     }
   };
@@ -72,16 +79,26 @@ export default function AuthModal() {
       return;
     }
 
+    if (!window.confirmationResult) {
+      toast.error("OTP session expired. Please resend OTP.");
+      setStep("phone");
+      return;
+    }
+
     try {
       setLoading(true);
-      await window.confirmationResult.confirm(form.otp);
 
-      // OTP verified → backend login / register
-      await phoneLogin({
-        phone: form.phone,
-        name: form.name,
-        dob: form.dob,
-      });
+      // ✅ Firebase OTP verification
+      const result = await window.confirmationResult.confirm(form.otp);
+
+      // ✅ Always use token from result.user (NO race condition)
+      const idToken = await result.user.getIdToken(true);
+
+      // 🔁 Backend session sync
+      await firebaseLoginWithToken(idToken);
+
+      // ✅ Safe place to clear reCAPTCHA
+      clearRecaptchaVerifier();
 
       toast.success("Logged in successfully 🎉");
       closeAuth();

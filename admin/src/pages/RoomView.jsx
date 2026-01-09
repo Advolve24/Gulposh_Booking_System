@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   Pencil,
   Trash2,
+  Users,
 } from "lucide-react";
 
 import {
@@ -241,11 +242,17 @@ export default function AdminRoomView() {
           <div className="space-y-8">
             <ImageSlider images={images} />
 
-            <div>
+            <div  className="space-y-1">
               <h1 className="text-[20px] sm:text-2xl font-semibold">{room.name}</h1>
               <p className="text-[14px] sm:text-muted-foreground">
                 ₹{room.pricePerNight.toLocaleString("en-IN")} / night
               </p>
+              {/* ✅ MAX GUESTS */}
+              {room.maxGuests && (
+                <p className="text-sm text-muted-foreground">
+                 <Users className="h-4 w-4" /> <span className="font-medium text-foreground"> {room.maxGuests}</span> guests
+                </p>
+              )}
             </div>
 
           
@@ -347,6 +354,14 @@ export default function AdminRoomView() {
           <aside className="relative">
             <div className="sticky top-[96px] self-start bg-card border border-border rounded-xl p-5 space-y-4">
               <h3 className="font-semibold">Pricing</h3>
+
+                              {/* MAX GUESTS */}
+                {room.maxGuests && (
+                  <div className="flex items-center justify-between text-sm border border-border rounded-lg px-3 py-2 bg-muted/40">
+                    <span className="text-muted-foreground">Max Guests</span>
+                    <span className="font-medium">{room.maxGuests}</span>
+                  </div>
+                )}
 
               <div className="bg-muted rounded-lg p-4">
                 <div className="text-sm text-muted-foreground">Per Night</div>

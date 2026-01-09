@@ -60,6 +60,7 @@ export default function RoomsNew() {
 
   const [houseRules, setHouseRules] = useState([]);
   const [ruleInput, setRuleInput] = useState("");
+  const [maxGuests, setMaxGuests] = useState("");
 
   /* ---------------- REVIEWS ---------------- */
   const [reviews, setReviews] = useState([]);
@@ -92,6 +93,7 @@ export default function RoomsNew() {
 
         setName(r.name || "");
         setPricePerNight(String(r.pricePerNight ?? ""));
+        setMaxGuests(String(r.maxGuests ?? ""));
         setMealPriceVeg(String(r.mealPriceVeg ?? ""));
         setMealPriceNonVeg(String(r.mealPriceNonVeg ?? ""));
         setDescription(r.description || "");
@@ -181,7 +183,7 @@ export default function RoomsNew() {
     () => true,
   ];
 
-  
+
   const goBack = () => {
     setStep((s) => Math.max(s - 1, 0));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -208,6 +210,7 @@ export default function RoomsNew() {
       const payload = {
         name: name.trim(),
         pricePerNight: Number(pricePerNight),
+         maxGuests: Number(maxGuests),
         mealPriceVeg: Number(mealPriceVeg) || 0,
         mealPriceNonVeg: Number(mealPriceNonVeg) || 0,
         description,
@@ -237,7 +240,12 @@ export default function RoomsNew() {
   const isStepValid = (key) => {
     switch (key) {
       case "basic":
-        return name.trim() && pricePerNight;
+        return (
+          name.trim().length > 2 &&
+          Number(pricePerNight) > 0 &&
+          Number(maxGuests) > 0
+        );
+
 
       case "meals":
         return (
@@ -361,13 +369,13 @@ export default function RoomsNew() {
           </div>
         </div>
 
-       <form onSubmit={onSubmit} onKeyDown={(e) => {  if (e.key === "Enter" && step !== STEPS.length - 1) { e.preventDefault(); }}}>
+        <form onSubmit={onSubmit} onKeyDown={(e) => { if (e.key === "Enter" && step !== STEPS.length - 1) { e.preventDefault(); } }}>
 
 
           {/* STEP CONTENT */}
           {step === 0 && (
             <Section title="Basic Information">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
                 <Field label="Room Name *">
                   <Input
                     value={name}
@@ -385,6 +393,18 @@ export default function RoomsNew() {
                     className="text-sm"
                   />
                 </Field>
+
+                <Field label="Max Guests *">
+                  <Input
+                    type="number"
+                    min="1"
+                    value={maxGuests}
+                    onChange={(e) => setMaxGuests(e.target.value)}
+                    placeholder="e.g. 4"
+                    className="text-sm"
+                  />
+                </Field>
+
               </div>
 
               <Field label="Description">
@@ -781,7 +801,7 @@ export default function RoomsNew() {
                 >
                   Cancel
                 </Button>
-                
+
                 {/* NEXT or SUBMIT */}
                 {step < STEPS.length - 1 ? (
                   <Button

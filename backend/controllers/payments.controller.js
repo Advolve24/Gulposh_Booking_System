@@ -6,26 +6,24 @@ import Room from "../models/Room.js";
 import Booking from "../models/Booking.js";
 import { sendWhatsAppText, sendWhatsAppTemplate } from "../utils/whatsapp.js";
 import { sendBookingConfirmationMail } from "../utils/mailer.js";
-import { parseYMD } from "../lib/date.js";
+import { parseYMD, toDateOnly } from "../lib/date.js";
 
-/* ----------------------------- Initialize Razorpay ----------------------------- */
+
+/* ----------------------------- Razorpay ----------------------------- */
 const rp = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-/* ----------------------------- Helper Functions ----------------------------- */
-const toDateOnly = (d) => {
-  const x = new Date(d);
-  return new Date(x.getFullYear(), x.getMonth(), x.getDate());
-};
-
+/* ----------------------------- Helpers ----------------------------- */
 const nightsBetween = (start, end) => {
-  const ms = toDateOnly(end) - toDateOnly(start);
-  return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
+  if (!start || !end) return 0;
+  const s = toDateOnly(start);
+  const e = toDateOnly(end);
+  return Math.max(0, Math.round((e - s) / 86400000));
 };
 
-
+/* ============================= CREATE ORDER ============================= */
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -37,88 +35,63 @@ export const createOrder = async (req, res) => {
       endDate,
       guests,
       withMeal,
-      vegGuests,
-      nonVegGuests,
-      comboGuests,
+      vegGuests = 0,
+      nonVegGuests = 0,
       contactName,
       contactEmail,
       contactPhone,
-    } = req.body || {};
+    } = req.body;
 
     if (!roomId || !startDate || !endDate || !guests) {
-      return res.status(400).json({
-        message: "roomId, startDate, endDate, guests are required",
-      });
+      return res.status(400).json({ message: "Missing booking fields" });
     }
 
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "Room not found" });
 
-    const nights = nightsBetween(startDate, endDate);
-    if (!nights) return res.status(400).json({ message: "Invalid date range" });
+    const sDate = parseYMD(startDate);
+    const eDate = parseYMD(endDate);
 
-    let mealTotal = 0;
-
-    if (withMeal) {
-      mealTotal =
-        nights *
-          (vegGuests * room.mealPriceVeg +
-            nonVegGuests * room.mealPriceNonVeg) +
-        comboGuests * room.mealPriceCombo;
+    const nights = nightsBetween(sDate, eDate);
+    if (nights <= 0) {
+      return res.status(400).json({ message: "Invalid date range" });
     }
 
     const roomTotal = nights * room.pricePerNight;
+    const mealTotal = withMeal
+      ? nights *
+        (vegGuests * room.mealPriceVeg +
+          nonVegGuests * room.mealPriceNonVeg)
+      : 0;
+
     const amountINR = roomTotal + mealTotal;
     const amountPaise = Math.round(amountINR * 100);
 
-    const shortId = String(room._id).slice(-6);
-    const shortTs = Date.now().toString(36);
-    const receipt = `r_${shortId}_${shortTs}`.substring(0, 40);
+    if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
+      return res.status(400).json({
+        message: "Invalid payment amount",
+        debug: { nights, roomTotal, mealTotal, amountINR },
+      });
+    }
 
-    const payload = {
+    const order = await rp.orders.create({
       amount: amountPaise,
       currency: "INR",
-      receipt,
-      notes: {
-        roomId: String(room._id),
-        userId: String(userId),
-        startDate: new Date(startDate).toISOString(),
-        endDate: new Date(endDate).toISOString(),
-        guests: String(guests),
-        vegGuests: String(vegGuests),
-        nonVegGuests: String(nonVegGuests),
-        comboGuests: String(comboGuests),
-        mealTotal: String(mealTotal),
-        roomTotal: String(roomTotal),
-        nights: String(nights),
-        pricePerNight: String(room.pricePerNight),
-        amountINR: String(amountINR),
-        contactName: contactName || "",
-        contactEmail: contactEmail || "",
-        contactPhone: contactPhone || "",
-      },
-    };
-
-    const order = await rp.orders.create(payload);
+      receipt: `r_${roomId.slice(-6)}_${Date.now()}`,
+    });
 
     res.json({
       key: process.env.RAZORPAY_KEY_ID,
       orderId: order.id,
       amount: order.amount,
-      currency: order.currency,
-      computed: { nights, pricePerNight: room.pricePerNight, amountINR },
+      currency: "INR",
     });
   } catch (err) {
     console.error("createOrder error:", err);
-    res.status(400).json({
-      message:
-        err?.error?.description || err?.message || "Failed to create order",
-    });
+    res.status(500).json({ message: err.message });
   }
 };
-
-
-
+/* ============================= VERIFY PAYMENT ============================= */
 export const verifyPayment = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -133,9 +106,8 @@ export const verifyPayment = async (req, res) => {
       endDate,
       guests,
       withMeal,
-      vegGuests,
-      nonVegGuests,
-      comboGuests,
+      vegGuests = 0,
+      nonVegGuests = 0,
       contactName,
       contactEmail,
       contactPhone,
@@ -150,35 +122,35 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid payment payload" });
     }
 
-    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+    /* ---------------- Verify Signature ---------------- */
     const expected = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
     if (expected !== razorpay_signature) {
       return res.status(400).json({ message: "Signature mismatch" });
     }
 
-    const sDate = parseYMD(startDate);
-    const eDate = parseYMD(endDate);
-
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "Room not found" });
 
+    const sDate = parseYMD(startDate);
+    const eDate = parseYMD(endDate);
+
     const nights = nightsBetween(sDate, eDate);
-    if (!nights) return res.status(400).json({ message: "Invalid date range" });
+      if (!nights || nights <= 0) {
+        return res.status(400).json({ message: "Invalid date range" });
+      }
 
     const roomTotal = nights * room.pricePerNight;
 
     let mealTotal = 0;
-
     if (withMeal) {
       mealTotal =
         nights *
-          (vegGuests * room.mealPriceVeg +
-            nonVegGuests * room.mealPriceNonVeg) +
-        comboGuests * room.mealPriceCombo;
+        (vegGuests * room.mealPriceVeg +
+          nonVegGuests * room.mealPriceNonVeg);
     }
 
     const amountINR = roomTotal + mealTotal;
@@ -188,20 +160,19 @@ export const verifyPayment = async (req, res) => {
       room: room._id,
       startDate: sDate,
       endDate: eDate,
+      nights,
       guests,
+      pricePerNight: room.pricePerNight,
+      roomTotal,
       withMeal: !!withMeal,
       vegGuests,
       nonVegGuests,
-      comboGuests,
       mealTotal,
-      roomTotal,
-      contactName: contactName || "",
-      contactEmail: contactEmail || "",
-      contactPhone: contactPhone || "",
-      currency: "INR",
-      pricePerNight: room.pricePerNight,
-      nights,
       amount: amountINR,
+      currency: "INR",
+      contactName,
+      contactEmail,
+      contactPhone,
       status: "confirmed",
       paymentProvider: "razorpay",
       orderId: razorpay_order_id,
@@ -210,14 +181,15 @@ export const verifyPayment = async (req, res) => {
       addressInfo: { address, country, state, city, pincode },
     });
 
-    const msg = `✅ Hi ${contactName}, your booking is confirmed!
-🏠 Room: ${room.name}
+    /* ---------------- Notifications ---------------- */
+    await sendWhatsAppText(
+      contactPhone,
+      `✅ Hi ${contactName}, your booking is confirmed!
+🏠 ${room.name}
 📅 ${startDate} → ${endDate}
 👥 Guests: ${guests}
-💰 Amount: ₹${amountINR}`;
-
-    const sent = await sendWhatsAppText(contactPhone, msg);
-    if (!sent) await sendWhatsAppTemplate(contactPhone, "hello_world");
+💰 Amount: ₹${amountINR}`
+    );
 
     try {
       await sendBookingConfirmationMail({
@@ -226,14 +198,12 @@ export const verifyPayment = async (req, res) => {
         room,
         booking,
       });
-    } catch (mailErr) {
-      console.error("Email failed:", mailErr?.message);
-    }
+    } catch {}
 
-    res.json({ ok: true, booking });
+    return res.json({ ok: true, booking });
   } catch (err) {
     console.error("verifyPayment error:", err);
-    res
+    return res
       .status(400)
       .json({ message: err?.message || "Verification failed" });
   }

@@ -267,71 +267,108 @@ export const updateBookingAdmin = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid booking id" });
+    }
+
+    const booking = await Booking.findById(id).populate("room");
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
     const {
-      fullName,
-      phone,
-      govIdType,
-      govIdNumber,
-      amountPaid,
-      paymentMode,
       startDate,
       endDate,
-      amount,
+      guests,
+      withMeal,
+      vegGuests = 0,
+      nonVegGuests = 0,
+      comboGuests = 0,
+      status,
     } = req.body || {};
+
+    /* ================= DATES ================= */
+    if (startDate) booking.startDate = new Date(startDate);
+    if (endDate) booking.endDate = new Date(endDate);
+
+    const nights = nightsBetween(booking.startDate, booking.endDate);
+    booking.nights = nights;
+
+    /* ================= GUESTS ================= */
+    if (typeof guests === "number" && guests > 0) {
+      booking.guests = guests;
+    }
+
+    booking.withMeal = !!withMeal;
+
+    /* ================= MEAL VALIDATION ================= */
+    const totalMealGuests =
+      Number(vegGuests) + Number(nonVegGuests) + Number(comboGuests);
+
+    if (totalMealGuests > booking.guests) {
+      return res.status(400).json({
+        message: "Meal guests cannot exceed total guests",
+      });
+    }
+
+    booking.vegGuests = Number(vegGuests) || 0;
+    booking.nonVegGuests = Number(nonVegGuests) || 0;
+    booking.comboGuests = Number(comboGuests) || 0;
+
+    /* ================= PRICES (LOCKED) ================= */
+    const vegPrice = Number(booking.mealMeta?.vegPrice || 0);
+    const nonVegPrice = Number(booking.mealMeta?.nonVegPrice || 0);
+
+    const vegTotal = booking.vegGuests * vegPrice * nights;
+    const nonVegTotal = booking.nonVegGuests * nonVegPrice * nights;
+
+    const mealTotal = booking.withMeal ? vegTotal + nonVegTotal : 0;
+    booking.mealTotal = mealTotal;
+
+    /* ================= ROOM TOTAL ================= */
+    booking.roomTotal = booking.pricePerNight * nights;
+
+    /* ================= FINAL AMOUNT ================= */
+    booking.amount = booking.roomTotal + booking.mealTotal;
+
+    /* ================= STATUS ================= */
+    if (status) booking.status = status;
+
+    await booking.save();
+
+    res.json({
+      ok: true,
+      booking,
+    });
+  } catch (err) {
+    console.error("updateBookingAdmin error:", err);
+    res.status(500).json({
+      message: err.message || "Failed to update booking",
+    });
+  }
+};
+
+
+export const getBookingAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
 
     if (!mongoose.isValidObjectId(id)) {
       return res.status(400).json({ message: "Invalid booking id" });
     }
 
-    const booking = await Booking.findById(id);
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    const booking = await Booking.findById(id)
+      .populate("user", "name email phone createdAt")
+      .populate("room", "name pricePerNight mealPrices") // ✅ IMPORTANT
+      .lean();
 
-    booking.adminMeta = {
-      fullName: fullName || booking.adminMeta?.fullName,
-      phone: phone || booking.adminMeta?.phone,
-      govIdType: govIdType || booking.adminMeta?.govIdType,
-      govIdNumber: govIdNumber || booking.adminMeta?.govIdNumber,
-      amountPaid:
-        amountPaid !== undefined
-          ? amountPaid
-          : booking.adminMeta?.amountPaid,
-      paymentMode: paymentMode || booking.adminMeta?.paymentMode,
-    };
-
-    if (phone) {
-      booking.contactPhone = phone;
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
     }
 
-    let datesChanged = false;
-    if (startDate) {
-      booking.startDate = new Date(startDate);
-      datesChanged = true;
-    }
-    if (endDate) {
-      booking.endDate = new Date(endDate);
-      datesChanged = true;
-    }
-
-    if (datesChanged && booking.startDate && booking.endDate) {
-      const ms =
-        new Date(booking.endDate).setHours(0, 0, 0, 0) -
-        new Date(booking.startDate).setHours(0, 0, 0, 0);
-      const nights = Math.max(
-        0,
-        Math.round(ms / (1000 * 60 * 60 * 24))
-      );
-      booking.nights = nights;
-    }
-
-    if (amount !== undefined && amount !== null) {
-      booking.amount = amount;
-    }
-
-    await booking.save();
-    res.json({ ok: true, booking });
+    res.json(booking);
   } catch (err) {
-    console.error("updateBookingAdmin error:", err);
-    res.status(400).json({ message: err.message || "Failed to update booking" });
+    console.error("getBookingAdmin error:", err);
+    res.status(500).json({ message: "Failed to load booking details" });
   }
 };
-

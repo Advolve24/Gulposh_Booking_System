@@ -1,12 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
-import {
-  useParams,
-  useNavigate,
-  Link,
-} from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 
 import { api } from "../api/http";
-import ImageSlider from "../components/ImageSlider";
 import CalendarRange from "../components/CalendarRange";
 
 import { Button } from "@/components/ui/button";
@@ -102,31 +97,31 @@ export default function RoomPage() {
   const navigate = useNavigate();
 
   const [room, setRoom] = useState(null);
-  const [range, setRange] = useState();
+  const [range, setRange] = useState(undefined);
   const [guests, setGuests] = useState("");
 
+  // ✅ SAME GLOBAL DISABLED DATA AS HOMEPAGE (bookings + blackouts)
   const [bookedAll, setBookedAll] = useState([]);
   const [blackoutRanges, setBlackoutRanges] = useState([]);
+
   const [activeImage, setActiveImage] = useState(0);
   const [showAllReviews, setShowAllReviews] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [activeDateType, setActiveDateType] = useState(null); // "from" | "to"
-
-
 
   /* LOAD DATA */
   useEffect(() => {
     api.get(`/rooms/${id}`).then(({ data }) => setRoom(data));
 
-    api.get("/rooms/blocked/all").then(({ data }) =>
+    // bookings/blocked (global)
+    api.get("/rooms/disabled/all").then(({ data }) =>
       setBookedAll(
         (data || []).map((b) => ({
-          from: toDateOnlyFromAPIUTC(b.startDate),
-          to: toDateOnlyFromAPIUTC(b.endDate),
+          from: toDateOnlyFromAPIUTC(b.from || b.startDate),
+          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
         }))
       )
     );
 
+    // blackouts (global)
     api.get("/blackouts").then(({ data }) =>
       setBlackoutRanges(
         (data || []).map((b) => ({
@@ -150,8 +145,7 @@ export default function RoomPage() {
   const avgRating = useMemo(() => {
     if (!room?.reviews?.length) return null;
     return (
-      room.reviews.reduce((a, r) => a + r.rating, 0) /
-      room.reviews.length
+      room.reviews.reduce((a, r) => a + r.rating, 0) / room.reviews.length
     ).toFixed(1);
   }, [room]);
 
@@ -173,36 +167,34 @@ export default function RoomPage() {
 
   if (!room) return null;
 
-  /* ---------------------------------------------------------------- */
-  /* UI */
-  /* ---------------------------------------------------------------- */
-
   function AccordionItem({ item }) {
     const [open, setOpen] = useState(false);
 
     return (
       <div
-        className={`border rounded-xl px-4 transition ${open ? "bg-muted/40" : ""
-          }`}
+        className={`border rounded-xl px-4 transition ${
+          open ? "bg-muted/40" : ""
+        }`}
       >
         <button
+          type="button"
           onClick={() => setOpen(!open)}
           className="w-full flex justify-between items-center py-4 text-sm font-medium"
         >
           {item.q}
           <ChevronDown
-            className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""
-              }`}
+            className={`w-4 h-4 transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
           />
         </button>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ${open ? "max-h-40 pb-4" : "max-h-0"
-            }`}
+          className={`overflow-hidden transition-all duration-300 ${
+            open ? "max-h-40 pb-4" : "max-h-0"
+          }`}
         >
-          <p className="text-sm text-gray-600 leading-relaxed">
-            {item.a}
-          </p>
+          <p className="text-sm text-gray-600 leading-relaxed">{item.a}</p>
         </div>
       </div>
     );
@@ -210,15 +202,11 @@ export default function RoomPage() {
 
   return (
     <>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-8 pb-28 md:pb-8 ">
-
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-8 pb-28 md:pb-8">
         {/* BACK */}
         <Link to="/" className="text-sm opacity-70 hover:opacity-100">
           ← Back
         </Link>
-
-        {/* IMAGE SLIDER (WITH THUMBNAILS)
-        <ImageSlider images={allImages} /> */}
 
         {/* IMAGE SLIDER WITH THUMBNAILS */}
         <div className="space-y-3">
@@ -234,8 +222,11 @@ export default function RoomPage() {
             {allImages.length > 1 && (
               <>
                 <button
+                  type="button"
                   onClick={() =>
-                    setActiveImage((p) => (p === 0 ? allImages.length - 1 : p - 1))
+                    setActiveImage((p) =>
+                      p === 0 ? allImages.length - 1 : p - 1
+                    )
                   }
                   className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-9 h-9 flex items-center justify-center shadow"
                 >
@@ -243,8 +234,11 @@ export default function RoomPage() {
                 </button>
 
                 <button
+                  type="button"
                   onClick={() =>
-                    setActiveImage((p) => (p === allImages.length - 1 ? 0 : p + 1))
+                    setActiveImage((p) =>
+                      p === allImages.length - 1 ? 0 : p + 1
+                    )
                   }
                   className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-9 h-9 flex items-center justify-center shadow"
                 >
@@ -258,24 +252,21 @@ export default function RoomPage() {
           <div className="flex gap-3 overflow-x-auto scrollbar-hide">
             {allImages.map((img, i) => (
               <button
+                type="button"
                 key={i}
                 onClick={() => setActiveImage(i)}
                 className={`shrink-0 rounded-lg overflow-hidden border-2 transition
-          ${i === activeImage
-                    ? "border-primary"
-                    : "border-transparent opacity-70 hover:opacity-100"
+                  ${
+                    i === activeImage
+                      ? "border-primary"
+                      : "border-transparent opacity-70 hover:opacity-100"
                   }`}
               >
-                <img
-                  src={img}
-                  alt=""
-                  className="h-[64px] w-[96px] object-cover"
-                />
+                <img src={img} alt="" className="h-[64px] w-[96px] object-cover" />
               </button>
             ))}
           </div>
         </div>
-
 
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
@@ -299,10 +290,8 @@ export default function RoomPage() {
 
         {/* GRID */}
         <div className="flex flex-col md:flex-row gap-8">
-
           {/* LEFT */}
           <div className="w-full md:w-[64%] space-y-10">
-
             {/* DESCRIPTION */}
             <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
               {room.description}
@@ -310,21 +299,17 @@ export default function RoomPage() {
 
             {/* AMENITIES */}
             <section>
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">
-                Amenities
-              </h3>
+              <h3 className="text-lg sm:text-xl font-semibold mb-4">Amenities</h3>
 
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {room.amenities.map((a) => {
+                {(room.amenities || []).map((a) => {
                   const Icon = AMENITY_ICONS[a];
                   return (
                     <div
                       key={a}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/40 border"
                     >
-                      {Icon && (
-                        <Icon className="w-5 h-5 text-primary" />
-                      )}
+                      {Icon && <Icon className="w-5 h-5 text-primary" />}
                       <span className="text-sm">{humanize(a)}</span>
                     </div>
                   );
@@ -339,7 +324,7 @@ export default function RoomPage() {
               </h3>
 
               <ul className="space-y-3 text-sm">
-                {room.houseRules.map((r, i) => {
+                {(room.houseRules || []).map((r, i) => {
                   const Icon = ruleIcon(r);
                   return (
                     <li key={i} className="flex gap-3">
@@ -353,9 +338,7 @@ export default function RoomPage() {
 
             {/* LOCATION */}
             <section>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">
-                Location
-              </h3>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">Location</h3>
 
               <div className="flex gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-primary" />
@@ -364,10 +347,8 @@ export default function RoomPage() {
             </section>
 
             {/* REVIEWS */}
-            {/* GUEST REVIEWS */}
             {room.reviews?.length > 0 && (
               <section>
-                {/* HEADER */}
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg sm:text-xl font-semibold">
                     Guest Reviews
@@ -382,7 +363,6 @@ export default function RoomPage() {
                   </div>
                 </div>
 
-                {/* REVIEWS LIST */}
                 <div className="space-y-4">
                   {(showAllReviews ? room.reviews : room.reviews.slice(0, 2)).map(
                     (r, i) => (
@@ -391,7 +371,6 @@ export default function RoomPage() {
                         className="border rounded-xl p-4 bg-white transition hover:shadow-sm"
                       >
                         <div className="flex items-center gap-3 mb-2">
-                          {/* INITIAL */}
                           <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
                             {r.name?.charAt(0).toUpperCase()}
                           </div>
@@ -414,9 +393,9 @@ export default function RoomPage() {
                   )}
                 </div>
 
-                {/* VIEW ALL */}
                 {room.reviews.length > 2 && !showAllReviews && (
                   <button
+                    type="button"
                     onClick={() => setShowAllReviews(true)}
                     className="mt-4 w-full border rounded-lg py-2 text-sm hover:bg-muted transition"
                   >
@@ -424,9 +403,9 @@ export default function RoomPage() {
                   </button>
                 )}
 
-                {/* SHOW LESS */}
                 {showAllReviews && (
                   <button
+                    type="button"
                     onClick={() => setShowAllReviews(false)}
                     className="mt-4 w-full border rounded-lg py-2 text-sm hover:bg-muted transition"
                   >
@@ -437,7 +416,6 @@ export default function RoomPage() {
             )}
 
             {/* FAQ */}
-            {/* FAQ ACCORDION */}
             <section>
               <h3 className="text-lg sm:text-xl font-semibold mb-4">
                 Frequently Asked Questions
@@ -470,13 +448,10 @@ export default function RoomPage() {
                 ))}
               </div>
             </section>
-
           </div>
 
-          {/* RIGHT — DESKTOP BOOKING CARD */}
-          {/* RIGHT – BOOKING CARD */}
-          <div className="hidden md:block w-[34%] sticky top-24 h-fit border border-[#eadfd6] rounded-2xl p-5 space-y-4 bg-white ">
-
+          {/* RIGHT – BOOKING CARD (✅ SAME AS HOMEPAGE CALENDAR) */}
+          <div className="hidden md:block w-[34%] sticky top-24 h-fit border border-[#eadfd6] rounded-2xl p-5 space-y-5 bg-white">
             {/* PRICE */}
             <div className="text-center">
               <span className="text-2xl font-semibold">
@@ -485,99 +460,37 @@ export default function RoomPage() {
               <span className="text-sm text-muted-foreground">/night</span>
             </div>
 
-            {/* CHECK IN / CHECK OUT (ONLY THESE) */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* CHECK IN */}
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  CHECK IN
-                </label>
+            {/* SAME CALENDAR RANGE AS HOMEPAGE (popover with date boxes) */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                CHECK IN / CHECK OUT
+              </label>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCalendar(true);
-                    setActiveDateType("from");
-                  }}
-                  className={`
-          mt-1 w-full px-3 py-2 rounded-lg border text-left transition
-          ${range?.from
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-white border-[#eadfd6] hover:bg-[#f8f3ec]"
-                    }
-        `}
-                >
-                  {range?.from
-                    ? range.from.toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                    })
-                    : "Add date"}
-                </button>
-              </div>
-
-              {/* CHECK OUT */}
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  CHECK OUT
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCalendar(true);
-                    setActiveDateType("to");
-                  }}
-                  className={`
-          mt-1 w-full px-3 py-2 rounded-lg border text-left transition
-          ${range?.to
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-white border-[#eadfd6] hover:bg-[#f8f3ec]"
-                    }
-        `}
-                >
-                  {range?.to
-                    ? range.to.toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                    })
-                    : "Add date"}
-                </button>
-              </div>
+              <CalendarRange
+                value={range}
+                onChange={setRange}
+                disabledRanges={disabledAll} // ✅ global blocked+booked+blackouts
+              />
             </div>
-
-            {/* CALENDAR — NO HEADER, NO DUPLICATE */}
-            {showCalendar && (
-              <div className="pt-2">
-                <CalendarRange
-                  value={range}
-                  onChange={(val) => {
-                    setRange(val);
-                    setActiveDateType(null);
-                    setShowCalendar(false);
-                  }}
-                  numberOfMonths={1}
-                  disabledRanges={disabledAll}
-                  hideHeader        // 🔴 IMPORTANT (see note below)
-                />
-              </div>
-            )}
 
             {/* GUESTS */}
             <div>
               <label className="text-xs font-medium text-muted-foreground">
-                GUESTS (MAX 10)
+                GUESTS (MAX {room.maxGuests || 10})
               </label>
 
               <Select value={guests} onValueChange={setGuests}>
-                <SelectTrigger className="mt-1 rounded-lg border-[#eadfd6] focus:ring-0 focus:border-primary">
+                <SelectTrigger className="mt-1 h-14 rounded-xl border-[#eadfd6] focus:ring-0 focus:border-primary">
                   <SelectValue placeholder="Select guests" />
                 </SelectTrigger>
 
                 <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  {Array.from(
+                    { length: room.maxGuests || 10 },
+                    (_, i) => i + 1
+                  ).map((n) => (
                     <SelectItem key={n} value={String(n)}>
-                      {n} guests
+                      {n} {n === 1 ? "guest" : "guests"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -587,14 +500,15 @@ export default function RoomPage() {
             {/* BOOK NOW */}
             <Button
               onClick={goToCheckout}
+              disabled={!range?.from || !range?.to || !guests}
               className="
-      w-full h-12 rounded-xl
-      font-medium
-      bg-primary text-primary-foreground
-      hover:bg-primary/90
-      active:scale-[0.99]
-      transition
-    "
+                w-full h-12 rounded-xl
+                font-medium
+                bg-primary text-primary-foreground
+                hover:bg-primary/90
+                active:scale-[0.99]
+                transition
+              "
             >
               Book Now
             </Button>
@@ -606,8 +520,6 @@ export default function RoomPage() {
               <div>✓ Best price guarantee</div>
             </div>
           </div>
-
-
         </div>
       </div>
 
