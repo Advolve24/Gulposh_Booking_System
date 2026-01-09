@@ -32,6 +32,7 @@ const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
 export default function AuthModal() {
   const { showAuthModal, closeAuth, firebaseLoginWithToken, user } = useAuth();
 
+
   const [step, setStep] = useState("phone"); // phone | otp
   const [loading, setLoading] = useState(false);
 
@@ -51,7 +52,6 @@ export default function AuthModal() {
 
     try {
       setLoading(true);
-
       const appVerifier = getRecaptchaVerifier();
 
       const confirmation = await signInWithPhoneNumber(
@@ -65,8 +65,8 @@ export default function AuthModal() {
       toast.success("OTP sent successfully");
     } catch (err) {
       console.error(err);
+      clearRecaptchaVerifier();
       toast.error("Failed to send OTP. Try again.");
-      // ❌ DO NOT clear reCAPTCHA here (breaks test OTP)
     } finally {
       setLoading(false);
     }
@@ -74,41 +74,33 @@ export default function AuthModal() {
 
   /* ================= VERIFY OTP ================= */
   const verifyOtp = async () => {
-    if (!form.otp || form.otp.length !== 6) {
-      toast.error("Enter valid 6-digit OTP");
-      return;
-    }
+  if (!form.otp || form.otp.length !== 6) {
+    toast.error("Enter valid 6-digit OTP");
+    return;
+  }
 
-    if (!window.confirmationResult) {
-      toast.error("OTP session expired. Please resend OTP.");
-      setStep("phone");
-      return;
-    }
+  try {
+    setLoading(true);
 
-    try {
-      setLoading(true);
+    // ✅ Firebase OTP verification
+    const result = await window.confirmationResult.confirm(form.otp);
 
-      // ✅ Firebase OTP verification
-      const result = await window.confirmationResult.confirm(form.otp);
+    // ✅ ALWAYS get token from result.user
+    const idToken = await result.user.getIdToken(true);
 
-      // ✅ Always use token from result.user (NO race condition)
-      const idToken = await result.user.getIdToken(true);
+    // 🔁 Backend sync (NO race condition)
+    await firebaseLoginWithToken(idToken);
 
-      // 🔁 Backend session sync
-      await firebaseLoginWithToken(idToken);
+    toast.success("Logged in successfully 🎉");
+    closeAuth();
+  } catch (err) {
+    console.error(err);
+    toast.error("Invalid OTP. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      // ✅ Safe place to clear reCAPTCHA
-      clearRecaptchaVerifier();
-
-      toast.success("Logged in successfully 🎉");
-      closeAuth();
-    } catch (err) {
-      console.error(err);
-      toast.error("Invalid OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   /* ================= PREFILL USER ================= */
   useEffect(() => {
