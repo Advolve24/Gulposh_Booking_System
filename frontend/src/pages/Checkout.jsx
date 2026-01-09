@@ -76,7 +76,7 @@ export default function Checkout() {
     city: "",
     pincode: "",
   });
-  const [showConfirmed, setShowConfirmed] = useState(false);
+  
 
 
   /** ---------- Location State ---------- */
@@ -218,7 +218,7 @@ export default function Checkout() {
     return (
       nights *
       (vegGuests * Number(room.mealPriceVeg || 0) +
-        nonVegGuests * Number(room.mealPriceNonVeg || 0))
+        nonVegGuests * Number(room.mealPriceNonVeg || 0)) 
     );
   }, [nights, withMeal, vegGuests, nonVegGuests, room]);
 
@@ -405,16 +405,6 @@ export default function Checkout() {
       theme: { color: "#BA081C" },
 
       handler: async (resp) => {
-        let popupShown = false;
-
-        // ✅ 10 sec fallback timer
-        const timer = setTimeout(() => {
-          if (!popupShown) {
-            popupShown = true;
-            setShowConfirmed(true);
-          }
-        }, 10000); // 10 seconds
-
         try {
           await api.post("/payments/verify", {
             razorpay_payment_id: resp.razorpay_payment_id,
@@ -437,20 +427,12 @@ export default function Checkout() {
             pincode,
           });
 
-          // ✅ If verification finishes earlier than 10 sec
-          if (!popupShown) {
-            popupShown = true;
-            clearTimeout(timer);
-            setShowConfirmed(true);
-          }
+          toast.success("Payment successful! Booking confirmed.");
+          navigate("/my-bookings", { replace: true });
         } catch (e) {
-          clearTimeout(timer);
-          toast.error(
-            e?.response?.data?.message || "Payment verification failed"
-          );
+          toast.error(e?.response?.data?.message || "Verification failed");
         }
       },
-
 
       modal: {
         ondismiss: () => toast("Payment was cancelled."),
@@ -533,8 +515,9 @@ export default function Checkout() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={`w-full justify-start text-left font-normal ${!form.dob && "text-muted-foreground"
-                    }`}
+                  className={`w-full justify-start text-left font-normal ${
+                    !form.dob && "text-muted-foreground"
+                  }`}
                 >
                   {form.dob ? format(form.dob, "PPP") : "Select date of birth"}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -834,26 +817,6 @@ export default function Checkout() {
           Proceed to Payment
         </Button>
       </div>
-
-      {showConfirmed && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl p-6 w-[90%] max-w-md text-center">
-            <h2 className="text-xl font-semibold mb-2">
-              Booking Confirmed 🎉
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Your booking has been successfully placed.
-            </p>
-
-            <Button
-              className="w-full"
-              onClick={() => navigate("/my-bookings", { replace: true })}
-            >
-              View My Bookings
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
