@@ -1,6 +1,5 @@
 import express from "express";
 import {
-  phoneLogin,
   firebaseLogin,
   logout,
   me,
@@ -17,9 +16,6 @@ const router = express.Router();
 
 // Firebase OTP → Backend JWT
 router.post("/firebase-login", firebaseLogin);
-
-// Manual / legacy phone login
-router.post("/phone-login", phoneLogin);
 
 // Logout + refresh
 router.post("/logout", logout);
