@@ -32,8 +32,8 @@ const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
 export default function AuthModal() {
   const { showAuthModal, closeAuth, firebaseLoginWithToken, user } = useAuth();
 
-
   const [step, setStep] = useState("phone"); // phone | otp
+  const [mode, setMode] = useState("signin"); // signin | signup
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -74,33 +74,50 @@ export default function AuthModal() {
 
   /* ================= VERIFY OTP ================= */
   const verifyOtp = async () => {
-  if (!form.otp || form.otp.length !== 6) {
-    toast.error("Enter valid 6-digit OTP");
-    return;
-  }
+    if (!form.otp || form.otp.length !== 6) {
+      toast.error("Enter valid 6-digit OTP");
+      return;
+    }
 
-  try {
-    setLoading(true);
+    // 🔐 Extra validation ONLY for signup
+    if (mode === "signup") {
+      if (!form.name.trim()) {
+        toast.error("Name is required for sign up");
+        return;
+      }
+      if (!form.dob) {
+        toast.error("Date of birth is required for sign up");
+        return;
+      }
+    }
 
-    // ✅ Firebase OTP verification
-    const result = await window.confirmationResult.confirm(form.otp);
+    try {
+      setLoading(true);
 
-    // ✅ ALWAYS get token from result.user
-    const idToken = await result.user.getIdToken(true);
+      // Firebase OTP verification
+      const result = await window.confirmationResult.confirm(form.otp);
+      const idToken = await result.user.getIdToken(true);
 
-    // 🔁 Backend sync (NO race condition)
-    await firebaseLoginWithToken(idToken);
+      // Backend login/signup decision
+      const res = await firebaseLoginWithToken(idToken, {
+        name: form.name || undefined,
+        dob: form.dob ? form.dob.toISOString() : undefined,
+      });
 
-    toast.success("Logged in successfully 🎉");
-    closeAuth();
-  } catch (err) {
-    console.error(err);
-    toast.error("Invalid OTP. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+      if (res?.isNewUser) {
+        toast.success("Account created successfully 🎉");
+      } else {
+        toast.success("Logged in successfully 🎉");
+      }
 
+      closeAuth();
+    } catch (err) {
+      console.error(err);
+      toast.error("Invalid OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ================= PREFILL USER ================= */
   useEffect(() => {
@@ -114,16 +131,32 @@ export default function AuthModal() {
     }
   }, [user]);
 
+  /* ================= AUTO MODE DECISION ================= */
+  useEffect(() => {
+    // If name & dob already exist → existing user
+    if (form.name || form.dob) {
+      setMode("signin");
+    } else {
+      setMode("signup");
+    }
+  }, [form.name, form.dob]);
+
   return (
     <Dialog open={showAuthModal} onOpenChange={(o) => !o && closeAuth()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {step === "phone" ? "Login with Mobile" : "Verify OTP"}
+            {step === "phone"
+              ? mode === "signup"
+                ? "Create your account"
+                : "Login with Mobile"
+              : "Verify OTP"}
           </DialogTitle>
           <DialogDescription>
             {step === "phone"
-              ? "Enter your mobile number to receive OTP"
+              ? mode === "signup"
+                ? "New here? Verify your number to sign up"
+                : "Welcome back! Enter your mobile number"
               : "Enter the OTP sent to your mobile"}
           </DialogDescription>
         </DialogHeader>
@@ -147,42 +180,47 @@ export default function AuthModal() {
               />
             </div>
 
-            <div>
-              <Label>Name (optional)</Label>
-              <Input
-                placeholder="Your name"
-                value={form.name}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Date of Birth (optional)</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    {form.dob ? format(form.dob, "PPP") : "Select date"}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={form.dob}
-                    onSelect={(date) =>
-                      setForm((f) => ({ ...f, dob: date }))
+            {/* ONLY FOR SIGNUP */}
+            {mode === "signup" && (
+              <>
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    placeholder="Your name"
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, name: e.target.value }))
                     }
-                    fromYear={1950}
-                    toYear={new Date().getFullYear()}
                   />
-                </PopoverContent>
-              </Popover>
-            </div>
+                </div>
+
+                <div>
+                  <Label>Date of Birth</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        {form.dob ? format(form.dob, "PPP") : "Select date"}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={form.dob}
+                        onSelect={(date) =>
+                          setForm((f) => ({ ...f, dob: date }))
+                        }
+                        fromYear={1950}
+                        toYear={new Date().getFullYear()}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </>
+            )}
 
             <Button className="w-full" onClick={sendOtp} disabled={loading}>
               {loading ? "Sending OTP..." : "Send OTP"}
