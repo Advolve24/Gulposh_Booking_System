@@ -26,6 +26,7 @@ import { toast } from "sonner";
 
 import CalendarRange from "../components/CalendarRange";
 import { loadRazorpayScript } from "../lib/loadRazorpay";
+
 import {
   getAllCountries,
   getStatesByCountry,
@@ -47,13 +48,13 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { user, init, phoneLogin } = useAuth();
 
-  /* ================= ROOM & SEARCH DATA ================= */
+  /* ================= ROOM ================= */
   const roomId = state?.roomId;
   const initialGuests = Number(state?.guests || 1);
 
   const [room, setRoom] = useState(null);
 
-  /* ================= FORM STATE ================= */
+  /* ================= FORM ================= */
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -102,7 +103,7 @@ export default function Checkout() {
     api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
   }, [roomId, navigate]);
 
-  /* ================= AUTOFILL USER PROFILE ================= */
+  /* ================= AUTOFILL PROFILE ================= */
   useEffect(() => {
     if (!user) return;
 
@@ -144,7 +145,7 @@ export default function Checkout() {
 
   const total = roomTotal + mealTotal;
 
-  /* ================= OTP FLOW ================= */
+  /* ================= OTP ================= */
   const sendOtp = async () => {
     if (!isValidPhone(form.phone)) {
       toast.error("Invalid phone number");
@@ -180,8 +181,10 @@ export default function Checkout() {
 
   /* ================= PAYMENT ================= */
   const proceedPayment = async () => {
-    if (withMeal && vegGuests + nonVegGuests !== Number(guests)) {
-      toast.error("Veg + Non-Veg must match total guests");
+    const g = Number(guests);
+
+    if (withMeal && vegGuests + nonVegGuests !== g) {
+      toast.error("Veg + Non-Veg guests must equal total guests");
       return;
     }
 
@@ -191,11 +194,10 @@ export default function Checkout() {
       roomId,
       startDate: toYMD(range.from),
       endDate: toYMD(range.to),
-      guests: Number(guests),
+      guests: g,
       withMeal,
       vegGuests,
       nonVegGuests,
-      ...address,
       contactName: form.name,
       contactEmail: form.email,
       contactPhone: form.phone,
@@ -213,10 +215,13 @@ export default function Checkout() {
           roomId,
           startDate: toYMD(range.from),
           endDate: toYMD(range.to),
-          guests,
+          guests: g,
           withMeal,
           vegGuests,
           nonVegGuests,
+          contactName: form.name,
+          contactEmail: form.email,
+          contactPhone: form.phone,
           ...address,
         });
         toast.success("Booking confirmed 🎉");
@@ -308,9 +313,7 @@ export default function Checkout() {
                 setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {countries.map((c) => (
                   <SelectItem key={c.isoCode} value={c.isoCode}>
@@ -329,9 +332,7 @@ export default function Checkout() {
                 setAddress((a) => ({ ...a, state: v, city: "" }))
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select state" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {statesList.map((s) => (
                   <SelectItem key={s.isoCode} value={s.isoCode}>
@@ -350,9 +351,7 @@ export default function Checkout() {
                 setAddress((a) => ({ ...a, city: v }))
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select city" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {citiesList.map((c) => (
                   <SelectItem key={c.name} value={c.name}>
@@ -381,14 +380,10 @@ export default function Checkout() {
         <div>
           <Label>Guests</Label>
           <Select value={guests} onValueChange={setGuests}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select guests" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <SelectItem key={n} value={String(n)}>
-                  {n}
-                </SelectItem>
+              {[1,2,3,4,5,6].map(n => (
+                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -396,9 +391,48 @@ export default function Checkout() {
 
         {/* MEALS */}
         <div className="flex items-center gap-2">
-          <Checkbox checked={withMeal} onCheckedChange={setWithMeal} />
+          <Checkbox
+            checked={withMeal}
+            onCheckedChange={(v) => {
+              setWithMeal(v);
+              if (!v) {
+                setVegGuests(0);
+                setNonVegGuests(0);
+              }
+            }}
+          />
           <Label>Include meals</Label>
         </div>
+
+        {withMeal && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Veg Guests</Label>
+              <Input
+                type="number"
+                min={0}
+                max={Number(guests) - nonVegGuests}
+                value={vegGuests}
+                onChange={(e) => setVegGuests(Number(e.target.value))}
+              />
+            </div>
+
+            <div>
+              <Label>Non-Veg Guests</Label>
+              <Input
+                type="number"
+                min={0}
+                max={Number(guests) - vegGuests}
+                value={nonVegGuests}
+                onChange={(e) => setNonVegGuests(Number(e.target.value))}
+              />
+            </div>
+
+            <p className="col-span-2 text-xs text-muted-foreground">
+              Veg + Non-Veg must equal total guests ({guests})
+            </p>
+          </div>
+        )}
 
         <Separator />
 
