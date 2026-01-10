@@ -24,8 +24,9 @@ const createRefreshToken = (user) =>
   );
 
 /* ===============================
-   FIREBASE OTP → LOGIN / SIGNUP
+   FIREBASE OTP LOGIN
    POST /auth/firebase-login
+   👉 OTP ONLY (no profile here)
 ================================ */
 export const firebaseLogin = async (req, res) => {
   try {
@@ -43,30 +44,18 @@ export const firebaseLogin = async (req, res) => {
     if (!phone)
       return res.status(400).json({ message: "Phone number not available" });
 
-    const { name, dob } = req.body || {};
-
     let user = await User.findOne({
       $or: [{ firebaseUid }, { phone }],
     });
 
     let isNewUser = false;
 
-    // 🆕 NEW USER
+    // 🆕 CREATE USER WITH PHONE ONLY
     if (!user) {
-      if (!name || !dob) {
-        return res.status(400).json({
-          code: "PROFILE_REQUIRED",
-          message: "Name and Date of Birth are required",
-        });
-      }
-
       user = await User.create({
         firebaseUid,
         phone,
-        name: String(name).trim(),
-        dob: new Date(dob),
       });
-
       isNewUser = true;
     } else if (!user.firebaseUid) {
       user.firebaseUid = firebaseUid;
@@ -89,79 +78,14 @@ export const firebaseLogin = async (req, res) => {
 
     res.json({
       id: user._id,
-      name: user.name,
       phone: user.phone,
-      email: user.email || null,
-      dob: user.dob || null,
       isAdmin: !!user.isAdmin,
       isNewUser,
+      profileComplete: user.profileComplete,
     });
   } catch (err) {
     console.error("firebaseLogin error:", err);
     res.status(401).json({ message: "Invalid Firebase token" });
-  }
-};
-
-/* ===============================
-   PHONE OTP → LOGIN / SIGNUP
-   POST /auth/phone-login
-================================ */
-export const phoneLogin = async (req, res) => {
-  try {
-    const { phone, name, email, dob } = req.body || {};
-
-    if (!phone)
-      return res.status(400).json({ message: "Phone number is required" });
-
-    const normalizedPhone = normalizePhone(phone);
-
-    let user = await User.findOne({ phone: normalizedPhone });
-    let isNewUser = false;
-
-    if (!user) {
-      if (!name || !dob) {
-        return res.status(400).json({
-          code: "PROFILE_REQUIRED",
-          message: "Name and Date of Birth are required",
-        });
-      }
-
-      user = await User.create({
-        phone: normalizedPhone,
-        name: String(name).trim(),
-        email: email ? String(email).trim() : undefined,
-        dob: new Date(dob),
-      });
-
-      isNewUser = true;
-    }
-
-    const accessToken = createAccessToken(user);
-    const refreshToken = createRefreshToken(user);
-
-    setSessionCookie(res, "token", accessToken, {
-      path: "/",
-      persistent: false,
-    });
-
-    setSessionCookie(res, "refresh_token", refreshToken, {
-      path: "/",
-      persistent: true,
-      days: 10,
-    });
-
-    res.json({
-      id: user._id,
-      name: user.name,
-      phone: user.phone,
-      email: user.email || null,
-      dob: user.dob || null,
-      isAdmin: !!user.isAdmin,
-      isNewUser,
-    });
-  } catch (err) {
-    console.error("phoneLogin error:", err);
-    res.status(500).json({ message: "Phone login failed" });
   }
 };
 
@@ -204,11 +128,10 @@ export const refreshSession = async (req, res) => {
 
 /* ===============================
    GET MY PROFILE
+   GET /auth/me
 ================================ */
 export const me = async (req, res) => {
-  const user = await User.findById(req.user.id).select(
-    "name phone email dob isAdmin"
-  );
+  const user = await User.findById(req.user.id);
 
   if (!user)
     return res.status(401).json({ message: "Unauthorized" });
@@ -217,26 +140,55 @@ export const me = async (req, res) => {
     id: user._id,
     name: user.name,
     phone: user.phone,
-    email: user.email || null,
-    dob: user.dob || null,
+    email: user.email,
+    dob: user.dob,
+    address: user.address,
+    country: user.country,
+    state: user.state,
+    city: user.city,
+    pincode: user.pincode,
     isAdmin: !!user.isAdmin,
+    profileComplete: user.profileComplete,
   });
 };
 
 /* ===============================
-   UPDATE PROFILE
+   UPDATE PROFILE (COMPLETE PROFILE)
+   PUT /auth/me
 ================================ */
 export const updateMe = async (req, res) => {
   try {
-    const { name, email, dob } = req.body || {};
-    const user = await User.findById(req.user.id);
+    const {
+      name,
+      email,
+      dob,
+      address,
+      country,
+      state,
+      city,
+      pincode,
+    } = req.body || {};
 
+    const user = await User.findById(req.user.id);
     if (!user)
       return res.status(401).json({ message: "Unauthorized" });
 
-    if (name !== undefined) user.name = String(name).trim();
-    if (email !== undefined) user.email = String(email).trim();
-    if (dob !== undefined) user.dob = dob ? new Date(dob) : null;
+    // 🔒 Required fields
+    if (!name || !dob) {
+      return res.status(400).json({
+        message: "Name and Date of Birth are required",
+      });
+    }
+
+    user.name = name.trim();
+    user.email = email?.trim() || null;
+    user.dob = new Date(dob);
+
+    user.address = address || null;
+    user.country = country || null;
+    user.state = state || null;
+    user.city = city || null;
+    user.pincode = pincode || null;
 
     await user.save();
 
@@ -244,9 +196,14 @@ export const updateMe = async (req, res) => {
       id: user._id,
       name: user.name,
       phone: user.phone,
-      email: user.email || null,
-      dob: user.dob || null,
-      isAdmin: !!user.isAdmin,
+      email: user.email,
+      dob: user.dob,
+      address: user.address,
+      country: user.country,
+      state: user.state,
+      city: user.city,
+      pincode: user.pincode,
+      profileComplete: user.profileComplete,
     });
   } catch (err) {
     console.error("updateMe error:", err);

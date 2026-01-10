@@ -1,9 +1,13 @@
 import { create } from "zustand";
 import { api } from "../api/http";
-import { auth } from "@/lib/firebase";
+
+/* =====================================================
+   AUTH STORE
+===================================================== */
 
 export const useAuth = create((set, get) => ({
   user: null,
+  loading: false,
 
   /* ================= UI ================= */
   showAuthModal: false,
@@ -13,18 +17,28 @@ export const useAuth = create((set, get) => ({
   /* ================= INIT SESSION ================= */
   init: async () => {
     try {
+      set({ loading: true });
+
       const { data } = await api.get("/auth/me");
-      set({ user: data });
+
+      set({
+        user: {
+          ...data,
+          profileComplete: isProfileComplete(data),
+        },
+        loading: false,
+      });
+
       return data;
     } catch {
-      set({ user: null });
+      set({ user: null, loading: false });
       return null;
     }
   },
 
   /* ================= FIREBASE OTP LOGIN ================= */
   firebaseLoginWithToken: async (idToken, navigate) => {
-    // 1️⃣ Backend session creation
+    // 1️⃣ Create backend session
     await api.post(
       "/auth/firebase-login",
       {},
@@ -36,28 +50,57 @@ export const useAuth = create((set, get) => ({
       }
     );
 
-    // 2️⃣ Fetch user profile
-    const { data: user } = await api.get("/auth/me");
+    // 2️⃣ Fetch full profile
+    const { data } = await api.get("/auth/me");
+
+    const user = {
+      ...data,
+      profileComplete: isProfileComplete(data),
+    };
+
     set({ user, showAuthModal: false });
 
-    // 3️⃣ Redirect NEW / INCOMPLETE users
+    // 3️⃣ Redirect if needed
     if (!user.profileComplete) {
-      navigate?.("/complete-profile");
+      navigate?.("/complete-profile", { replace: true });
     }
 
     return user;
   },
 
-  /* ================= PHONE LOGIN (LEGACY / NON-FIREBASE) ================= */
+  /* ================= PHONE OTP LOGIN ================= */
   phoneLogin: async (payload, navigate) => {
-    const { data: user } = await api.post("/auth/phone-login", payload);
+    await api.post("/auth/phone-login", payload);
+
+    // Fetch fresh profile
+    const { data } = await api.get("/auth/me");
+
+    const user = {
+      ...data,
+      profileComplete: isProfileComplete(data),
+    };
+
     set({ user, showAuthModal: false });
 
     if (!user.profileComplete) {
-      navigate?.("/complete-profile");
+      navigate?.("/complete-profile", { replace: true });
     }
 
     return user;
+  },
+
+  /* ================= AFTER PROFILE UPDATE ================= */
+  refreshUser: async () => {
+    const { data } = await api.get("/auth/me");
+
+    set({
+      user: {
+        ...data,
+        profileComplete: isProfileComplete(data),
+      },
+    });
+
+    return data;
   },
 
   /* ================= LOGOUT ================= */
@@ -66,3 +109,22 @@ export const useAuth = create((set, get) => ({
     set({ user: null });
   },
 }));
+
+/* =====================================================
+   HELPERS
+===================================================== */
+
+function isProfileComplete(user) {
+  if (!user) return false;
+
+  return Boolean(
+    user.name &&
+    user.phone &&
+    user.dob &&
+    user.address &&
+    user.country &&
+    user.state &&
+    user.city &&
+    user.pincode
+  );
+}
