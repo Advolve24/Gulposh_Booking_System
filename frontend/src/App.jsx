@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import CompleteProfile from "./pages/CompleteProfile";
 import Home from "./pages/Home";
 import RoomPage from "./pages/RoomPage";
 import Checkout from "./pages/Checkout";
@@ -38,7 +39,9 @@ export default function App() {
       <AuthModal />
 
       <Routes>
+        
         <Route path="/" element={<Home />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/room/:id" element={<RoomPage />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/bookings" element={<MyBookings />} />

@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/http";
 import { useAuth } from "../store/authStore";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { loadRazorpayScript } from "../lib/loadRazorpay";
 import { toast } from "sonner";
+
 import CalendarRange from "../components/CalendarRange";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
+
 import {
   Select,
   SelectTrigger,
@@ -21,14 +23,16 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+
+import { loadRazorpayScript } from "../lib/loadRazorpay";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
-import { getAllCountries, getStatesByCountry, getCitiesByState } from "../lib/location";
+import {
+  getAllCountries,
+  getStatesByCountry,
+  getCitiesByState,
+} from "../lib/location";
 
-// ✅ Firebase OTP
-import { signInWithPhoneNumber } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { getRecaptchaVerifier } from "@/lib/recaptcha";
-
+/* ================= HELPERS ================= */
 function toDateOnly(d) {
   const x = new Date(d);
   return new Date(x.getFullYear(), x.getMonth(), x.getDate());
@@ -38,36 +42,50 @@ function toYMD(d) {
 }
 const isValidEmail = (e) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e).trim());
-const isValidPhone = (p) => /^[0-9]{10}$/.test(String(p).trim());
 
 export default function Checkout() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const { user, init, phoneLogin } = useAuth();
+  /* 🔐 Protect checkout */
+  useEffect(() => {
+    if (!user) {
+      toast.info("Please sign in to continue booking");
+      navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
 
-  /** ---------- UI State ---------- */
+  /* ---------- Location state ---------- */
+  const roomId = state?.roomId;
+  const startDate = state?.startDate ? new Date(state.startDate) : null;
+  const endDate = state?.endDate ? new Date(state.endDate) : null;
+  const guestsFromState = state?.guests ? Number(state.guests) : null;
+
+  /* ---------- UI state ---------- */
   const [room, setRoom] = useState(null);
   const [withMeal, setWithMeal] = useState(false);
+  const [vegGuests, setVegGuests] = useState(0);
+  const [nonVegGuests, setNonVegGuests] = useState(0);
   const [errors, setErrors] = useState({});
   const [disabledAll, setDisabledAll] = useState([]);
 
-  /** -------- OTP state (Inline) -------- */
-  const [otpStep, setOtpStep] = useState("idle"); // idle | sent | verified
-  const [otp, setOtp] = useState("");
-  const [otpLoading, setOtpLoading] = useState(false);
+  const [range, setRange] = useState({
+    from: startDate,
+    to: endDate,
+  });
 
-  // when user clicks proceed while not logged in, we set this = true and continue after otp verification
-  const pendingProceedRef = useRef(false);
+  const [guestsState, setGuestsState] = useState(
+    String(guestsFromState || "")
+  );
 
-  /** --------- Meal guest splits ---------- */
-  const [vegGuests, setVegGuests] = useState(0);
-  const [nonVegGuests, setNonVegGuests] = useState(0);
-
-  /** ---------- Country/State/City ---------- */
-  const [countries, setCountries] = useState([]);
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
+  /* ---------- Profile form ---------- */
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    dob: null,
+  });
 
   const [addressInfo, setAddressInfo] = useState({
     address: "",
@@ -76,306 +94,139 @@ export default function Checkout() {
     city: "",
     pincode: "",
   });
-  
 
-
-  /** ---------- Location State ---------- */
-  const roomId = state?.roomId;
-  const startDate = state?.startDate ? new Date(state.startDate) : null;
-  const endDate = state?.endDate ? new Date(state.endDate) : null;
-  const guests = state?.guests ? Number(state.guests) : null;
-
-  const [range, setRange] = useState({
-    from: startDate || null,
-    to: endDate || null,
-  });
-
-  const [guestsState, setGuestsState] = useState(String(guests || ""));
-
-
-  const [form, setForm] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    dob: user?.dob ? new Date(user.dob) : null,
-  });
-
-  /** -------- Load countries -------- */
+  /* ---------- Autofill from profile ---------- */
   useEffect(() => {
-    setCountries(getAllCountries());
-  }, []);
+    if (!user) return;
 
-  /** -------- On country change -------- */
-  useEffect(() => {
-    if (addressInfo.country) {
-      setStates(getStatesByCountry(addressInfo.country));
-    } else {
-      setStates([]);
-    }
-    setCities([]);
-  }, [addressInfo.country]);
+    setForm({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      dob: user.dob ? new Date(user.dob) : null,
+    });
 
-  /** -------- On state change -------- */
-  useEffect(() => {
-    if (addressInfo.state && addressInfo.country) {
-      setCities(getCitiesByState(addressInfo.country, addressInfo.state));
-    } else {
-      setCities([]);
-    }
-  }, [addressInfo.state, addressInfo.country]);
+    setAddressInfo({
+      address: user.address || "",
+      country: user.country || "",
+      state: user.state || "",
+      city: user.city || "",
+      pincode: user.pincode || "",
+    });
+  }, [user]);
 
-  /** -------- Validate initial selection -------- */
-  useEffect(() => {
-    if (!roomId || !startDate || !endDate || !guests) {
-      toast.error("Please select a room, dates and guests first.");
-      navigate("/", { replace: true });
-    }
-  }, [roomId, startDate, endDate, guests, navigate]);
-
-  /** -------- Load room -------- */
+  /* ---------- Load room ---------- */
   useEffect(() => {
     if (!roomId) return;
     api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
   }, [roomId]);
 
-  /** -------- Load Disabled Dates -------- */
+  /* ---------- Disabled dates ---------- */
   useEffect(() => {
     if (!roomId) return;
     (async () => {
-      try {
-        const [bookingsRes, blackoutsRes] = await Promise.all([
-          api.get("/rooms/disabled/all"),
-          api.get("/blackouts"),
-        ]);
+      const [bookingsRes, blackoutsRes] = await Promise.all([
+        api.get("/rooms/disabled/all"),
+        api.get("/blackouts"),
+      ]);
 
-        const bookings = (bookingsRes.data || []).map((b) => ({
-          from: toDateOnlyFromAPIUTC(b.from || b.startDate),
-          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
-        }));
+      const bookings = (bookingsRes.data || []).map((b) => ({
+        from: toDateOnlyFromAPIUTC(b.from || b.startDate),
+        to: toDateOnlyFromAPIUTC(b.to || b.endDate),
+      }));
 
-        const blackouts = (blackoutsRes.data || []).map((b) => ({
-          from: toDateOnlyFromAPI(b.from),
-          to: toDateOnlyFromAPI(b.to),
-        }));
+      const blackouts = (blackoutsRes.data || []).map((b) => ({
+        from: toDateOnlyFromAPI(b.from),
+        to: toDateOnlyFromAPI(b.to),
+      }));
 
-        setDisabledAll([...bookings, ...blackouts]);
-      } catch (err) {
-        console.error("Failed to load disabled ranges:", err);
-      }
+      setDisabledAll([...bookings, ...blackouts]);
     })();
   }, [roomId]);
 
-  /** -------- Sync user data -------- */
-  useEffect(() => {
-    if (user) {
-      setForm((f) => ({
-        ...f,
-        name: user.name || f.name,
-        email: user.email || f.email,
-        phone: user.phone || f.phone,
-        dob: user.dob ? new Date(user.dob) : f.dob,
-      }));
-      setOtpStep("verified");
-    } else {
-      // when user logs out and comes back
-      setOtpStep("idle");
-      setOtp("");
-    }
-  }, [user]);
+  /* ---------- Location helpers ---------- */
+  const countries = getAllCountries();
+  const states = addressInfo.country
+    ? getStatesByCountry(addressInfo.country)
+    : [];
+  const cities =
+    addressInfo.country && addressInfo.state
+      ? getCitiesByState(addressInfo.country, addressInfo.state)
+      : [];
 
-  /** -------- Form Handlers -------- */
-  const handlePhoneChange = (e) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-    setForm((f) => ({ ...f, phone: digits }));
-    // If phone is changed after otp sent, reset otp flow
-    setOtp("");
-    setOtpStep("idle");
-  };
-
-  const handlePincodeChange = (e) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 6);
-    setAddressInfo((f) => ({ ...f, pincode: digits }));
-  };
-
-  /** -------- Nights Calculation -------- */
+  /* ---------- Nights ---------- */
   const nights = useMemo(() => {
     if (!range?.from || !range?.to) return 0;
-    const ms = toDateOnly(range.to) - toDateOnly(range.from);
-    return Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
+    return Math.max(
+      0,
+      (toDateOnly(range.to) - toDateOnly(range.from)) /
+        (1000 * 60 * 60 * 24)
+    );
   }, [range]);
 
-  /** -------- Room charges -------- */
-  const roomTotal = useMemo(() => {
-    if (!room) return 0;
-    if (!nights) return 0;
-    return nights * Number(room.pricePerNight || 0);
-  }, [room, nights]);
+  /* ---------- Pricing ---------- */
+  const roomTotal = useMemo(
+    () => nights * Number(room?.pricePerNight || 0),
+    [nights, room]
+  );
 
-  /** -------- Meal charges -------- */
   const mealTotal = useMemo(() => {
-    if (!room || !withMeal) return 0;
-
+    if (!withMeal || !room) return 0;
     return (
       nights *
       (vegGuests * Number(room.mealPriceVeg || 0) +
-        nonVegGuests * Number(room.mealPriceNonVeg || 0)) 
+        nonVegGuests * Number(room.mealPriceNonVeg || 0))
     );
-  }, [nights, withMeal, vegGuests, nonVegGuests, room]);
+  }, [withMeal, nights, vegGuests, nonVegGuests, room]);
 
-  /** -------- Grand Total -------- */
-  const total = useMemo(() => roomTotal + mealTotal, [roomTotal, mealTotal]);
+  const total = roomTotal + mealTotal;
 
-  /** -------- Validate form -------- */
+  /* ---------- Guests cap ---------- */
+  const maxGuestsCap = useMemo(() => {
+    if (!room) return 1;
+    const nums = (room.accommodation || [])
+      .flatMap((s) =>
+        Array.from(String(s).matchAll(/\d+/g)).map((m) => Number(m[0]))
+      )
+      .filter(Boolean);
+    return nums.length ? nums.reduce((a, b) => a + b, 0) : 1;
+  }, [room]);
+
+  /* ---------- Validation ---------- */
   const validateForm = () => {
-    const newErrors = {};
+    const e = {};
+    if (form.email && !isValidEmail(form.email))
+      e.email = "Invalid email format";
 
-    if (!form.name.trim()) newErrors.name = "Name is required";
-
-    // email optional
-    if (form.email && !isValidEmail(form.email)) {
-      newErrors.email = "Invalid email format";
-    }
-
-    if (!form.phone.trim()) newErrors.phone = "Phone number is required";
-    else if (!isValidPhone(form.phone))
-      newErrors.phone = "Enter a valid 10-digit phone number";
-
-    if (!form.dob) newErrors.dob = "Date of birth is required";
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      Object.values(newErrors).forEach((msg) => toast.error(msg));
+    if (Object.keys(e).length) {
+      setErrors(e);
+      Object.values(e).forEach((m) => toast.error(m));
       return false;
     }
     return true;
   };
 
-  /** -------- Auto-detect max guests from accommodation -------- */
-  const maxGuestsCap = useMemo(() => {
-    if (!room) return 1;
-
-    const nums = (room.accommodation || [])
-      .flatMap((s) =>
-        Array.from(String(s).matchAll(/\d+/g)).map((m) => Number(m[0]))
-      )
-      .filter((n) => Number.isFinite(n) && n > 0);
-
-    const sum = nums.length ? nums.reduce((a, b) => a + b, 0) : 0;
-    return Math.max(1, sum || 1);
-  }, [room]);
-
-  const onGuestsChange = (v) => {
-    setGuestsState(v);
-    setVegGuests(0);
-    setNonVegGuests(0);
-  };
-
-  /** ================= OTP: Send ================= */
-  const sendOtp = async () => {
-    if (!form.phone || !isValidPhone(form.phone)) {
-      toast.error("Enter valid 10-digit phone number");
-      return;
-    }
-    try {
-      setOtpLoading(true);
-      const appVerifier = getRecaptchaVerifier();
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        `+91${form.phone}`,
-        appVerifier
-      );
-      window.confirmationResult = confirmation;
-      setOtpStep("sent");
-      toast.success("OTP sent");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to send OTP. Try again.");
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  /** ================= OTP: Verify ================= */
-  const verifyOtp = async () => {
-    if (!otp || otp.length !== 6) {
-      toast.error("Enter valid 6-digit OTP");
-      return;
-    }
-    try {
-      setOtpLoading(true);
-
-      // verify with firebase
-      await window.confirmationResult.confirm(otp);
-
-      // login/register in backend
-      await phoneLogin({
-        phone: form.phone,
-        name: form.name,
-        email: form.email || undefined,
-        dob: form.dob ? form.dob.toISOString() : null,
-      });
-
-      await init?.();
-
-      setOtpStep("verified");
-      toast.success("Mobile verified");
-
-      // If user clicked proceed earlier, continue automatically
-      if (pendingProceedRef.current) {
-        pendingProceedRef.current = false;
-        await proceedToPayment();
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Invalid OTP. Please try again.");
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  /** ======= COMMON payment block extracted so we can call after OTP ======= */
+  /* ---------- Payment ---------- */
   const proceedToPayment = async () => {
-    const start = range?.from;
-    const end = range?.to;
-    const guests = Number(guestsState);
+    if (!validateForm()) return;
 
-    if (!start || !end || !guests) {
-      toast.error("Please select valid dates and guests.");
-      return;
-    }
-
-    if (withMeal) {
-      if (vegGuests + nonVegGuests !== guests) {
-        toast.error("Veg + Non-Veg must match total guests.");
-        return;
-      }
-    }
-
-    const conflict = disabledAll.some((b) => !(end < b.from || start > b.to));
-    if (conflict) {
-      toast.error("Selected dates include unavailable days. Choose another range.");
+    if (withMeal && vegGuests + nonVegGuests !== Number(guestsState)) {
+      toast.error("Veg + Non-Veg must match total guests");
       return;
     }
 
     const ok = await loadRazorpayScript();
-    if (!ok) throw new Error("Failed to load Razorpay");
-
-    const { address, country, state, city, pincode } = addressInfo;
+    if (!ok) throw new Error("Razorpay failed to load");
 
     const { data: order } = await api.post("/payments/create-order", {
       roomId: room._id,
-      startDate: toYMD(start),
-      endDate: toYMD(end),
-      guests,
+      startDate: toYMD(range.from),
+      endDate: toYMD(range.to),
+      guests: Number(guestsState),
       withMeal,
       vegGuests,
       nonVegGuests,
-      address,
-      country,
-      state,
-      city,
-      pincode,
+      ...addressInfo,
       contactName: form.name,
       contactEmail: form.email || null,
       contactPhone: form.phone,
@@ -386,434 +237,184 @@ export default function Checkout() {
       amount: order.amount,
       currency: "INR",
       name: room.name,
-      description: `Booking • ${nights} night(s)`,
       order_id: order.orderId,
-      prefill: {
-        name: form.name,
-        email: form.email || "",
-        contact: form.phone,
-      },
-      notes: {
-        roomId: room._id,
-        startDate: start.toISOString(),
-        endDate: end.toISOString(),
-        guests: String(guests),
-        withMeal: String(!!withMeal),
-        vegGuests: String(vegGuests),
-        nonVegGuests: String(nonVegGuests),
-      },
       theme: { color: "#BA081C" },
-
       handler: async (resp) => {
-        try {
-          await api.post("/payments/verify", {
-            razorpay_payment_id: resp.razorpay_payment_id,
-            razorpay_order_id: resp.razorpay_order_id,
-            razorpay_signature: resp.razorpay_signature,
-            roomId: room._id,
-            startDate: toYMD(start),
-            endDate: toYMD(end),
-            guests,
-            withMeal,
-            vegGuests,
-            nonVegGuests,
-            contactName: form.name,
-            contactEmail: form.email || null,
-            contactPhone: form.phone,
-            address,
-            country,
-            state,
-            city,
-            pincode,
-          });
-
-          toast.success("Payment successful! Booking confirmed.");
-          navigate("/my-bookings", { replace: true });
-        } catch (e) {
-          toast.error(e?.response?.data?.message || "Verification failed");
-        }
-      },
-
-      modal: {
-        ondismiss: () => toast("Payment was cancelled."),
+        await api.post("/payments/verify", {
+          ...order,
+          ...resp,
+        });
+        toast.success("Booking confirmed 🎉");
+        navigate("/my-bookings", { replace: true });
       },
     });
 
     rzp.open();
   };
 
-  /** -------- PROCEED button -------- */
-  const proceed = async () => {
-    try {
-      if (!validateForm()) return;
-
-      // 🚨 OTP Gate
-      if (!user) {
-        pendingProceedRef.current = true;
-        toast.info("Please verify your mobile number to continue.");
-
-        // If OTP not sent yet, send OTP
-        if (otpStep === "idle") {
-          await sendOtp();
-        }
-        return;
-      }
-
-      await proceedToPayment();
-    } catch (err) {
-      toast.error(
-        err?.response?.data?.message || err.message || "Could not start payment"
-      );
-    }
-  };
-
   if (!room) return null;
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* ✅ reCAPTCHA container (must exist in DOM) */}
-      <div id="recaptcha-container" />
-
-      <div className="bg-primary text-primary-foreground rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div className="text-lg sm:text-xl font-semibold">{room.name}</div>
-        <div className="flex items-center gap-3 text-sm sm:text-base">
-          <span>₹{room.pricePerNight}/night</span>
-        </div>
+      <div className="bg-primary text-primary-foreground rounded-xl p-4">
+        <div className="text-xl font-semibold">{room.name}</div>
+        <div>₹{room.pricePerNight}/night</div>
       </div>
 
-      <div className="rounded-xl border p-4 sm:p-6 space-y-5">
-        {/* User Info */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="space-y-1 sm:col-span-2">
+      <div className="rounded-xl border p-6 space-y-5">
+        {/* PROFILE */}
+        <div className="grid sm:grid-cols-4 gap-4">
+          <div className="sm:col-span-2">
             <Label>Name</Label>
-            <Input
-              value={form.name}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, name: e.target.value }))
-              }
-              placeholder="Your full name"
-            />
-            {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+            <Input value={form.name} disabled />
           </div>
 
-          <div className="space-y-1 sm:col-span-2">
-            <Label>Email (optional)</Label>
+          <div className="sm:col-span-2">
+            <Label>Email</Label>
             <Input
-              type="email"
               value={form.email}
               onChange={(e) =>
                 setForm((f) => ({ ...f, email: e.target.value }))
               }
-              placeholder="you@example.com"
             />
-            {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
           </div>
 
-          <div className="space-y-1 sm:col-span-2">
+          <div className="sm:col-span-2">
             <Label>Date of Birth</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={`w-full justify-start text-left font-normal ${
-                    !form.dob && "text-muted-foreground"
-                  }`}
-                >
-                  {form.dob ? format(form.dob, "PPP") : "Select date of birth"}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={form.dob}
-                  onSelect={(date) => setForm((f) => ({ ...f, dob: date }))}
-                  captionLayout="dropdown"
-                  fromYear={1950}
-                  toYear={new Date().getFullYear()}
-                />
-              </PopoverContent>
-            </Popover>
-            {errors.dob && <p className="text-red-500 text-xs">{errors.dob}</p>}
+            <Button variant="outline" disabled className="w-full justify-start">
+              {form.dob ? format(form.dob, "PPP") : "-"}
+              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+            </Button>
           </div>
 
-          <div className="space-y-1 sm:col-span-2">
+          <div className="sm:col-span-2">
             <Label>Phone</Label>
-            <Input
-              type="tel"
-              value={form.phone}
-              onChange={handlePhoneChange}
-              placeholder="10-digit mobile number"
-              disabled={!!user} // after login, don't allow change here
-            />
-            {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
-
-            {/* ✅ Inline OTP UI */}
-            {!user && (
-              <div className="mt-3 space-y-2">
-                {otpStep === "idle" && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full"
-                    onClick={sendOtp}
-                    disabled={otpLoading}
-                  >
-                    {otpLoading ? "Sending OTP..." : "Send OTP"}
-                  </Button>
-                )}
-
-                {otpStep === "sent" && (
-                  <div className="space-y-2">
-                    <Input
-                      inputMode="numeric"
-                      placeholder="Enter 6-digit OTP"
-                      value={otp}
-                      onChange={(e) =>
-                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
-                    />
-                    <Button
-                      type="button"
-                      className="w-full"
-                      onClick={verifyOtp}
-                      disabled={otpLoading}
-                    >
-                      {otpLoading ? "Verifying..." : "Verify OTP"}
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full"
-                      onClick={sendOtp}
-                      disabled={otpLoading}
-                    >
-                      Resend OTP
-                    </Button>
-                  </div>
-                )}
-
-                {otpStep === "verified" && (
-                  <p className="text-xs text-green-600">Mobile number verified ✅</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1 sm:col-span-2">
-            <Label>Address</Label>
-            <Input
-              placeholder="Street, Apartment, Landmark"
-              value={addressInfo.address}
-              onChange={(e) =>
-                setAddressInfo((f) => ({ ...f, address: e.target.value }))
-              }
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label>Country</Label>
-            <Select
-              value={addressInfo.country}
-              onValueChange={(v) =>
-                setAddressInfo((f) => ({
-                  ...f,
-                  country: v,
-                  state: "",
-                  city: "",
-                }))
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {countries.map((c) => (
-                  <SelectItem key={c.isoCode} value={c.isoCode}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label>State</Label>
-            <Select
-              value={addressInfo.state}
-              onValueChange={(v) =>
-                setAddressInfo((f) => ({ ...f, state: v, city: "" }))
-              }
-              disabled={!addressInfo.country}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select state" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {states.map((s) => (
-                  <SelectItem key={s.isoCode} value={s.isoCode}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label>City</Label>
-            <Select
-              value={addressInfo.city}
-              onValueChange={(v) => setAddressInfo((f) => ({ ...f, city: v }))}
-              disabled={!addressInfo.state}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select city" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {cities.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <Label>Postal / Zip Code</Label>
-            <Input
-              type="tel"
-              inputMode="numeric"
-              placeholder="Enter 6-digit postal code"
-              value={addressInfo.pincode}
-              onChange={handlePincodeChange}
-            />
-          </div>
-
-          <div className="space-y-1 sm:col-span-2">
-            <Label>Guests</Label>
-            <Select value={guestsState} onValueChange={onGuestsChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select guests" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: maxGuestsCap }, (_, i) => i + 1).map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input value={form.phone} disabled />
           </div>
         </div>
 
-        {/* Dates & Guests */}
-        <div className="grid w-full grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="space-y-1 sm:col-span-2">
-            <Label>Check-in / Check-out</Label>
-            <CalendarRange
-              value={range}
-              onChange={setRange}
-              numberOfMonths={1}
-              disabledRanges={disabledAll}
-            />
-          </div>
-        </div>
-
-        {/* With meal */}
-        <div className="flex items-center gap-3 pt-2">
-          <Checkbox
-            id="withMeal"
-            checked={withMeal}
-            onCheckedChange={(v) => {
-              setWithMeal(Boolean(v));
-              if (!v) {
-                setVegGuests(0);
-                setNonVegGuests(0);
-              }
-            }}
+        {/* ADDRESS */}
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Input
+            placeholder="Address"
+            value={addressInfo.address}
+            onChange={(e) =>
+              setAddressInfo((f) => ({ ...f, address: e.target.value }))
+            }
           />
-          <Label htmlFor="withMeal" className="cursor-pointer flex items-center gap-1">
-            Include meals
-            {room && (
-              <span className="text-xs text-muted-foreground">
-                (Veg ₹{room.mealPriceVeg || 0} | Non-Veg ₹{room.mealPriceNonVeg || 0} per guest)
-              </span>
-            )}
-          </Label>
+
+          <Select
+            value={addressInfo.country}
+            onValueChange={(v) =>
+              setAddressInfo((f) => ({ ...f, country: v, state: "", city: "" }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Country" />
+            </SelectTrigger>
+            <SelectContent>
+              {countries.map((c) => (
+                <SelectItem key={c.isoCode} value={c.isoCode}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={addressInfo.state}
+            onValueChange={(v) =>
+              setAddressInfo((f) => ({ ...f, state: v, city: "" }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="State" />
+            </SelectTrigger>
+            <SelectContent>
+              {states.map((s) => (
+                <SelectItem key={s.isoCode} value={s.isoCode}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={addressInfo.city}
+            onValueChange={(v) =>
+              setAddressInfo((f) => ({ ...f, city: v }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="City" />
+            </SelectTrigger>
+            <SelectContent>
+              {cities.map((c) => (
+                <SelectItem key={c.name} value={c.name}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Input
+            placeholder="Pincode"
+            value={addressInfo.pincode}
+            onChange={(e) =>
+              setAddressInfo((f) => ({
+                ...f,
+                pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+              }))
+            }
+          />
+        </div>
+
+        {/* GUESTS */}
+        <Select value={guestsState} onValueChange={setGuestsState}>
+          <SelectTrigger>
+            <SelectValue placeholder="Guests" />
+          </SelectTrigger>
+          <SelectContent>
+            {Array.from({ length: maxGuestsCap }, (_, i) => i + 1).map((n) => (
+              <SelectItem key={n} value={String(n)}>
+                {n}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* MEALS */}
+        <div className="flex items-center gap-3">
+          <Checkbox checked={withMeal} onCheckedChange={setWithMeal} />
+          <Label>Include meals</Label>
         </div>
 
         {withMeal && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
-              <div>
-                <Label>Veg Guests</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max={Number(guestsState) - nonVegGuests}
-                  value={vegGuests}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    if (val <= Number(guestsState) - nonVegGuests) {
-                      setVegGuests(val);
-                    }
-                  }}
-                />
-              </div>
-
-              <div>
-                <Label>Non-Veg Guests</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max={Number(guestsState) - vegGuests}
-                  value={nonVegGuests}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    if (val <= Number(guestsState) - vegGuests) {
-                      setNonVegGuests(val);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground mt-1">
-              Veg + Non-Veg must equal total guests.
-            </p>
-          </>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Input
+              type="number"
+              placeholder="Veg Guests"
+              value={vegGuests}
+              onChange={(e) => setVegGuests(Number(e.target.value))}
+            />
+            <Input
+              type="number"
+              placeholder="Non-Veg Guests"
+              value={nonVegGuests}
+              onChange={(e) => setNonVegGuests(Number(e.target.value))}
+            />
+          </div>
         )}
 
-        <Separator className="my-2" />
+        <Separator />
 
-        {/* Totals */}
-        <div className="space-y-1 text-sm">
-          <div className="flex items-center justify-between">
-            <span>Nights</span>
-            <span>{nights}</span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span>Room Total</span>
-            <span>₹{roomTotal.toLocaleString("en-IN")}</span>
-          </div>
-
-          {withMeal && (
-            <div className="flex items-center justify-between">
-              <span>Meal Total</span>
-              <span>₹{mealTotal.toLocaleString("en-IN")}</span>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between font-medium text-base pt-1">
-            <span>Total</span>
-            <span>₹{total.toLocaleString("en-IN")}</span>
-          </div>
+        {/* TOTAL */}
+        <div className="flex justify-between font-semibold">
+          <span>Total</span>
+          <span>₹{total.toLocaleString("en-IN")}</span>
         </div>
 
-        <Button className="w-full mt-2" onClick={proceed}>
+        <Button className="w-full" onClick={proceedToPayment}>
           Proceed to Payment
         </Button>
       </div>
