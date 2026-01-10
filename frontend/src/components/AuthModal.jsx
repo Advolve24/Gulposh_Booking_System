@@ -74,50 +74,39 @@ export default function AuthModal() {
 
   /* ================= VERIFY OTP ================= */
   const verifyOtp = async () => {
-    if (!form.otp || form.otp.length !== 6) {
-      toast.error("Enter valid 6-digit OTP");
-      return;
+  if (!form.otp || form.otp.length !== 6) {
+    toast.error("Enter valid 6-digit OTP");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    // ✅ Firebase OTP verification
+    const result = await window.confirmationResult.confirm(form.otp);
+    const idToken = await result.user.getIdToken(true);
+
+    // ✅ Backend decides new vs existing user
+    const res = await firebaseLoginWithToken(idToken, {
+      name: form.name || undefined,
+      dob: form.dob ? form.dob.toISOString() : undefined,
+    });
+
+    if (res?.isNewUser) {
+      toast.success("Account created successfully 🎉");
+    } else {
+      toast.success("Logged in successfully 🎉");
     }
 
-    // 🔐 Extra validation ONLY for signup
-    if (mode === "signup") {
-      if (!form.name.trim()) {
-        toast.error("Name is required for sign up");
-        return;
-      }
-      if (!form.dob) {
-        toast.error("Date of birth is required for sign up");
-        return;
-      }
-    }
+    closeAuth();
+  } catch (err) {
+    console.error(err);
+    toast.error("Invalid OTP. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
-    try {
-      setLoading(true);
-
-      // Firebase OTP verification
-      const result = await window.confirmationResult.confirm(form.otp);
-      const idToken = await result.user.getIdToken(true);
-
-      // Backend login/signup decision
-      const res = await firebaseLoginWithToken(idToken, {
-        name: form.name || undefined,
-        dob: form.dob ? form.dob.toISOString() : undefined,
-      });
-
-      if (res?.isNewUser) {
-        toast.success("Account created successfully 🎉");
-      } else {
-        toast.success("Logged in successfully 🎉");
-      }
-
-      closeAuth();
-    } catch (err) {
-      console.error(err);
-      toast.error("Invalid OTP. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   /* ================= PREFILL USER ================= */
   useEffect(() => {
