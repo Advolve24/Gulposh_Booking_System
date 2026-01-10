@@ -1,16 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/http";
 import { useAuth } from "../store/authStore";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-
-import CalendarRange from "../components/CalendarRange";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
@@ -24,139 +21,105 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
+import CalendarRange from "../components/CalendarRange";
 import { loadRazorpayScript } from "../lib/loadRazorpay";
-import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import {
   getAllCountries,
   getStatesByCountry,
   getCitiesByState,
 } from "../lib/location";
 
+import { signInWithPhoneNumber } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { getRecaptchaVerifier } from "@/lib/recaptcha";
+
 /* ================= HELPERS ================= */
-function toDateOnly(d) {
-  const x = new Date(d);
-  return new Date(x.getFullYear(), x.getMonth(), x.getDate());
-}
-function toYMD(d) {
-  return d ? format(new Date(d), "yyyy-MM-dd") : null;
-}
-const isValidEmail = (e) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e).trim());
+const isValidPhone = (p) => /^[0-9]{10}$/.test(p);
+const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
+const toDateOnly = (d) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
 export default function Checkout() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, init, phoneLogin } = useAuth();
 
-  /* 🔐 Protect checkout */
-  useEffect(() => {
-    if (!user) {
-      toast.info("Please sign in to continue booking");
-      navigate("/", { replace: true });
-    }
-  }, [user, navigate]);
-
-  /* ---------- Location state ---------- */
   const roomId = state?.roomId;
-  const startDate = state?.startDate ? new Date(state.startDate) : null;
-  const endDate = state?.endDate ? new Date(state.endDate) : null;
-  const guestsFromState = state?.guests ? Number(state.guests) : null;
+  const guestsFromSearch = Number(state?.guests || 0);
 
-  /* ---------- UI state ---------- */
   const [room, setRoom] = useState(null);
   const [withMeal, setWithMeal] = useState(false);
+
+  /* ================= FORM ================= */
+  const [form, setForm] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    dob: user?.dob ? new Date(user.dob) : null,
+  });
+
+  const [address, setAddress] = useState({
+    address: user?.address || "",
+    country: user?.country || "",
+    state: user?.state || "",
+    city: user?.city || "",
+    pincode: user?.pincode || "",
+  });
+
+  /* ================= GUESTS ================= */
+  const [guests, setGuests] = useState(String(guestsFromSearch || ""));
   const [vegGuests, setVegGuests] = useState(0);
   const [nonVegGuests, setNonVegGuests] = useState(0);
-  const [errors, setErrors] = useState({});
-  const [disabledAll, setDisabledAll] = useState([]);
 
+  /* ================= DATE ================= */
   const [range, setRange] = useState({
-    from: startDate,
-    to: endDate,
+    from: state?.startDate ? new Date(state.startDate) : null,
+    to: state?.endDate ? new Date(state.endDate) : null,
   });
 
-  const [guestsState, setGuestsState] = useState(
-    String(guestsFromState || "")
-  );
+  /* ================= OTP ================= */
+  const [otpStep, setOtpStep] = useState("idle");
+  const [otp, setOtp] = useState("");
+  const pendingProceed = useRef(false);
 
-  /* ---------- Profile form ---------- */
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    dob: null,
-  });
+  /* ================= LOCATION ================= */
+  const countries = getAllCountries();
+  const states = address.country
+    ? getStatesByCountry(address.country)
+    : [];
+  const cities =
+    address.country && address.state
+      ? getCitiesByState(address.country, address.state)
+      : [];
 
-  const [addressInfo, setAddressInfo] = useState({
-    address: "",
-    country: "",
-    state: "",
-    city: "",
-    pincode: "",
-  });
+  /* ================= LOAD ROOM ================= */
+  useEffect(() => {
+    if (!roomId) return navigate("/", { replace: true });
+    api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
+  }, [roomId, navigate]);
 
-  /* ---------- Autofill from profile ---------- */
+  /* ================= SYNC USER ================= */
   useEffect(() => {
     if (!user) return;
-
     setForm({
-      name: user.name || "",
+      name: user.name,
       email: user.email || "",
-      phone: user.phone || "",
+      phone: user.phone,
       dob: user.dob ? new Date(user.dob) : null,
     });
-
-    setAddressInfo({
+    setAddress({
       address: user.address || "",
       country: user.country || "",
       state: user.state || "",
       city: user.city || "",
       pincode: user.pincode || "",
     });
+    setOtpStep("verified");
   }, [user]);
 
-  /* ---------- Load room ---------- */
-  useEffect(() => {
-    if (!roomId) return;
-    api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
-  }, [roomId]);
-
-  /* ---------- Disabled dates ---------- */
-  useEffect(() => {
-    if (!roomId) return;
-    (async () => {
-      const [bookingsRes, blackoutsRes] = await Promise.all([
-        api.get("/rooms/disabled/all"),
-        api.get("/blackouts"),
-      ]);
-
-      const bookings = (bookingsRes.data || []).map((b) => ({
-        from: toDateOnlyFromAPIUTC(b.from || b.startDate),
-        to: toDateOnlyFromAPIUTC(b.to || b.endDate),
-      }));
-
-      const blackouts = (blackoutsRes.data || []).map((b) => ({
-        from: toDateOnlyFromAPI(b.from),
-        to: toDateOnlyFromAPI(b.to),
-      }));
-
-      setDisabledAll([...bookings, ...blackouts]);
-    })();
-  }, [roomId]);
-
-  /* ---------- Location helpers ---------- */
-  const countries = getAllCountries();
-  const states = addressInfo.country
-    ? getStatesByCountry(addressInfo.country)
-    : [];
-  const cities =
-    addressInfo.country && addressInfo.state
-      ? getCitiesByState(addressInfo.country, addressInfo.state)
-      : [];
-
-  /* ---------- Nights ---------- */
+  /* ================= CALCULATIONS ================= */
   const nights = useMemo(() => {
-    if (!range?.from || !range?.to) return 0;
+    if (!range.from || !range.to) return 0;
     return Math.max(
       0,
       (toDateOnly(range.to) - toDateOnly(range.from)) /
@@ -164,257 +127,193 @@ export default function Checkout() {
     );
   }, [range]);
 
-  /* ---------- Pricing ---------- */
-  const roomTotal = useMemo(
-    () => nights * Number(room?.pricePerNight || 0),
-    [nights, room]
-  );
+  const roomTotal = nights * (room?.pricePerNight || 0);
 
-  const mealTotal = useMemo(() => {
-    if (!withMeal || !room) return 0;
-    return (
-      nights *
-      (vegGuests * Number(room.mealPriceVeg || 0) +
-        nonVegGuests * Number(room.mealPriceNonVeg || 0))
-    );
-  }, [withMeal, nights, vegGuests, nonVegGuests, room]);
+  const mealTotal =
+    withMeal && room
+      ? nights *
+        (vegGuests * room.mealPriceVeg +
+          nonVegGuests * room.mealPriceNonVeg)
+      : 0;
 
   const total = roomTotal + mealTotal;
 
-  /* ---------- Guests cap ---------- */
-  const maxGuestsCap = useMemo(() => {
-    if (!room) return 1;
-    const nums = (room.accommodation || [])
-      .flatMap((s) =>
-        Array.from(String(s).matchAll(/\d+/g)).map((m) => Number(m[0]))
-      )
-      .filter(Boolean);
-    return nums.length ? nums.reduce((a, b) => a + b, 0) : 1;
-  }, [room]);
-
-  /* ---------- Validation ---------- */
-  const validateForm = () => {
-    const e = {};
-    if (form.email && !isValidEmail(form.email))
-      e.email = "Invalid email format";
-
-    if (Object.keys(e).length) {
-      setErrors(e);
-      Object.values(e).forEach((m) => toast.error(m));
-      return false;
-    }
-    return true;
-  };
-
-  /* ---------- Payment ---------- */
-  const proceedToPayment = async () => {
-    if (!validateForm()) return;
-
-    if (withMeal && vegGuests + nonVegGuests !== Number(guestsState)) {
-      toast.error("Veg + Non-Veg must match total guests");
+  /* ================= OTP FLOW ================= */
+  const sendOtp = async () => {
+    if (!isValidPhone(form.phone)) {
+      toast.error("Enter valid phone number");
       return;
     }
+    const verifier = getRecaptchaVerifier();
+    const res = await signInWithPhoneNumber(
+      auth,
+      `+91${form.phone}`,
+      verifier
+    );
+    window.confirmationResult = res;
+    setOtpStep("sent");
+    toast.success("OTP sent");
+  };
 
-    const ok = await loadRazorpayScript();
-    if (!ok) throw new Error("Razorpay failed to load");
+  const verifyOtp = async () => {
+    await window.confirmationResult.confirm(otp);
+    await phoneLogin({
+      phone: form.phone,
+      name: form.name,
+      email: form.email,
+      dob: form.dob?.toISOString(),
+    });
+    await init();
+    setOtpStep("verified");
+    toast.success("Mobile verified");
 
-    const { data: order } = await api.post("/payments/create-order", {
-      roomId: room._id,
+    if (pendingProceed.current) {
+      pendingProceed.current = false;
+      proceedPayment();
+    }
+  };
+
+  /* ================= PAYMENT ================= */
+  const proceedPayment = async () => {
+    if (withMeal && vegGuests + nonVegGuests !== Number(guests)) {
+      return toast.error("Veg + Non-Veg must equal total guests");
+    }
+
+    await loadRazorpayScript();
+
+    const { data } = await api.post("/payments/create-order", {
+      roomId,
       startDate: toYMD(range.from),
       endDate: toYMD(range.to),
-      guests: Number(guestsState),
+      guests: Number(guests),
       withMeal,
       vegGuests,
       nonVegGuests,
-      ...addressInfo,
+      ...address,
       contactName: form.name,
-      contactEmail: form.email || null,
+      contactEmail: form.email,
       contactPhone: form.phone,
     });
 
     const rzp = new window.Razorpay({
-      key: order.key,
-      amount: order.amount,
+      key: data.key,
+      amount: data.amount,
       currency: "INR",
       name: room.name,
-      order_id: order.orderId,
-      theme: { color: "#BA081C" },
-      handler: async (resp) => {
+      order_id: data.orderId,
+      handler: async (res) => {
         await api.post("/payments/verify", {
-          ...order,
-          ...resp,
+          ...res,
+          roomId,
+          startDate: toYMD(range.from),
+          endDate: toYMD(range.to),
+          guests,
+          withMeal,
+          vegGuests,
+          nonVegGuests,
+          ...address,
         });
         toast.success("Booking confirmed 🎉");
-        navigate("/my-bookings", { replace: true });
+        navigate("/my-bookings");
       },
     });
 
     rzp.open();
   };
 
+  const proceed = async () => {
+    if (!user) {
+      pendingProceed.current = true;
+      if (otpStep === "idle") sendOtp();
+      return toast.info("Verify mobile to continue");
+    }
+    proceedPayment();
+  };
+
   if (!room) return null;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      <div className="bg-primary text-primary-foreground rounded-xl p-4">
-        <div className="text-xl font-semibold">{room.name}</div>
-        <div>₹{room.pricePerNight}/night</div>
-      </div>
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div id="recaptcha-container" />
 
-      <div className="rounded-xl border p-6 space-y-5">
-        {/* PROFILE */}
-        <div className="grid sm:grid-cols-4 gap-4">
-          <div className="sm:col-span-2">
-            <Label>Name</Label>
-            <Input value={form.name} disabled />
-          </div>
+      {/* FORM */}
+      <div className="border rounded-xl p-6 space-y-6">
 
-          <div className="sm:col-span-2">
-            <Label>Email</Label>
-            <Input
-              value={form.email}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, email: e.target.value }))
-              }
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <Label>Date of Birth</Label>
-            <Button variant="outline" disabled className="w-full justify-start">
-              {form.dob ? format(form.dob, "PPP") : "-"}
-              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-            </Button>
-          </div>
-
-          <div className="sm:col-span-2">
-            <Label>Phone</Label>
-            <Input value={form.phone} disabled />
-          </div>
+        {/* BASIC */}
+        <div className="grid grid-cols-2 gap-4">
+          <Input value={form.name} disabled />
+          <Input value={form.email} onChange={(e)=>setForm(f=>({...f,email:e.target.value}))}/>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                {form.dob ? format(form.dob,"PPP") : "Date of Birth"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <Calendar
+                selected={form.dob}
+                onSelect={(d)=>setForm(f=>({...f,dob:d}))}
+              />
+            </PopoverContent>
+          </Popover>
+          <Input value={form.phone} disabled />
         </div>
 
         {/* ADDRESS */}
-        <div className="grid sm:grid-cols-3 gap-4">
-          <Input
-            placeholder="Address"
-            value={addressInfo.address}
-            onChange={(e) =>
-              setAddressInfo((f) => ({ ...f, address: e.target.value }))
-            }
-          />
+        <Input placeholder="Address" value={address.address}
+          onChange={(e)=>setAddress(a=>({...a,address:e.target.value}))}/>
 
-          <Select
-            value={addressInfo.country}
-            onValueChange={(v) =>
-              setAddressInfo((f) => ({ ...f, country: v, state: "", city: "" }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Country" />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map((c) => (
-                <SelectItem key={c.isoCode} value={c.isoCode}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
+        <div className="grid grid-cols-3 gap-4">
+          <Select value={address.country} onValueChange={(v)=>setAddress(a=>({...a,country:v,state:"",city:""}))}>
+            <SelectTrigger><SelectValue placeholder="Country"/></SelectTrigger>
+            <SelectContent>{countries.map(c=><SelectItem key={c.isoCode} value={c.isoCode}>{c.name}</SelectItem>)}</SelectContent>
           </Select>
 
-          <Select
-            value={addressInfo.state}
-            onValueChange={(v) =>
-              setAddressInfo((f) => ({ ...f, state: v, city: "" }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="State" />
-            </SelectTrigger>
-            <SelectContent>
-              {states.map((s) => (
-                <SelectItem key={s.isoCode} value={s.isoCode}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
+          <Select value={address.state} onValueChange={(v)=>setAddress(a=>({...a,state:v,city:""}))}>
+            <SelectTrigger><SelectValue placeholder="State"/></SelectTrigger>
+            <SelectContent>{states.map(s=><SelectItem key={s.isoCode} value={s.isoCode}>{s.name}</SelectItem>)}</SelectContent>
           </Select>
 
-          <Select
-            value={addressInfo.city}
-            onValueChange={(v) =>
-              setAddressInfo((f) => ({ ...f, city: v }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="City" />
-            </SelectTrigger>
-            <SelectContent>
-              {cities.map((c) => (
-                <SelectItem key={c.name} value={c.name}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
+          <Select value={address.city} onValueChange={(v)=>setAddress(a=>({...a,city:v}))}>
+            <SelectTrigger><SelectValue placeholder="City"/></SelectTrigger>
+            <SelectContent>{cities.map(c=><SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
           </Select>
-
-          <Input
-            placeholder="Pincode"
-            value={addressInfo.pincode}
-            onChange={(e) =>
-              setAddressInfo((f) => ({
-                ...f,
-                pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-              }))
-            }
-          />
         </div>
 
+        <Input placeholder="Pincode" value={address.pincode}
+          onChange={(e)=>setAddress(a=>({...a,pincode:e.target.value.replace(/\D/g,"").slice(0,6)}))}/>
+
         {/* GUESTS */}
-        <Select value={guestsState} onValueChange={setGuestsState}>
-          <SelectTrigger>
-            <SelectValue placeholder="Guests" />
-          </SelectTrigger>
+        <Select value={guests} onValueChange={(v)=>{setGuests(v);setVegGuests(0);setNonVegGuests(0);}}>
+          <SelectTrigger><SelectValue placeholder="Guests"/></SelectTrigger>
           <SelectContent>
-            {Array.from({ length: maxGuestsCap }, (_, i) => i + 1).map((n) => (
-              <SelectItem key={n} value={String(n)}>
-                {n}
-              </SelectItem>
-            ))}
+            {[...Array(10)].map((_,i)=><SelectItem key={i+1} value={String(i+1)}>{i+1}</SelectItem>)}
           </SelectContent>
         </Select>
 
         {/* MEALS */}
-        <div className="flex items-center gap-3">
-          <Checkbox checked={withMeal} onCheckedChange={setWithMeal} />
+        <div className="flex items-center gap-2">
+          <Checkbox checked={withMeal} onCheckedChange={setWithMeal}/>
           <Label>Include meals</Label>
         </div>
 
         {withMeal && (
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Input
-              type="number"
-              placeholder="Veg Guests"
-              value={vegGuests}
-              onChange={(e) => setVegGuests(Number(e.target.value))}
-            />
-            <Input
-              type="number"
-              placeholder="Non-Veg Guests"
-              value={nonVegGuests}
-              onChange={(e) => setNonVegGuests(Number(e.target.value))}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <Input type="number" placeholder="Veg Guests" value={vegGuests}
+              onChange={(e)=>setVegGuests(Number(e.target.value))}/>
+            <Input type="number" placeholder="Non-Veg Guests" value={nonVegGuests}
+              onChange={(e)=>setNonVegGuests(Number(e.target.value))}/>
           </div>
         )}
 
-        <Separator />
+        <Separator/>
 
-        {/* TOTAL */}
-        <div className="flex justify-between font-semibold">
+        <div className="flex justify-between text-lg font-semibold">
           <span>Total</span>
           <span>₹{total.toLocaleString("en-IN")}</span>
         </div>
 
-        <Button className="w-full" onClick={proceedToPayment}>
+        <Button className="w-full bg-red-700" onClick={proceed}>
           Proceed to Payment
         </Button>
       </div>
