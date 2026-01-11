@@ -125,6 +125,23 @@ export default function Checkout() {
     setOtpStep("verified");
   }, [user]);
 
+  useEffect(() => {
+  if (!user) {
+    navigate("/login", { replace: true });
+    return;
+  }
+
+  if (!user.name || !user.dob) {
+    navigate("/complete-profile", {
+      replace: true,
+      state: {
+        redirectTo: "/checkout",
+        bookingState: location.state,
+      },
+    });
+  }
+}, [user]);
+
   /* ================= CALCULATIONS ================= */
   const nights = useMemo(() => {
     if (!range.from || !range.to) return 0;
