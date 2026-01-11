@@ -94,10 +94,10 @@ function mergeRanges(ranges) {
 /* ---------------------------------------------------------------- */
 
 export default function RoomPage() {
-  const { openAuth } = useAuth();
+  const { user, openAuth } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const [room, setRoom] = useState(null);
   const [range, setRange] = useState(undefined);
   const [guests, setGuests] = useState("");
@@ -151,46 +151,41 @@ export default function RoomPage() {
     ).toFixed(1);
   }, [room]);
 
- const goToCheckout = () => {
-  if (!range?.from || !range?.to || !guests) {
-    toast.error("Please select dates and guests");
-    return;
-  }
+  const goToCheckout = () => {
+    if (!range?.from || !range?.to || !guests) {
+      toast.error("Please select dates and guests");
+      return;
+    }
 
-  const bookingState = {
-    roomId: room._id,
-    startDate: range.from,
-    endDate: range.to,
-    guests: Number(guests),
-  };
+    const bookingState = {
+      roomId: room._id,
+      startDate: range.from,
+      endDate: range.to,
+      guests: Number(guests),
+    };
 
-  /* 🔐 USER NOT LOGGED IN → OPEN OTP MODAL */
-  if (!user) {
-    openAuth(); // 🔥 opens mobile OTP modal
-    sessionStorage.setItem(
-      "postAuthRedirect",
-      JSON.stringify({
-        redirectTo: "/checkout",
-        bookingState,
-      })
-    );
-    return;
-  }
+    /* 🔐 USER NOT LOGGED IN → OPEN OTP MODAL */
+    if (!user) {
+      openAuth(); // ✅ THIS opens AuthModal (OTP)
+      return;
+    }
 
-  /* 🚨 PROFILE INCOMPLETE → COMPLETE PROFILE */
-  if (!user.name || !user.dob) {
-    navigate("/complete-profile", {
-      state: {
-        redirectTo: "/checkout",
-        bookingState,
-      },
+    /* 🚨 PROFILE NOT COMPLETE → COMPLETE PROFILE */
+    if (!user.profileComplete) {
+      navigate("/complete-profile", {
+        state: {
+          redirectTo: "/checkout",
+          bookingState,
+        },
+      });
+      return;
+    }
+
+    /* ✅ ALL GOOD */
+    navigate("/checkout", {
+      state: bookingState,
     });
-    return;
-  }
-
-  /* ✅ ALL GOOD */
-  navigate("/checkout", { state: bookingState });
-};
+  };
 
   if (!room) return null;
 
@@ -199,9 +194,8 @@ export default function RoomPage() {
 
     return (
       <div
-        className={`border rounded-xl px-4 transition ${
-          open ? "bg-muted/40" : ""
-        }`}
+        className={`border rounded-xl px-4 transition ${open ? "bg-muted/40" : ""
+          }`}
       >
         <button
           type="button"
@@ -210,16 +204,14 @@ export default function RoomPage() {
         >
           {item.q}
           <ChevronDown
-            className={`w-4 h-4 transition-transform ${
-              open ? "rotate-180" : ""
-            }`}
+            className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""
+              }`}
           />
         </button>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ${
-            open ? "max-h-40 pb-4" : "max-h-0"
-          }`}
+          className={`overflow-hidden transition-all duration-300 ${open ? "max-h-40 pb-4" : "max-h-0"
+            }`}
         >
           <p className="text-sm text-gray-600 leading-relaxed">{item.a}</p>
         </div>
@@ -283,10 +275,9 @@ export default function RoomPage() {
                 key={i}
                 onClick={() => setActiveImage(i)}
                 className={`shrink-0 rounded-lg overflow-hidden border-2 transition
-                  ${
-                    i === activeImage
-                      ? "border-primary"
-                      : "border-transparent opacity-70 hover:opacity-100"
+                  ${i === activeImage
+                    ? "border-primary"
+                    : "border-transparent opacity-70 hover:opacity-100"
                   }`}
               >
                 <img src={img} alt="" className="h-[64px] w-[96px] object-cover" />
