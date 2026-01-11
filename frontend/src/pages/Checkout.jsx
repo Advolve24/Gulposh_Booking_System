@@ -146,107 +146,143 @@ export default function Checkout() {
   const total = roomTotal + mealTotal;
 
   /* ================= OTP ================= */
-  const sendOtp = async () => {
-    if (!isValidPhone(form.phone)) {
-      toast.error("Invalid phone number");
-      return;
-    }
-    const verifier = getRecaptchaVerifier();
-    const res = await signInWithPhoneNumber(
-      auth,
-      `+91${form.phone}`,
-      verifier
-    );
-    window.confirmationResult = res;
-    setOtpStep("sent");
-    toast.success("OTP sent");
-  };
+  // const sendOtp = async () => {
+  //   if (!isValidPhone(form.phone)) {
+  //     toast.error("Invalid phone number");
+  //     return;
+  //   }
+  //   const verifier = getRecaptchaVerifier();
+  //   const res = await signInWithPhoneNumber(
+  //     auth,
+  //     `+91${form.phone}`,
+  //     verifier
+  //   );
+  //   window.confirmationResult = res;
+  //   setOtpStep("sent");
+  //   toast.success("OTP sent");
+  // };
 
-  const verifyOtp = async () => {
-    await window.confirmationResult.confirm(otp);
-    await phoneLogin({
-      phone: form.phone,
-      name: form.name,
-      email: form.email,
-      dob: form.dob?.toISOString(),
-    });
-    await init();
-    setOtpStep("verified");
+  // const verifyOtp = async () => {
+  //   await window.confirmationResult.confirm(otp);
+  //   await phoneLogin({
+  //     phone: form.phone,
+  //     name: form.name,
+  //     email: form.email,
+  //     dob: form.dob?.toISOString(),
+  //   });
+  //   await init();
+  //   setOtpStep("verified");
 
-    if (pendingProceedRef.current) {
-      pendingProceedRef.current = false;
-      proceedPayment();
-    }
-  };
+  //   if (pendingProceedRef.current) {
+  //     pendingProceedRef.current = false;
+  //     proceedPayment();
+  //   }
+  // };
 
   /* ================= PAYMENT ================= */
   const proceedPayment = async () => {
-    const g = Number(guests);
+  const g = Number(guests);
 
-    if (withMeal && vegGuests + nonVegGuests !== g) {
-      toast.error("Veg + Non-Veg guests must equal total guests");
-      return;
-    }
+  /* ================= VALIDATION ================= */
+  if (withMeal && vegGuests + nonVegGuests !== g) {
+    toast.error("Veg + Non-Veg guests must equal total guests");
+    return;
+  }
 
-    await loadRazorpayScript();
+  /* ================= LOAD RAZORPAY ================= */
+  const ok = await loadRazorpayScript();
+  if (!ok) {
+    toast.error("Failed to load payment gateway");
+    return;
+  }
 
-    const { data } = await api.post("/payments/create-order", {
-      roomId,
-      startDate: toYMD(range.from),
-      endDate: toYMD(range.to),
-      guests: g,
-      withMeal,
-      vegGuests,
-      nonVegGuests,
-      contactName: form.name,
-      contactEmail: form.email,
-      contactPhone: form.phone,
-    });
-
-    const rzp = new window.Razorpay({
-  key: data.key,
-  amount: data.amount,
-  currency: "INR",
-  name: room.name,
-  description: `${room.name} booking`,
-
-  order_id: data.orderId,
-
-  // 🔥 THIS IS THE FIX
-  prefill: {
-    name: form.name || "",
-    email: form.email || "",
-    contact: String(form.phone || ""), // ✅ 10 digits only, NO +91
-  },
-
-  notes: {
+  /* ================= CREATE ORDER ================= */
+  const { data } = await api.post("/payments/create-order", {
     roomId,
-    guests: String(guests),
-  },
+    startDate: toYMD(range.from),
+    endDate: toYMD(range.to),
+    guests: g,
+    withMeal,
+    vegGuests,
+    nonVegGuests,
+    contactName: form.name,
+    contactEmail: form.email,
+    contactPhone: form.phone,
+  });
 
-  handler: async (resp) => {
-    await api.post("/payments/verify", {
-      ...resp,
+  /* ================= RAZORPAY ================= */
+  const rzp = new window.Razorpay({
+    key: data.key,
+    amount: data.amount,
+    currency: "INR",
+    name: room.name,
+    description: `${room.name} booking`,
+    order_id: data.orderId,
+
+    // ✅ Auto-fill Razorpay
+    prefill: {
+      name: form.name || "",
+      email: form.email || "",
+      contact: String(form.phone || ""), // ✅ 10 digits, no +91
+    },
+
+    notes: {
       roomId,
-      startDate: toYMD(range.from),
-      endDate: toYMD(range.to),
-      guests: Number(guests),
-      withMeal,
-      vegGuests,
-      nonVegGuests,
-      contactName: form.name,
-      contactEmail: form.email,
-      contactPhone: form.phone,
-      ...address,
-    });
+      guests: String(g),
+    },
 
-    toast.success("Booking confirmed 🎉");
-    navigate("/my-bookings");
-  },
-});
+    /* ================= PAYMENT SUCCESS ================= */
+    handler: async (resp) => {
+      // 🔄 Show processing toast
+      const toastId = toast.loading("Confirming your booking…");
 
-    rzp.open();
-  };
+      try {
+        const { data: verifyRes } = await api.post("/payments/verify", {
+          ...resp,
+          roomId,
+          startDate: toYMD(range.from),
+          endDate: toYMD(range.to),
+          guests: g,
+          withMeal,
+          vegGuests,
+          nonVegGuests,
+          contactName: form.name,
+          contactEmail: form.email,
+          contactPhone: form.phone,
+          ...address,
+        });
+
+        // ✅ Show success ONLY after backend confirmation
+        if (verifyRes?.ok) {
+          toast.success("Booking confirmed 🎉", { id: toastId });
+
+          setTimeout(() => {
+            navigate("/my-bookings");
+          }, 1500);
+        }
+      } catch (err) {
+        // ❌ Never alarm user
+        console.error("Verification failed:", err);
+
+        // Keep calm UX (do NOT say failed)
+        toast.loading("Finalizing your booking…", { id: toastId });
+      }
+    },
+
+    modal: {
+      ondismiss: () => {
+        toast.info("Payment cancelled");
+      },
+    },
+
+    theme: {
+      color: "#BA081C",
+    },
+  });
+
+  rzp.open();
+};
+
 
   const proceed = async () => {
     if (!user) {
