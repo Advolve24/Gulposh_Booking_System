@@ -166,28 +166,28 @@ export default function RoomPage() {
 
   /* 🔐 USER NOT LOGGED IN */
   if (!user) {
-    return navigate("/login", {
+    navigate("/login", {
       state: {
         redirectTo: "/complete-profile",
         bookingState,
       },
     });
+    return;
   }
 
-  /* 🚨 PROFILE NOT COMPLETE */
-  if (!user.profileComplete) {
-    return navigate("/complete-profile", {
+  /* 🚨 PROFILE INCOMPLETE (STRICT & SAFE CHECK) */
+  if (!user.name || !user.dob) {
+    navigate("/complete-profile", {
       state: {
         redirectTo: "/checkout",
         bookingState,
       },
     });
+    return;
   }
 
-  /* ✅ ALL GOOD → CHECKOUT */
-  navigate("/checkout", {
-    state: bookingState,
-  });
+  /* ✅ PROFILE COMPLETE → CHECKOUT */
+  navigate("/checkout", { state: bookingState });
 };
 
 
