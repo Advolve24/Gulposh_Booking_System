@@ -151,21 +151,45 @@ export default function RoomPage() {
     ).toFixed(1);
   }, [room]);
 
-  const goToCheckout = () => {
-    if (!range?.from || !range?.to || !guests) {
-      alert("Please select dates and guests");
-      return;
-    }
+ const goToCheckout = () => {
+  if (!range?.from || !range?.to || !guests) {
+    toast.error("Please select dates and guests");
+    return;
+  }
 
-    navigate("/checkout", {
+  const bookingState = {
+    roomId: room._id,
+    startDate: range.from,
+    endDate: range.to,
+    guests: Number(guests),
+  };
+
+  /* 🔐 USER NOT LOGGED IN */
+  if (!user) {
+    return navigate("/login", {
       state: {
-        roomId: room._id,
-        startDate: range.from,
-        endDate: range.to,
-        guests: Number(guests),
+        redirectTo: "/complete-profile",
+        bookingState,
       },
     });
-  };
+  }
+
+  /* 🚨 PROFILE NOT COMPLETE */
+  if (!user.profileComplete) {
+    return navigate("/complete-profile", {
+      state: {
+        redirectTo: "/checkout",
+        bookingState,
+      },
+    });
+  }
+
+  /* ✅ ALL GOOD → CHECKOUT */
+  navigate("/checkout", {
+    state: bookingState,
+  });
+};
+
 
   if (!room) return null;
 
