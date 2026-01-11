@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../store/authStore";
 import { api } from "../api/http";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ import {
 export default function CompleteProfile() {
   const { user, init } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +51,7 @@ export default function CompleteProfile() {
     pincode: "",
   });
 
-  /* 🚫 If profile already complete, block page */
+  /* 🚫 Block access if profile already complete */
   useEffect(() => {
     if (user?.profileComplete) {
       navigate("/", { replace: true });
@@ -79,12 +80,13 @@ export default function CompleteProfile() {
     }
   }, [form.state, form.country]);
 
-  /* ✅ Submit profile */
+  /* ✅ SUBMIT PROFILE */
   const submit = async () => {
     if (!form.name.trim()) {
       toast.error("Full name is required");
       return;
     }
+
     if (!form.dob) {
       toast.error("Date of birth is required");
       return;
@@ -104,9 +106,20 @@ export default function CompleteProfile() {
         pincode: form.pincode || null,
       });
 
-      await init(); // refresh auth user
+      // 🔥 Refresh auth user
+      await init();
+
       toast.success("Profile completed successfully 🎉");
-      navigate("/", { replace: true });
+
+      /* 🔁 REDIRECT LOGIC */
+      const redirectTo = location.state?.redirectTo || "/";
+      const bookingState = location.state?.bookingState;
+
+      navigate(redirectTo, {
+        replace: true,
+        state: bookingState,
+      });
+
     } catch (err) {
       toast.error(
         err?.response?.data?.message || "Failed to save profile"
@@ -119,6 +132,7 @@ export default function CompleteProfile() {
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6">
       <div className="rounded-xl border p-5 space-y-5 bg-white">
+
         <div>
           <h2 className="text-xl font-semibold">Complete your profile</h2>
           <p className="text-sm text-muted-foreground">
@@ -127,6 +141,7 @@ export default function CompleteProfile() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
           <div>
             <Label>Full Name</Label>
             <Input
@@ -164,7 +179,9 @@ export default function CompleteProfile() {
                 <Calendar
                   mode="single"
                   selected={form.dob}
-                  onSelect={(d) => setForm((f) => ({ ...f, dob: d }))}
+                  onSelect={(d) =>
+                    setForm((f) => ({ ...f, dob: d }))
+                  }
                   fromYear={1950}
                   toYear={new Date().getFullYear()}
                 />
@@ -177,7 +194,12 @@ export default function CompleteProfile() {
             <Select
               value={form.country}
               onValueChange={(v) =>
-                setForm((f) => ({ ...f, country: v, state: "", city: "" }))
+                setForm((f) => ({
+                  ...f,
+                  country: v,
+                  state: "",
+                  city: "",
+                }))
               }
             >
               <SelectTrigger>
@@ -260,11 +282,17 @@ export default function CompleteProfile() {
               }
             />
           </div>
+
         </div>
 
-        <Button className="w-full" onClick={submit} disabled={loading}>
+        <Button
+          className="w-full"
+          onClick={submit}
+          disabled={loading}
+        >
           {loading ? "Saving..." : "Save & Continue"}
         </Button>
+
       </div>
     </div>
   );

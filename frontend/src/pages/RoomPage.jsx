@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../store/authStore";
 
 import { api } from "../api/http";
 import CalendarRange from "../components/CalendarRange";
@@ -93,9 +94,10 @@ function mergeRanges(ranges) {
 /* ---------------------------------------------------------------- */
 
 export default function RoomPage() {
+  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
-
+  
   const [room, setRoom] = useState(null);
   const [range, setRange] = useState(undefined);
   const [guests, setGuests] = useState("");
