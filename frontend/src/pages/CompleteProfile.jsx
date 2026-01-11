@@ -51,14 +51,30 @@ export default function CompleteProfile() {
     pincode: "",
   });
 
-  /* 🚫 Block access if profile already complete */
+  /* 🚫 BLOCK ACCESS IF PROFILE ALREADY COMPLETE */
   useEffect(() => {
     if (user?.profileComplete) {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
-  /* 🌍 Load countries */
+  /* 🔁 PREFILL FROM USER (IMPORTANT) */
+  useEffect(() => {
+    if (!user) return;
+
+    setForm({
+      name: user.name || "",
+      email: user.email || "",
+      dob: user.dob ? new Date(user.dob) : null,
+      address: user.address || "",
+      country: user.country || "",
+      state: user.state || "",
+      city: user.city || "",
+      pincode: user.pincode || "",
+    });
+  }, [user]);
+
+  /* 🌍 LOAD COUNTRIES */
   useEffect(() => {
     setCountries(getAllCountries());
   }, []);
@@ -106,12 +122,12 @@ export default function CompleteProfile() {
         pincode: form.pincode || null,
       });
 
-      // 🔥 Refresh auth user
-      await init();
+      // 🔥 refresh auth store
+      const updatedUser = await init();
 
       toast.success("Profile completed successfully 🎉");
 
-      /* 🔁 REDIRECT LOGIC */
+      /* 🔁 REDIRECT BACK TO INTENT */
       const redirectTo = location.state?.redirectTo || "/";
       const bookingState = location.state?.bookingState;
 

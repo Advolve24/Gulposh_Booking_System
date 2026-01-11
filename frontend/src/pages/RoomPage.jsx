@@ -94,7 +94,7 @@ function mergeRanges(ranges) {
 /* ---------------------------------------------------------------- */
 
 export default function RoomPage() {
-  const { user } = useAuth();
+  const { openAuth } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -164,18 +164,20 @@ export default function RoomPage() {
     guests: Number(guests),
   };
 
-  /* 🔐 USER NOT LOGGED IN */
+  /* 🔐 USER NOT LOGGED IN → OPEN OTP MODAL */
   if (!user) {
-    navigate("/login", {
-      state: {
-        redirectTo: "/complete-profile",
+    openAuth(); // 🔥 opens mobile OTP modal
+    sessionStorage.setItem(
+      "postAuthRedirect",
+      JSON.stringify({
+        redirectTo: "/checkout",
         bookingState,
-      },
-    });
+      })
+    );
     return;
   }
 
-  /* 🚨 PROFILE INCOMPLETE (STRICT & SAFE CHECK) */
+  /* 🚨 PROFILE INCOMPLETE → COMPLETE PROFILE */
   if (!user.name || !user.dob) {
     navigate("/complete-profile", {
       state: {
@@ -186,10 +188,9 @@ export default function RoomPage() {
     return;
   }
 
-  /* ✅ PROFILE COMPLETE → CHECKOUT */
+  /* ✅ ALL GOOD */
   navigate("/checkout", { state: bookingState });
 };
-
 
   if (!room) return null;
 

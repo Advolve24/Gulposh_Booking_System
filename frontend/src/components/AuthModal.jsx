@@ -84,11 +84,46 @@ export default function AuthModal() {
       const result = await window.confirmationResult.confirm(form.otp);
       const idToken = await result.user.getIdToken(true);
 
-      // 🔥 AuthStore handles profile redirect
-      await firebaseLoginWithToken(idToken, navigate);
+      /**
+       * 🔥 LOGIN (backend session created here)
+       * AuthStore handles setting user
+       */
+      const user = await firebaseLoginWithToken(idToken);
 
-      toast.success("Logged in successfully 🎉");
       closeAuth();
+      toast.success("Logged in successfully 🎉");
+
+      /**
+       * 🔁 POST-AUTH REDIRECT LOGIC
+       */
+      const redirectRaw = sessionStorage.getItem("postAuthRedirect");
+      sessionStorage.removeItem("postAuthRedirect");
+
+      if (redirectRaw) {
+        const { redirectTo, bookingState } = JSON.parse(redirectRaw);
+
+        // 🚨 Profile incomplete → complete profile FIRST
+        if (!user?.name || !user?.dob) {
+          navigate("/complete-profile", {
+            replace: true,
+            state: {
+              redirectTo,
+              bookingState,
+            },
+          });
+          return;
+        }
+
+        // ✅ Profile complete → go to checkout
+        navigate(redirectTo, {
+          replace: true,
+          state: bookingState,
+        });
+        return;
+      }
+
+      // fallback
+      navigate("/", { replace: true });
     } catch (err) {
       console.error(err);
       clearRecaptchaVerifier();
