@@ -204,30 +204,46 @@ export default function Checkout() {
     });
 
     const rzp = new window.Razorpay({
-      key: data.key,
-      amount: data.amount,
-      currency: "INR",
-      name: room.name,
-      order_id: data.orderId,
-      handler: async (resp) => {
-        await api.post("/payments/verify", {
-          ...resp,
-          roomId,
-          startDate: toYMD(range.from),
-          endDate: toYMD(range.to),
-          guests: g,
-          withMeal,
-          vegGuests,
-          nonVegGuests,
-          contactName: form.name,
-          contactEmail: form.email,
-          contactPhone: form.phone,
-          ...address,
-        });
-        toast.success("Booking confirmed 🎉");
-        navigate("/my-bookings");
-      },
+  key: data.key,
+  amount: data.amount,
+  currency: "INR",
+  name: room.name,
+  description: `${room.name} booking`,
+
+  order_id: data.orderId,
+
+  // 🔥 THIS IS THE FIX
+  prefill: {
+    name: form.name || "",
+    email: form.email || "",
+    contact: String(form.phone || ""), // ✅ 10 digits only, NO +91
+  },
+
+  notes: {
+    roomId,
+    guests: String(guests),
+  },
+
+  handler: async (resp) => {
+    await api.post("/payments/verify", {
+      ...resp,
+      roomId,
+      startDate: toYMD(range.from),
+      endDate: toYMD(range.to),
+      guests: Number(guests),
+      withMeal,
+      vegGuests,
+      nonVegGuests,
+      contactName: form.name,
+      contactEmail: form.email,
+      contactPhone: form.phone,
+      ...address,
     });
+
+    toast.success("Booking confirmed 🎉");
+    navigate("/my-bookings");
+  },
+});
 
     rzp.open();
   };
