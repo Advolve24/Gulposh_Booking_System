@@ -94,7 +94,7 @@ function mergeRanges(ranges) {
 /* ---------------------------------------------------------------- */
 
 export default function RoomPage() {
-  const { user, openAuth } = useAuth();
+ const { openAuth, user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -174,11 +174,11 @@ export default function RoomPage() {
       })
     );
 
-    openAuth(); // ✅ CORRECT FUNCTION
+    openAuth(); // ✅ ONLY THIS
     return;
   }
 
-  // 🚨 LOGGED IN BUT PROFILE INCOMPLETE
+  // 🚨 PROFILE INCOMPLETE
   if (!user.profileComplete) {
     navigate("/complete-profile", {
       state: {
@@ -190,10 +190,9 @@ export default function RoomPage() {
   }
 
   // ✅ ALL GOOD
-  navigate("/checkout", {
-    state: bookingState,
-  });
+  navigate("/checkout", { state: bookingState });
 };
+
 
 
   if (!room) return null;
