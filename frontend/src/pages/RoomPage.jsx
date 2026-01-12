@@ -154,7 +154,7 @@ export default function RoomPage() {
   }, [room]);
 
   const goToCheckout = () => {
-    if (!range?.from || !range?.to || totalGuests < 1) {
+    if (!range?.from || !range?.to || totalGuests ) {
       toast.error("Please select dates and guests");
       return;
     }
