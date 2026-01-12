@@ -197,7 +197,7 @@ export default function Home() {
                   description="Ages 13 or above"
                   value={adults}
                   min={0}
-                  max={10}
+                  max={20}
                   onChange={setAdults}
                 />
 
@@ -206,7 +206,7 @@ export default function Home() {
                   description="Ages 2–12"
                   value={children}
                   min={0}
-                  max={10 - adults}
+                  max={20 - adults}
                   onChange={setChildren}
                 />
               </PopoverContent>
