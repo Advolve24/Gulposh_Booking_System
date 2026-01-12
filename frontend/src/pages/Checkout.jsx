@@ -138,8 +138,8 @@ export default function Checkout() {
   const mealTotal =
     withMeal && room
       ? nights *
-        (vegGuests * room.mealPriceVeg +
-          nonVegGuests * room.mealPriceNonVeg)
+      (vegGuests * room.mealPriceVeg +
+        nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
   const total = roomTotal + mealTotal;
@@ -180,98 +180,98 @@ export default function Checkout() {
 
   /* ================= PAYMENT ================= */
   const proceedPayment = async () => {
-  const g = Number(guests);
+    const g = Number(guests);
 
-  /* ================= VALIDATION ================= */
-  if (withMeal && vegGuests + nonVegGuests !== g) {
-    toast.error("Veg + Non-Veg guests must equal total guests");
-    return;
-  }
+    /* ================= VALIDATION ================= */
+    if (withMeal && vegGuests + nonVegGuests !== g) {
+      toast.error("Veg + Non-Veg guests must equal total guests");
+      return;
+    }
 
-  /* ================= LOAD RAZORPAY ================= */
-  const ok = await loadRazorpayScript();
-  if (!ok) {
-    toast.error("Failed to load payment gateway");
-    return;
-  }
+    /* ================= LOAD RAZORPAY ================= */
+    const ok = await loadRazorpayScript();
+    if (!ok) {
+      toast.error("Failed to load payment gateway");
+      return;
+    }
 
-  /* ================= CREATE ORDER ================= */
-  const { data } = await api.post("/payments/create-order", {
-    roomId,
-    startDate: toYMD(range.from),
-    endDate: toYMD(range.to),
-    guests: g,
-    withMeal,
-    vegGuests,
-    nonVegGuests,
-    contactName: form.name,
-    contactEmail: form.email,
-    contactPhone: form.phone,
-  });
-
-  /* ================= RAZORPAY ================= */
-  const rzp = new window.Razorpay({
-    key: data.key,
-    amount: data.amount,
-    currency: "INR",
-    name: room.name,
-    description: `${room.name} booking`,
-    order_id: data.orderId,
-
-    prefill: {
-      name: form.name || "",
-      email: form.email || "",
-      contact: String(form.phone || ""),
-    },
-
-    notes: {
+    /* ================= CREATE ORDER ================= */
+    const { data } = await api.post("/payments/create-order", {
       roomId,
-      guests: String(g),
-    },
+      startDate: toYMD(range.from),
+      endDate: toYMD(range.to),
+      guests: g,
+      withMeal,
+      vegGuests,
+      nonVegGuests,
+      contactName: form.name,
+      contactEmail: form.email,
+      contactPhone: form.phone,
+    });
 
-    /* ================= PAYMENT SUCCESS ================= */
-    handler: (resp) => {
-      // ✅ 1. INSTANT USER CONFIRMATION
-      toast.success(
-        "Payment successful 🎉 Your booking is being confirmed"
-      );
+    /* ================= RAZORPAY ================= */
+    const rzp = new window.Razorpay({
+      key: data.key,
+      amount: data.amount,
+      currency: "INR",
+      name: room.name,
+      description: `${room.name} booking`,
+      order_id: data.orderId,
 
-      // ✅ 2. INSTANT REDIRECT
-      navigate("/my-bookings");
-
-      // ✅ 3. VERIFY IN BACKGROUND (NO await)
-      api.post("/payments/verify", {
-        ...resp,
-        roomId,
-        startDate: toYMD(range.from),
-        endDate: toYMD(range.to),
-        guests: g,
-        withMeal,
-        vegGuests,
-        nonVegGuests,
-        contactName: form.name,
-        contactEmail: form.email,
-        contactPhone: form.phone,
-        ...address,
-      }).catch((err) => {
-        console.error("Background verification failed:", err);
-        // optional: log to DB / Slack
-      });
-    },
-
-    modal: {
-      ondismiss: () => {
-        toast.info("Payment cancelled");
+      prefill: {
+        name: form.name || "",
+        email: form.email || "",
+        contact: String(form.phone || ""),
       },
-    },
 
-    theme: {
-      color: "#BA081C",
-    },
-  });
+      notes: {
+        roomId,
+        guests: String(g),
+      },
 
-  rzp.open();
-};
+      /* ================= PAYMENT SUCCESS ================= */
+      handler: (resp) => {
+        // ✅ 1. INSTANT USER CONFIRMATION
+        toast.success(
+          "Payment successful 🎉 Your booking is being confirmed"
+        );
+
+        // ✅ 2. INSTANT REDIRECT
+        navigate("/my-bookings");
+
+        // ✅ 3. VERIFY IN BACKGROUND (NO await)
+        api.post("/payments/verify", {
+          ...resp,
+          roomId,
+          startDate: toYMD(range.from),
+          endDate: toYMD(range.to),
+          guests: g,
+          withMeal,
+          vegGuests,
+          nonVegGuests,
+          contactName: form.name,
+          contactEmail: form.email,
+          contactPhone: form.phone,
+          ...address,
+        }).catch((err) => {
+          console.error("Background verification failed:", err);
+          // optional: log to DB / Slack
+        });
+      },
+
+      modal: {
+        ondismiss: () => {
+          toast.info("Payment cancelled");
+        },
+      },
+
+      theme: {
+        color: "#BA081C",
+      },
+    });
+
+    rzp.open();
+  };
 
 
   const proceed = async () => {
@@ -418,74 +418,159 @@ export default function Checkout() {
           />
         </div>
 
+        {/* BOOKING DATES */}
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label>Check-in</Label>
+            <Input
+              value={range.from ? format(range.from, "dd MMM yyyy") : ""}
+              disabled
+            />
+          </div>
+
+          <div>
+            <Label>Check-out</Label>
+            <Input
+              value={range.to ? format(range.to, "dd MMM yyyy") : ""}
+              disabled
+            />
+          </div>
+
+          <div>
+            <Label>Nights</Label>
+            <Input value={nights} disabled />
+          </div>
+        </div>
+
+
+        {/* GUESTS */}
         {/* GUESTS */}
         <div>
           <Label>Guests</Label>
-          <Select value={guests} onValueChange={setGuests}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={guests}
+            onValueChange={(v) => {
+              setGuests(v);
+
+              // auto-fix meal split if guests reduced
+              const g = Number(v);
+              if (vegGuests + nonVegGuests > g) {
+                setVegGuests(0);
+                setNonVegGuests(0);
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {[1,2,3,4,5,6].map(n => (
-                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
         {/* MEALS */}
-        <div className="flex items-center gap-2">
-          <Checkbox
-            checked={withMeal}
-            onCheckedChange={(v) => {
-              setWithMeal(v);
-              if (!v) {
-                setVegGuests(0);
-                setNonVegGuests(0);
-              }
-            }}
-          />
-          <Label>Include meals</Label>
-        </div>
-
-        {withMeal && (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Veg Guests</Label>
-              <Input
-                type="number"
-                min={0}
-                max={Number(guests) - nonVegGuests}
-                value={vegGuests}
-                onChange={(e) => setVegGuests(Number(e.target.value))}
-              />
-            </div>
-
-            <div>
-              <Label>Non-Veg Guests</Label>
-              <Input
-                type="number"
-                min={0}
-                max={Number(guests) - vegGuests}
-                value={nonVegGuests}
-                onChange={(e) => setNonVegGuests(Number(e.target.value))}
-              />
-            </div>
-
-            <p className="col-span-2 text-xs text-muted-foreground">
-              Veg + Non-Veg must equal total guests ({guests})
-            </p>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={withMeal}
+              onCheckedChange={(v) => {
+                setWithMeal(v);
+                if (!v) {
+                  setVegGuests(0);
+                  setNonVegGuests(0);
+                }
+              }}
+            />
+            <Label>
+              Include meals
+              {room && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  (Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg} per guest per night)
+                </span>
+              )}
+            </Label>
           </div>
-        )}
+
+          {withMeal && (
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <div>
+                <Label>Veg Guests</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={Number(guests) - nonVegGuests}
+                  value={vegGuests}
+                  onChange={(e) =>
+                    setVegGuests(Math.max(0, Number(e.target.value)))
+                  }
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  ₹{room.mealPriceVeg} × {nights} nights
+                </p>
+              </div>
+
+              <div>
+                <Label>Non-Veg Guests</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={Number(guests) - vegGuests}
+                  value={nonVegGuests}
+                  onChange={(e) =>
+                    setNonVegGuests(Math.max(0, Number(e.target.value)))
+                  }
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  ₹{room.mealPriceNonVeg} × {nights} nights
+                </p>
+              </div>
+
+              <p className="col-span-2 text-xs text-muted-foreground">
+                Veg + Non-Veg must equal total guests ({guests})
+              </p>
+
+              {/* MEAL SUBTOTAL */}
+              <div className="col-span-2 flex justify-between text-sm font-medium">
+                <span>Meal Charges</span>
+                <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         <Separator />
 
-        <div className="flex justify-between text-lg font-semibold">
-          <span>Total</span>
-          <span>₹{total.toLocaleString("en-IN")}</span>
+        {/* PRICE BREAKDOWN */}
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span>Room ({nights} nights)</span>
+            <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+          </div>
+
+          {withMeal && (
+            <div className="flex justify-between">
+              <span>Meals</span>
+              <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+            </div>
+          )}
+
+          <Separator />
+
+          <div className="flex justify-between text-lg font-semibold">
+            <span>Total</span>
+            <span>₹{total.toLocaleString("en-IN")}</span>
+          </div>
         </div>
 
         <Button className="w-full bg-red-700" onClick={proceed}>
           Proceed to Payment
         </Button>
+
       </div>
     </div>
   );

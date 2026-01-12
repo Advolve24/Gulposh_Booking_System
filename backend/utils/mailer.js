@@ -60,115 +60,157 @@ export async function sendBookingConfirmationMail({ to, name, room, booking }) {
   <meta charset="UTF-8" />
   <title>Booking Confirmed</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f3f6fb;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f3f6fb;padding:24px 0;">
+
+<body style="margin:0;padding:0;background:#f4f6fb;font-family:Inter,Arial,sans-serif;color:#111827;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 0;">
     <tr>
       <td align="center">
-        <!-- Outer card -->
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 18px rgba(15,23,42,0.12);">
-          
-          <!-- Header bar -->
+
+        <!-- Card -->
+        <table width="600" cellpadding="0" cellspacing="0"
+          style="background:#ffffff;border-radius:14px;overflow:hidden;
+          box-shadow:0 10px 30px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
           <tr>
-            <td style="padding:20px 24px;background:linear-gradient(90deg,#004aad,#007bff);color:#ffffff;">
-              <table width="100%" cellspacing="0" cellpadding="0" role="presentation">
+            <td style="padding:24px 28px;background:#004aad;color:#ffffff;">
+              <table width="100%">
                 <tr>
-                  <td style="vertical-align:middle;">
-                    <div style="display:flex;align-items:center;justify-content:center;">
-                      <div style="width:40px;height:40px;border-radius:50%;background-color:#fff;display:flex;align-items:center;justify-content:center;margin-right:12px;"> 
-                      <img src="https://gulposhbookingsystem.netlify.app/logo1.png"  width="24" height="24" style="display:block;">
-                      </div>
-                      <div>
-                        <div style="font-size:20px;font-weight:bold;margin-bottom:2px;">Booking Confirmed</div>
-                        <div style="font-size:12px;opacity:0.9;">${room?.name || "Luxurious Villa"}</div>
-                      </div>
-                      </div>
-                    </td>
+                  <td>
+                    <h1 style="margin:0;font-size:20px;font-weight:600;">
+                      Booking Confirmed
+                    </h1>
+                    <p style="margin:6px 0 0;font-size:13px;opacity:0.9;">
+                      ${room?.name || "Villa Stay"}
+                    </p>
+                  </td>
+                  <td align="right">
+                    <img src="https://gulposhbookingsystem.netlify.app/logo1.png"
+                      width="36" height="36" style="border-radius:6px;">
+                  </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Body content -->
+          <!-- Body -->
           <tr>
-            <td style="padding:24px;">
+            <td style="padding:28px;">
+
               <!-- Greeting -->
-              <p style="margin:0 0 12px 0;font-size:14px;color:#111827;">
-                Hi <strong>${name || "Guest"}</strong>,
-              </p>
-              <p style="margin:0 0 18px 0;font-size:14px;color:#111827;line-height:1.5;">
-                Thank you for your booking. Your reservation is <strong>confirmed</strong>.
+              <p style="margin:0 0 16px;font-size:14px;">
+                Dear <strong>${name || "Guest"}</strong>,
               </p>
 
-              <!-- Booking Details title -->
-              <h3 style="margin:0 0 8px 0;font-size:16px;color:#111827;border-left:3px solid #f5b400;padding-left:8px;">
-                Booking Details
-              </h3>
+              <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#374151;">
+                Thank you for choosing us. We are pleased to confirm your booking.
+                Below are your reservation details.
+              </p>
 
-              <!-- Booking details card -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#e6f3ff;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#111827;">
+              <!-- Booking Summary -->
+              <table width="100%" cellpadding="0" cellspacing="0"
+                style="border:1px solid #e5e7eb;border-radius:10px;margin-bottom:24px;">
+                
                 <tr>
-                  <td style="padding:4px 0;width:40%;color:#4b5563;">Property:</td>
-                  <td style="padding:4px 0;text-align:right;font-weight:600;">${room?.name || "Villa"}</td>
+                  <td colspan="2"
+                    style="padding:14px 16px;background:#f9fafb;
+                    font-weight:600;font-size:14px;">
+                    Stay Details
+                  </td>
                 </tr>
+
                 <tr>
-                  <td style="padding:4px 0;color:#4b5563;">Check-in:</td>
-                  <td style="padding:4px 0;text-align:right;">${fmtDate(checkIn)}</td>
+                  <td style="padding:12px 16px;color:#6b7280;">Property</td>
+                  <td style="padding:12px 16px;text-align:right;font-weight:500;">
+                    ${room?.name}
+                  </td>
                 </tr>
+
                 <tr>
-                  <td style="padding:4px 0;color:#4b5563;">Check-out:</td>
-                  <td style="padding:4px 0;text-align:right;">${fmtDate(checkOut)}</td>
+                  <td style="padding:12px 16px;color:#6b7280;">Check-in</td>
+                  <td style="padding:12px 16px;text-align:right;">
+                    ${fmtDate(checkIn)}
+                  </td>
                 </tr>
+
                 <tr>
-                  <td style="padding:4px 0;color:#4b5563;">Nights:</td>
-                  <td style="padding:4px 0;text-align:right;">${nights}</td>
+                  <td style="padding:12px 16px;color:#6b7280;">Check-out</td>
+                  <td style="padding:12px 16px;text-align:right;">
+                    ${fmtDate(checkOut)}
+                  </td>
                 </tr>
+
                 <tr>
-                  <td style="padding:4px 0;color:#4b5563;">Guests:</td>
-                  <td style="padding:4px 0;text-align:right;">${guests}</td>
+                  <td style="padding:12px 16px;color:#6b7280;">Nights</td>
+                  <td style="padding:12px 16px;text-align:right;">
+                    ${nights}
+                  </td>
                 </tr>
+
                 <tr>
-                  <td style="padding:4px 0;color:#4b5563;">Meals:</td>
-                  <td style="padding:4px 0;text-align:right;">${
-                    withMeal ? "Included" : "Not included"
-                  }</td>
+                  <td style="padding:12px 16px;color:#6b7280;">Guests</td>
+                  <td style="padding:12px 16px;text-align:right;">
+                    ${guests}
+                  </td>
                 </tr>
+
                 <tr>
-                  <td style="padding:8px 0 0 0;color:#4b5563;border-top:1px solid #d1e4ff;">Amount Paid:</td>
-                  <td style="padding:8px 0 0 0;text-align:right;border-top:1px solid #d1e4ff;font-weight:bold;color:#004aad;">
-                    ${amountFormatted}
+                  <td style="padding:12px 16px;color:#6b7280;">Meals</td>
+                  <td style="padding:12px 16px;text-align:right;">
+                    ${withMeal ? "Included" : "Not included"}
                   </td>
                 </tr>
               </table>
 
-              <!-- Payment title -->
-              <h3 style="margin:0 0 8px 0;font-size:16px;color:#111827;border-left:3px solid #f5b400;padding-left:8px;">
-                Payment
-              </h3>
+              <!-- Payment Summary -->
+              <table width="100%" cellpadding="0" cellspacing="0"
+                style="border:1px solid #e5e7eb;border-radius:10px;margin-bottom:24px;">
 
-              <!-- Payment card -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#e6f3ff;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#111827;">
                 <tr>
-                  <td style="padding:4px 0;width:40%;color:#4b5563;">Payment ID:</td>
-                  <td style="padding:4px 0;text-align:right;">${paymentId || "-"}</td>
+                  <td colspan="2"
+                    style="padding:14px 16px;background:#f9fafb;
+                    font-weight:600;font-size:14px;">
+                    Payment Summary
+                  </td>
                 </tr>
+
                 <tr>
-                  <td style="padding:4px 0;color:#4b5563;">Order ID:</td>
-                  <td style="padding:4px 0;text-align:right;">${orderId || "-"}</td>
+                  <td style="padding:12px 16px;color:#6b7280;">Total Paid</td>
+                  <td style="padding:12px 16px;text-align:right;
+                    font-size:16px;font-weight:600;color:#004aad;">
+                    ₹${Number(amount || 0).toLocaleString("en-IN")}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 16px;color:#6b7280;">Payment ID</td>
+                  <td style="padding:12px 16px;text-align:right;">
+                    ${paymentId || "-"}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:12px 16px;color:#6b7280;">Order ID</td>
+                  <td style="padding:12px 16px;text-align:right;">
+                    ${orderId || "-"}
+                  </td>
                 </tr>
               </table>
 
               ${
                 addressBlock
                   ? `
-              <!-- Address title -->
-              <h3 style="margin:0 0 8px 0;font-size:16px;color:#111827;border-left:3px solid #f5b400;padding-left:8px;">
-                Guest Address
-              </h3>
-
-              <!-- Address card -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#e6f3ff;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#111827;">
+              <!-- Address -->
+              <table width="100%" cellpadding="0" cellspacing="0"
+                style="border:1px solid #e5e7eb;border-radius:10px;margin-bottom:24px;">
                 <tr>
-                  <td style="padding:4px 0;color:#111827;">
+                  <td style="padding:14px 16px;background:#f9fafb;
+                    font-weight:600;font-size:14px;">
+                    Guest Address
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 16px;color:#374151;">
                     ${addressBlock}
                   </td>
                 </tr>
@@ -177,20 +219,23 @@ export async function sendBookingConfirmationMail({ to, name, room, booking }) {
                   : ""
               }
 
-              <!-- Footer note -->
-              <p style="margin:8px 0 0 0;font-size:13px;color:#4b5563;">
-                We look forward to hosting you.
+              <!-- Footer Text -->
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#374151;">
+                We look forward to welcoming you and ensuring a comfortable stay.
               </p>
-              <p style="margin:4px 0 0 0;font-size:12px;color:#9ca3af;">
-                If you have any questions, simply reply to this email.
+
+              <p style="margin:12px 0 0;font-size:13px;color:#6b7280;">
+                For any assistance, simply reply to this email.
               </p>
+
             </td>
           </tr>
+
         </table>
 
-        <!-- Small footer -->
-        <p style="margin-top:12px;font-size:11px;color:#9ca3af;">
-          &copy; ${new Date().getFullYear()} Villa Booking. All rights reserved.
+        <!-- Footer -->
+        <p style="margin-top:14px;font-size:12px;color:#9ca3af;">
+          © ${new Date().getFullYear()} Villa Booking. All rights reserved.
         </p>
 
       </td>
