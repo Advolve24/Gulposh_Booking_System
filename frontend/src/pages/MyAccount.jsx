@@ -12,6 +12,7 @@ import {
   Phone,
   MapPin,
   Calendar as CalendarIcon,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -21,6 +22,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -38,7 +40,6 @@ export default function MyAccount() {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    phone: "",
     dob: null,
     address: "",
     country: "",
@@ -46,6 +47,13 @@ export default function MyAccount() {
     city: "",
     pincode: "",
   });
+
+  const [phone, setPhone] = useState("");
+  const [originalPhone, setOriginalPhone] = useState("");
+
+  const [otp, setOtp] = useState("");
+  const [otpStep, setOtpStep] = useState("idle"); 
+  // idle | sent | verified
 
   /* ================= LOAD PROFILE ================= */
   useEffect(() => {
@@ -56,7 +64,6 @@ export default function MyAccount() {
         setForm({
           name: data.name || "",
           email: data.email || "",
-          phone: data.phone || "",
           dob: data.dob ? new Date(data.dob) : null,
           address: data.address || "",
           country: data.country || "",
@@ -64,6 +71,9 @@ export default function MyAccount() {
           city: data.city || "",
           pincode: data.pincode || "",
         });
+
+        setPhone(data.phone || "");
+        setOriginalPhone(data.phone || "");
       } catch {
         toast.error("Failed to load profile");
       } finally {
@@ -72,41 +82,59 @@ export default function MyAccount() {
     })();
   }, []);
 
-  /* ================= LOCATION HELPERS ================= */
+  /* ================= LOCATION ================= */
   const countries = getAllCountries();
-  const states = form.country
-    ? getStatesByCountry(form.country)
-    : [];
+  const states = form.country ? getStatesByCountry(form.country) : [];
   const cities =
     form.country && form.state
       ? getCitiesByState(form.country, form.state)
       : [];
 
-  /* ================= SAVE PROFILE ================= */
-  const onSave = async () => {
-    if (!form.name.trim()) {
-      toast.error("Name is required");
-      return;
+  const phoneChanged = phone !== originalPhone;
+
+  /* ================= OTP ================= */
+  const sendOtp = async () => {
+    if (!/^[0-9]{10}$/.test(phone)) {
+      return toast.error("Enter valid 10-digit phone number");
     }
-    if (!form.dob) {
-      toast.error("Date of birth is required");
-      return;
+
+    try {
+      await api.post("/auth/phone/send-otp", { phone });
+      setOtpStep("sent");
+      toast.success("OTP sent to new number");
+    } catch {
+      toast.error("Failed to send OTP");
+    }
+  };
+
+  const verifyOtp = async () => {
+    try {
+      await api.post("/auth/phone/verify", { phone, otp });
+      setOtpStep("verified");
+      toast.success("Phone number verified");
+    } catch {
+      toast.error("Invalid OTP");
+    }
+  };
+
+  /* ================= SAVE ================= */
+  const onSave = async () => {
+    if (!form.name.trim()) return toast.error("Name required");
+    if (!form.dob) return toast.error("Date of birth required");
+
+    if (phoneChanged && otpStep !== "verified") {
+      return toast.error("Verify phone number before saving");
     }
 
     try {
       setSaving(true);
-
       await api.put("/auth/me", {
-        name: form.name,
-        email: form.email || null,
+        ...form,
+        phone,
         dob: form.dob.toISOString(),
-        address: form.address || null,
-        country: form.country || null,
-        state: form.state || null,
-        city: form.city || null,
-        pincode: form.pincode || null,
       });
 
+      setOriginalPhone(phone);
       toast.success("Profile updated successfully");
     } catch {
       toast.error("Update failed");
@@ -115,20 +143,8 @@ export default function MyAccount() {
     }
   };
 
-  const initials =
-    form.name
-      ?.split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "U";
-
   if (loading) {
-    return (
-      <div className="py-20 text-center text-muted-foreground">
-        Loading…
-      </div>
-    );
+    return <div className="py-20 text-center">Loading…</div>;
   }
 
   return (
@@ -136,11 +152,9 @@ export default function MyAccount() {
 
       {/* HEADER */}
       <div className="text-center">
-        <h1 className="text-3xl font-serif font-semibold">
-          My Account
-        </h1>
+        <h1 className="text-3xl font-serif font-semibold">My Account</h1>
         <p className="text-muted-foreground mt-1">
-          Manage your personal information
+          Manage your personal information and preferences
         </p>
       </div>
 
@@ -148,206 +162,55 @@ export default function MyAccount() {
       <Card className="rounded-2xl border bg-white p-6 sm:p-8 space-y-6">
 
         {/* HEADER ROW */}
-        <div className="flex items-center justify-between">
+        <div className="flex justify-between items-center">
           <h2 className="text-xl font-serif font-semibold">
             Profile Information
           </h2>
-
           <Button onClick={onSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? "Saving…" : "Save Changes"}
           </Button>
         </div>
 
-        {/* AVATAR */}
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-semibold">
-            {initials}
-          </div>
+        {/* PHONE */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <Phone className="w-4 h-4" />
+            Phone Number
+          </Label>
 
-          <div>
-            <div className="text-lg font-semibold">
-              {form.name || "Your Name"}
+          <Input
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+              setOtpStep("idle");
+            }}
+          />
+
+          {phoneChanged && otpStep === "idle" && (
+            <Button size="sm" variant="outline" onClick={sendOtp}>
+              Verify New Number
+            </Button>
+          )}
+
+          {otpStep === "sent" && (
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+              />
+              <Button size="sm" onClick={verifyOtp}>
+                Verify
+              </Button>
             </div>
-            <div className="text-sm text-muted-foreground">
-              {form.email || "—"}
-            </div>
-          </div>
-        </div>
+          )}
 
-        <div className="border-t" />
-
-        {/* FORM */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-          {/* NAME */}
-          <div>
-            <Label className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Full Name
-            </Label>
-            <Input
-              className="mt-2"
-              value={form.name}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, name: e.target.value }))
-              }
-            />
-          </div>
-
-          {/* EMAIL */}
-          <div>
-            <Label className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              Email
-            </Label>
-            <Input
-              className="mt-2"
-              value={form.email}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, email: e.target.value }))
-              }
-            />
-          </div>
-
-          {/* DOB */}
-          <div>
-            <Label className="flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4" />
-              Date of Birth
-            </Label>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="mt-2 w-full justify-start"
-                >
-                  {form.dob ? format(form.dob, "PPP") : "Select date"}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={form.dob}
-                  onSelect={(d) =>
-                    setForm((f) => ({ ...f, dob: d }))
-                  }
-                  fromYear={1950}
-                  toYear={new Date().getFullYear()}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* PHONE (LOCKED) */}
-          <div>
-            <Label className="flex items-center gap-2">
-              <Phone className="w-4 h-4" />
-              Phone Number
-            </Label>
-            <Input
-              className="mt-2 bg-muted cursor-not-allowed"
-              value={form.phone}
-              disabled
-            />
-          </div>
-
-          {/* ADDRESS */}
-          <div className="sm:col-span-2">
-            <Label className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              Address
-            </Label>
-            <Input
-              className="mt-2"
-              value={form.address}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, address: e.target.value }))
-              }
-            />
-          </div>
-
-          {/* COUNTRY */}
-          <Select
-            value={form.country}
-            onValueChange={(v) =>
-              setForm((f) => ({
-                ...f,
-                country: v,
-                state: "",
-                city: "",
-              }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Country" />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map((c) => (
-                <SelectItem key={c.isoCode} value={c.isoCode}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* STATE */}
-          <Select
-            value={form.state}
-            onValueChange={(v) =>
-              setForm((f) => ({ ...f, state: v, city: "" }))
-            }
-            disabled={!form.country}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="State" />
-            </SelectTrigger>
-            <SelectContent>
-              {states.map((s) => (
-                <SelectItem key={s.isoCode} value={s.isoCode}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* CITY */}
-          <Select
-            value={form.city}
-            onValueChange={(v) =>
-              setForm((f) => ({ ...f, city: v }))
-            }
-            disabled={!form.state}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="City" />
-            </SelectTrigger>
-            <SelectContent>
-              {cities.map((c) => (
-                <SelectItem key={c.name} value={c.name}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* PINCODE */}
-          <div>
-            <Label>Pincode</Label>
-            <Input
-              className="mt-2"
-              inputMode="numeric"
-              value={form.pincode}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-                }))
-              }
-            />
-          </div>
+          {otpStep === "verified" && (
+            <p className="flex items-center gap-1 text-sm text-green-600">
+              <ShieldCheck className="w-4 h-4" />
+              Phone number verified
+            </p>
+          )}
         </div>
       </Card>
     </div>
