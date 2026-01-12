@@ -218,11 +218,10 @@ export default function Checkout() {
     description: `${room.name} booking`,
     order_id: data.orderId,
 
-    // ✅ Auto-fill Razorpay
     prefill: {
       name: form.name || "",
       email: form.email || "",
-      contact: String(form.phone || ""), // ✅ 10 digits, no +91
+      contact: String(form.phone || ""),
     },
 
     notes: {
@@ -231,41 +230,33 @@ export default function Checkout() {
     },
 
     /* ================= PAYMENT SUCCESS ================= */
-    handler: async (resp) => {
-      // 🔄 Show processing toast
-      const toastId = toast.loading("Confirming your booking…");
+    handler: (resp) => {
+      // ✅ 1. INSTANT USER CONFIRMATION
+      toast.success(
+        "Payment successful 🎉 Your booking is being confirmed"
+      );
 
-      try {
-        const { data: verifyRes } = await api.post("/payments/verify", {
-          ...resp,
-          roomId,
-          startDate: toYMD(range.from),
-          endDate: toYMD(range.to),
-          guests: g,
-          withMeal,
-          vegGuests,
-          nonVegGuests,
-          contactName: form.name,
-          contactEmail: form.email,
-          contactPhone: form.phone,
-          ...address,
-        });
+      // ✅ 2. INSTANT REDIRECT
+      navigate("/my-bookings");
 
-        // ✅ Show success ONLY after backend confirmation
-        if (verifyRes?.ok) {
-          toast.success("Booking confirmed 🎉", { id: toastId });
-
-          setTimeout(() => {
-            navigate("/my-bookings");
-          }, 1500);
-        }
-      } catch (err) {
-        // ❌ Never alarm user
-        console.error("Verification failed:", err);
-
-        // Keep calm UX (do NOT say failed)
-        toast.loading("Finalizing your booking…", { id: toastId });
-      }
+      // ✅ 3. VERIFY IN BACKGROUND (NO await)
+      api.post("/payments/verify", {
+        ...resp,
+        roomId,
+        startDate: toYMD(range.from),
+        endDate: toYMD(range.to),
+        guests: g,
+        withMeal,
+        vegGuests,
+        nonVegGuests,
+        contactName: form.name,
+        contactEmail: form.email,
+        contactPhone: form.phone,
+        ...address,
+      }).catch((err) => {
+        console.error("Background verification failed:", err);
+        // optional: log to DB / Slack
+      });
     },
 
     modal: {
