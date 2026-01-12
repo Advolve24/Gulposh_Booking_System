@@ -104,6 +104,7 @@ export default function RoomPage() {
   const [children, setChildren] = useState(0);
 
   const totalGuests = adults + children;
+
   // SAME GLOBAL DISABLED DATA AS HOMEPAGE (bookings + blackouts)
   const [bookedAll, setBookedAll] = useState([]);
   const [blackoutRanges, setBlackoutRanges] = useState([]);
@@ -154,7 +155,7 @@ export default function RoomPage() {
   }, [room]);
 
   const goToCheckout = () => {
-    if (!range?.from || !range?.to || totalGuests ) {
+    if (!range?.from || !range?.to || totalGuests < 1) {
       toast.error("Please select dates and guests");
       return;
     }
@@ -531,7 +532,7 @@ export default function RoomPage() {
             {/* BOOK NOW */}
             <Button
               onClick={goToCheckout}
-              disabled={!range?.from || !range?.to || !totalGuests<1}
+              disabled={!range?.from || !range?.to || totalGuests < 1}
               className="
                 w-full h-12 rounded-xl
                 font-medium
