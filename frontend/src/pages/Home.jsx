@@ -4,8 +4,8 @@ import { api } from "../api/http";
 import RoomCard from "../components/RoomCard";
 import CalendarRange from "../components/CalendarRange";
 import { Search } from "lucide-react";
-
-
+import GuestCounter from "@/components/GuestCounter";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   Select,
   SelectTrigger,
@@ -57,8 +57,11 @@ export default function Home() {
 
   const [rooms, setRooms] = useState([]);
   const [disabledAll, setDisabledAll] = useState([]);
-  const [guests, setGuests] = useState("");
   const [range, setRange] = useState();
+  const [adults, setAdults] = useState(0);
+  const [children, setChildren] = useState(0);
+
+  const totalGuests = adults + children;
 
   /* ================= LOAD DATA ================= */
 
@@ -92,7 +95,8 @@ export default function Home() {
   /* ================= FILTER LOGIC ================= */
 
   const hasValidRange = !!(range?.from && range?.to);
-  const hasGuests = !!guests;
+  const hasGuests = totalGuests > 0;
+
 
   const handleGuestChange = (value) => {
     if (value === "upto10") {
@@ -102,27 +106,27 @@ export default function Home() {
     }
   };
 
- const filteredRooms = useMemo(() => {
-  if (!hasValidRange || !hasGuests || guests === "upto10") return rooms;
+  const filteredRooms = useMemo(() => {
+    if (!hasValidRange || !hasGuests || totalGuests === "upto10") return rooms;
 
-  const s = toDateOnly(range.from);
-  const e = toDateOnly(range.to);
-  const g = Number(guests);
+    const s = toDateOnly(range.from);
+    const e = toDateOnly(range.to);
+    const g = Number(totalGuests);
 
-  return rooms.filter((r) => {
-    // ✅ BACKEND MAX GUESTS ONLY
-    const cap = Number(r.maxGuests || 1);
+    return rooms.filter((r) => {
+      // ✅ BACKEND MAX GUESTS ONLY
+      const cap = Number(r.maxGuests || 1);
 
-    if (g > cap) return false;
+      if (g > cap) return false;
 
-    // ❌ date conflict check
-    const conflict = disabledAll.some(
-      (b) => !(e < b.from || s > b.to)
-    );
+      // ❌ date conflict check
+      const conflict = disabledAll.some(
+        (b) => !(e < b.from || s > b.to)
+      );
 
-    return !conflict;
-  });
-}, [rooms, disabledAll, range, guests, hasValidRange, hasGuests]);
+      return !conflict;
+    });
+  }, [rooms, disabledAll, range, totalGuests, hasValidRange, hasGuests]);
 
 
   /* ================= UI ================= */
@@ -169,48 +173,64 @@ export default function Home() {
               GUESTS
             </label>
 
-            <Select value={guests} onValueChange={handleGuestChange}>
-              <SelectTrigger className="h-14 rounded-xl w-full">
-                <SelectValue placeholder="Select guests" />
-              </SelectTrigger>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-14 w-full justify-between rounded-xl"
+                >
+                  {totalGuests > 0
+                    ? `${totalGuests} guest${totalGuests > 1 ? "s" : ""}`
+                    : "Add guests"}
+                </Button>
+              </PopoverTrigger>
 
-              <SelectContent>
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}
-                  </SelectItem>
-                ))}
-                <SelectItem value="upto10">
-                  Up to 10
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              <PopoverContent className="w-72 p-4">
+                <GuestCounter
+                  label="Adults"
+                  description="Ages 13 or above"
+                  value={adults}
+                  min={0}
+                  max={10}
+                  onChange={setAdults}
+                />
+
+                <GuestCounter
+                  label="Children"
+                  description="Ages 2–12"
+                  value={children}
+                  min={0}
+                  max={10 - adults}
+                  onChange={setChildren}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* SEARCH */}
           <Button
-  type="button"
-  aria-label="Search"
-  className="h-14 w-full bg-primary
+            type="button"
+            aria-label="Search"
+            className="h-14 w-full bg-primary
     text-primary-foreground
     hover:bg-primary/90
     rounded-xl shadow-md flex items-center justify-center gap-2"
-  onClick={() => {
-    if (!hasValidRange || !hasGuests) {
-      // optional UX feedback
-      alert("Please select dates and guests");
-      return;
-    }
+            onClick={() => {
+              if (!hasValidRange || !hasGuests) {
+                // optional UX feedback
+                alert("Please select dates and guests");
+                return;
+              }
 
-    // Search logic (even if it's just scroll / trigger state)
-    document
-      .getElementById("results")
-      ?.scrollIntoView({ behavior: "smooth" });
-  }}
->
-  Search
-  <Search className="h-4 w-4" />
-</Button>
+              // Search logic (even if it's just scroll / trigger state)
+              document
+                .getElementById("results")
+                ?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            Search
+            <Search className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* AVAILABLE ROOMS HEADER */}
@@ -236,7 +256,7 @@ export default function Home() {
               key={r._id}
               room={r}
               range={range}
-              guests={guests}
+              guests={totalGuests}
             />
           ))}
         </div>

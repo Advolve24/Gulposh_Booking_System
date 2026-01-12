@@ -3,7 +3,9 @@ import { Users, ArrowRight } from "lucide-react";
 
 export default function RoomCard({ room, range, guests }) {
   const hasRange = range?.from && range?.to;
-  const hasGuests = !!guests;
+ const guestCount = Number(guests || 0);
+const hasGuests = guestCount > 0;
+
 
   /* ---------------- QUERY PARAMS ---------------- */
   const params = new URLSearchParams();
@@ -11,7 +13,7 @@ export default function RoomCard({ room, range, guests }) {
     params.set("from", range.from.toISOString());
     params.set("to", range.to.toISOString());
   }
-  if (hasGuests) params.set("guests", guests);
+  if (hasGuests) params.set("guests", guestCount);
 
   const search = params.toString() ? `?${params.toString()}` : "";
 
@@ -32,14 +34,13 @@ export default function RoomCard({ room, range, guests }) {
   const linkState =
     hasRange || hasGuests
       ? {
-        ...(hasRange && {
-          from: range.from.toISOString(),
-          to: range.to.toISOString(),
-        }),
-        ...(hasGuests && { guests }),
-      }
+          ...(hasRange && {
+            from: range.from.toISOString(),
+            to: range.to.toISOString(),
+          }),
+          ...(hasGuests && { guests: guestCount }),
+        }
       : undefined;
-
   /* ---------------- UI ---------------- */
   return (
     <div

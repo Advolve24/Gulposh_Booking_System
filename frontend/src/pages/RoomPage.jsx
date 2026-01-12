@@ -4,7 +4,7 @@ import { useAuth } from "../store/authStore";
 
 import { api } from "../api/http";
 import CalendarRange from "../components/CalendarRange";
-
+import GuestCounter from "../components/GuestCounter";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -94,13 +94,17 @@ function mergeRanges(ranges) {
 /* ---------------------------------------------------------------- */
 
 export default function RoomPage() {
- const { openAuth, user } = useAuth();
+  const { openAuth, user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [room, setRoom] = useState(null);
   const [range, setRange] = useState(undefined);
-  const [guests, setGuests] = useState("");
+  const [adults, setAdults] = useState(1);
+  const [children, setChildren] = useState(0);
+
+  const totalGuests = adults + children;
+
 
   // ✅ SAME GLOBAL DISABLED DATA AS HOMEPAGE (bookings + blackouts)
   const [bookedAll, setBookedAll] = useState([]);
@@ -151,49 +155,47 @@ export default function RoomPage() {
     ).toFixed(1);
   }, [room]);
 
- const goToCheckout = () => {
-  if (!range?.from || !range?.to || !guests) {
-    toast.error("Please select dates and guests");
-    return;
-  }
+  const goToCheckout = () => {
+    if (!range?.from || !range?.to || totalGuests < 1) {
+      toast.error("Please select dates and guests");
+      return;
+    }
 
-  const bookingState = {
-    roomId: room._id,
-    startDate: range.from,
-    endDate: range.to,
-    guests: Number(guests),
+    const bookingState = {
+      roomId: room._id,
+      startDate: range.from,
+      endDate: range.to,
+      guests: Number(totalGuests),
+    };
+
+    // 🔐 NOT LOGGED IN → OPEN OTP MODAL
+    if (!user) {
+      sessionStorage.setItem(
+        "postAuthRedirect",
+        JSON.stringify({
+          redirectTo: "/checkout",
+          bookingState,
+        })
+      );
+
+      openAuth(); // ✅ ONLY THIS
+      return;
+    }
+
+    // 🚨 PROFILE INCOMPLETE
+    if (!user.profileComplete) {
+      navigate("/complete-profile", {
+        state: {
+          redirectTo: "/checkout",
+          bookingState,
+        },
+      });
+      return;
+    }
+
+    // ✅ ALL GOOD
+    navigate("/checkout", { state: bookingState });
   };
-
-  // 🔐 NOT LOGGED IN → OPEN OTP MODAL
-  if (!user) {
-    sessionStorage.setItem(
-      "postAuthRedirect",
-      JSON.stringify({
-        redirectTo: "/checkout",
-        bookingState,
-      })
-    );
-
-    openAuth(); // ✅ ONLY THIS
-    return;
-  }
-
-  // 🚨 PROFILE INCOMPLETE
-  if (!user.profileComplete) {
-    navigate("/complete-profile", {
-      state: {
-        redirectTo: "/checkout",
-        bookingState,
-      },
-    });
-    return;
-  }
-
-  // ✅ ALL GOOD
-  navigate("/checkout", { state: bookingState });
-};
-
-
 
   if (!room) return null;
 
@@ -505,28 +507,33 @@ export default function RoomPage() {
                 GUESTS (MAX {room.maxGuests || 10})
               </label>
 
-              <Select value={guests} onValueChange={setGuests}>
-                <SelectTrigger className="mt-1 h-14 rounded-xl border-[#eadfd6] focus:ring-0 focus:border-primary">
-                  <SelectValue placeholder="Select guests" />
-                </SelectTrigger>
+              <GuestCounter
+                label="Adults"
+                description="Ages 13+"
+                value={adults}
+                min={1}
+                max={room.maxGuests - children}
+                onChange={setAdults}
+              />
 
-                <SelectContent>
-                  {Array.from(
-                    { length: room.maxGuests || 10 },
-                    (_, i) => i + 1
-                  ).map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n} {n === 1 ? "guest" : "guests"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <GuestCounter
+                label="Children"
+                description="Ages 2–12"
+                value={children}
+                min={0}
+                max={room.maxGuests - adults}
+                onChange={setChildren}
+              />
+
+              <p className="mt-2 text-xs text-muted-foreground">
+                Total guests: <strong>{totalGuests}</strong>
+              </p>
             </div>
 
             {/* BOOK NOW */}
             <Button
               onClick={goToCheckout}
-              disabled={!range?.from || !range?.to || !guests}
+              disabled={!range?.from || !range?.to || !totalGuests<1}
               className="
                 w-full h-12 rounded-xl
                 font-medium
