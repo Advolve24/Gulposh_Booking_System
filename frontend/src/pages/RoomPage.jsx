@@ -104,9 +104,7 @@ export default function RoomPage() {
   const [children, setChildren] = useState(0);
 
   const totalGuests = adults + children;
-
-
-  // ✅ SAME GLOBAL DISABLED DATA AS HOMEPAGE (bookings + blackouts)
+  // SAME GLOBAL DISABLED DATA AS HOMEPAGE (bookings + blackouts)
   const [bookedAll, setBookedAll] = useState([]);
   const [blackoutRanges, setBlackoutRanges] = useState([]);
 
