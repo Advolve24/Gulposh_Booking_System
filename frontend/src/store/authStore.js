@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { api } from "../api/http";
 
 /* =====================================================
-   AUTH STORE
+   AUTH STORE (NO NAVIGATION HERE)
 ===================================================== */
 
 export const useAuth = create((set, get) => ({
@@ -21,15 +21,10 @@ export const useAuth = create((set, get) => ({
 
       const { data } = await api.get("/auth/me");
 
-      set({
-        user: {
-          ...data,
-          profileComplete: isProfileComplete(data),
-        },
-        loading: false,
-      });
+      const user = normalizeUser(data);
 
-      return data;
+      set({ user, loading: false });
+      return user;
     } catch {
       set({ user: null, loading: false });
       return null;
@@ -37,7 +32,7 @@ export const useAuth = create((set, get) => ({
   },
 
   /* ================= FIREBASE OTP LOGIN ================= */
-  firebaseLoginWithToken: async (idToken, navigate) => {
+  firebaseLoginWithToken: async (idToken) => {
     // 1️⃣ Create backend session
     await api.post(
       "/auth/firebase-login",
@@ -50,41 +45,13 @@ export const useAuth = create((set, get) => ({
       }
     );
 
-    // 2️⃣ Fetch full profile
+    // 2️⃣ Fetch profile
     const { data } = await api.get("/auth/me");
 
-    const user = {
-      ...data,
-      profileComplete: isProfileComplete(data),
-    };
+    const user = normalizeUser(data);
 
+    // 3️⃣ Save user ONLY (NO REDIRECT HERE)
     set({ user, showAuthModal: false });
-
-    // 3️⃣ Redirect if needed
-    if (!user.profileComplete) {
-      navigate?.("/complete-profile", { replace: true });
-    }
-
-    return user;
-  },
-
-  /* ================= PHONE OTP LOGIN ================= */
-  phoneLogin: async (payload, navigate) => {
-    await api.post("/auth/phone-login", payload);
-
-    // Fetch fresh profile
-    const { data } = await api.get("/auth/me");
-
-    const user = {
-      ...data,
-      profileComplete: isProfileComplete(data),
-    };
-
-    set({ user, showAuthModal: false });
-
-    if (!user.profileComplete) {
-      navigate?.("/complete-profile", { replace: true });
-    }
 
     return user;
   },
@@ -93,14 +60,10 @@ export const useAuth = create((set, get) => ({
   refreshUser: async () => {
     const { data } = await api.get("/auth/me");
 
-    set({
-      user: {
-        ...data,
-        profileComplete: isProfileComplete(data),
-      },
-    });
+    const user = normalizeUser(data);
+    set({ user });
 
-    return data;
+    return user;
   },
 
   /* ================= LOGOUT ================= */
@@ -114,17 +77,24 @@ export const useAuth = create((set, get) => ({
    HELPERS
 ===================================================== */
 
-function isProfileComplete(user) {
-  if (!user) return false;
+function normalizeUser(user) {
+  if (!user) return null;
 
+  return {
+    ...user,
+    profileComplete: isProfileComplete(user),
+  };
+}
+
+function isProfileComplete(user) {
   return Boolean(
-    user.name &&
-    user.phone &&
-    user.dob &&
-    user.address &&
-    user.country &&
-    user.state &&
-    user.city &&
-    user.pincode
+    user?.name &&
+      user?.phone &&
+      user?.dob &&
+      user?.address &&
+      user?.country &&
+      user?.state &&
+      user?.city &&
+      user?.pincode
   );
 }

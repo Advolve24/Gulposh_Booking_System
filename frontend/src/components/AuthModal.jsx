@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../store/authStore";
 import {
   Dialog,
@@ -20,6 +20,7 @@ import {
   clearRecaptchaVerifier,
 } from "@/lib/recaptcha";
 
+const OTP_TIMER = 60;
 const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
 
 export default function AuthModal() {
@@ -34,15 +35,29 @@ export default function AuthModal() {
     otp: "",
   });
 
-  /* ================= RESET FLOW ================= */
+  const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
+
+  /* ================= TIMER ================= */
+  useEffect(() => {
+    if (step !== "otp" || secondsLeft <= 0) return;
+
+    const interval = setInterval(() => {
+      setSecondsLeft((s) => s - 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [step, secondsLeft]);
+
+  /* ================= RESET ================= */
   const resetFlow = () => {
     clearRecaptchaVerifier();
     window.confirmationResult = null;
     setForm({ phone: "", otp: "" });
     setStep("phone");
+    setSecondsLeft(OTP_TIMER);
   };
 
-  /* ================= SEND OTP ================= */
+  /* ================= SEND / RESEND OTP ================= */
   const sendOtp = async () => {
     if (!isValidPhone(form.phone)) {
       toast.error("Enter a valid 10-digit mobile number");
@@ -52,20 +67,24 @@ export default function AuthModal() {
     try {
       setLoading(true);
 
-      const appVerifier = getRecaptchaVerifier();
+      clearRecaptchaVerifier();
+      const verifier = getRecaptchaVerifier();
+
       const confirmation = await signInWithPhoneNumber(
         auth,
         `+91${form.phone}`,
-        appVerifier
+        verifier
       );
 
       window.confirmationResult = confirmation;
       setStep("otp");
+      setSecondsLeft(OTP_TIMER);
+
       toast.success("OTP sent successfully");
     } catch (err) {
       console.error(err);
       clearRecaptchaVerifier();
-      toast.error("Failed to send OTP. Try again.");
+      toast.error("Failed to send OTP");
     } finally {
       setLoading(false);
     }
@@ -73,7 +92,7 @@ export default function AuthModal() {
 
   /* ================= VERIFY OTP ================= */
   const verifyOtp = async () => {
-    if (!form.otp || form.otp.length !== 6) {
+    if (form.otp.length !== 6) {
       toast.error("Enter valid 6-digit OTP");
       return;
     }
@@ -84,37 +103,26 @@ export default function AuthModal() {
       const result = await window.confirmationResult.confirm(form.otp);
       const idToken = await result.user.getIdToken(true);
 
-      /**
-       * 🔥 LOGIN (backend session created here)
-       * AuthStore handles setting user
-       */
       const user = await firebaseLoginWithToken(idToken);
 
       closeAuth();
       toast.success("Logged in successfully 🎉");
 
-      /**
-       * 🔁 POST-AUTH REDIRECT LOGIC
-       */
-      const redirectRaw = sessionStorage.getItem("postAuthRedirect");
+      // 🔁 POST-AUTH REDIRECT
+      const raw = sessionStorage.getItem("postAuthRedirect");
       sessionStorage.removeItem("postAuthRedirect");
 
-      if (redirectRaw) {
-        const { redirectTo, bookingState } = JSON.parse(redirectRaw);
+      if (raw) {
+        const { redirectTo, bookingState } = JSON.parse(raw);
 
-        // 🚨 Profile incomplete → complete profile FIRST
-        if (!user?.name || !user?.dob) {
+        if (!user.profileComplete) {
           navigate("/complete-profile", {
             replace: true,
-            state: {
-              redirectTo,
-              bookingState,
-            },
+            state: { redirectTo, bookingState },
           });
           return;
         }
 
-        // ✅ Profile complete → go to checkout
         navigate(redirectTo, {
           replace: true,
           state: bookingState,
@@ -122,14 +130,11 @@ export default function AuthModal() {
         return;
       }
 
-      // fallback
       navigate("/", { replace: true });
     } catch (err) {
       console.error(err);
-      clearRecaptchaVerifier();
-      window.confirmationResult = null;
-      toast.error("Invalid or expired OTP. Please try again.");
-      setStep("phone");
+      toast.error("Invalid or expired OTP");
+      setForm((f) => ({ ...f, otp: "" }));
     } finally {
       setLoading(false);
     }
@@ -153,7 +158,7 @@ export default function AuthModal() {
           <DialogDescription>
             {step === "phone"
               ? "Enter your mobile number to continue"
-              : "Enter the OTP sent to your mobile"}
+              : `Enter the OTP sent to +91 ${form.phone}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -204,13 +209,20 @@ export default function AuthModal() {
               {loading ? "Verifying..." : "Verify & Continue"}
             </Button>
 
-            <Button
-              variant="ghost"
-              className="w-full text-sm"
-              onClick={resetFlow}
-            >
-              Change mobile number
-            </Button>
+            {/* TIMER / RESEND */}
+            <div className="text-center text-sm text-muted-foreground">
+              {secondsLeft > 0 ? (
+                <>Resend OTP in <b>{secondsLeft}s</b></>
+              ) : (
+                <button
+                  type="button"
+                  onClick={sendOtp}
+                  className="text-primary font-medium hover:underline"
+                >
+                  Resend OTP
+                </button>
+              )}
+            </div>
           </div>
         )}
       </DialogContent>

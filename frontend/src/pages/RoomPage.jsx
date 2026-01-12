@@ -152,40 +152,47 @@ export default function RoomPage() {
   }, [room]);
 
   const goToCheckout = () => {
-    if (!range?.from || !range?.to || !guests) {
-      toast.error("Please select dates and guests");
-      return;
-    }
+  if (!range?.from || !range?.to || !guests) {
+    toast.error("Please select dates and guests");
+    return;
+  }
 
-    const bookingState = {
-      roomId: room._id,
-      startDate: range.from,
-      endDate: range.to,
-      guests: Number(guests),
-    };
-
-    /* 🔐 USER NOT LOGGED IN → OPEN OTP MODAL */
-    if (!user) {
-      openAuth(); // ✅ THIS opens AuthModal (OTP)
-      return;
-    }
-
-    /* 🚨 PROFILE NOT COMPLETE → COMPLETE PROFILE */
-    if (!user.profileComplete) {
-      navigate("/complete-profile", {
-        state: {
-          redirectTo: "/checkout",
-          bookingState,
-        },
-      });
-      return;
-    }
-
-    /* ✅ ALL GOOD */
-    navigate("/checkout", {
-      state: bookingState,
-    });
+  const bookingState = {
+    roomId: room._id,
+    startDate: range.from,
+    endDate: range.to,
+    guests: Number(guests),
   };
+
+  // 🔐 Not logged in → open OTP modal
+  if (!user) {
+    sessionStorage.setItem(
+      "postAuthRedirect",
+      JSON.stringify({
+        redirectTo: "/checkout",
+        bookingState,
+      })
+    );
+
+    openAuthModal(); // 🔥 IMPORTANT
+    return;
+  }
+
+  // 🚨 Logged in but profile incomplete
+  if (!user.profileComplete) {
+    navigate("/complete-profile", {
+      state: {
+        redirectTo: "/checkout",
+        bookingState,
+      },
+    });
+    return;
+  }
+
+  // ✅ All good
+  navigate("/checkout", { state: bookingState });
+};
+
 
   if (!room) return null;
 
