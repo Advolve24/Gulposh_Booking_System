@@ -6,6 +6,7 @@ import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
 /* ===============================
    HELPERS
 ================================ */
+
 const normalizePhone = (phone = "") =>
   phone.replace(/\D/g, "").slice(-10);
 
@@ -25,8 +26,6 @@ const createRefreshToken = (user) =>
 
 /* ===============================
    FIREBASE OTP LOGIN
-   POST /auth/firebase-login
-   👉 OTP ONLY (no profile here)
 ================================ */
 export const firebaseLogin = async (req, res) => {
   try {
@@ -48,15 +47,12 @@ export const firebaseLogin = async (req, res) => {
       $or: [{ firebaseUid }, { phone }],
     });
 
-    let isNewUser = false;
-
-    // 🆕 CREATE USER WITH PHONE ONLY
     if (!user) {
       user = await User.create({
         firebaseUid,
         phone,
+        profileComplete: false,
       });
-      isNewUser = true;
     } else if (!user.firebaseUid) {
       user.firebaseUid = firebaseUid;
       await user.save();
@@ -79,9 +75,8 @@ export const firebaseLogin = async (req, res) => {
     res.json({
       id: user._id,
       phone: user.phone,
-      isAdmin: !!user.isAdmin,
-      isNewUser,
       profileComplete: user.profileComplete,
+      isAdmin: !!user.isAdmin,
     });
   } catch (err) {
     console.error("firebaseLogin error:", err);
@@ -128,7 +123,6 @@ export const refreshSession = async (req, res) => {
 
 /* ===============================
    GET MY PROFILE
-   GET /auth/me
 ================================ */
 export const me = async (req, res) => {
   const user = await User.findById(req.user.id);
@@ -147,14 +141,13 @@ export const me = async (req, res) => {
     state: user.state,
     city: user.city,
     pincode: user.pincode,
-    isAdmin: !!user.isAdmin,
     profileComplete: user.profileComplete,
+    isAdmin: !!user.isAdmin,
   });
 };
 
 /* ===============================
-   UPDATE PROFILE (COMPLETE PROFILE)
-   PUT /auth/me
+   UPDATE PROFILE
 ================================ */
 export const updateMe = async (req, res) => {
   try {
@@ -173,7 +166,6 @@ export const updateMe = async (req, res) => {
     if (!user)
       return res.status(401).json({ message: "Unauthorized" });
 
-    // 🔒 Required fields
     if (!name || !dob) {
       return res.status(400).json({
         message: "Name and Date of Birth are required",
@@ -183,12 +175,14 @@ export const updateMe = async (req, res) => {
     user.name = name.trim();
     user.email = email?.trim() || null;
     user.dob = new Date(dob);
-
     user.address = address || null;
     user.country = country || null;
     user.state = state || null;
     user.city = city || null;
     user.pincode = pincode || null;
+
+    // 🔥 CRITICAL FIX
+    user.profileComplete = true;
 
     await user.save();
 
@@ -203,7 +197,7 @@ export const updateMe = async (req, res) => {
       state: user.state,
       city: user.city,
       pincode: user.pincode,
-      profileComplete: user.profileComplete,
+      profileComplete: true,
     });
   } catch (err) {
     console.error("updateMe error:", err);
