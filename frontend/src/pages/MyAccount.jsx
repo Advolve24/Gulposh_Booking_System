@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/http";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +14,30 @@ import {
   Mail,
   Phone,
   MapPin,
+  Calendar as CalendarIcon,
   ShieldCheck,
 } from "lucide-react";
+
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+
+import {
+  getAllCountries,
+  getStatesByCountry,
+  getCitiesByState,
+} from "../lib/location";
+
+import { signInWithPhoneNumber } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
 export default function MyAccount() {
   const [loading, setLoading] = useState(true);
@@ -22,14 +45,19 @@ export default function MyAccount() {
   const [editMode, setEditMode] = useState(false);
 
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
     email: "",
-    phone: "",
+    dob: null,
     address: "",
+    country: "",
+    state: "",
+    city: "",
+    pincode: "",
   });
 
+  const [phone, setPhone] = useState("");
   const [originalPhone, setOriginalPhone] = useState("");
+
   const [otpStep, setOtpStep] = useState("idle"); // idle | sent | verified
   const [otp, setOtp] = useState("");
 
@@ -39,23 +67,18 @@ export default function MyAccount() {
       try {
         const { data } = await api.get("/auth/me");
 
-        const [firstName = "", lastName = ""] =
-          (data.name || "").split(" ");
-
         setForm({
-          firstName,
-          lastName,
+          name: data.name || "",
           email: data.email || "",
-          phone: data.phone || "",
-          address: [
-            data.city,
-            data.state,
-            data.country,
-          ]
-            .filter(Boolean)
-            .join(", "),
+          dob: data.dob ? new Date(data.dob) : null,
+          address: data.address || "",
+          country: data.country || "",
+          state: data.state || "",
+          city: data.city || "",
+          pincode: data.pincode || "",
         });
 
+        setPhone(data.phone || "");
         setOriginalPhone(data.phone || "");
       } catch {
         toast.error("Failed to load profile");
@@ -65,18 +88,30 @@ export default function MyAccount() {
     })();
   }, []);
 
-  const phoneChanged = form.phone !== originalPhone;
+  const phoneChanged = phone !== originalPhone;
+
+  /* ================= LOCATION ================= */
+  const countries = getAllCountries();
+  const states = form.country ? getStatesByCountry(form.country) : [];
+  const cities =
+    form.country && form.state
+      ? getCitiesByState(form.country, form.state)
+      : [];
 
   /* ================= OTP ================= */
   const sendOtp = async () => {
-    if (!/^[0-9]{10}$/.test(form.phone)) {
+    if (!/^[0-9]{10}$/.test(phone)) {
       return toast.error("Enter valid 10 digit phone number");
     }
 
     try {
-      await api.post("/auth/phone/send-otp", {
-        phone: form.phone,
-      });
+      const verifier = getRecaptchaVerifier();
+      const result = await signInWithPhoneNumber(
+        auth,
+        `+91${phone}`,
+        verifier
+      );
+      window.confirmationResult = result;
       setOtpStep("sent");
       toast.success("OTP sent");
     } catch {
@@ -86,48 +121,62 @@ export default function MyAccount() {
 
   const verifyOtp = async () => {
     try {
-      await api.post("/auth/phone/verify", {
-        phone: form.phone,
-        otp,
-      });
+      await window.confirmationResult.confirm(otp);
       setOtpStep("verified");
-      toast.success("Phone verified");
+      setOriginalPhone(phone);
+      toast.success("Phone number verified");
     } catch {
       toast.error("Invalid OTP");
     }
   };
 
-  /* ================= SAVE ================= */
+  /* ================= SAVE PROFILE ================= */
   const onSave = async () => {
-    if (!form.firstName.trim()) {
-      return toast.error("First name required");
+    if (!form.name.trim()) {
+      return toast.error("Name is required");
+    }
+
+    if (!form.dob) {
+      return toast.error("Date of birth is required");
     }
 
     if (phoneChanged && otpStep !== "verified") {
-      return toast.error("Verify phone number first");
+      return toast.error("Verify phone number before saving");
     }
 
     try {
       setSaving(true);
 
       await api.put("/auth/me", {
-        name: `${form.firstName} ${form.lastName}`.trim(),
-        phone: form.phone,
+        name: form.name,
+        email: form.email || null,
+        dob: form.dob.toISOString(),
+        address: form.address || null,
+        country: form.country || null,
+        state: form.state || null,
+        city: form.city || null,
+        pincode: form.pincode || null,
       });
 
-      setOriginalPhone(form.phone);
       setEditMode(false);
       setOtpStep("idle");
-      toast.success("Profile updated");
-    } catch {
-      toast.error("Update failed");
+      toast.success("Profile updated successfully");
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || "Update failed"
+      );
     } finally {
       setSaving(false);
     }
   };
 
   const initials =
-    `${form.firstName[0] || ""}${form.lastName[0] || ""}`.toUpperCase();
+    form.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "U";
 
   if (loading) {
     return (
@@ -139,6 +188,7 @@ export default function MyAccount() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-10">
+      <div id="recaptcha-container" />
 
       {/* HEADER */}
       <div className="text-center">
@@ -152,8 +202,6 @@ export default function MyAccount() {
 
       {/* PROFILE CARD */}
       <Card className="rounded-2xl border bg-white p-6 sm:p-8 space-y-6">
-
-        {/* TITLE ROW */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-serif font-semibold">
             Profile Information
@@ -173,16 +221,11 @@ export default function MyAccount() {
         {/* AVATAR */}
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-semibold">
-            {initials || "U"}
+            {initials}
           </div>
-
           <div>
-            <div className="text-lg font-semibold">
-              {form.firstName} {form.lastName}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {form.email}
-            </div>
+            <div className="text-lg font-semibold">{form.name}</div>
+            <div className="text-sm text-muted-foreground">{form.email}</div>
           </div>
         </div>
 
@@ -191,74 +234,72 @@ export default function MyAccount() {
         {/* FORM */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-          {/* FIRST NAME */}
           <div>
-            <Label className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              First Name
-            </Label>
+            <Label>Name</Label>
             <Input
               className="mt-2"
               disabled={!editMode}
-              value={form.firstName}
+              value={form.name}
               onChange={(e) =>
-                setForm((f) => ({ ...f, firstName: e.target.value }))
+                setForm((f) => ({ ...f, name: e.target.value }))
               }
             />
           </div>
 
-          {/* LAST NAME */}
           <div>
-            <Label className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Last Name
-            </Label>
+            <Label>Email</Label>
             <Input
               className="mt-2"
               disabled={!editMode}
-              value={form.lastName}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, lastName: e.target.value }))
-              }
-            />
-          </div>
-
-          {/* EMAIL */}
-          <div>
-            <Label className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              Email Address
-            </Label>
-            <Input
-              className="mt-2"
               value={form.email}
-              disabled
+              onChange={(e) =>
+                setForm((f) => ({ ...f, email: e.target.value }))
+              }
             />
+          </div>
+
+          <div>
+            <Label>Date of Birth</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={!editMode}
+                  className="mt-2 w-full justify-start"
+                >
+                  {form.dob ? format(form.dob, "PPP") : "Select date"}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Calendar
+                  selected={form.dob}
+                  onSelect={(d) =>
+                    setForm((f) => ({ ...f, dob: d }))
+                  }
+                  fromYear={1950}
+                  toYear={new Date().getFullYear()}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* PHONE */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Phone className="w-4 h-4" />
-              Phone Number
-            </Label>
-
+            <Label>Phone Number</Label>
             <Input
               className="mt-2"
               disabled={!editMode}
-              value={form.phone}
+              value={phone}
               onChange={(e) => {
-                setForm((f) => ({
-                  ...f,
-                  phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                }));
+                setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
                 setOtpStep("idle");
               }}
             />
 
             {editMode && phoneChanged && otpStep === "idle" && (
               <Button size="sm" variant="outline" onClick={sendOtp}>
-                Verify New Number
+                Verify Phone
               </Button>
             )}
 
@@ -283,36 +324,84 @@ export default function MyAccount() {
             )}
           </div>
 
-          {/* ADDRESS */}
           <div className="sm:col-span-2">
-            <Label className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              Address
-            </Label>
+            <Label>Address</Label>
             <Input
               className="mt-2"
+              disabled={!editMode}
               value={form.address}
-              disabled
+              onChange={(e) =>
+                setForm((f) => ({ ...f, address: e.target.value }))
+              }
+            />
+          </div>
+
+          <Select
+            disabled={!editMode}
+            value={form.country}
+            onValueChange={(v) =>
+              setForm((f) => ({ ...f, country: v, state: "", city: "" }))
+            }
+          >
+            <SelectTrigger><SelectValue placeholder="Country" /></SelectTrigger>
+            <SelectContent>
+              {countries.map((c) => (
+                <SelectItem key={c.isoCode} value={c.isoCode}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            disabled={!editMode || !form.country}
+            value={form.state}
+            onValueChange={(v) =>
+              setForm((f) => ({ ...f, state: v, city: "" }))
+            }
+          >
+            <SelectTrigger><SelectValue placeholder="State" /></SelectTrigger>
+            <SelectContent>
+              {states.map((s) => (
+                <SelectItem key={s.isoCode} value={s.isoCode}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            disabled={!editMode || !form.state}
+            value={form.city}
+            onValueChange={(v) =>
+              setForm((f) => ({ ...f, city: v }))
+            }
+          >
+            <SelectTrigger><SelectValue placeholder="City" /></SelectTrigger>
+            <SelectContent>
+              {cities.map((c) => (
+                <SelectItem key={c.name} value={c.name}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div>
+            <Label>Pincode</Label>
+            <Input
+              className="mt-2"
+              disabled={!editMode}
+              value={form.pincode}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                }))
+              }
             />
           </div>
         </div>
-      </Card>
-
-      {/* DANGER ZONE */}
-      <Card className="border border-red-200 bg-red-50 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-red-600">
-          Danger Zone
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Permanently delete your account and all associated data
-        </p>
-
-        <Button
-          variant="destructive"
-          className="mt-4"
-        >
-          Delete Account
-        </Button>
       </Card>
     </div>
   );
