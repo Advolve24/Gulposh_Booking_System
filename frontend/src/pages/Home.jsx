@@ -98,16 +98,16 @@ export default function Home() {
   const hasGuests = totalGuests > 0;
 
 
-  const handleGuestChange = (value) => {
-    if (value === "upto10") {
-      navigate("/entire-villa-form");
-    } else {
-      setGuests(value);
-    }
-  };
+  // const handleGuestChange = (value) => {
+  //   if (value === "upto10") {
+  //     navigate("/entire-villa-form");
+  //   } else {
+  //     setGuests(value);
+  //   }
+  // };
 
   const filteredRooms = useMemo(() => {
-    if (!hasValidRange || !hasGuests || totalGuests === "upto10") return rooms;
+   if (!hasValidRange || !hasGuests) return rooms;
 
     const s = toDateOnly(range.from);
     const e = toDateOnly(range.to);
@@ -127,6 +127,12 @@ export default function Home() {
       return !conflict;
     });
   }, [rooms, disabledAll, range, totalGuests, hasValidRange, hasGuests]);
+
+  useEffect(() => {
+  if (totalGuests > 10) {
+    navigate("/entire-villa-form");
+  }
+}, [totalGuests, navigate]);
 
 
   /* ================= UI ================= */
