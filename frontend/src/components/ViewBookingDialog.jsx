@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
-import api from "@/api/http";
+import { api } from "../api/http";
 
 import {
   Dialog,
