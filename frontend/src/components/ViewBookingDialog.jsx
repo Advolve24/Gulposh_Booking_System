@@ -11,7 +11,7 @@ import {
   CreditCard,
 } from "lucide-react";
 
-import api from "@/api/http";
+import { api } from "../api/http";
 
 /* ---------------- HELPERS ---------------- */
 
