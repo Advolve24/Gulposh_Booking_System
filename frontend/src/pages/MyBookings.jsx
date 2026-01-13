@@ -11,7 +11,7 @@ import {
   Eye,
 } from "lucide-react";
 
-import ViewBookingDialog from "@/components/booking/ViewBookingDialog";
+import ViewBookingDialog from "@/components/ViewBookingDialog";
 
 /* ---------------- HELPERS ---------------- */
 
