@@ -37,7 +37,7 @@ export default function MyAccount() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [deleting, setDeleting] = useState(false); // ✅ MOVED UP (IMPORTANT)
+  const [deleting, setDeleting] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -92,7 +92,7 @@ export default function MyAccount() {
     })();
   }, []);
 
-  /* ================= UNSAVED CHANGES ================= */
+  /* ================= DETECT UNSAVED CHANGES ================= */
   useEffect(() => {
     if (!initialForm) return;
 
@@ -146,7 +146,7 @@ export default function MyAccount() {
     }
   };
 
-  /* ================= SAVE ================= */
+  /* ================= SAVE PROFILE ================= */
   const onSave = async () => {
     if (!form.name.trim()) return toast.error("Name is required");
     if (!form.dob) return toast.error("Date of birth is required");
@@ -155,9 +155,16 @@ export default function MyAccount() {
 
     try {
       setSaving(true);
+
       await api.put("/auth/me", {
-        ...form,
+        name: form.name,
+        email: form.email || null,
         dob: form.dob.toISOString(),
+        address: form.address || null,
+        country: form.country || null,
+        state: form.state || null,
+        city: form.city || null,
+        pincode: form.pincode || null,
       });
 
       setInitialForm({
@@ -186,10 +193,10 @@ export default function MyAccount() {
     try {
       setDeleting(true);
       await api.delete("/auth/me");
-      toast.success("Account deleted");
+      toast.success("Account deleted successfully");
       window.location.href = "/";
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Delete failed");
+      toast.error(err?.response?.data?.message || "Failed to delete account");
     } finally {
       setDeleting(false);
     }
@@ -203,7 +210,6 @@ export default function MyAccount() {
       .join("")
       .toUpperCase() || "U";
 
-  /* ================= LOADING ================= */
   if (loading) {
     return (
       <div className="py-20 text-center text-muted-foreground">
@@ -212,7 +218,6 @@ export default function MyAccount() {
     );
   }
 
-  /* ================= RENDER ================= */
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-10">
       <div id="recaptcha-container" />
@@ -273,8 +278,175 @@ export default function MyAccount() {
 
         <Separator />
 
-        {/* FORM GRID */}
-        {/* (your full form remains unchanged – already included above) */}
+        {/* FORM */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label>Name</Label>
+            <Input
+              disabled={!editMode}
+              value={form.name}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, name: e.target.value }))
+              }
+            />
+          </div>
+
+          <div>
+            <Label>Email</Label>
+            <Input
+              disabled={!editMode}
+              value={form.email}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, email: e.target.value }))
+              }
+            />
+          </div>
+
+          <div>
+            <Label>Date of Birth</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={!editMode}
+                  className="w-full justify-start"
+                >
+                  {form.dob ? format(form.dob, "PPP") : "Select date"}
+                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Calendar
+                  selected={form.dob}
+                  onSelect={(d) => setForm((f) => ({ ...f, dob: d }))}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label>Phone Number</Label>
+            <Input
+              disabled={!editMode}
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                setOtpStep("idle");
+              }}
+            />
+            {editMode && phoneChanged && otpStep === "idle" && (
+              <Button size="sm" variant="outline" onClick={sendOtp}>
+                Verify Phone
+              </Button>
+            )}
+            {otpStep === "sent" && (
+              <div className="flex gap-2 mt-2">
+                <Input
+                  placeholder="Enter OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
+                <Button size="sm" onClick={verifyOtp}>
+                  Verify
+                </Button>
+              </div>
+            )}
+            {otpStep === "verified" && (
+              <p className="flex items-center gap-1 text-sm text-green-600 mt-1">
+                <ShieldCheck className="w-4 h-4" /> Phone verified
+              </p>
+            )}
+          </div>
+
+          <div className="sm:col-span-2">
+            <Label>Address</Label>
+            <Input
+              disabled={!editMode}
+              value={form.address}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, address: e.target.value }))
+              }
+            />
+          </div>
+
+          <div>
+            <Label>Country</Label>
+            <Select
+              disabled={!editMode}
+              value={form.country}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, country: v, state: "", city: "" }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((c) => (
+                  <SelectItem key={c.isoCode} value={c.isoCode}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>State</Label>
+            <Select
+              disabled={!editMode || !form.country}
+              value={form.state}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, state: v, city: "" }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="State" />
+              </SelectTrigger>
+              <SelectContent>
+                {states.map((s) => (
+                  <SelectItem key={s.isoCode} value={s.isoCode}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>City</Label>
+            <Select
+              disabled={!editMode || !form.state}
+              value={form.city}
+              onValueChange={(v) => setForm((f) => ({ ...f, city: v }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="City" />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((c) => (
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Pincode</Label>
+            <Input
+              disabled={!editMode}
+              value={form.pincode}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                }))
+              }
+            />
+          </div>
+        </div>
       </Card>
 
       {/* DANGER ZONE */}
@@ -291,7 +463,6 @@ export default function MyAccount() {
             variant="destructive"
             disabled={deleting}
             onClick={onDeleteAccount}
-            className="rounded-xl px-6 py-2.5 text-sm font-medium"
           >
             {deleting ? "Deleting..." : "Delete Account"}
           </Button>
