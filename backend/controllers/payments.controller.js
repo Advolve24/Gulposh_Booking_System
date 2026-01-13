@@ -203,11 +203,17 @@ export const verifyPayment = async (req, res) => {
       null;
 
     sendBookingConfirmationMail({
-      to: emailToSend,
-      name: contactName,
-      room,
-      booking,
-    });
+  to: emailToSend,
+  name: contactName,
+  room,
+  booking,
+})
+  .then(() => {
+    console.log("✅ Booking confirmation email sent to:", emailToSend);
+  })
+  .catch((err) => {
+    console.error("❌ Booking email failed:", err);
+  });
 
     return res.json({ ok: true, booking });
   } catch (err) {
