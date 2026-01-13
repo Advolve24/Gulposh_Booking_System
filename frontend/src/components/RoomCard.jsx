@@ -3,8 +3,8 @@ import { Users, ArrowRight } from "lucide-react";
 
 export default function RoomCard({ room, range, guests }) {
   const hasRange = range?.from && range?.to;
- const guestCount = Number(guests || 0);
-const hasGuests = guestCount > 0;
+  const guestCount = Number(guests || 0);
+  const hasGuests = guestCount > 0;
 
 
   /* ---------------- QUERY PARAMS ---------------- */
@@ -34,12 +34,12 @@ const hasGuests = guestCount > 0;
   const linkState =
     hasRange || hasGuests
       ? {
-          ...(hasRange && {
-            from: range.from.toISOString(),
-            to: range.to.toISOString(),
-          }),
-          ...(hasGuests && { guests: guestCount }),
-        }
+        ...(hasRange && {
+          from: range.from.toISOString(),
+          to: range.to.toISOString(),
+        }),
+        ...(hasGuests && { guests: guestCount }),
+      }
       : undefined;
   /* ---------------- UI ---------------- */
   return (
@@ -56,39 +56,56 @@ const hasGuests = guestCount > 0;
       "
     >
       {/* IMAGE */}
+      {/* IMAGE */}
       <Link to={`/room/${room._id}${search}`} state={linkState}>
         <div className="relative h-56 overflow-hidden">
           <img
             src={room.coverImage || "https://picsum.photos/600/400"}
             alt={room.name}
             className="
-              w-full
-              h-full
-              object-cover
-              scale-110
-              transition-transform
-              duration-700
-              ease-out
-              group-hover:scale-100
-            "
+        w-full h-full object-cover
+        scale-110 transition-transform
+        duration-700 ease-out
+        group-hover:scale-100
+      "
           />
+
+          {/* PRICE PILL */}
+          <div
+            className="
+        absolute top-4 right-4
+        bg-white/90 backdrop-blur-md
+        text-[#ba081c]
+        rounded-full
+        px-3 py-1.5
+        shadow-md
+        text-sm md:text-base
+        font-semibold
+        flex items-center gap-1
+      "
+          >
+            ₹{Number(room.pricePerNight).toLocaleString("en-IN")}
+            <span className="text-xs font-normal text-muted-foreground">
+              /night
+            </span>
+          </div>
 
           {/* subtle dark overlay */}
           <div
             className="
-              absolute
-              inset-0
-              bg-black/10
-              opacity-0
-              group-hover:opacity-100
-              transition
-            "
+        absolute inset-0
+        bg-black/10
+        opacity-0
+        group-hover:opacity-100
+        transition
+      "
           />
         </div>
       </Link>
 
+
       {/* CONTENT */}
-      <div className="p-5 space-y-4">
+      <div className="p-3 space-y-3">
         {/* TITLE + PRICE */}
         <div className="flex items-start justify-between gap-3">
           <Link to={`/room/${room._id}${search}`} state={linkState}>
@@ -99,21 +116,12 @@ const hasGuests = guestCount > 0;
                 font-semibold
                 leading-tight
                 transition-colors
-                group-hover:text-[#9a0336]
+                group-hover:text-[#ba081c]
               "
             >
               {room.name}
             </h3>
           </Link>
-
-          <div className="text-right shrink-0">
-            <div className="text-lg font-semibold">
-              ₹{Number(room.pricePerNight).toLocaleString("en-IN")}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              /night
-            </div>
-          </div>
         </div>
 
         {/* DESCRIPTION */}
@@ -152,7 +160,7 @@ const hasGuests = guestCount > 0;
                 w-full
                 h-10
                 rounded-lg
-                bg-primary
+                bg-[#ba081c]
                 text-primary-foreground
                 font-medium
                 transition

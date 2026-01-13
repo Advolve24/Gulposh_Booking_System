@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Header() {
@@ -33,96 +33,96 @@ export default function Header() {
     <header
       className="
         sticky top-0 z-50
-        backdrop-blur-md
-        bg-white/70
-        border-b border-[#eadfd6]
-        shadow-sm
+        backdrop-blur-xl
+        bg-[#efe7df]/80
+        border-b border-black/5
       "
     >
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 h-[64px] flex items-center justify-between">
 
-        {/* LOGO */}
-        <Link to="/" className="flex items-center gap-2">
+        {/* ================= LOGO ================= */}
+          <Link to="/" className="flex items-center gap-2">
           <img src="/logo1.png" className="h-9" alt="logo" />
           <img src="/logo2.png" className="h-6" alt="brand" />
         </Link>
 
-        {/* PROFILE */}
-        {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="
-                  flex items-center gap-2
-                  px-3 py-1.5
-                  rounded-full
-                  border-2 border-[#ecd6d6]
-                  bg-white/80
-                  hover:bg-white
-                  transition
-                "
-              >
-                {/* Avatar */}
-                <div
-                  className="
-                    h-8 w-8
-                    rounded-full
-                    bg-primary
-                    text-primary-foreground
-                    flex items-center justify-center
-                    text-sm font-semibold
-                  "
-                >
-                  {initials}
-                </div>
+        {/* ================= RIGHT ACTIONS ================= */}
+        <div className="flex items-center gap-4">
 
-                {/* Name */}
-                <span className="text-sm font-medium text-gray-800">
-                  {user.name || user.email}
-                </span>
-
-                {/* Arrow */}
-                <ChevronDown className="w-4 h-4 text-gray-500" />
-              </button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={() => navigate("/my-account")}>
-                My Account
-              </DropdownMenuItem>
-
-              <DropdownMenuItem onClick={() => navigate("/bookings")}>
-                My Bookings
-              </DropdownMenuItem>
-
-              <DropdownMenuItem onClick={() => navigate("/invoices")}>
-                My Invoices
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem
-                onClick={onLogout}
-                className="text-red-600 focus:text-red-600"
-              >
-                Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <button
-            onClick={openAuth}
+          {/* Visit website */}
+          <a
+            href="https://villagulposh.com/"
+            target="_blank"
+            rel="noreferrer"
             className="
-              px-4 py-2
-              rounded-full
-              border border-border
-              text-sm
-              bg-white/80
+              hidden sm:flex items-center gap-1
+              text-sm text-[#6f5f55]
+              hover:text-[#3b2f2a]
+              transition
             "
           >
-            Sign in
-          </button>
-        )}
+            Visit Website
+            <ExternalLink className="h-4 w-4" />
+          </a>
+
+          {/* Auth */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="
+                    flex items-center gap-2
+                    px-3 py-1.5
+                    rounded-full
+                    bg-white/60
+                    backdrop-blur-md
+                    border border-black/5
+                    hover:bg-white
+                    transition
+                  "
+                >
+                  <div className="h-8 w-8 rounded-full bg-[#ba081c] text-white flex items-center justify-center text-sm font-semibold">
+                    {initials}
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-[#6f5f55]" />
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => navigate("/my-account")}>
+                  My Account
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/bookings")}>
+                  My Bookings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/invoices")}>
+                  My Invoices
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={onLogout}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <button
+              onClick={openAuth}
+              className="
+                px-5 py-2
+                rounded-full
+                bg-[#a11d2e]
+                text-white text-sm
+                hover:bg-[#8e1827]
+                transition
+              "
+            >
+              Sign In
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );
