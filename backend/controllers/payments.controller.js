@@ -56,8 +56,8 @@ export const createOrder = async (req, res) => {
     const roomTotal = nights * room.pricePerNight;
     const mealTotal = withMeal
       ? nights *
-        (vegGuests * room.mealPriceVeg +
-          nonVegGuests * room.mealPriceNonVeg)
+      (vegGuests * room.mealPriceVeg +
+        nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
     const amountINR = roomTotal + mealTotal;
@@ -149,8 +149,8 @@ export const verifyPayment = async (req, res) => {
     const roomTotal = nights * room.pricePerNight;
     const mealTotal = withMeal
       ? nights *
-        (vegGuests * room.mealPriceVeg +
-          nonVegGuests * room.mealPriceNonVeg)
+      (vegGuests * room.mealPriceVeg +
+        nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
     const amountINR = roomTotal + mealTotal;
@@ -185,25 +185,28 @@ export const verifyPayment = async (req, res) => {
     /* ---------------- Notifications (Non-Blocking) ---------------- */
 
     // ✅ WhatsApp
-    sendWhatsAppText(
-      contactPhone,
-      `✅ Hi ${contactName}, your booking is confirmed!
-🏠 ${room.name}
-📅 ${startDate} → ${endDate}
-👥 Guests: ${guests}
-💰 Amount: ₹${amountINR}`
-    ).catch((err) => {
-      console.error("WhatsApp failed:", err);
-    });
+    //     sendWhatsAppText(
+    //       contactPhone,
+    //       `✅ Hi ${contactName}, your booking is confirmed!
+    // 🏠 ${room.name}
+    // 📅 ${startDate} → ${endDate}
+    // 👥 Guests: ${guests}
+    // 💰 Amount: ₹${amountINR}`
+    //     ).catch((err) => {
+    //       console.error("WhatsApp failed:", err);
+    //     });
 
     // ✅ Email
+    const emailToSend =
+      contactEmail ||
+      req.user?.email ||
+      null;
+
     sendBookingConfirmationMail({
-      to: contactEmail,
+      to: emailToSend,
       name: contactName,
       room,
       booking,
-    }).catch((err) => {
-      console.error("Email failed:", err);
     });
 
     return res.json({ ok: true, booking });
