@@ -4,7 +4,6 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Room from "../models/Room.js";
 import Booking from "../models/Booking.js";
-import { sendWhatsAppText } from "../utils/whatsapp.js";
 import { sendBookingConfirmationMail } from "../utils/mailer.js";
 import { parseYMD, toDateOnly } from "../lib/date.js";
 
@@ -26,7 +25,9 @@ const nightsBetween = (start, end) => {
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ message: "Auth required" });
+    if (!userId) {
+      return res.status(401).json({ message: "Auth required" });
+    }
 
     const {
       roomId,
@@ -43,7 +44,9 @@ export const createOrder = async (req, res) => {
     }
 
     const room = await Room.findById(roomId);
-    if (!room) return res.status(404).json({ message: "Room not found" });
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
 
     const sDate = parseYMD(startDate);
     const eDate = parseYMD(endDate);
@@ -56,8 +59,8 @@ export const createOrder = async (req, res) => {
     const roomTotal = nights * room.pricePerNight;
     const mealTotal = withMeal
       ? nights *
-      (vegGuests * room.mealPriceVeg +
-        nonVegGuests * room.mealPriceNonVeg)
+        (vegGuests * room.mealPriceVeg +
+          nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
     const amountINR = roomTotal + mealTotal;
@@ -80,8 +83,8 @@ export const createOrder = async (req, res) => {
       currency: "INR",
     });
   } catch (err) {
-    console.error("createOrder error:", err);
-    return res.status(500).json({ message: err.message });
+    console.error("❌ createOrder error:", err);
+    return res.status(500).json({ message: "Failed to create order" });
   }
 };
 
@@ -89,7 +92,9 @@ export const createOrder = async (req, res) => {
 export const verifyPayment = async (req, res) => {
   try {
     const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ message: "Auth required" });
+    if (!userId) {
+      return res.status(401).json({ message: "Auth required" });
+    }
 
     const {
       razorpay_order_id,
@@ -112,17 +117,21 @@ export const verifyPayment = async (req, res) => {
       pincode,
     } = req.body || {};
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature
+    ) {
       return res.status(400).json({ message: "Invalid payment payload" });
     }
 
     /* ---------------- Verify Razorpay Signature ---------------- */
-    const expected = crypto
+    const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
-    if (expected !== razorpay_signature) {
+    if (expectedSignature !== razorpay_signature) {
       return res.status(400).json({ message: "Signature mismatch" });
     }
 
@@ -136,7 +145,9 @@ export const verifyPayment = async (req, res) => {
     }
 
     const room = await Room.findById(roomId);
-    if (!room) return res.status(404).json({ message: "Room not found" });
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
 
     const sDate = parseYMD(startDate);
     const eDate = parseYMD(endDate);
@@ -149,8 +160,8 @@ export const verifyPayment = async (req, res) => {
     const roomTotal = nights * room.pricePerNight;
     const mealTotal = withMeal
       ? nights *
-      (vegGuests * room.mealPriceVeg +
-        nonVegGuests * room.mealPriceNonVeg)
+        (vegGuests * room.mealPriceVeg +
+          nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
     const amountINR = roomTotal + mealTotal;
@@ -182,44 +193,33 @@ export const verifyPayment = async (req, res) => {
       addressInfo: { address, country, state, city, pincode },
     });
 
-    /* ---------------- Notifications (Non-Blocking) ---------------- */
-
-    // ✅ WhatsApp
-    //     sendWhatsAppText(
-    //       contactPhone,
-    //       `✅ Hi ${contactName}, your booking is confirmed!
-    // 🏠 ${room.name}
-    // 📅 ${startDate} → ${endDate}
-    // 👥 Guests: ${guests}
-    // 💰 Amount: ₹${amountINR}`
-    //     ).catch((err) => {
-    //       console.error("WhatsApp failed:", err);
-    //     });
-
-    // ✅ Email
+    /* ---------------- Email Notification ---------------- */
     const emailToSend =
       contactEmail ||
       req.user?.email ||
       null;
 
-    sendBookingConfirmationMail({
-  to: emailToSend,
-  name: contactName,
-  room,
-  booking,
-})
-  .then(() => {
-    console.log("✅ Booking confirmation email sent to:", emailToSend);
-  })
-  .catch((err) => {
-    console.error("❌ Booking email failed:", err);
-  });
+    if (emailToSend) {
+      try {
+        await sendBookingConfirmationMail({
+          to: emailToSend,
+          name: contactName,
+          room,
+          booking,
+        });
+        console.log("✅ Booking confirmation email sent to:", emailToSend);
+      } catch (mailErr) {
+        console.error("❌ Booking email failed:", mailErr);
+      }
+    } else {
+      console.warn("⚠️ No email found to send booking confirmation");
+    }
 
     return res.json({ ok: true, booking });
   } catch (err) {
-    console.error("verifyPayment error:", err);
+    console.error("❌ verifyPayment error:", err);
     return res
-      .status(400)
-      .json({ message: err?.message || "Verification failed" });
+      .status(500)
+      .json({ message: "Payment verification failed" });
   }
 };
