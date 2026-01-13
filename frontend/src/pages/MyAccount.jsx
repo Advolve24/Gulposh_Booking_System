@@ -212,6 +212,31 @@ export default function MyAccount() {
     );
   }
 
+  const [deleting, setDeleting] = useState(false);
+
+  const onDeleteAccount = async () => {
+    const ok = confirm(
+      "Are you sure you want to permanently delete your account? This action cannot be undone."
+    );
+    if (!ok) return;
+
+    try {
+      setDeleting(true);
+      await api.delete("/auth/me"); // backend must support this
+      toast.success("Account deleted successfully");
+
+      // logout + redirect
+      window.location.href = "/";
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || "Failed to delete account"
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-10">
       <div id="recaptcha-container" />
@@ -473,6 +498,50 @@ export default function MyAccount() {
 
         </div>
       </Card>
+      {/* ================= DANGER ZONE ================= */}
+      <Card
+        className="
+    rounded-2xl
+    border border-red-200
+    bg-white
+    p-6 sm:p-8
+  "
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+          <div>
+            <h3 className="text-lg font-semibold text-red-600">
+              Danger Zone
+            </h3>
+
+            <div className="mt-2">
+              <div className="font-medium">
+                Delete Account
+              </div>
+              <p className="text-sm text-muted-foreground mt-1 max-w-md">
+                Permanently delete your account and all associated data.
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="destructive"
+            disabled={deleting}
+            onClick={onDeleteAccount}
+            className="
+        rounded-xl
+        px-6
+        py-2.5
+        text-sm
+        font-medium
+        shadow-sm
+      "
+          >
+            {deleting ? "Deleting..." : "Delete Account"}
+          </Button>
+        </div>
+      </Card>
+
     </div>
   );
 }
