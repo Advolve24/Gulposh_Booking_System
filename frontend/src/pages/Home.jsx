@@ -283,7 +283,7 @@ export default function Home() {
           >
             <div
               className="
-      w-full max-w-4xl
+      w-full max-w-6xl
       mx-auto
       rounded-3xl
        bg-white/10 backdrop-blur-sm
