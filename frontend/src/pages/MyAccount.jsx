@@ -373,6 +373,7 @@ export default function MyAccount() {
             )}
           </div>
 
+          {/* ADDRESS */}
           <div className="sm:col-span-2">
             <Label>Address</Label>
             <Input
@@ -386,68 +387,79 @@ export default function MyAccount() {
           </div>
 
           {/* COUNTRY */}
-          <Select
-            disabled={!editMode}
-            value={form.country}
-            onValueChange={(v) =>
-              setForm((f) => ({ ...f, country: v, state: "", city: "" }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Country" />
-            </SelectTrigger>
-            <SelectContent>
-              {countries.map((c) => (
-                <SelectItem key={c.isoCode} value={c.isoCode}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div>
+            <Label>Country</Label>
+            <Select
+              disabled={!editMode}
+              value={form.country}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, country: v, state: "", city: "" }))
+              }
+            >
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder="Country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((c) => (
+                  <SelectItem key={c.isoCode} value={c.isoCode}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* STATE */}
-          <Select
-            disabled={!editMode || !form.country}
-            value={form.state}
-            onValueChange={(v) =>
-              setForm((f) => ({ ...f, state: v, city: "" }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="State" />
-            </SelectTrigger>
-            <SelectContent>
-              {states.map((s) => (
-                <SelectItem key={s.isoCode} value={s.isoCode}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div>
+            <Label>State</Label>
+            <Select
+              disabled={!editMode || !form.country}
+              value={form.state}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, state: v, city: "" }))
+              }
+            >
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder="State" />
+              </SelectTrigger>
+              <SelectContent>
+                {states.map((s) => (
+                  <SelectItem key={s.isoCode} value={s.isoCode}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* CITY */}
-          <Select
-            disabled={!editMode || !form.state}
-            value={form.city}
-            onValueChange={(v) =>
-              setForm((f) => ({ ...f, city: v }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="City" />
-            </SelectTrigger>
-            <SelectContent>
-              {cities.map((c) => (
-                <SelectItem key={c.name} value={c.name}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div>
+            <Label>City</Label>
+            <Select
+              disabled={!editMode || !form.state}
+              value={form.city}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, city: v }))
+              }
+            >
+              <SelectTrigger className="mt-2">
+                <SelectValue placeholder="City" />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((c) => (
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
+          {/* PINCODE */}
           <div>
             <Label>Pincode</Label>
             <Input
+              className="mt-2"
               disabled={!editMode}
               value={form.pincode}
               onChange={(e) =>
@@ -458,6 +470,7 @@ export default function MyAccount() {
               }
             />
           </div>
+
         </div>
       </Card>
     </div>
