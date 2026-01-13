@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { api } from "../api/http";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -34,6 +36,8 @@ import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
 export default function MyAccount() {
   /* ================= STATE ================= */
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -247,11 +251,12 @@ export default function MyAccount() {
                     toast.error("Save changes first");
                     return;
                   }
-                  setEditMode(false);
+                  navigate(-1); // 👈 GO BACK
                 }}
               >
                 Cancel
               </Button>
+
               <Button onClick={onSave} disabled={saving}>
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
