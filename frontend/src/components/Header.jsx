@@ -33,8 +33,8 @@ export default function Header() {
     <header
       className="
         sticky top-0 z-50
-        backdrop-blur-xl
-        bg-[#efe7df]/80
+        backdrop-blur-md
+        bg-white/70
         border-b border-black/5
       "
     >
