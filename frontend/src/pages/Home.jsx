@@ -183,8 +183,9 @@ export default function Home() {
         className="
         relative isolate overflow-hidden
         h-[85vh]
-        sm:h-[95svh]
+        sm:h-[92svh]
         w-full
+         
       "
       >
 
@@ -209,7 +210,7 @@ export default function Home() {
         </div>
 
         {/* ================= CONTENT ================= */}
-        <div className="mx-auto max-w-7xl px-4 pt-10 sm:pt-14 pb-10 sm:pb-12 md:pt-20 md:pb-16">
+        <div className="mx-auto max-w-7xl px-4 pt-10 sm:pt-14 pb-10 sm:pb-12 md:pt-14 md:pb-16">
 
           {/* LOCATION PILL */}
           <motion.div
@@ -274,7 +275,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.02, delay: 0.25 }}
             className="
-    mt-10
+    mt-14
     flex flex-col
     items-center
     justify-center
@@ -385,15 +386,14 @@ export default function Home() {
               </div>
             </div>
             {/* ================= STATS ================= */}
-            <div className="hidden sm:block mt-14 max-w-4xl mx-auto px-2">
-
+            <div className="hidden sm:block mt-20 w-[55%] mx-auto px-2">
               <div
                 className="
       grid
       grid-cols-2
-      gap-y-8
-      text-white/80
       sm:grid-cols-4
+      gap-6
+      text-white
     "
               >
                 {[
@@ -405,25 +405,42 @@ export default function Home() {
                   <div
                     key={i}
                     className="
-          relative
-          flex flex-col
+          flex
+          flex-col
           items-center
           justify-center
           text-center
+
+          rounded-2xl
+          px-6
+          py-5
+
+          bg-white/10
+          backdrop-blur-md
+          ring-1 ring-white/20
+
+          shadow-[0_12px_40px_-20px_rgba(0,0,0,0.6)]
+          transition-all
+          duration-300
+
+          hover:bg-white/15
+          hover:ring-white/30
         "
                   >
                     {/* VALUE */}
-                    <div className="text-white font-semibold text-[18px] md:text-[20px]">
+                    <div className="text-white font-semibold text-[22px] leading-none">
                       {value}
                     </div>
 
                     {/* LABEL */}
-                    <div className="text-[14px] md:text-[15px] text-white/80">
+                    <div className="mt-1 text-[14px] text-white">
                       {label}
                     </div>
                   </div>
                 ))}
               </div>
+
+
             </div>
 
 
@@ -688,51 +705,51 @@ export default function Home() {
         </div>
       </section>
       <footer className="bg-[#A11D2E] text-white">
-  <div
-    className="
+        <div
+          className="
       max-w-7xl mx-auto
       px-4 py-4
       shadow-[0_-6px_20px_-10px_rgba(0,0,0,0.35)]
     "
-  >
-    <div
-      className="
+        >
+          <div
+            className="
         flex flex-col
         gap-3
         text-xs font-medium
         md:flex-row md:items-center md:justify-between
       "
-    >
-      {/* LEFT */}
-      <div className="text-white/90">
-        © {new Date().getFullYear()} Gulposh Villa. All rights reserved.
-      </div>
+          >
+            {/* LEFT */}
+            <div className="text-white/90">
+              © {new Date().getFullYear()} Gulposh Villa. All rights reserved.
+            </div>
 
-      {/* RIGHT */}
-      <div className="flex gap-6">
-        <button
-          className="
+            {/* RIGHT */}
+            <div className="flex gap-6">
+              <button
+                className="
             text-white/80
             hover:text-white
             transition-colors
           "
-        >
-          Privacy Policy
-        </button>
+              >
+                Privacy Policy
+              </button>
 
-        <button
-          className="
+              <button
+                className="
             text-white/80
             hover:text-white
             transition-colors
           "
-        >
-          Terms of Service
-        </button>
-      </div>
-    </div>
-  </div>
-</footer>
+              >
+                Terms of Service
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
 
     </div>
   );
