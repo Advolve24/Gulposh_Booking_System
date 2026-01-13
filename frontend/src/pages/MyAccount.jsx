@@ -10,10 +10,6 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
   Calendar as CalendarIcon,
   ShieldCheck,
 } from "lucide-react";
@@ -55,6 +51,9 @@ export default function MyAccount() {
     pincode: "",
   });
 
+  const [initialForm, setInitialForm] = useState(null);
+  const [hasChanges, setHasChanges] = useState(false);
+
   const [phone, setPhone] = useState("");
   const [originalPhone, setOriginalPhone] = useState("");
 
@@ -67,7 +66,7 @@ export default function MyAccount() {
       try {
         const { data } = await api.get("/auth/me");
 
-        setForm({
+        const loadedForm = {
           name: data.name || "",
           email: data.email || "",
           dob: data.dob ? new Date(data.dob) : null,
@@ -76,6 +75,13 @@ export default function MyAccount() {
           state: data.state || "",
           city: data.city || "",
           pincode: data.pincode || "",
+        };
+
+        setForm(loadedForm);
+
+        setInitialForm({
+          ...loadedForm,
+          dob: loadedForm.dob ? loadedForm.dob.toISOString() : null,
         });
 
         setPhone(data.phone || "");
@@ -87,6 +93,20 @@ export default function MyAccount() {
       }
     })();
   }, []);
+
+  /* ================= DETECT UNSAVED CHANGES ================= */
+  useEffect(() => {
+    if (!initialForm) return;
+
+    const current = {
+      ...form,
+      dob: form.dob ? form.dob.toISOString() : null,
+    };
+
+    setHasChanges(
+      JSON.stringify(current) !== JSON.stringify(initialForm)
+    );
+  }, [form, initialForm]);
 
   const phoneChanged = phone !== originalPhone;
 
@@ -158,6 +178,12 @@ export default function MyAccount() {
         pincode: form.pincode || null,
       });
 
+      setInitialForm({
+        ...form,
+        dob: form.dob ? form.dob.toISOString() : null,
+      });
+
+      setHasChanges(false);
       setEditMode(false);
       setOtpStep("idle");
       toast.success("Profile updated successfully");
@@ -192,7 +218,7 @@ export default function MyAccount() {
 
       {/* HEADER */}
       <div className="text-center">
-        <h1 className="text-3xl font-serif font-semibold">
+        <h1 className="text-3xl font-semibold">
           My Account
         </h1>
         <p className="text-muted-foreground mt-1">
@@ -202,8 +228,10 @@ export default function MyAccount() {
 
       {/* PROFILE CARD */}
       <Card className="rounded-2xl border bg-white p-6 sm:p-8 space-y-6">
+
+        {/* ACTION BAR */}
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-serif font-semibold">
+          <h2 className="text-xl font-semibold">
             Profile Information
           </h2>
 
@@ -212,11 +240,33 @@ export default function MyAccount() {
               Edit Profile
             </Button>
           ) : (
-            <Button onClick={onSave} disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (hasChanges) {
+                    toast.error("You have unsaved changes. Please save before exiting.");
+                    return;
+                  }
+                  setEditMode(false);
+                }}
+              >
+                Cancel
+              </Button>
+
+              <Button onClick={onSave} disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
           )}
         </div>
+
+        {/* UNSAVED CHANGES ALERT */}
+        {editMode && hasChanges && (
+          <div className="rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+            You have unsaved changes. Click <strong>Save Changes</strong> to apply them.
+          </div>
+        )}
 
         {/* AVATAR */}
         <div className="flex items-center gap-4">
@@ -288,7 +338,6 @@ export default function MyAccount() {
           <div className="space-y-2">
             <Label>Phone Number</Label>
             <Input
-              className="mt-2"
               disabled={!editMode}
               value={phone}
               onChange={(e) => {
@@ -336,6 +385,7 @@ export default function MyAccount() {
             />
           </div>
 
+          {/* COUNTRY */}
           <Select
             disabled={!editMode}
             value={form.country}
@@ -343,7 +393,9 @@ export default function MyAccount() {
               setForm((f) => ({ ...f, country: v, state: "", city: "" }))
             }
           >
-            <SelectTrigger><SelectValue placeholder="Country" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Country" />
+            </SelectTrigger>
             <SelectContent>
               {countries.map((c) => (
                 <SelectItem key={c.isoCode} value={c.isoCode}>
@@ -353,6 +405,7 @@ export default function MyAccount() {
             </SelectContent>
           </Select>
 
+          {/* STATE */}
           <Select
             disabled={!editMode || !form.country}
             value={form.state}
@@ -360,7 +413,9 @@ export default function MyAccount() {
               setForm((f) => ({ ...f, state: v, city: "" }))
             }
           >
-            <SelectTrigger><SelectValue placeholder="State" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="State" />
+            </SelectTrigger>
             <SelectContent>
               {states.map((s) => (
                 <SelectItem key={s.isoCode} value={s.isoCode}>
@@ -370,6 +425,7 @@ export default function MyAccount() {
             </SelectContent>
           </Select>
 
+          {/* CITY */}
           <Select
             disabled={!editMode || !form.state}
             value={form.city}
@@ -377,7 +433,9 @@ export default function MyAccount() {
               setForm((f) => ({ ...f, city: v }))
             }
           >
-            <SelectTrigger><SelectValue placeholder="City" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="City" />
+            </SelectTrigger>
             <SelectContent>
               {cities.map((c) => (
                 <SelectItem key={c.name} value={c.name}>
@@ -390,7 +448,6 @@ export default function MyAccount() {
           <div>
             <Label>Pincode</Label>
             <Input
-              className="mt-2"
               disabled={!editMode}
               value={form.pincode}
               onChange={(e) =>

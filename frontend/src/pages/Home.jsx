@@ -619,7 +619,7 @@ export default function Home() {
           BOOK ENTIRE VILLA (exact dark CTA block)
       ====================================================== */}
       <section className="bg-[#fffaf7] text-white" ref={cta.ref}>
-        <div className="mx-auto max-w-7xl px-4 py-8  md:py-10">
+        <div className="mx-auto max-w-7xl px-4 py-8  md:py-14">
           <motion.div
             initial="hidden"
             animate={cta.inView ? "show" : "hidden"}

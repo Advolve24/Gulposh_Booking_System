@@ -57,6 +57,10 @@ const AMENITY_ICONS = {
   dining_table: Utensils,
   wardrobe: Shirt,
   free_parking: Car,
+  ac: ShieldCheck,
+  security: ShieldCheck,
+  breakfast: Utensils,
+  parking: Car
 };
 
 const ruleIcon = (text = "") => {
