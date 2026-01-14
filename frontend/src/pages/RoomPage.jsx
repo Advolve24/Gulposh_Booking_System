@@ -660,7 +660,7 @@ export default function RoomPage() {
 
             {/* BENEFITS */}
             <div className="pt-2 space-y-2 text-sm text-green-700">
-              <div>✓ Free cancellation up to 7 days</div>
+              <div>✓ Free cancellation up to 10 days</div>
               <div>✓ Instant confirmation</div>
               <div>✓ Best price guarantee</div>
             </div>
