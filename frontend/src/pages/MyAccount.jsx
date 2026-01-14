@@ -309,21 +309,44 @@ export default function MyAccount() {
 
           <div>
             <Label>Date of Birth</Label>
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   disabled={!editMode}
-                  className="w-full justify-start"
+                  className="
+          w-full
+          justify-between
+          overflow-hidden
+          whitespace-nowrap
+        "
                 >
-                  {form.dob ? format(form.dob, "PPP") : "Select date"}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  {/* DATE TEXT (SAFE WIDTH) */}
+                  <span className="truncate text-left">
+                    {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date"}
+                  </span>
+
+                  {/* ICON (FIXED SIZE) */}
+                  <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent>
+
+              <PopoverContent
+                className="w-auto p-0"
+                align="start"
+                side="bottom"
+              >
                 <Calendar
+                  mode="single"
                   selected={form.dob}
-                  onSelect={(d) => setForm((f) => ({ ...f, dob: d }))}
+                  onSelect={(d) =>
+                    setForm((f) => ({ ...f, dob: d }))
+                  }
+                  captionLayout="dropdown"
+                  fromYear={1950}
+                  toYear={new Date().getFullYear()}
+                  disabled={(date) => date > new Date()}
                 />
               </PopoverContent>
             </Popover>
