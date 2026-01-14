@@ -30,7 +30,7 @@ export default function AuthModal() {
   const [form, setForm] = useState({ phone: "", otp: "" });
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
 
-  const verifyingRef = useRef(false); // 🔐 prevents double verify
+  const verifyingRef = useRef(false);
 
   /* ================= TIMER ================= */
   useEffect(() => {
@@ -58,7 +58,6 @@ export default function AuthModal() {
     try {
       setLoading(true);
 
-      // ✅ Create reCAPTCHA ONCE and reuse
       const verifier = getRecaptchaVerifier(auth, "recaptcha-container");
       await verifier.render();
 
@@ -80,10 +79,13 @@ export default function AuthModal() {
     }
   };
 
-  /* ================= VERIFY OTP ================= */
+  /* ================= VERIFY OTP (MANUAL ONLY) ================= */
   const verifyOtp = async () => {
     if (verifyingRef.current) return;
-    if (form.otp.length !== 6) return;
+    if (form.otp.length !== 6) {
+      toast.error("Enter 6-digit OTP");
+      return;
+    }
 
     verifyingRef.current = true;
 
@@ -116,19 +118,13 @@ export default function AuthModal() {
       navigate("/", { replace: true });
     } catch (err) {
       verifyingRef.current = false;
+      console.error(err);
       toast.error("Invalid or expired OTP");
       setForm((f) => ({ ...f, otp: "" }));
     } finally {
       setLoading(false);
     }
   };
-
-  /* ================= AUTO VERIFY (SAFE) ================= */
-  useEffect(() => {
-    if (step === "otp" && form.otp.length === 6) {
-      verifyOtp();
-    }
-  }, [form.otp, step]);
 
   return (
     <Dialog
@@ -141,15 +137,22 @@ export default function AuthModal() {
       }}
     >
       <DialogContent
-        className="p-0 sm:max-w-[420px] rounded-3xl overflow-hidden bg-white"
+        className="
+          p-0
+          w-[92vw]
+          max-w-[380px]
+          rounded-3xl
+          overflow-hidden
+          bg-white
+        "
       >
-        {/* ACCESSIBILITY FIX */}
+        {/* ACCESSIBILITY */}
         <VisuallyHidden>
           <DialogTitle>Authentication</DialogTitle>
           <DialogDescription>Login or verify OTP</DialogDescription>
         </VisuallyHidden>
 
-        {/* REQUIRED for Firebase */}
+        {/* REQUIRED FOR FIREBASE */}
         <div id="recaptcha-container" />
 
         {/* CLOSE */}
@@ -164,14 +167,14 @@ export default function AuthModal() {
         </button>
 
         {/* IMAGE */}
-        <div className="relative h-56">
+        <div className="relative h-48">
           <img
             src="/Gulposh-65-scaled-1.webp"
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
-          <div className="absolute bottom-5 left-6 text-white">
-            <h3 className="text-xl font-serif">Gulposh Luxury Villa</h3>
+          <div className="absolute bottom-4 left-4 text-white">
+            <h3 className="text-lg font-serif">Gulposh Luxury Villa</h3>
             <p className="text-xs opacity-90">
               Experience elegance. Book effortlessly.
             </p>
@@ -179,8 +182,8 @@ export default function AuthModal() {
         </div>
 
         {/* BODY */}
-        <div className="px-6 py-6 space-y-5 bg-[#f6f4f1]">
-          <h2 className="text-xl font-semibold">
+        <div className="px-5 py-5 space-y-4 bg-[#f6f4f1]">
+          <h2 className="text-lg font-semibold">
             {step === "phone" ? "Sign in" : "Verify OTP"}
           </h2>
 
@@ -188,9 +191,9 @@ export default function AuthModal() {
             <>
               <Label>Mobile Number</Label>
               <Input
-                className="h-12 rounded-xl"
-                value={form.phone}
+                className="h-11 rounded-xl"
                 inputMode="numeric"
+                value={form.phone}
                 onChange={(e) =>
                   setForm({
                     ...form,
@@ -199,7 +202,7 @@ export default function AuthModal() {
                 }
               />
               <Button
-                className="w-full h-12 bg-[#a11d2e]"
+                className="w-full h-11 bg-[#a11d2e]"
                 onClick={sendOtp}
                 disabled={loading}
               >
@@ -212,9 +215,9 @@ export default function AuthModal() {
             <>
               <Label>Enter OTP</Label>
               <Input
-                className="h-12 text-center tracking-[0.35em]"
-                value={form.otp}
+                className="h-11 text-center tracking-[0.35em] font-semibold"
                 inputMode="numeric"
+                value={form.otp}
                 onChange={(e) =>
                   setForm({
                     ...form,
@@ -223,20 +226,33 @@ export default function AuthModal() {
                 }
               />
 
-              <div className="text-xs text-center">
-                {secondsLeft > 0
-                  ? `Resend in ${secondsLeft}s`
-                  : (
-                    <button
-                      onClick={sendOtp}
-                      className="text-primary underline"
-                    >
-                      Resend OTP
-                    </button>
-                  )}
+              <Button
+                className="w-full h-11 bg-[#a11d2e]"
+                onClick={verifyOtp}
+                disabled={loading}
+              >
+                {loading ? "Verifying..." : "Verify OTP"}
+              </Button>
+
+              <div className="text-xs text-center text-muted-foreground">
+                {secondsLeft > 0 ? (
+                  <>Resend OTP in <b>{secondsLeft}s</b></>
+                ) : (
+                  <button
+                    onClick={sendOtp}
+                    className="text-primary font-medium underline"
+                  >
+                    Resend OTP
+                  </button>
+                )}
               </div>
             </>
           )}
+        </div>
+
+        {/* FOOTER */}
+        <div className="bg-white px-4 py-2 text-center text-[11px] text-muted-foreground border-t">
+          🔒 Secured login • No spam • Privacy protected
         </div>
       </DialogContent>
     </Dialog>
