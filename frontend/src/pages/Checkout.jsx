@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { ArrowLeft } from "lucide-react";
 
 import {
   Select,
@@ -287,66 +288,115 @@ export default function Checkout() {
 
   /* ================= UI ================= */
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div id="recaptcha-container" />
+    <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6">
+      {/* reCAPTCHA – hidden, no layout impact */}
+      <div
+        id="recaptcha-container"
+        className="absolute inset-0 opacity-0 pointer-events-none"
+      />
 
-      <div className="border rounded-xl p-6 space-y-6 bg-white">
+      {/* BACK BUTTON */}
+      <div className="mb-4 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-black"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+      </div>
 
-        {/* PROFILE */}
+      <div className="bg-white rounded-xl p-4 sm:p-6 space-y-6">
+
+        {/* ================= PROFILE ================= */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          {/* NAME – FULL */}
+          <div className="col-span-2">
             <Label>Name</Label>
-            <Input value={form.name} disabled />
+            <Input value={form.name} disabled className="truncate" />
           </div>
 
-          <div>
+          {/* EMAIL – FULL */}
+          <div className="col-span-2">
             <Label>Email</Label>
             <Input
               value={form.email}
+              className="truncate"
               onChange={(e) =>
                 setForm((f) => ({ ...f, email: e.target.value }))
               }
             />
           </div>
 
-          <div>
+          {/* DOB */}
+          <div className="col-span-1">
             <Label>Date of Birth</Label>
+
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start">
-                  {form.dob ? format(form.dob, "PPP") : "Select date"}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                <Button
+                  variant="outline"
+                  className="
+          w-full
+          justify-between
+          overflow-hidden
+          whitespace-nowrap
+        "
+                >
+                  {/* TEXT (SAFE & RESPONSIVE) */}
+                  <span className="truncate text-left">
+                    {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date"}
+                  </span>
+
+                  {/* ICON (NEVER SHRINKS) */}
+                  <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent>
+
+              <PopoverContent
+                className="w-auto p-0"
+                align="start"
+                side="bottom"
+              >
                 <Calendar
+                  mode="single"
                   selected={form.dob}
                   onSelect={(d) =>
                     setForm((f) => ({ ...f, dob: d }))
                   }
+                  captionLayout="dropdown"
+                  fromYear={1950}
+                  toYear={new Date().getFullYear()}
+                  disabled={(date) => date > new Date()}
                 />
               </PopoverContent>
             </Popover>
           </div>
 
-          <div>
+
+          {/* PHONE */}
+          <div className="col-span-1">
             <Label>Phone</Label>
-            <Input value={form.phone} disabled />
+            <Input value={form.phone} disabled className="truncate" />
           </div>
         </div>
 
-        {/* ADDRESS */}
-        <div>
-          <Label>Address</Label>
-          <Input
-            value={address.address}
-            onChange={(e) =>
-              setAddress((a) => ({ ...a, address: e.target.value }))
-            }
-          />
-        </div>
+        {/* ================= ADDRESS ================= */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {/* ADDRESS – FULL */}
+          <div className="col-span-2 md:col-span-3">
+            <Label>Address</Label>
+            <Input
+              value={address.address}
+              className="truncate"
+              onChange={(e) =>
+                setAddress((a) => ({ ...a, address: e.target.value }))
+              }
+            />
+          </div>
 
-        <div className="grid grid-cols-3 gap-4">
+          {/* COUNTRY */}
           <div>
             <Label>Country</Label>
             <Select
@@ -355,7 +405,9 @@ export default function Checkout() {
                 setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
               }
             >
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="truncate">
+                <SelectValue className="truncate" />
+              </SelectTrigger>
               <SelectContent>
                 {countries.map((c) => (
                   <SelectItem key={c.isoCode} value={c.isoCode}>
@@ -366,6 +418,7 @@ export default function Checkout() {
             </Select>
           </div>
 
+          {/* STATE */}
           <div>
             <Label>State</Label>
             <Select
@@ -374,7 +427,9 @@ export default function Checkout() {
                 setAddress((a) => ({ ...a, state: v, city: "" }))
               }
             >
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="truncate">
+                <SelectValue className="truncate" />
+              </SelectTrigger>
               <SelectContent>
                 {statesList.map((s) => (
                   <SelectItem key={s.isoCode} value={s.isoCode}>
@@ -385,6 +440,7 @@ export default function Checkout() {
             </Select>
           </div>
 
+          {/* CITY */}
           <div>
             <Label>City</Label>
             <Select
@@ -393,7 +449,9 @@ export default function Checkout() {
                 setAddress((a) => ({ ...a, city: v }))
               }
             >
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="truncate">
+                <SelectValue className="truncate" />
+              </SelectTrigger>
               <SelectContent>
                 {citiesList.map((c) => (
                   <SelectItem key={c.name} value={c.name}>
@@ -403,28 +461,31 @@ export default function Checkout() {
               </SelectContent>
             </Select>
           </div>
+
+          {/* PINCODE */}
+          <div>
+            <Label>Pincode</Label>
+            <Input
+              value={address.pincode}
+              className="truncate"
+              onChange={(e) =>
+                setAddress((a) => ({
+                  ...a,
+                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                }))
+              }
+            />
+          </div>
         </div>
 
-        <div>
-          <Label>Pincode</Label>
-          <Input
-            value={address.pincode}
-            onChange={(e) =>
-              setAddress((a) => ({
-                ...a,
-                pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-              }))
-            }
-          />
-        </div>
-
-        {/* BOOKING DATES */}
-        <div className="grid grid-cols-3 gap-4">
+        {/* ================= BOOKING DATES ================= */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div>
             <Label>Check-in</Label>
             <Input
               value={range.from ? format(range.from, "dd MMM yyyy") : ""}
               disabled
+              className="truncate"
             />
           </div>
 
@@ -433,49 +494,48 @@ export default function Checkout() {
             <Input
               value={range.to ? format(range.to, "dd MMM yyyy") : ""}
               disabled
+              className="truncate"
             />
           </div>
 
-          <div>
+          <div className="col-span-2 md:col-span-1">
             <Label>Nights</Label>
             <Input value={nights} disabled />
           </div>
         </div>
 
-
-        {/* GUESTS */}
-        {/* GUESTS */}
-        <div>
-          <Label>Guests</Label>
-          <Select
-            value={guests}
-            onValueChange={(v) => {
-              setGuests(v);
-
-              // auto-fix meal split if guests reduced
-              const g = Number(v);
-              if (vegGuests + nonVegGuests > g) {
-                setVegGuests(0);
-                setNonVegGuests(0);
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <SelectItem key={n} value={String(n)}>
-                  {n}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* ================= GUESTS ================= */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2 sm:col-span-1">
+            <Label>Guests</Label>
+            <Select
+              value={guests}
+              onValueChange={(v) => {
+                setGuests(v);
+                const g = Number(v);
+                if (vegGuests + nonVegGuests > g) {
+                  setVegGuests(0);
+                  setNonVegGuests(0);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* MEALS */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
+        {/* ================= MEALS ================= */}
+        <div className="space-y-3">
+          <div className="flex items-start gap-2">
             <Checkbox
               checked={withMeal}
               onCheckedChange={(v) => {
@@ -486,18 +546,18 @@ export default function Checkout() {
                 }
               }}
             />
-            <Label>
+            <Label className="leading-snug">
               Include meals
               {room && (
-                <span className="ml-2 text-xs text-muted-foreground">
-                  (Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg} per guest per night)
+                <span className="block text-xs text-muted-foreground">
+                  Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg} per guest per night
                 </span>
               )}
             </Label>
           </div>
 
           {withMeal && (
-            <div className="grid grid-cols-2 gap-4 mt-2">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Veg Guests</Label>
                 <Input
@@ -509,9 +569,6 @@ export default function Checkout() {
                     setVegGuests(Math.max(0, Number(e.target.value)))
                   }
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  ₹{room.mealPriceVeg} × {nights} nights
-                </p>
               </div>
 
               <div>
@@ -525,16 +582,8 @@ export default function Checkout() {
                     setNonVegGuests(Math.max(0, Number(e.target.value)))
                   }
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  ₹{room.mealPriceNonVeg} × {nights} nights
-                </p>
               </div>
 
-              <p className="col-span-2 text-xs text-muted-foreground">
-                Veg + Non-Veg must equal total guests ({guests})
-              </p>
-
-              {/* MEAL SUBTOTAL */}
               <div className="col-span-2 flex justify-between text-sm font-medium">
                 <span>Meal Charges</span>
                 <span>₹{mealTotal.toLocaleString("en-IN")}</span>
@@ -545,7 +594,7 @@ export default function Checkout() {
 
         <Separator />
 
-        {/* PRICE BREAKDOWN */}
+        {/* ================= PRICE ================= */}
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span>Room ({nights} nights)</span>
@@ -567,10 +616,9 @@ export default function Checkout() {
           </div>
         </div>
 
-        <Button className="w-full bg-red-700" onClick={proceed}>
+        <Button className="w-full h-12 bg-red-700" onClick={proceed}>
           Proceed to Payment
         </Button>
-
       </div>
     </div>
   );
