@@ -669,7 +669,6 @@ export default function RoomPage() {
       </div>
 
       {/* MOBILE STICKY FOOTER */}
-      {/* MOBILE STICKY FOOTER */}
       <div
         className="
     fixed bottom-0 left-0 right-0 md:hidden
@@ -722,25 +721,36 @@ export default function RoomPage() {
           {/* HEADER */}
           <DrawerHeader
             className="
-        flex
-        justify-between
-        items-center
-        px-4
-        mb-2
-      "
+    relative
+    px-4
+    mb-2
+    flex
+    items-center
+  "
           >
-            <DrawerTitle className="text-base font-semibold">
+            {/* CENTERED TITLE */}
+            <DrawerTitle
+              className="
+      absolute
+      left-1/2
+      -translate-x-1/2
+      text-base
+      font-semibold
+    "
+            >
               Complete your booking
             </DrawerTitle>
 
-            <DrawerClose>
+            {/* CLOSE BUTTON (RIGHT ALIGNED) */}
+            <DrawerClose className="ml-auto">
               <X className="w-5 h-5 text-muted-foreground" />
             </DrawerClose>
           </DrawerHeader>
 
+
           {/* CENTERED BOOKING CARD (NO EDGE TOUCH) */}
           <div className="px-4">
-            <div className="mx-auto max-w-[360px]">
+            <div className="mx-auto max-w-[330px]">
               <BookingCard
                 room={room}
                 range={range}
