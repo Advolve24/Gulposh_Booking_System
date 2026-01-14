@@ -294,6 +294,18 @@ export default function Checkout() {
       className="absolute inset-0 opacity-0 pointer-events-none"
     />
 
+    {/* BACK BUTTON */}
+    <div className="mb-4 flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-black"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </button>
+    </div>
+
     <div className="bg-white rounded-xl p-4 sm:p-6 space-y-6">
 
       {/* ================= PROFILE ================= */}
@@ -301,7 +313,7 @@ export default function Checkout() {
         {/* NAME – FULL */}
         <div className="col-span-2">
           <Label>Name</Label>
-          <Input value={form.name} disabled />
+          <Input value={form.name} disabled className="truncate" />
         </div>
 
         {/* EMAIL – FULL */}
@@ -309,18 +321,22 @@ export default function Checkout() {
           <Label>Email</Label>
           <Input
             value={form.email}
+            className="truncate"
             onChange={(e) =>
               setForm((f) => ({ ...f, email: e.target.value }))
             }
           />
         </div>
 
-        {/* DOB – HALF */}
+        {/* DOB */}
         <div className="col-span-1">
           <Label>Date of Birth</Label>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
+              <Button
+                variant="outline"
+                className="w-full justify-between truncate"
+              >
                 {form.dob ? format(form.dob, "PPP") : "Select date"}
                 <CalendarIcon className="h-4 w-4 opacity-50" />
               </Button>
@@ -336,10 +352,10 @@ export default function Checkout() {
           </Popover>
         </div>
 
-        {/* PHONE – HALF */}
+        {/* PHONE */}
         <div className="col-span-1">
           <Label>Phone</Label>
-          <Input value={form.phone} disabled />
+          <Input value={form.phone} disabled className="truncate" />
         </div>
       </div>
 
@@ -350,6 +366,7 @@ export default function Checkout() {
           <Label>Address</Label>
           <Input
             value={address.address}
+            className="truncate"
             onChange={(e) =>
               setAddress((a) => ({ ...a, address: e.target.value }))
             }
@@ -357,7 +374,7 @@ export default function Checkout() {
         </div>
 
         {/* COUNTRY */}
-        <div className="col-span-1">
+        <div>
           <Label>Country</Label>
           <Select
             value={address.country}
@@ -365,7 +382,9 @@ export default function Checkout() {
               setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
             }
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="truncate">
+              <SelectValue className="truncate" />
+            </SelectTrigger>
             <SelectContent>
               {countries.map((c) => (
                 <SelectItem key={c.isoCode} value={c.isoCode}>
@@ -377,7 +396,7 @@ export default function Checkout() {
         </div>
 
         {/* STATE */}
-        <div className="col-span-1">
+        <div>
           <Label>State</Label>
           <Select
             value={address.state}
@@ -385,7 +404,9 @@ export default function Checkout() {
               setAddress((a) => ({ ...a, state: v, city: "" }))
             }
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="truncate">
+              <SelectValue className="truncate" />
+            </SelectTrigger>
             <SelectContent>
               {statesList.map((s) => (
                 <SelectItem key={s.isoCode} value={s.isoCode}>
@@ -397,7 +418,7 @@ export default function Checkout() {
         </div>
 
         {/* CITY */}
-        <div className="col-span-1">
+        <div>
           <Label>City</Label>
           <Select
             value={address.city}
@@ -405,7 +426,9 @@ export default function Checkout() {
               setAddress((a) => ({ ...a, city: v }))
             }
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="truncate">
+              <SelectValue className="truncate" />
+            </SelectTrigger>
             <SelectContent>
               {citiesList.map((c) => (
                 <SelectItem key={c.name} value={c.name}>
@@ -417,10 +440,11 @@ export default function Checkout() {
         </div>
 
         {/* PINCODE */}
-        <div className="col-span-1">
+        <div>
           <Label>Pincode</Label>
           <Input
             value={address.pincode}
+            className="truncate"
             onChange={(e) =>
               setAddress((a) => ({
                 ...a,
@@ -438,6 +462,7 @@ export default function Checkout() {
           <Input
             value={range.from ? format(range.from, "dd MMM yyyy") : ""}
             disabled
+            className="truncate"
           />
         </div>
 
@@ -446,10 +471,10 @@ export default function Checkout() {
           <Input
             value={range.to ? format(range.to, "dd MMM yyyy") : ""}
             disabled
+            className="truncate"
           />
         </div>
 
-        {/* NIGHTS – FULL ON MOBILE */}
         <div className="col-span-2 md:col-span-1">
           <Label>Nights</Label>
           <Input value={nights} disabled />
@@ -471,7 +496,9 @@ export default function Checkout() {
               }
             }}
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {[1, 2, 3, 4, 5, 6].map((n) => (
                 <SelectItem key={n} value={String(n)}>
