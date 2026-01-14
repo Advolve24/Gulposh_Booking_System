@@ -67,4 +67,8 @@ export const updateBookingAdmin = (id, payload) =>
 export const getBookingAdmin = (id) =>
   api.get(`/admin/bookings/${id}`).then(r => r.data);
 
+export const adminGlobalSearch = (q) =>
+  api.get(`/admin/search?q=${encodeURIComponent(q)}`).then(r => r.data);
+
+
 

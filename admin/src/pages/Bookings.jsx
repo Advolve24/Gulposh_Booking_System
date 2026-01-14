@@ -29,11 +29,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-
 import { Filter } from "lucide-react";
 import { listBookingsAdmin } from "@/api/admin";
-
-/* ================= HELPERS ================= */
+import BookingViewPopup from "@/components/BookingViewPopup";
 
 const dateFmt = (d) => (d ? format(new Date(d), "dd MMM yy") : "—");
 
@@ -82,6 +80,7 @@ export default function Booking() {
   const [page, setPage] = useState(1);
   const perPage = 8;
   const [params] = useSearchParams();
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
 
   const filteredBookings = useMemo(() => {
@@ -169,7 +168,14 @@ export default function Booking() {
 
               <tbody>
                 {visible.map((b, i) => (
-                  <tr key={b._id} className="border-t hover:bg-muted/20">
+                  <tr
+                    key={b._id}
+                    onClick={() => setSelectedBooking(b)}
+                    className="
+    border-t hover:bg-muted/20
+    cursor-pointer
+  "
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-green-400" />
@@ -221,9 +227,7 @@ export default function Booking() {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="bg-white" align="end">
-                          <DropdownMenuItem
-                            onClick={() => navigate(`/bookings/${b._id}`)}
-                          >
+                          <DropdownMenuItem onClick={() => setSelectedBooking(b)}>
                             View Booking
                           </DropdownMenuItem>
                           <DropdownMenuItem
@@ -365,6 +369,13 @@ export default function Booking() {
             </button>
           </div>
         </div>
+
+        <BookingViewPopup
+          open={!!selectedBooking}
+          booking={selectedBooking}
+          onClose={() => setSelectedBooking(null)}
+        />
+
       </div>
     </AppLayout>
   );

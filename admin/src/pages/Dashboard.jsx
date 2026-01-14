@@ -127,8 +127,6 @@ export default function Dashboard() {
   const [bookings, setBookings] = useState([]);
   const [blackouts, setBlackouts] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [showFullCalendar, setShowFullCalendar] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const [blockSelection, setBlockSelection] = useState([]);
   const [blockStart, setBlockStart] = useState(null);
@@ -542,62 +540,9 @@ export default function Dashboard() {
 
             </div>
 
-            {/* Toggle ONLY on desktop */}
-            {isDesktop && (
-              !showFullCalendar ? (
-                <button
-                  className="text-sm text-primary font-medium"
-                  onClick={() => {
-                    setShowFullCalendar(true);
-                    document
-                      .getElementById("calendar-section")
-                      ?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                >
-                  View Full →
-                </button>
-              ) : (
-                <button
-                  className="text-sm text-muted-foreground hover:text-primary"
-                  onClick={() => setShowFullCalendar(false)}
-                >
-                  ← Week View
-                </button>
-              )
-            )}
           </div>
 
-          {/* ================= WEEK VIEW (DESKTOP ONLY) ================= */}
-          {isDesktop && !showFullCalendar && (
-            <div className="grid grid-cols-7 gap-3">
-              {weekDays.map((d) => {
-                const isBooked = d.count > 0;
-
-                return (
-                  <div
-                    key={d.date.toISOString()}
-                    className={`rounded-xl border px-4 py-4  text-center transition
-              ${d.isBlocked
-                        ? "bg-red-50 border-red-300"
-                        : isBooked
-                          ? "bg-amber-50 border-amber-200"
-                          : "bg-white"}
-            `}
-                  >
-                    <p className="text-[11px] text-muted-foreground uppercase">
-                      {format(d.date, "EEE")}
-                    </p>
-                    <p className="text-lg font-semibold">
-                      {format(d.date, "dd")}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ================= FULL MONTH VIEW (MOBILE + TABLET + DESKTOP TOGGLE) ================= */}
-          {(!isDesktop || showFullCalendar) && (
+          {(
             <>
               {/* MONTH NAV */}
               <div className="flex items-center justify-between mb-2 sm:mb-5">
@@ -650,6 +595,7 @@ export default function Dashboard() {
                           text-[10px] sm:text-sm
                           font-semibold
                           leading-none
+                          h-[50px] w-[80px]
                           max-h-[36px] sm:max-h-none cursor-pointer
 
                           ${!isSameMonth(date, currentMonth)

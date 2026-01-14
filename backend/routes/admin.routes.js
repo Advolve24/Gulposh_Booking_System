@@ -28,7 +28,7 @@ router.put("/users/:id", updateUserAdmin);
 router.delete("/users/:id", deleteUserAdmin);
 router.post("/villa-order", createVillaOrder);
 router.post("/villa-verify", verifyVillaPayment);
-
+router.get("/search", adminGlobalSearch);
 
 
 export default router;
