@@ -138,14 +138,21 @@ export default function AuthModal() {
     >
       <DialogContent
         className="
-          p-0
-          w-[92vw]
-          max-w-[380px]
-          rounded-3xl
-          overflow-hidden
-          bg-white
-        "
+    p-0
+    w-[92vw]
+    max-w-[380px]
+    rounded-3xl
+    overflow-hidden
+    bg-white
+    border-0
+    outline-none
+    ring-0
+    shadow-none
+    focus:outline-none
+    focus:ring-0
+  "
       >
+
         {/* ACCESSIBILITY */}
         <VisuallyHidden>
           <DialogTitle>Authentication</DialogTitle>
