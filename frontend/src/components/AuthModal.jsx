@@ -1,19 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../store/authStore";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import {
-  getRecaptchaVerifier,
-  clearRecaptchaVerifier,
-} from "@/lib/recaptcha";
+import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
 const OTP_TIMER = 60;
 const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
@@ -27,6 +30,8 @@ export default function AuthModal() {
   const [form, setForm] = useState({ phone: "", otp: "" });
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
 
+  const verifyingRef = useRef(false); // 🔐 prevents double verify
+
   /* ================= TIMER ================= */
   useEffect(() => {
     if (step !== "otp" || secondsLeft <= 0) return;
@@ -36,7 +41,7 @@ export default function AuthModal() {
 
   /* ================= RESET ================= */
   const resetFlow = () => {
-    clearRecaptchaVerifier();
+    verifyingRef.current = false;
     window.confirmationResult = null;
     setForm({ phone: "", otp: "" });
     setStep("phone");
@@ -52,8 +57,10 @@ export default function AuthModal() {
 
     try {
       setLoading(true);
-      clearRecaptchaVerifier();
-      const verifier = getRecaptchaVerifier();
+
+      // ✅ Create reCAPTCHA ONCE and reuse
+      const verifier = getRecaptchaVerifier(auth, "recaptcha-container");
+      await verifier.render();
 
       const confirmation = await signInWithPhoneNumber(
         auth,
@@ -65,8 +72,8 @@ export default function AuthModal() {
       setStep("otp");
       setSecondsLeft(OTP_TIMER);
       toast.success("OTP sent");
-    } catch {
-      clearRecaptchaVerifier();
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to send OTP");
     } finally {
       setLoading(false);
@@ -74,12 +81,16 @@ export default function AuthModal() {
   };
 
   /* ================= VERIFY OTP ================= */
-  const verifyOtp = async (otpValue = form.otp) => {
-    if (otpValue.length !== 6) return;
+  const verifyOtp = async () => {
+    if (verifyingRef.current) return;
+    if (form.otp.length !== 6) return;
+
+    verifyingRef.current = true;
 
     try {
       setLoading(true);
-      const result = await window.confirmationResult.confirm(otpValue);
+
+      const result = await window.confirmationResult.confirm(form.otp);
       const idToken = await result.user.getIdToken(true);
       const user = await firebaseLoginWithToken(idToken);
 
@@ -103,7 +114,8 @@ export default function AuthModal() {
       }
 
       navigate("/", { replace: true });
-    } catch {
+    } catch (err) {
+      verifyingRef.current = false;
       toast.error("Invalid or expired OTP");
       setForm((f) => ({ ...f, otp: "" }));
     } finally {
@@ -111,10 +123,10 @@ export default function AuthModal() {
     }
   };
 
-  /* ================= AUTO VERIFY ================= */
+  /* ================= AUTO VERIFY (SAFE) ================= */
   useEffect(() => {
     if (step === "otp" && form.otp.length === 6) {
-      verifyOtp(form.otp);
+      verifyOtp();
     }
   }, [form.otp, step]);
 
@@ -129,143 +141,102 @@ export default function AuthModal() {
       }}
     >
       <DialogContent
-        className="
-          p-0
-          sm:max-w-[420px]
-          rounded-3xl
-          overflow-hidden
-          bg-white
-          shadow-[0_50px_120px_-30px_rgba(0,0,0,0.7)]
-          border border-black/10
-        "
+        className="p-0 sm:max-w-[420px] rounded-3xl overflow-hidden bg-white"
       >
-        {/* CLOSE BUTTON — ALWAYS VISIBLE */}
+        {/* ACCESSIBILITY FIX */}
+        <VisuallyHidden>
+          <DialogTitle>Authentication</DialogTitle>
+          <DialogDescription>Login or verify OTP</DialogDescription>
+        </VisuallyHidden>
+
+        {/* REQUIRED for Firebase */}
+        <div id="recaptcha-container" />
+
+        {/* CLOSE */}
         <button
           onClick={() => {
             resetFlow();
             closeAuth();
           }}
-          className="
-            absolute
-            right-4 top-4
-            z-30
-            rounded-full
-            bg-white/90
-            p-1.5
-            shadow-md
-            hover:bg-white
-            transition
-          "
+          className="absolute right-4 top-4 z-30 rounded-full bg-white p-1.5"
         >
-          <X className="h-4 w-4 text-black" />
+          <X className="h-4 w-4" />
         </button>
 
-        {/* IMAGE HEADER */}
+        {/* IMAGE */}
         <div className="relative h-56">
           <img
             src="/Gulposh-65-scaled-1.webp"
-            alt="Gulposh Villa"
             className="h-full w-full object-cover"
           />
-          {/* luxury overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
-          <div className="absolute inset-0 ring-1 ring-white/10" />
-
-          <div className="absolute bottom-5 left-6 right-6 text-white">
-            <h3 className="text-xl font-serif font-semibold">
-              Gulposh Luxury Villa
-            </h3>
-            <p className="text-xs text-white/85 mt-1">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
+          <div className="absolute bottom-5 left-6 text-white">
+            <h3 className="text-xl font-serif">Gulposh Luxury Villa</h3>
+            <p className="text-xs opacity-90">
               Experience elegance. Book effortlessly.
             </p>
           </div>
         </div>
 
-        {/* CONTENT */}
+        {/* BODY */}
         <div className="px-6 py-6 space-y-5 bg-[#f6f4f1]">
-          <div className="space-y-1">
-            <h2 className="text-xl font-semibold">
-              {step === "phone" ? "Sign in or Create Account" : "Verify OTP"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {step === "phone"
-                ? "Continue with your mobile number"
-                : `OTP sent to +91 ${form.phone}`}
-            </p>
-          </div>
+          <h2 className="text-xl font-semibold">
+            {step === "phone" ? "Sign in" : "Verify OTP"}
+          </h2>
 
           {step === "phone" && (
-            <div className="space-y-4">
-              <div>
-                <Label>Mobile Number</Label>
-                <Input
-                  className="mt-2 h-12 rounded-xl"
-                  placeholder="Enter 10-digit number"
-                  inputMode="numeric"
-                  value={form.phone}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                    })
-                  }
-                />
-              </div>
-
+            <>
+              <Label>Mobile Number</Label>
+              <Input
+                className="h-12 rounded-xl"
+                value={form.phone}
+                inputMode="numeric"
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                  })
+                }
+              />
               <Button
-                className="w-full h-12 rounded-xl text-base bg-[#a11d2e] hover:bg-[#8e1827]"
+                className="w-full h-12 bg-[#a11d2e]"
                 onClick={sendOtp}
                 disabled={loading}
               >
-                {loading ? "Sending OTP..." : "Continue"}
+                {loading ? "Sending..." : "Continue"}
               </Button>
-            </div>
+            </>
           )}
 
           {step === "otp" && (
-            <div className="space-y-4">
-              <div>
-                <Label>Enter OTP</Label>
-                <Input
-                  className="
-                    mt-2
-                    h-12
-                    rounded-xl
-                    text-center
-                    tracking-[0.35em]
-                    font-semibold
-                  "
-                  placeholder="••••••"
-                  inputMode="numeric"
-                  value={form.otp}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      otp: e.target.value.replace(/\D/g, "").slice(0, 6),
-                    })
-                  }
-                />
-              </div>
+            <>
+              <Label>Enter OTP</Label>
+              <Input
+                className="h-12 text-center tracking-[0.35em]"
+                value={form.otp}
+                inputMode="numeric"
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    otp: e.target.value.replace(/\D/g, "").slice(0, 6),
+                  })
+                }
+              />
 
-              <div className="text-center text-xs text-muted-foreground">
-                {secondsLeft > 0 ? (
-                  <>Resend OTP in <b>{secondsLeft}s</b></>
-                ) : (
-                  <button
-                    onClick={sendOtp}
-                    className="text-primary font-medium hover:underline"
-                  >
-                    Resend OTP
-                  </button>
-                )}
+              <div className="text-xs text-center">
+                {secondsLeft > 0
+                  ? `Resend in ${secondsLeft}s`
+                  : (
+                    <button
+                      onClick={sendOtp}
+                      className="text-primary underline"
+                    >
+                      Resend OTP
+                    </button>
+                  )}
               </div>
-            </div>
+            </>
           )}
-        </div>
-
-        {/* FOOTER */}
-        <div className="bg-white px-6 py-3 text-center text-[11px] text-muted-foreground border-t">
-          🔒 Secured login • No spam • Privacy protected
         </div>
       </DialogContent>
     </Dialog>
