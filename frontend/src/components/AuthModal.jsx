@@ -3,8 +3,6 @@ import { useAuth } from "../store/authStore";
 import {
   Dialog,
   DialogContent,
-  DialogTitle,
-  DialogDescription,
   DialogOverlay,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,26 +29,31 @@ export default function AuthModal() {
   const [form, setForm] = useState({ phone: "", otp: "" });
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
 
-  const verifyingRef = useRef(false);
   const confirmationRef = useRef(null);
+  const sendingRef = useRef(false);
+  const verifyingRef = useRef(false);
 
-  /* ================= TIMER (iOS SAFE) ================= */
+  /* ================= TIMER ================= */
   useEffect(() => {
-    if (step !== "otp") return;
-    if (secondsLeft <= 0) return;
+    if (step !== "otp" || secondsLeft <= 0) return;
 
-    const interval = setInterval(() => {
+    const t = setInterval(() => {
       setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(t);
   }, [step, secondsLeft]);
 
-  /* ================= RESET ================= */
+  /* ================= CLEAN RESET ================= */
   const resetFlow = () => {
+    sendingRef.current = false;
     verifyingRef.current = false;
     confirmationRef.current = null;
-    window.confirmationResult = null;
+
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
+    }
 
     setForm({ phone: "", otp: "" });
     setStep("phone");
@@ -60,19 +63,23 @@ export default function AuthModal() {
 
   /* ================= SEND OTP ================= */
   const sendOtp = async () => {
+    if (sendingRef.current) return;
+
     if (!isValidPhone(form.phone)) {
       toast.error("Enter a valid 10-digit mobile number");
       return;
     }
 
-    try {
-      setLoading(true);
-      setForm((f) => ({ ...f, otp: "" }));
-      setSecondsLeft(OTP_TIMER);
-      verifyingRef.current = false;
+    sendingRef.current = true;
+    setLoading(true);
 
-      const verifier = getRecaptchaVerifier(auth, "recaptcha-container");
-      await verifier.render();
+    try {
+      // ensure single recaptcha instance
+      const verifier =
+        window.recaptchaVerifier ||
+        getRecaptchaVerifier(auth, "recaptcha-container");
+
+      window.recaptchaVerifier = verifier;
 
       const confirmation = await signInWithPhoneNumber(
         auth,
@@ -81,14 +88,26 @@ export default function AuthModal() {
       );
 
       confirmationRef.current = confirmation;
-      window.confirmationResult = confirmation;
-
       setStep("otp");
-      toast.success("OTP sent");
+      setSecondsLeft(OTP_TIMER);
+
+      toast.success("OTP sent successfully");
     } catch (err) {
       console.error(err);
-      toast.error("Failed to send OTP. Please try again.");
+
+      if (err?.code === "auth/too-many-requests") {
+        toast.error("Too many attempts. Please wait a minute.");
+      } else {
+        toast.error("Failed to send OTP. Try again.");
+      }
+
+      // cleanup on failure
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
     } finally {
+      sendingRef.current = false;
       setLoading(false);
     }
   };
@@ -97,14 +116,14 @@ export default function AuthModal() {
   const verifyOtp = async () => {
     if (verifyingRef.current) return;
 
-    const cleanOtp = form.otp.replace(/\D/g, "");
-    if (cleanOtp.length !== 6) {
-      toast.error("Enter a valid 6-digit OTP");
+    const otp = form.otp.replace(/\D/g, "");
+    if (otp.length !== 6) {
+      toast.error("Enter valid 6-digit OTP");
       return;
     }
 
     if (!confirmationRef.current) {
-      toast.error("OTP expired. Please resend OTP.");
+      toast.error("OTP expired. Please resend.");
       resetFlow();
       return;
     }
@@ -113,7 +132,7 @@ export default function AuthModal() {
     setLoading(true);
 
     try {
-      const result = await confirmationRef.current.confirm(cleanOtp);
+      const result = await confirmationRef.current.confirm(otp);
       const idToken = await result.user.getIdToken(true);
 
       const user = await firebaseLoginWithToken(idToken);
@@ -140,10 +159,9 @@ export default function AuthModal() {
       navigate("/", { replace: true });
     } catch (err) {
       console.error(err);
-      toast.error("Invalid or expired OTP. Please resend.");
-
-      verifyingRef.current = false;
+      toast.error("Invalid OTP. Please resend.");
       setForm((f) => ({ ...f, otp: "" }));
+      verifyingRef.current = false;
     } finally {
       setLoading(false);
     }
@@ -159,35 +177,20 @@ export default function AuthModal() {
         }
       }}
     >
-      <DialogOverlay className="bg-black/60 p-0" />
+      <DialogOverlay className="bg-black/60" />
 
-      <DialogContent
-        className="
-          p-0
-          w-[92vw]
-          max-w-[380px]
-          rounded-3xl
-          overflow-hidden
-          bg-white
-          border-0
-          shadow-none
-          outline-none
-          ring-0
-          mx-auto
-        "
-      >
+      <DialogContent className="p-0 w-[92vw] max-w-[380px] rounded-3xl overflow-hidden bg-white border-0">
         <VisuallyHidden>
-          <DialogTitle>Authentication</DialogTitle>
-          <DialogDescription>Login or verify OTP</DialogDescription>
+          <h2>Authentication</h2>
         </VisuallyHidden>
 
-        {/* Firebase reCAPTCHA */}
+        {/* reCAPTCHA */}
         <div
           id="recaptcha-container"
           className="absolute inset-0 pointer-events-none opacity-0"
         />
 
-        {/* IMAGE HEADER */}
+        {/* HEADER */}
         <div className="relative h-48">
           <button
             onClick={() => {
@@ -204,19 +207,11 @@ export default function AuthModal() {
             alt="Gulposh Villa"
             className="h-full w-full object-cover"
           />
-
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
-
-          <div className="absolute bottom-4 left-4 text-white">
-            <h3 className="text-lg font-serif">Gulposh Luxury Villa</h3>
-            <p className="text-xs opacity-90">
-              Experience elegance. Book effortlessly.
-            </p>
-          </div>
         </div>
 
         {/* BODY */}
-        <div className="px-5 py-5 space-y-4 bg-white">
+        <div className="px-5 py-5 space-y-4">
           <h2 className="text-lg font-semibold">
             {step === "phone" ? "Sign in" : "Verify OTP"}
           </h2>
@@ -236,6 +231,7 @@ export default function AuthModal() {
                   })
                 }
               />
+
               <Button
                 className="w-full h-11 bg-[#a11d2e]"
                 onClick={sendOtp}
@@ -265,7 +261,7 @@ export default function AuthModal() {
               <Button
                 className="w-full h-11 bg-[#a11d2e]"
                 onClick={verifyOtp}
-                disabled={loading || verifyingRef.current}
+                disabled={loading}
               >
                 {loading ? "Verifying..." : "Verify OTP"}
               </Button>
@@ -276,7 +272,7 @@ export default function AuthModal() {
                 ) : (
                   <button
                     onClick={sendOtp}
-                    className="text-primary font-medium underline"
+                    className="text-primary underline"
                   >
                     Resend OTP
                   </button>
@@ -286,8 +282,7 @@ export default function AuthModal() {
           )}
         </div>
 
-        {/* FOOTER */}
-        <div className="bg-white px-4 py-2 text-center text-[11px] text-muted-foreground border-t">
+        <div className="px-4 py-2 text-center text-[11px] border-t text-muted-foreground">
           🔒 Secured login • No spam • Privacy protected
         </div>
       </DialogContent>
