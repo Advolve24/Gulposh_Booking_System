@@ -13,6 +13,15 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from "@/components/ui/drawer";
+
+import { X } from "lucide-react";
 
 import {
   Wifi,
@@ -93,6 +102,104 @@ function mergeRanges(ranges) {
   return out;
 }
 
+function BookingCard({
+  room,
+  range,
+  setRange,
+  adults,
+  setAdults,
+  children,
+  setChildren,
+  disabledAll,
+  goToCheckout,
+}) {
+  const totalGuests = adults + children;
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* SCROLLABLE CONTENT */}
+      <div className="flex-1 space-y-4 pb-4">
+        {/* PRICE */}
+        <div className="text-center">
+          <span className="text-2xl font-semibold">
+            ₹{Number(room.pricePerNight).toLocaleString("en-IN")}
+          </span>
+          <span className="text-sm text-muted-foreground"> / night</span>
+        </div>
+
+        {/* DATES */}
+        <div>
+          <label className="text-[11px] font-medium text-muted-foreground">
+            CHECK IN / CHECK OUT
+          </label>
+          <CalendarRange
+            value={range}
+            onChange={setRange}
+            disabledRanges={disabledAll}
+          />
+        </div>
+
+        {/* GUESTS */}
+        <div className="space-y-2">
+          <label className="text-[11px] font-medium text-muted-foreground">
+            GUESTS (MAX {room.maxGuests || 10})
+          </label>
+
+          <GuestCounter
+            label="Adults"
+            description="Ages 13+"
+            value={adults}
+            min={1}
+            max={room.maxGuests - children}
+            onChange={setAdults}
+          />
+
+          <GuestCounter
+            label="Children"
+            description="Ages 2–12"
+            value={children}
+            min={0}
+            max={room.maxGuests - adults}
+            onChange={setChildren}
+          />
+
+          <p className="text-xs text-muted-foreground">
+            Total guests: <strong>{totalGuests}</strong>
+          </p>
+        </div>
+
+        {/* BENEFITS */}
+        <div className="space-y-2 text-sm text-green-700">
+          <div>✓ Free cancellation up to 7 days</div>
+          <div>✓ Instant confirmation</div>
+          <div>✓ Best price guarantee</div>
+        </div>
+      </div>
+
+      {/* STICKY FOOTER BUTTON */}
+      <div className="sticky bottom-0 bg-white pt-3">
+        <Button
+          onClick={goToCheckout}
+          disabled={!range?.from || !range?.to || totalGuests < 1}
+          className="
+            w-full
+            h-12
+            rounded-xl
+            text-base
+            font-semibold
+            bg-primary
+            hover:bg-primary/90
+            shadow-md
+          "
+        >
+          Book Now
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+
 /* ---------------------------------------------------------------- */
 /* PAGE */
 /* ---------------------------------------------------------------- */
@@ -115,6 +222,8 @@ export default function RoomPage() {
 
   const [activeImage, setActiveImage] = useState(0);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
+
 
   /* LOAD DATA */
   useEffect(() => {
@@ -560,16 +669,94 @@ export default function RoomPage() {
       </div>
 
       {/* MOBILE STICKY FOOTER */}
-      <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white border-t px-4 py-3 flex items-center gap-3 z-50">
-        <div className="flex-1">
-          <div className="text-sm font-semibold">
-            ₹{Number(room.pricePerNight).toLocaleString("en-IN")}/night
+      {/* MOBILE STICKY FOOTER */}
+      <div
+        className="
+    fixed bottom-0 left-0 right-0 md:hidden
+    bg-white border-t
+    px-4 py-3
+    z-50
+  "
+      >
+        <div className="flex items-center gap-3 max-w-md mx-auto">
+          {/* PRICE (30%) */}
+          <div className="w-[30%]">
+            <div className="text-xs text-muted-foreground">Price</div>
+            <div className="text-base font-bold leading-tight">
+              ₹{Number(room.pricePerNight).toLocaleString("en-IN")}
+              <span className="text-xs font-normal text-muted-foreground">
+                /night
+              </span>
+            </div>
           </div>
+
+          {/* BUTTON (70%) */}
+          <Button
+            onClick={() => setShowDrawer(true)}
+            className="
+        w-[70%]
+        h-12
+        rounded-xl
+        text-base
+        font-semibold
+        bg-primary
+        hover:bg-primary/90
+        shadow-md
+      "
+          >
+            Book Now
+          </Button>
         </div>
-        <Button className="flex-1 h-11" onClick={goToCheckout}>
-          Book Now
-        </Button>
       </div>
+
+      {/* MOBILE DRAWER */}
+      <Drawer open={showDrawer} onOpenChange={setShowDrawer}>
+        <DrawerContent
+          className="
+      rounded-t-2xl
+      bg-white
+      pt-3
+      pb-4
+    "
+        >
+          {/* HEADER */}
+          <DrawerHeader
+            className="
+        flex
+        justify-between
+        items-center
+        px-4
+        mb-2
+      "
+          >
+            <DrawerTitle className="text-base font-semibold">
+              Complete your booking
+            </DrawerTitle>
+
+            <DrawerClose>
+              <X className="w-5 h-5 text-muted-foreground" />
+            </DrawerClose>
+          </DrawerHeader>
+
+          {/* CENTERED BOOKING CARD (NO EDGE TOUCH) */}
+          <div className="px-4">
+            <div className="mx-auto max-w-[360px]">
+              <BookingCard
+                room={room}
+                range={range}
+                setRange={setRange}
+                adults={adults}
+                setAdults={setAdults}
+                children={children}
+                setChildren={setChildren}
+                disabledAll={disabledAll}
+                goToCheckout={goToCheckout}
+              />
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
     </>
   );
 }
