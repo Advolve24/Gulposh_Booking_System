@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
+  DialogOverlay,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -127,66 +128,75 @@ export default function AuthModal() {
   };
 
   return (
-    <Dialog
-      open={showAuthModal}
-      onOpenChange={(open) => {
-        if (!open) {
+     <Dialog
+  open={showAuthModal}
+  onOpenChange={(open) => {
+    if (!open) {
+      resetFlow();
+      closeAuth();
+    }
+  }}
+
+
+>
+  {/* 🔴 FIX OVERLAY SIDE GAP */}
+  <DialogOverlay className="bg-black/60 p-0" />
+
+  <DialogContent
+    className="
+      p-0
+      w-[92vw]
+      max-w-[380px]
+      rounded-3xl
+      overflow-hidden
+      bg-white
+      border-0
+      shadow-none
+      outline-none
+      ring-0
+      mx-auto
+    "
+  >
+    {/* ACCESSIBILITY */}
+    <VisuallyHidden>
+      <DialogTitle>Authentication</DialogTitle>
+      <DialogDescription>Login or verify OTP</DialogDescription>
+    </VisuallyHidden>
+
+    {/* FIREBASE reCAPTCHA (NO LAYOUT IMPACT) */}
+    <div
+      id="recaptcha-container"
+      className="absolute inset-0 pointer-events-none opacity-0"
+    />
+
+    {/* IMAGE HEADER */}
+    <div className="relative h-48">
+      <button
+        onClick={() => {
           resetFlow();
           closeAuth();
-        }
-      }}
-    >
-      <DialogContent
-        className="
-    p-0
-    w-[92vw]
-    max-w-[380px]
-    rounded-3xl
-    overflow-hidden
-    bg-white
-    border-0
-    outline-none
-    ring-0
-    shadow-none
-    focus:outline-none
-    focus:ring-0
-  "
+        }}
+        className="absolute right-4 top-4 z-30 rounded-full bg-white/90 p-1.5"
       >
+        <X className="h-4 w-4 text-black" />
+      </button>
 
-        {/* ACCESSIBILITY */}
-        <VisuallyHidden>
-          <DialogTitle>Authentication</DialogTitle>
-          <DialogDescription>Login or verify OTP</DialogDescription>
-        </VisuallyHidden>
+      <img
+        src="/Gulposh-65-scaled-1.webp"
+        alt="Gulposh Villa"
+        className="h-full w-full object-cover"
+      />
 
-        {/* REQUIRED FOR FIREBASE */}
-        <div id="recaptcha-container" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
 
-        {/* CLOSE */}
-        <button
-          onClick={() => {
-            resetFlow();
-            closeAuth();
-          }}
-          className="absolute right-4 top-4 z-30 rounded-full bg-white p-1.5"
-        >
-          <X className="h-4 w-4" />
-        </button>
+      <div className="absolute bottom-4 left-4 text-white">
+        <h3 className="text-lg font-serif">Gulposh Luxury Villa</h3>
+        <p className="text-xs opacity-90">
+          Experience elegance. Book effortlessly.
+        </p>
+      </div>
+    </div>
 
-        {/* IMAGE */}
-        <div className="relative h-48">
-          <img
-            src="/Gulposh-65-scaled-1.webp"
-            className="h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
-          <div className="absolute bottom-4 left-4 text-white">
-            <h3 className="text-lg font-serif">Gulposh Luxury Villa</h3>
-            <p className="text-xs opacity-90">
-              Experience elegance. Book effortlessly.
-            </p>
-          </div>
-        </div>
 
         {/* BODY */}
         <div className="px-5 py-5 space-y-4 bg-[#f6f4f1]">
@@ -199,6 +209,7 @@ export default function AuthModal() {
               <Label>Mobile Number</Label>
               <Input
                 className="h-11 rounded-xl"
+                  placeholder="Enter 10 digit phone number"
                 inputMode="numeric"
                 value={form.phone}
                 onChange={(e) =>
@@ -265,3 +276,4 @@ export default function AuthModal() {
     </Dialog>
   );
 }
+
