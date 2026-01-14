@@ -113,7 +113,7 @@ export default function CalendarRange({
         </div>
 
         {/* CALENDAR */}
-        <div className="border rounded-xl bg-card">
+        <div className="border rounded-xl bg-card items-center">
           {calendarUI}
         </div>
       </div>
@@ -136,7 +136,6 @@ export default function CalendarRange({
             grid grid-cols-2
             items-center
             rounded-xl border
-            bg-white
             px-4
             overflow-hidden
             text-left
@@ -149,7 +148,7 @@ export default function CalendarRange({
 
       <PopoverContent
         align="start"
-        className="p-0 bg-white border rounded-2xl shadow-xl"
+        className="p-0 border rounded-2xl items-centershadow-xl"
       >
         {calendarUI}
       </PopoverContent>
