@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import {
   format,
   addDays,
@@ -38,9 +39,7 @@ import {
 } from "../api/admin";
 
 
-/* ===============================
-   DATE HELPERS
-================================ */
+
 const toDateSafe = (v) => {
   if (!v) return null;
   const d = new Date(v);
@@ -58,9 +57,7 @@ const percentChange = (current, previous) => {
 };
 
 
-/* ===============================
-   STATUS BADGE
-================================ */
+
 function StatusBadge({ status }) {
   const map = {
     confirmed: "bg-green-100 text-green-700",
@@ -76,19 +73,21 @@ function StatusBadge({ status }) {
   );
 }
 
-/* ===============================
-   STAT CARD
-================================ */
-function StatCard({ icon: Icon, label, value, hint, hintColor }) {
+
+function StatCard({ icon: Icon, label, value, hint, hintColor, onClick }) {
   return (
     <div
-      className="
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      className={`
         w-[150px] sm:w-full
- bg-card border border-border rounded-xl
+        bg-card border border-border rounded-xl
         p-3 sm:p-4
         flex items-center justify-between
         min-h-[75px] sm:min-h-[100px]
-      "
+        transition
+        ${onClick ? "cursor-pointer hover:border-primary" : ""}
+      `}
     >
       {/* LEFT */}
       <div className="flex flex-col space-y-0.5 sm:space-y-1 leading-tight">
@@ -96,18 +95,13 @@ function StatCard({ icon: Icon, label, value, hint, hintColor }) {
           {label}
         </p>
 
-        <h2 className="text-[16px] mt-1 sm:mt-0 sm:text-2xl font-semibold leading-none">
+        <h2 className="text-[16px] sm:text-2xl font-semibold leading-none">
           {value}
         </h2>
 
         {hint && (
           <p
-            className={`
-              hidden sm:block
-              text-[10px] sm:text-sm
-              leading-tight
-              ${hintColor}
-            `}
+            className={`hidden sm:block text-[10px] sm:text-sm ${hintColor}`}
           >
             {hint}
           </p>
@@ -115,14 +109,7 @@ function StatCard({ icon: Icon, label, value, hint, hintColor }) {
       </div>
 
       {/* ICON */}
-      <div
-        className="
-          h-8 w-8 sm:h-11 sm:w-11
-          rounded-lg bg-muted
-          flex items-center justify-center
-          shrink-0
-        "
-      >
+      <div className="h-8 w-8 sm:h-11 sm:w-11 rounded-lg bg-muted flex items-center justify-center">
         <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
       </div>
     </div>
@@ -148,6 +135,7 @@ export default function Dashboard() {
   const [blockEnd, setBlockEnd] = useState(null);
   const [savingBlock, setSavingBlock] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+  const navigate = useNavigate();
 
 
 
@@ -224,12 +212,6 @@ export default function Dashboard() {
   }, []);
 
 
-  /* ===============================
-     CALENDAR LOGIC
-  ================================ */
-  /* ===============================
-   CALENDAR HELPERS (USE STATE SAFELY)
-================================ */
   const toDateOnly = (d) => {
     if (!d) return null;
     return new Date(Date.UTC(
@@ -283,9 +265,6 @@ export default function Dashboard() {
   };
 
 
-  /* ===============================
-     WEEK GRID (MON → SUN)
-  ================================ */
   const weekDays = useMemo(() => {
     const start = startOfWeek(new Date(), { weekStartsOn: 1 });
 
@@ -303,9 +282,6 @@ export default function Dashboard() {
 
 
 
-  /* ===============================
-     FULL MONTH CALENDAR (ALIGNED)
-  ================================ */
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
     const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
@@ -313,7 +289,6 @@ export default function Dashboard() {
     return eachDayOfInterval({ start, end });
   }, [currentMonth]);
 
-  // Selected block dates logic//
   const isSelectedForBlock = (date) =>
     blockSelection.some((d) => isSameDay(d, date));
 
@@ -321,7 +296,6 @@ export default function Dashboard() {
     const bookingCount = getBookingCountForDate(date);
     const blackout = getBlackoutForDate(date);
 
-    /* ================= UNBLOCK ================= */
     if (blackout) {
       if (!window.confirm("Unblock this date?")) return;
 
@@ -343,24 +317,20 @@ export default function Dashboard() {
       return;
     }
 
-    /* ================= SINGLE DATE BOOKED ================= */
     if (bookingCount > 0) {
       toast.error("Booked dates cannot be blocked");
       return;
     }
 
-    /* ================= FIRST CLICK ================= */
     if (!blockStart) {
       setBlockStart(date);
       toast.info("Select end date to block");
       return;
     }
 
-    /* ================= SECOND CLICK ================= */
     const from = isAfter(date, blockStart) ? blockStart : date;
     const to = isAfter(date, blockStart) ? date : blockStart;
 
-    /* 🚫 RANGE VALIDATION (CRITICAL FIX) */
     if (rangeHasBooking(from, to)) {
       toast.error("Selected range includes booked dates");
       setBlockStart(null);
@@ -505,6 +475,7 @@ export default function Dashboard() {
     sm:grid-cols-2
     md:grid-cols-4
     max-w-[320px] sm:max-w-full
+    py-4
   "
       >
 
@@ -515,14 +486,16 @@ export default function Dashboard() {
           value={stats?.totalBookings ?? 0}
           hint={`${bookingChange > 0 ? "+" : ""}${bookingChange}% from last month`}
           hintColor={bookingChange >= 0 ? "text-green-600" : "text-red-600"}
+          onClick={() => navigate("/bookings")}
         />
 
         <StatCard
           icon={CalendarCheck2}
-          label="Upcoming Stays"
-          value={stats?.upcomingBookings ?? 0}
-          hint="Next 7 days"
-          hintColor="text-blue-600"
+          label="Confirmed Bookings"
+          value={bookings.filter(b => b.status === "confirmed").length}
+          hint="Paid & confirmed stays"
+          hintColor="text-green-600"
+          onClick={() => navigate("/bookings?status=confirmed")}
         />
 
         <StatCard
@@ -531,6 +504,7 @@ export default function Dashboard() {
           value={stats?.cancelledBookings ?? 0}
           hint={`${cancelledChange > 0 ? "+" : ""}${cancelledChange}% from last month`}
           hintColor={cancelledChange <= 0 ? "text-green-600" : "text-red-600"}
+          onClick={() => navigate("/bookings?status=cancelled")}
         />
 
         <StatCard
@@ -539,7 +513,9 @@ export default function Dashboard() {
           value={`₹${(stats?.totalRevenue ?? 0).toLocaleString("en-IN")}`}
           hint={`${revenueChange > 0 ? "+" : ""}${revenueChange}% from last month`}
           hintColor={revenueChange >= 0 ? "text-green-600" : "text-red-600"}
+          onClick={() => navigate("/bookings?paid=true")}
         />
+
       </div>
 
       {/* ===== CALENDAR + QUICK ACTIONS ===== */}

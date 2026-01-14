@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import AppLayout from "@/components/layout/AppLayout";
+import { useSearchParams } from "react-router-dom";
 import {
   MoreHorizontal,
   Calendar,
@@ -80,6 +81,20 @@ export default function Booking() {
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const perPage = 8;
+  const [params] = useSearchParams();
+
+
+  const filteredBookings = useMemo(() => {
+    if (status === "all") return bookings;
+    return bookings.filter(b => b.status === status);
+  }, [bookings, status]);
+
+
+
+  useEffect(() => {
+    const statusFromUrl = params.get("status") || "all";
+    setStatus(statusFromUrl);
+  }, [params]);
 
   const loadBookings = async () => {
     try {
@@ -97,8 +112,11 @@ export default function Booking() {
     loadBookings();
   }, [status]);
 
-  const totalPages = Math.max(1, Math.ceil(bookings.length / perPage));
-  const visible = bookings.slice((page - 1) * perPage, page * perPage);
+  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / perPage));
+  const visible = filteredBookings.slice(
+    (page - 1) * perPage,
+    page * perPage
+  );
 
   return (
     <AppLayout>
