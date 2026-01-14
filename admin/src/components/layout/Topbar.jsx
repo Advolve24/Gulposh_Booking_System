@@ -1,8 +1,56 @@
 import { Menu, Bell, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { adminGlobalSearch } from "@/api/admin";
+import { useNavigate } from "react-router-dom";
+
+
+function Section({ title, children }) {
+  return (
+    <div className="py-2">
+      <div className="px-3 text-xs font-semibold text-muted-foreground uppercase">
+        {title}
+      </div>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function Item({ label, sub, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left px-3 py-2 hover:bg-muted flex flex-col"
+    >
+      <span className="text-sm font-medium">{label}</span>
+      {sub && (
+        <span className="text-xs text-muted-foreground">{sub}</span>
+      )}
+    </button>
+  );
+}
+
 
 export default function Topbar({ onMenuClick }) {
   const { pathname } = useLocation();
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+  if (!query.trim()) {
+    setResults(null);
+    return;
+  }
+
+  const t = setTimeout(async () => {
+    const data = await adminGlobalSearch(query);
+    setResults(data);
+  }, 300);
+
+  return () => clearTimeout(t);
+}, [query]);
+
 
   const getPageTitle = () => {
     if (pathname === "/dashboard") return "Dashboard";
@@ -66,22 +114,69 @@ export default function Topbar({ onMenuClick }) {
         {/* RIGHT */}
         <div className="flex items-center gap-3 sm:gap-4">
           {/* SEARCH (hide on mobile) */}
-          <div
-            className="
-              hidden sm:flex items-center
-              bg-white/60 backdrop-blur-md
-              rounded-full
-              px-4 py-2
-              text-sm
-              border border-white/30
-            "
-          >
-            <Search size={16} className="mr-2 text-muted-foreground" />
-            <input
-              placeholder="Search..."
-              className="bg-transparent outline-none w-44 placeholder:text-muted-foreground"
+          <div className="relative hidden sm:block">
+  <div className="flex items-center bg-white/60 rounded-full px-4 py-2 border">
+    <Search size={16} className="mr-2 text-muted-foreground" />
+    <input
+  value={query}
+  onChange={(e) => setQuery(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") e.preventDefault();
+  }}
+  placeholder="Search users, bookings, rooms..."
+  className="bg-transparent outline-none w-56"
+/>
+
+  </div>
+
+  {/* DROPDOWN */}
+  {results && (
+    <div className="absolute mt-2 w-full bg-white border rounded-xl shadow-lg z-50">
+      
+      {/* USERS */}
+      {results.users?.length > 0 && (
+        <Section title="Users">
+          {results.users.map(u => (
+            <Item
+              key={u._id}
+              label={u.name}
+              sub={u.email}
+              onClick={() => navigate(`/users/${u._id}`)}
             />
-          </div>
+          ))}
+        </Section>
+      )}
+
+      {/* BOOKINGS */}
+      {results.bookings?.length > 0 && (
+        <Section title="Bookings">
+          {results.bookings.map(b => (
+            <Item
+              key={b._id}
+              label={`Booking #${b._id.slice(-6)}`}
+              sub={b.user?.name}
+              onClick={() => navigate(`/bookings/${b._id}`)}
+            />
+          ))}
+        </Section>
+      )}
+
+      {/* ROOMS */}
+      {results.rooms?.length > 0 && (
+        <Section title="Rooms">
+          {results.rooms.map(r => (
+            <Item
+              key={r._id}
+              label={r.name}
+              onClick={() => navigate(`/rooms/view/${r._id}`)}
+            />
+          ))}
+        </Section>
+      )}
+    </div>
+  )}
+</div>
+
 
           {/* NOTIFICATION */}
           <div className="relative">
