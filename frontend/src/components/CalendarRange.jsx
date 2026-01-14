@@ -3,11 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/http";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+
 import { Button } from "@/components/ui/button";
 import { CalendarDays } from "lucide-react";
 import { toDateOnlyFromAPIUTC, todayDateOnly } from "../lib/date";
@@ -145,12 +142,20 @@ export default function CalendarRange({
       </PopoverTrigger>
 
       <PopoverContent
-         side="bottom"
-        align="start"
-         sideOffset={8}
-  avoidCollisions={false}
-        className="p-0 border rounded-2xl items-centershadow-xl"
-      >
+  side="bottom"
+  align="start"
+  sideOffset={12}
+  collisionPadding={16}
+  className="
+    p-0
+    border
+    rounded-2xl
+    shadow-2xl
+    bg-background
+    z-[100]
+  "
+>
+
         {calendarUI}
       </PopoverContent>
     </Popover>
