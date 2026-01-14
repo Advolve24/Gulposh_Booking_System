@@ -48,85 +48,124 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background grid place-items-center p-4">
-      <Card className="w-full max-w-sm shadow-lg">
-        <CardHeader className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-              <img src="/logo1.png" alt="Logo" className="h-4 w-5" />
-            </div>
-            <div className="text-sm text-muted-foreground">Admin</div>
-          </div>
-          <CardTitle>Sign in</CardTitle>
-          <CardDescription>Use your administrator credentials to continue.</CardDescription>
-        </CardHeader>
+  <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#fbf8f4]">
+    {/* LEFT IMAGE SECTION */}
+    <div className="relative h-[40vh] lg:h-auto">
+  <img
+    src="/LoginImg.webp"
+    alt="Villa Gulposh"
+    className="absolute inset-0 h-full w-full object-cover"
+  />
 
-        <CardContent>
-          {error ? (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : null}
+  {/* Gradient Overlay */}
+  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="username"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPw ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  aria-label={showPw ? "Hide password" : "Show password"}
-                  onClick={() => setShowPw((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
-                  tabIndex={-1}
-                >
-                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in…
-                </>
-              ) : (
-                "Sign in"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-
-        <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>© {new Date().getFullYear()} Villa Gulposh</span>
-          <Link to="https://gulposhbookingsystem.netlify.app/" className="hover:underline">
-            Back to site
-          </Link>
-        </CardFooter>
-      </Card>
+  {/* Text */}
+  <div className="relative z-10 flex h-full items-end px-6 pb-8 lg:p-12">
+    <div className="text-white max-w-md">
+      <p className="text-xs tracking-widest uppercase mb-1 opacity-90">
+        Welcome back
+      </p>
+      <h1 className="text-[36px] lg:text-[50px] font-serif leading-tight mb-1">
+        Villa Gulposh
+      </h1>
+      <p className="text-sm opacity-90 leading-relaxed">
+        Manage your exclusive property with elegance and ease.
+      </p>
     </div>
-  );
+  </div>
+</div>
+
+    {/* RIGHT LOGIN SECTION */}
+    <div className="flex items-center justify-center px-6 py-10">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#5b1f2b] text-white">
+              <Shield className="h-5 w-5" />
+            </div>
+            <span className="text-[24px] font-medium font-serif text-gray-800">
+              Admin Portal
+            </span>
+          </div>
+
+          <h2 className="text-[36px] font-serif mb-1">Sign in</h2>
+          <p className="text-sm text-muted-foreground">
+            Use your administrator credentials to continue.
+          </p>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* FORM */}
+        <form onSubmit={onSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input
+              type="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              className="h-11"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Password</Label>
+            <div className="relative">
+              <Input
+                type={showPw ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="h-11 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full h-11 bg-[#5b1f2b] hover:bg-[#4a1923]"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in…
+              </>
+            ) : (
+              "Sign in"
+            )}
+          </Button>
+        </form>
+
+        {/* FOOTER */}
+        <div className="mt-10 flex items-center justify-between text-xs text-muted-foreground">
+          <span>© {new Date().getFullYear()} Villa Gulposh</span>
+          <Link
+            to="https://gulposhbookingsystem.netlify.app/"
+            className="flex items-center gap-1 text-[#5b1f2b] hover:underline"
+          >
+            ← Back to site
+          </Link>
+        </div>
+      </div>
+    </div>
+  </div>
+)
 }

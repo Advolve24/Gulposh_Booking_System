@@ -39,7 +39,7 @@ export default function Sidebar({ open, onClose }) {
           ${open ? "translate-x-0" : "-translate-x-full"}
 
           /* Desktop */
-          lg:static lg:translate-x-0
+         lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0
         `}
       >
         {/* HEADER */}

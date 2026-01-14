@@ -34,8 +34,7 @@ import { listBookingsAdmin } from "@/api/admin";
 
 /* ================= HELPERS ================= */
 
-const fmt = (d, withYear = false) =>
-  d ? format(new Date(d), withYear ? "MMM dd, yyyy" : "MMM dd") : "—";
+const dateFmt = (d) => (d ? format(new Date(d), "dd MMM yy") : "—");
 
 const nightsBetween = (from, to) => {
   const a = new Date(from);
@@ -47,24 +46,32 @@ const nightsBetween = (from, to) => {
 
 const StatusBadge = ({ status }) => {
   const map = {
-    confirmed: "bg-green-100 text-green-700",
-    pending: "bg-yellow-100 text-yellow-700",
-    cancelled: "bg-red-100 text-red-700",
-    completed: "bg-blue-100 text-blue-700",
+    confirmed: "bg-green-100 text-green-700 border-green-300",
+    pending: "bg-orange-100 text-orange-700 border-orange-300",
+    cancelled: "bg-red-100 text-red-700 border-red-300",
   };
 
   return (
     <span
-      className={`inline-flex px-3 py-1 rounded-full text-xs font-medium capitalize ${
-        map[status] || "bg-muted text-muted-foreground"
-      }`}
+      className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium border ${map[status] || "bg-muted text-muted-foreground"
+        }`}
     >
-      {status}
+      {status === "confirmed" ? "Paid" : status}
     </span>
   );
 };
 
-/* ================= PAGE ================= */
+const guestLabel = (b) => {
+  const adults = Number(b.adults ?? b.guests ?? 0);
+  const children = Number(b.children ?? 0);
+  const total = adults + children;
+
+  return {
+    main: `${adults} Adults, ${children} Children`,
+    sub: `Total: ${total} Guests`,
+  };
+};
+
 
 export default function Booking() {
   const navigate = useNavigate();
@@ -74,13 +81,10 @@ export default function Booking() {
   const [page, setPage] = useState(1);
   const perPage = 8;
 
-  /* ================= LOAD BOOKINGS ================= */
-
   const loadBookings = async () => {
     try {
       const params = {};
       if (status !== "all") params.status = status;
-
       const data = await listBookingsAdmin(params);
       setBookings(Array.isArray(data) ? data : []);
       setPage(1);
@@ -93,46 +97,14 @@ export default function Booking() {
     loadBookings();
   }, [status]);
 
-  /* ================= STATS ================= */
-
-  const totals = useMemo(
-    () => ({
-      total: bookings.length,
-      confirmed: bookings.filter((b) => b.status === "confirmed").length,
-      cancelled: bookings.filter((b) => b.status === "cancelled").length,
-    }),
-    [bookings]
-  );
-
-  /* ================= PAGINATION ================= */
-
   const totalPages = Math.max(1, Math.ceil(bookings.length / perPage));
   const visible = bookings.slice((page - 1) * perPage, page * perPage);
 
-  /* ================= UI ================= */
-
   return (
     <AppLayout>
-      <div className="mx-auto w-full max-w-7xl px-3 sm:px-6 py-4 sm:py-6 space-y-4">
+      <div className=" max-w-7xl space-y-6 py-6">
 
-        {/* ===== STATS ===== */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <StatCard icon={Calendar} label="Total Bookings" value={totals.total} />
-          <StatCard
-            icon={CheckCircle}
-            label="Confirmed"
-            value={totals.confirmed}
-            color="green"
-          />
-          <StatCard
-            icon={XCircle}
-            label="Cancelled"
-            value={totals.cancelled}
-            color="red"
-          />
-        </div>
-
-        {/* ===== FILTER BAR ===== */}
+        {/* FILTER */}
         <div className="flex items-center justify-between gap-3">
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-[160px] h-10">
@@ -141,9 +113,9 @@ export default function Booking() {
                 <SelectValue placeholder="All Bookings" />
               </div>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white">
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="confirmed">Paid</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
@@ -157,122 +129,202 @@ export default function Booking() {
           </button>
         </div>
 
-        {/* ===== DESKTOP TABLE ===== */}
-        <div className="hidden sm:block bg-card border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40">
-              <tr>
-                <th className="px-4 py-3 text-left">ID</th>
-                <th className="px-4 py-3 text-left">Guest</th>
-                <th className="px-4 py-3">Room</th>
-                <th className="px-4 py-3">Dates</th>
-                <th className="px-4 py-3 text-center">Guests</th>
-                <th className="px-4 py-3 text-right">Amount</th>
-                <th className="px-4 py-3 text-center">Status</th>
-                <th />
-              </tr>
-            </thead>
+        {/* DESKTOP TABLE */}
+        <div className="hidden sm:block bg-card border rounded-xl">
+          <div className="relative overflow-x-auto">
+            <table className="min-w-[1200px] w-full text-sm">
 
-            <tbody>
-              {visible.map((b) => (
-                <tr key={b._id} className="border-t">
-                  <td className="px-4 py-3 text-primary font-medium">
-                    {b._id.slice(-5)}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <div>{b.user?.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {b.user?.email}
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-3">{b.room?.name}</td>
-
-                  <td className="px-4 py-3">
-                    {fmt(b.startDate, true)} → {fmt(b.endDate, true)}
-                  </td>
-
-                  <td className="px-4 py-3 text-center">{b.guests}</td>
-
-                  <td className="px-4 py-3 text-right font-medium">
-                    ₹{b.amount.toLocaleString("en-IN")}
-                  </td>
-
-                  <td className="px-4 py-3 text-center">
-                    <StatusBadge status={b.status} />
-                  </td>
-
-                  <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="p-1 rounded-md hover:bg-muted">
-                          <MoreHorizontal size={18} />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => navigate(`/bookings/${b._id}`)}
-                        >
-                          View Booking
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            navigate(`/bookings/${b._id}/invoice`)
-                          }
-                        >
-                          View Invoice
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() =>
-                            navigate(`/bookings/${b._id}/invoice?download=true`)
-                          }
-                        >
-                          Download Invoice
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
+              <thead className="bg-muted/40">
+                <tr>
+                  <th className="px-4 py-3 text-left">Booking ID</th>
+                  <th className="px-4 py-3 text-left">Guest</th>
+                  <th className="px-4 py-3 text-left">Room</th>
+                  <th className="px-4 py-3 text-left">Check in</th>
+                  <th className="px-4 py-3 text-left">Check out</th>
+                  <th className="px-4 py-3 text-center">Nights</th>
+                  <th className="px-4 py-3 text-left">Guests</th>
+                  <th className="px-4 py-3 text-right">Amount</th>
+                  <th className="px-4 py-3 text-center">Payment</th>
+                  <th />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {visible.map((b, i) => (
+                  <tr key={b._id} className="border-t hover:bg-muted/20">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-400" />
+                        #{b._id.slice(-6)}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{b.user?.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {b.user?.phone}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3">{b.room?.name}</td>
+
+                    <td className="px-4 py-3">
+                      {dateFmt(b.startDate)}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      {dateFmt(b.endDate)}
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      {nightsBetween(b.startDate, b.endDate)}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div>{guestLabel(b).main}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {guestLabel(b).sub}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3 text-right font-medium">
+                      ₹{b.amount?.toLocaleString("en-IN")}
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      <StatusBadge status={b.status} />
+                    </td>
+
+                    <td className="px-4 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-1 rounded-md hover:bg-muted">
+                            <MoreHorizontal size={18} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-white" align="end">
+                          <DropdownMenuItem
+                            onClick={() => navigate(`/bookings/${b._id}`)}
+                          >
+                            View Booking
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(`/bookings/${b._id}/invoice`)
+                            }
+                          >
+                            View Invoice
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(`/bookings/${b._id}/invoice?download=true`)
+                            }
+                          >
+                            Download Invoice
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* ===== MOBILE CARDS ===== */}
+        {/* MOBILE VIEW */}
         <div className="sm:hidden space-y-3">
           {visible.map((b) => (
             <div
               key={b._id}
               onClick={() => navigate(`/bookings/${b._id}`)}
-              className="bg-card border rounded-xl p-4 space-y-2 cursor-pointer"
+              className="bg-card border rounded-xl p-4 space-y-2"
             >
-              <div className="flex justify-between">
-                <div className="font-semibold truncate">{b.user?.name}</div>
-                <StatusBadge status={b.status} />
+              {/* HEADER */}
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-semibold">{b.user?.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {b.room?.name}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={b.status} />
+
+                  {/* ACTIONS MENU */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => e.stopPropagation()} // ⛔ stop card click
+                        className="p-1 rounded-md hover:bg-muted"
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent
+                      className="bg-white"
+                      align="end"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DropdownMenuItem
+                        onClick={() => navigate(`/bookings/${b._id}`)}
+                      >
+                        View Booking
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        onClick={() =>
+                          navigate(`/bookings/${b._id}/invoice`)
+                        }
+                      >
+                        View Invoice
+                      </DropdownMenuItem>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuItem
+                        onClick={() =>
+                          navigate(`/bookings/${b._id}/invoice?download=true`)
+                        }
+                      >
+                        Download Invoice
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
 
-              <div className="text-xs text-muted-foreground">
-                {b.room?.name}
+              {/* DETAILS */}
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Calendar size={12} />
+                  {dateFmt(b.startDate)} – {dateFmt(b.endDate)}
+                </span>
+
+                <span className="flex items-center gap-1">
+                  <Moon size={12} />
+                  {nightsBetween(b.startDate, b.endDate)} Nights
+                </span>
+
+                <span className="flex items-center gap-1">
+                  <Users size={12} />
+                  {guestLabel(b).main}
+                </span>
               </div>
 
-              <div className="flex gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Calendar size={12} /> {fmt(b.startDate)}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Moon size={12} /> {nightsBetween(b.startDate, b.endDate)}N
-                </span>
-                <span className="flex items-center gap-1">
-                  <Users size={12} /> {b.guests}
-                </span>
+              {/* AMOUNT */}
+              <div className="text-right font-medium">
+                ₹{b.amount?.toLocaleString("en-IN")}
               </div>
             </div>
+
           ))}
         </div>
 
-        {/* ===== PAGINATION ===== */}
+        {/* PAGINATION */}
         <div className="flex justify-between items-center pt-3">
           <span className="text-xs text-muted-foreground">
             Showing {visible.length} of {bookings.length}
@@ -297,30 +349,5 @@ export default function Booking() {
         </div>
       </div>
     </AppLayout>
-  );
-}
-
-/* ================= STAT CARD ================= */
-
-function StatCard({ icon: Icon, label, value, color }) {
-  const map = {
-    green: "text-green-600 bg-green-100",
-    red: "text-red-600 bg-red-100",
-  };
-
-  return (
-    <div className="bg-card border rounded-xl p-4 flex justify-between items-center">
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-xl font-semibold">{value}</p>
-      </div>
-      <div
-        className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-          map[color] || "bg-muted"
-        }`}
-      >
-        <Icon size={18} />
-      </div>
-    </div>
   );
 }
