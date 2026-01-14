@@ -4,6 +4,7 @@ import { createRoom, listRoomsAdmin, deleteRoom, getRoomAdmin, updateRoom } from
 import { getAdminStats } from "../controllers/admin.stats.controller.js";
 import { listUsersAdmin, getUserAdmin, listUserBookingsAdmin, cancelBookingAdmin, listBookingsAdmin, updateUserAdmin, deleteUserAdmin,  createUserAdmin, updateBookingAdmin,  getBookingAdmin } from "../controllers/admin.user.controller.js";
 import { createVillaOrder, verifyVillaPayment } from "../controllers/admin.villa.controller.js";
+import { adminGlobalSearch } from "../controllers/admin.search.controller.js";
 
 const router = express.Router();
 
