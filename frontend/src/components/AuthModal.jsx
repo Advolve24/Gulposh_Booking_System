@@ -32,21 +32,30 @@ export default function AuthModal() {
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
 
   const verifyingRef = useRef(false);
+  const confirmationRef = useRef(null);
 
-  /* ================= TIMER ================= */
+  /* ================= TIMER (iOS SAFE) ================= */
   useEffect(() => {
-    if (step !== "otp" || secondsLeft <= 0) return;
-    const t = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
-    return () => clearInterval(t);
+    if (step !== "otp") return;
+    if (secondsLeft <= 0) return;
+
+    const interval = setInterval(() => {
+      setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, [step, secondsLeft]);
 
   /* ================= RESET ================= */
   const resetFlow = () => {
     verifyingRef.current = false;
+    confirmationRef.current = null;
     window.confirmationResult = null;
+
     setForm({ phone: "", otp: "" });
     setStep("phone");
     setSecondsLeft(OTP_TIMER);
+    setLoading(false);
   };
 
   /* ================= SEND OTP ================= */
@@ -58,6 +67,9 @@ export default function AuthModal() {
 
     try {
       setLoading(true);
+      setForm((f) => ({ ...f, otp: "" }));
+      setSecondsLeft(OTP_TIMER);
+      verifyingRef.current = false;
 
       const verifier = getRecaptchaVerifier(auth, "recaptcha-container");
       await verifier.render();
@@ -68,33 +80,42 @@ export default function AuthModal() {
         verifier
       );
 
+      confirmationRef.current = confirmation;
       window.confirmationResult = confirmation;
+
       setStep("otp");
-      setSecondsLeft(OTP_TIMER);
       toast.success("OTP sent");
     } catch (err) {
       console.error(err);
-      toast.error("Failed to send OTP");
+      toast.error("Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ================= VERIFY OTP (MANUAL ONLY) ================= */
+  /* ================= VERIFY OTP ================= */
   const verifyOtp = async () => {
     if (verifyingRef.current) return;
-    if (form.otp.length !== 6) {
-      toast.error("Enter 6-digit OTP");
+
+    const cleanOtp = form.otp.replace(/\D/g, "");
+    if (cleanOtp.length !== 6) {
+      toast.error("Enter a valid 6-digit OTP");
+      return;
+    }
+
+    if (!confirmationRef.current) {
+      toast.error("OTP expired. Please resend OTP.");
+      resetFlow();
       return;
     }
 
     verifyingRef.current = true;
+    setLoading(true);
 
     try {
-      setLoading(true);
-
-      const result = await window.confirmationResult.confirm(form.otp);
+      const result = await confirmationRef.current.confirm(cleanOtp);
       const idToken = await result.user.getIdToken(true);
+
       const user = await firebaseLoginWithToken(idToken);
 
       closeAuth();
@@ -118,9 +139,10 @@ export default function AuthModal() {
 
       navigate("/", { replace: true });
     } catch (err) {
-      verifyingRef.current = false;
       console.error(err);
-      toast.error("Invalid or expired OTP");
+      toast.error("Invalid or expired OTP. Please resend.");
+
+      verifyingRef.current = false;
       setForm((f) => ({ ...f, otp: "" }));
     } finally {
       setLoading(false);
@@ -128,78 +150,73 @@ export default function AuthModal() {
   };
 
   return (
-     <Dialog
-  open={showAuthModal}
-  onOpenChange={(open) => {
-    if (!open) {
-      resetFlow();
-      closeAuth();
-    }
-  }}
-
-
->
-  {/* 🔴 FIX OVERLAY SIDE GAP */}
-  <DialogOverlay className="bg-black/60 p-0" />
-
-  <DialogContent
-    className="
-      p-0
-      w-[92vw]
-      max-w-[380px]
-      rounded-3xl
-      overflow-hidden
-      bg-white
-      border-0
-      shadow-none
-      outline-none
-      ring-0
-      mx-auto
-    "
-  >
-    {/* ACCESSIBILITY */}
-    <VisuallyHidden>
-      <DialogTitle>Authentication</DialogTitle>
-      <DialogDescription>Login or verify OTP</DialogDescription>
-    </VisuallyHidden>
-
-    {/* FIREBASE reCAPTCHA (NO LAYOUT IMPACT) */}
-    <div
-      id="recaptcha-container"
-      className="absolute inset-0 pointer-events-none opacity-0"
-    />
-
-    {/* IMAGE HEADER */}
-    <div className="relative h-48">
-      <button
-        onClick={() => {
+    <Dialog
+      open={showAuthModal}
+      onOpenChange={(open) => {
+        if (!open) {
           resetFlow();
           closeAuth();
-        }}
-        className="absolute right-4 top-4 z-30 rounded-full bg-white/90 p-1.5"
+        }
+      }}
+    >
+      <DialogOverlay className="bg-black/60 p-0" />
+
+      <DialogContent
+        className="
+          p-0
+          w-[92vw]
+          max-w-[380px]
+          rounded-3xl
+          overflow-hidden
+          bg-white
+          border-0
+          shadow-none
+          outline-none
+          ring-0
+          mx-auto
+        "
       >
-        <X className="h-4 w-4 text-black" />
-      </button>
+        <VisuallyHidden>
+          <DialogTitle>Authentication</DialogTitle>
+          <DialogDescription>Login or verify OTP</DialogDescription>
+        </VisuallyHidden>
 
-      <img
-        src="/Gulposh-65-scaled-1.webp"
-        alt="Gulposh Villa"
-        className="h-full w-full object-cover"
-      />
+        {/* Firebase reCAPTCHA */}
+        <div
+          id="recaptcha-container"
+          className="absolute inset-0 pointer-events-none opacity-0"
+        />
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
+        {/* IMAGE HEADER */}
+        <div className="relative h-48">
+          <button
+            onClick={() => {
+              resetFlow();
+              closeAuth();
+            }}
+            className="absolute right-4 top-4 z-30 rounded-full bg-white/90 p-1.5"
+          >
+            <X className="h-4 w-4 text-black" />
+          </button>
 
-      <div className="absolute bottom-4 left-4 text-white">
-        <h3 className="text-lg font-serif">Gulposh Luxury Villa</h3>
-        <p className="text-xs opacity-90">
-          Experience elegance. Book effortlessly.
-        </p>
-      </div>
-    </div>
+          <img
+            src="/Gulposh-65-scaled-1.webp"
+            alt="Gulposh Villa"
+            className="h-full w-full object-cover"
+          />
 
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
+
+          <div className="absolute bottom-4 left-4 text-white">
+            <h3 className="text-lg font-serif">Gulposh Luxury Villa</h3>
+            <p className="text-xs opacity-90">
+              Experience elegance. Book effortlessly.
+            </p>
+          </div>
+        </div>
 
         {/* BODY */}
-        <div className="px-5 py-5 space-y-4 bg-[#f6f4f1]">
+        <div className="px-5 py-5 space-y-4 bg-white">
           <h2 className="text-lg font-semibold">
             {step === "phone" ? "Sign in" : "Verify OTP"}
           </h2>
@@ -209,7 +226,7 @@ export default function AuthModal() {
               <Label>Mobile Number</Label>
               <Input
                 className="h-11 rounded-xl"
-                  placeholder="Enter 10 digit phone number"
+                placeholder="Enter 10 digit phone number"
                 inputMode="numeric"
                 value={form.phone}
                 onChange={(e) =>
@@ -235,6 +252,7 @@ export default function AuthModal() {
               <Input
                 className="h-11 text-center tracking-[0.35em] font-semibold"
                 inputMode="numeric"
+                autoFocus
                 value={form.otp}
                 onChange={(e) =>
                   setForm({
@@ -247,7 +265,7 @@ export default function AuthModal() {
               <Button
                 className="w-full h-11 bg-[#a11d2e]"
                 onClick={verifyOtp}
-                disabled={loading}
+                disabled={loading || verifyingRef.current}
               >
                 {loading ? "Verifying..." : "Verify OTP"}
               </Button>
@@ -276,4 +294,3 @@ export default function AuthModal() {
     </Dialog>
   );
 }
-
