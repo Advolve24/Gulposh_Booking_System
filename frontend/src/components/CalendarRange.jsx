@@ -145,7 +145,10 @@ export default function CalendarRange({
       </PopoverTrigger>
 
       <PopoverContent
+         side="bottom"
         align="start"
+         sideOffset={8}
+  avoidCollisions={false}
         className="p-0 border rounded-2xl items-centershadow-xl"
       >
         {calendarUI}
