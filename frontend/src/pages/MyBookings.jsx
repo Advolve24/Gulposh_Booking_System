@@ -141,10 +141,9 @@ export default function MyBookings() {
           <button
             onClick={() => setTab("upcoming")}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
-              ${
-                tab === "upcoming"
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground"
+              ${tab === "upcoming"
+                ? "bg-primary text-primary-foreground shadow"
+                : "text-muted-foreground hover:text-foreground"
               }`}
           >
             <Calendar className="w-4 h-4" />
@@ -154,10 +153,9 @@ export default function MyBookings() {
           <button
             onClick={() => setTab("past")}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
-              ${
-                tab === "past"
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:text-foreground"
+              ${tab === "past"
+                ? "bg-primary text-primary-foreground shadow"
+                : "text-muted-foreground hover:text-foreground"
               }`}
           >
             <Clock className="w-4 h-4" />
@@ -183,7 +181,23 @@ export default function MyBookings() {
               return (
                 <div
                   key={b._id}
-                  className="group bg-white rounded-2xl overflow-hidden border shadow-sm hover:shadow-xl transition"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openView(b._id)}
+                  className="
+    group
+    bg-white
+    rounded-2xl
+    overflow-hidden
+    border
+    shadow-sm
+    hover:shadow-xl
+    transition
+    cursor-pointer
+    focus:outline-none
+    focus:ring-2
+    focus:ring-primary/40
+  "
                 >
                   {/* IMAGE */}
                   <div className="relative h-48 overflow-hidden">
@@ -200,9 +214,7 @@ export default function MyBookings() {
                         <h3 className="text-white text-lg font-serif font-semibold">
                           {b.room?.name}
                         </h3>
-                        <p className="text-white/80 text-sm">
-                          Gulposh Villa
-                        </p>
+                        <p className="text-white/80 text-sm">Gulposh Villa</p>
                       </div>
 
                       <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-600/90 text-white">
@@ -232,29 +244,33 @@ export default function MyBookings() {
 
                     <div className="border-t pt-3 flex items-center justify-between">
                       <div>
-                        <div className="text-xs text-muted-foreground">
-                          Total
-                        </div>
-                        <div className="text-lg font-semibold">
-                          ₹{b.amount}
-                        </div>
+                        <div className="text-xs text-muted-foreground">Total</div>
+                        <div className="text-lg font-semibold">₹{b.amount}</div>
                       </div>
 
+                      {/* VIEW BUTTON — SAFE */}
                       <Button
                         variant="outline"
                         size="sm"
                         className="rounded-xl flex items-center gap-2"
-                        onClick={() => openView(b._id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openView(b._id);
+                        }}
                       >
                         <Eye className="w-4 h-4" />
                         View
                       </Button>
                     </div>
 
+                    {/* CANCEL (UPCOMING ONLY) */}
                     {tab === "upcoming" && b.status === "confirmed" && (
                       <div className="pt-3 flex justify-center">
                         <Button
-                          onClick={() => onCancel(b._id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCancel(b._id);
+                          }}
                           className="w-full max-w-[220px] rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
                         >
                           Cancel Booking
@@ -263,7 +279,9 @@ export default function MyBookings() {
                     )}
                   </div>
                 </div>
+
               );
+
             })}
           </div>
         )}
