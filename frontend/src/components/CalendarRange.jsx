@@ -1,25 +1,51 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/http";
-import { format } from "date-fns";
+import { format, addMonths, subMonths } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { toDateOnlyFromAPIUTC, todayDateOnly } from "../lib/date";
 
+/* ===============================
+   MEDIA QUERY
+================================ */
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return isDesktop;
+}
+
+/* ===============================
+   CALENDAR RANGE
+================================ */
 export default function CalendarRange({
   roomId,
   value,
   onChange,
   disabledRanges,
-  inline = false, // ✅ NEW
+  inline = false,
 }) {
   const [roomRanges, setRoomRanges] = useState([]);
   const [globalRanges, setGlobalRanges] = useState([]);
+  const isDesktop = useIsDesktop();
 
-  /* ---------------- LOAD DISABLED RANGES ---------------- */
+  /* 🔹 Control visible month manually */
+  const [month, setMonth] = useState(new Date());
+
+  /* -------- LOAD DISABLED RANGES -------- */
 
   useEffect(() => {
     if (!roomId || disabledRanges) return;
@@ -63,7 +89,6 @@ export default function CalendarRange({
     })();
   }, [disabledRanges]);
 
-
   const disabled = useMemo(
     () => [
       { before: todayDateOnly() },
@@ -74,50 +99,77 @@ export default function CalendarRange({
     [globalRanges, roomRanges, disabledRanges]
   );
 
+  /* ===============================
+     CALENDAR UI
+  ============================== */
 
   const calendarUI = (
-    <Calendar
-      mode="range"
-      numberOfMonths={1}
-      selected={value}
-      onSelect={onChange}
-      disabled={disabled}
-      className="p-4"
-      classNames={{
-        day_selected: "bg-primary text-primary-foreground",
-        day_range_start: "bg-primary text-primary-foreground",
-        day_range_end: "bg-primary text-primary-foreground",
-        day_range_middle: "bg-primary/15",
-        nav_button: "hover:bg-muted",
-        day_today: "border border-primary",
-      }}
-    />
+    <div className="calendar-wrapper">
+      {/* 🔹 OUTSIDE NAV */}
+      <button
+        className="calendar-nav left"
+        onClick={() => setMonth((m) => subMonths(m, 1))}
+      >
+        <ChevronLeft size={20} />
+      </button>
+
+      <button
+        className="calendar-nav right"
+        onClick={() => setMonth((m) => addMonths(m, 1))}
+      >
+        <ChevronRight size={20} />
+      </button>
+
+      <Calendar
+        mode="range"
+        month={month}
+        onMonthChange={setMonth}
+        numberOfMonths={isDesktop ? 2 : 1}
+        selected={value}
+        onSelect={onChange}
+        disabled={disabled}
+        showOutsideDays={false}
+        className="airbnb-calendar p-4"
+        classNames={{
+          months: isDesktop ? "flex gap-8" : "flex justify-center",
+          caption: "hidden", // ⛔ disable internal nav
+          table: "w-full border-collapse",
+          head_row: "grid grid-cols-7",
+          row: "grid grid-cols-7",
+          cell: "h-9 w-9 text-center",
+          day: "h-9 w-9 rounded-full",
+
+          day_range_start: "range-start",
+          day_range_end: "range-end",
+          day_range_middle: "range-middle",
+          day_selected: "range-selected",
+
+          day_today: "border border-primary",
+          day_disabled: "opacity-40",
+        }}
+      />
+    </div>
   );
 
-  /* ======================================================
-     INLINE MODE (ROOM PAGE – RIGHT CARD)
-  ====================================================== */
+  /* ===============================
+     INLINE MODE
+  ============================== */
 
   if (inline) {
     return (
       <div className="space-y-2">
-        {/* HEADER */}
         <div className="grid grid-cols-2 gap-3">
           <DateBox label="Check in" value={value?.from} />
           <DateBox label="Check out" value={value?.to} />
         </div>
-
-        {/* CALENDAR */}
-        <div className="border rounded-xl bg-card items-center">
-          {calendarUI}
-        </div>
+        <div className="border rounded-xl bg-card">{calendarUI}</div>
       </div>
     );
   }
 
-  /* ======================================================
-     POPOVER MODE (HOME PAGE)
-  ====================================================== */
+  /* ===============================
+     POPOVER MODE
+  ============================== */
 
   return (
     <Popover>
@@ -125,60 +177,49 @@ export default function CalendarRange({
         <Button
           variant="outline"
           className="
-            w-full
-            min-w-0
-            h-14
-            grid grid-cols-2
-            items-center
-            rounded-xl border
-            px-4
-            overflow-hidden
-            text-left
-          "
+              w-full
+              h-14
+              grid grid-cols-2
+              rounded-xl
+              px-4
+              bg-white
+              border
+              text-center
+              divide-x-2
+              divide-muted-black
+            "
         >
           <DateBox label="Check in" value={value?.from} />
           <DateBox label="Check out" value={value?.to} />
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent
-  side="bottom"
-  align="start"
-  sideOffset={12}
-  collisionPadding={16}
-  className="
-    p-0
-    border
-    rounded-2xl
-    shadow-2xl
-    bg-background
-    z-[100]
-  "
->
 
+      <PopoverContent
+        side="bottom"
+        align="center"
+        sideOffset={12}
+        className="p-0 border rounded-2xl shadow-xl bg-background z-[100] "
+      >
         {calendarUI}
       </PopoverContent>
     </Popover>
   );
 }
 
-/* ---------------- DATE BOX ---------------- */
-
+/* ===============================
+   DATE BOX
+================================ */
 function DateBox({ label, value }) {
   return (
-    <div className="flex flex-col justify-center min-w-0">
-      <span className="text-[11px] uppercase text-muted-foreground leading-none mb-1">
+    <div className="flex flex-col items-center justify-center">
+      <span className="text-[11px] uppercase text-muted-foreground ">
         {label}
       </span>
 
-      <span className="flex items-center gap-2 text-sm leading-tight">
-        <CalendarDays
-          size={14}
-          className="text-muted-foreground relative top-[0.5px]"
-        />
-        <span className="truncate">
-          {value ? format(value, "dd MMM yyyy") : "Add date"}
-        </span>
+      <span className="flex items-center gap-2 text-sm font-medium ">
+        <CalendarDays size={14} className="text-muted-foreground" />
+        {value ? format(value, "dd MMM yyyy") : "Add date"}
       </span>
     </div>
   );

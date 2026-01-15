@@ -177,7 +177,7 @@ export default function AuthModal() {
         }
       }}
     >
-      <DialogOverlay className="bg-black/60" />
+      <DialogOverlay className="bg-black/10" />
 
       <DialogContent className="p-0 w-[92vw] max-w-[380px] rounded-3xl overflow-hidden bg-white border-0">
         <VisuallyHidden>
