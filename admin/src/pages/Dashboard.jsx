@@ -79,48 +79,75 @@ function StatusBadge({ status }) {
 }
 
 
-function StatCard({ icon: Icon, label, value, hint, hintColor, onClick }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  hintColor,
+  onClick,
+  bg,
+  textColor = "text-foreground",
+  mobileFull = false,
+  iconColor,
+}) {
   return (
     <div
       onClick={onClick}
       role={onClick ? "button" : undefined}
       className={`
-        w-[150px] sm:w-full
-        bg-card border border-border rounded-xl
+        ${mobileFull ? "col-span-2 md:col-span-1" : ""}
+        w-full
+        rounded-xl
         p-3 sm:p-4
-        flex items-center justify-between
-        min-h-[75px] sm:min-h-[100px]
+        min-h-[100px]
+        flex items-start md:items-center justify-between
         transition
-        ${onClick ? "cursor-pointer hover:border-primary" : ""}
+        ${onClick ? "cursor-pointer hover:opacity-90" : ""}
       `}
+      style={{ backgroundColor: bg }}
     >
       {/* LEFT */}
-      <div className="flex flex-col space-y-0.5 sm:space-y-1 leading-tight">
-        <p className="text-[10px] sm:text-sm text-muted-foreground">
-          {label}
-        </p>
-
-        <h2 className="text-[16px] sm:text-2xl font-semibold leading-none">
-          {value}
-        </h2>
+      <div className={`flex md:w-auto w-[60%] flex-col gap-4 ${textColor}`}>
+        <p className="text-sm opacity-80">{label}</p>
+        <h2 className="text-2xl font-semibold">{value}</h2>
 
         {hint && (
-          <p
-            className={`hidden sm:block text-[10px] sm:text-sm ${hintColor}`}
-          >
+          <p className={`hidden sm:block text-sm ${hintColor}`}>
             {hint}
           </p>
         )}
       </div>
 
       {/* ICON */}
-      <div className="h-8 w-8 sm:h-11 sm:w-11 rounded-lg bg-muted flex items-center justify-center">
-        <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+      <div className={`h-10 w-10 rounded-lg bg-black/10 flex items-center justify-center`}>
+        <Icon className={`h-5 w-5 ${iconColor ?? ""}`} />
       </div>
     </div>
   );
 }
 
+function UpcomingBookingCard({ booking }) {
+  if (!booking) return null;
+
+  const date = new Date(booking.startDate);
+
+  return (
+    <div className="bg-[#DCEEE2] rounded-xl p-4 flex flex-col items-center justify-center text-center">
+      <p className="text-sm font-medium text-green-900 mb-2">
+        Upcoming Booking
+      </p>
+
+      <h2 className="text-4xl font-extrabold text-green-700 leading-none">
+        {format(date, "dd")}
+      </h2>
+
+      <p className="text-sm font-semibold text-green-800 uppercase">
+        {format(date, "MMM")}
+      </p>
+    </div>
+  );
+}
 
 
 
@@ -444,11 +471,19 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [bookings]);
 
+  const upcomingBooking = useMemo(() => {
+    const today = startOfToday();
+
+    return bookings
+      .filter(b => new Date(b.startDate) >= today)
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0];
+  }, [bookings]);
+
+
 
 
   return (
     <AppLayout>
-      {/* ===== STATS ===== */}
       <div
         className="
     grid grid-cols-2
@@ -456,7 +491,7 @@ export default function Dashboard() {
     justify-items-center
     sm:grid-cols-2
     md:grid-cols-4
-    max-w-[320px] sm:max-w-full
+    sm:max-w-full
     py-0
   "
       >
@@ -469,7 +504,10 @@ export default function Dashboard() {
           hint={`${bookingChange > 0 ? "+" : ""}${bookingChange}% from last month`}
           hintColor={bookingChange >= 0 ? "text-green-600" : "text-red-600"}
           onClick={() => navigate("/bookings")}
+          bg="#ebebeb"
+          mobileFull
         />
+
 
         <StatCard
           icon={CalendarCheck2}
@@ -478,6 +516,7 @@ export default function Dashboard() {
           hint="Paid & confirmed stays"
           hintColor="text-green-600"
           onClick={() => navigate("/bookings?status=confirmed")}
+          bg="white"
         />
 
         <StatCard
@@ -487,16 +526,23 @@ export default function Dashboard() {
           hint={`${cancelledChange > 0 ? "+" : ""}${cancelledChange}% from last month`}
           hintColor={cancelledChange <= 0 ? "text-green-600" : "text-red-600"}
           onClick={() => navigate("/bookings?status=cancelled")}
+          bg="white"
         />
+
 
         <StatCard
           icon={Wallet}
           label="Total Revenue"
           value={`₹${(stats?.totalRevenue ?? 0).toLocaleString("en-IN")}`}
           hint={`${revenueChange > 0 ? "+" : ""}${revenueChange}% from last month`}
-          hintColor={revenueChange >= 0 ? "text-green-600" : "text-red-600"}
+          hintColor={revenueChange >= 0 ? "text-green-300" : "text-red-300"}
           onClick={() => navigate("/bookings?paid=true")}
+          bg="#671e30"
+          textColor="text-white"
+          iconColor="text-white"
+          mobileFull
         />
+
 
       </div>
 
@@ -508,10 +554,10 @@ export default function Dashboard() {
             bg-card
             border border-border
             rounded-xl
-            px-2 py-3 sm:p-6
+            px-4 py-3 sm:p-6
             overflow-hidden
             max-h-[calc(100vh-180px)]
-            sm:max-h-none  max-w-[320px] sm:max-w-none
+            sm:max-h-none w-[88vw] md:w-full
           ">
 
           {/* ================= HEADER ================= */}
@@ -577,7 +623,7 @@ export default function Dashboard() {
           ${isBlocked
                           ? "bg-red-100 text-red-700 border-red-300"
                           : hasBooking
-                            ? "bg-blue-100 text-blue-700 border-blue-300"
+                            ? "bg-green-100 text-green-700 border-green-300"
                             : "bg-white border-border"
                         }
         `}
@@ -592,14 +638,19 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3  max-w-[320px] sm:max-w-none">
-
+        <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3">
           <h3 className="font-semibold">Quick Actions</h3>
+
           <Action icon={Plus} title="Add Room" desc="Create a new room listing" link="/rooms/new" />
           <Action icon={Home} title="Book Villa" desc="Book the entire property" link="/villa-booking" />
           <Action icon={Ban} title="Block Dates" desc="Select dates directly in calendar" link="/block-dates" />
 
+          {/* UPCOMING BOOKING */}
+          {upcomingBooking && (
+            <UpcomingBookingCard booking={upcomingBooking} />
+          )}
         </div>
+
       </div>
 
       <div className="bg-card border border-border rounded-xl mt-6 p-4 sm:p-6">
@@ -657,9 +708,7 @@ export default function Dashboard() {
   );
 }
 
-/* ===============================
-   QUICK ACTION CARD
-================================ */
+
 function Action({ icon: Icon, title, desc, link, onClick }) {
   const handleClick = () => {
     if (onClick) {
