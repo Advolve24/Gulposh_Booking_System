@@ -23,7 +23,11 @@ export default function Sidebar({
     { to: "/users", label: "Users", icon: Users },
   ];
 
-  
+  const handleNavClick = () => {
+    if (window.innerWidth < 1024) {
+      onClose();
+    }
+  };
 
   return (
     <>
@@ -37,16 +41,24 @@ export default function Sidebar({
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50
-          bg-primary text-white
-          flex flex-col
-          transition-all duration-300
-          ${collapsed ? "lg:w-20" : "lg:w-64"}
-          w-64
-          ${open ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0
-        `}
+    fixed inset-y-0 left-0 z-50
+    bg-primary text-white
+    flex flex-col
+
+    /* WIDTH */
+    w-64 lg:${collapsed ? "w-20" : "w-64"}
+
+    /* MOBILE SLIDE ONLY */
+    ${open ? "translate-x-0" : "-translate-x-full"}
+    lg:translate-x-0 lg:transform-none
+
+    transition-transform duration-300
+    lg:transition-none
+  `}
       >
+
+
+
         {/* HEADER */}
         {/* HEADER */}
         <div className="relative h-16 flex items-center border-b border-white/20 px-4">
@@ -94,7 +106,7 @@ export default function Sidebar({
             <NavLink
               key={to}
               to={to}
-              onClick={onClose}
+              onClick={handleNavClick}
               className={({ isActive }) =>
                 `
                 flex items-center gap-3 px-3 py-2 rounded-lg text-sm
