@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../store/authStore";
 
 import { api } from "../api/http";
@@ -205,14 +205,23 @@ function BookingCard({
 /* ---------------------------------------------------------------- */
 
 export default function RoomPage() {
+  const location = useLocation();
   const { openAuth, user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const navState = location.state;
+
+const savedSearch = sessionStorage.getItem("searchParams");
+const fallbackState = savedSearch ? JSON.parse(savedSearch) : null;
+
+const initialSearch = navState ?? null;
+
   const [room, setRoom] = useState(null);
-  const [range, setRange] = useState(undefined);
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
+  const [range, setRange] = useState(() => initialSearch?.range || undefined);
+const [adults, setAdults] = useState(() => initialSearch?.adults ?? 1);
+const [children, setChildren] = useState(() => initialSearch?.children ?? 0);
+
 
   const totalGuests = adults + children;
 
@@ -223,6 +232,46 @@ export default function RoomPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+
+  useEffect(() => {
+  // If user navigated without search state (e.g. back + new room)
+  if (!location.state) {
+    setRange(undefined);
+    setAdults(1);
+    setChildren(0);
+  }
+}, [id]);
+
+
+  useEffect(() => {
+  if (!location.state) return;
+
+  const saved = sessionStorage.getItem("searchParams");
+  if (!saved) return;
+
+  const parsed = JSON.parse(saved);
+
+  if (parsed?.range?.from && parsed?.range?.to) {
+    setRange({
+      from: new Date(parsed.range.from),
+      to: new Date(parsed.range.to),
+    });
+  }
+
+  if (typeof parsed?.adults === "number") setAdults(parsed.adults);
+  if (typeof parsed?.children === "number") setChildren(parsed.children);
+}, [location.state]);
+
+
+
+  useEffect(() => {
+  if (range?.from && typeof range.from === "string") {
+    setRange({
+      from: new Date(range.from),
+      to: new Date(range.to),
+    });
+  }
+}, []);
 
 
   /* LOAD DATA */

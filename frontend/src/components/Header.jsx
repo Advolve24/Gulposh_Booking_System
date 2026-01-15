@@ -34,7 +34,7 @@ export default function Header() {
       className="
         sticky top-0 z-50
         backdrop-blur-md
-        bg-white/70
+        bg-white/50
         border-b border-black/5
       "
     >

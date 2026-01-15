@@ -163,13 +163,30 @@ export default function Home() {
     }
   }, [totalGuests, navigate]);
 
-  const onSearch = () => {
-    if (!hasValidRange || !hasGuests) {
-      alert("Please select dates and guests");
-      return;
-    }
-    document.getElementById("results")?.scrollIntoView({ behavior: "smooth" });
-  };
+ const onSearch = () => {
+  if (!hasValidRange || !hasGuests) {
+    alert("Please select dates and guests");
+    return;
+  }
+
+  // ✅ 1. SAVE SEARCH DATA (THIS WAS MISSING)
+  sessionStorage.setItem(
+    "searchParams",
+    JSON.stringify({
+      range,
+      adults,
+      children,
+    })
+  );
+
+  // ✅ 2. SHOW / SCROLL TO ROOMS SECTION
+  document.getElementById("results")?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+};
+
+
 
   /* ================= UI ================= */
 
@@ -416,7 +433,7 @@ export default function Home() {
           py-5
 
           bg-white/10
-          backdrop-blur-md
+          backdrop-blur-sm
           ring-1 ring-white/20
 
           shadow-[0_12px_40px_-20px_rgba(0,0,0,0.6)]
@@ -480,7 +497,17 @@ export default function Home() {
           className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
         >
           {filteredRooms.map((r) => (
-            <RoomCard key={r._id} room={r} range={range} guests={totalGuests} />
+            // <RoomCard key={r._id} room={r} range={range} guests={totalGuests} />
+            <RoomCard key={r._id}
+    room={r}
+    range={range}
+    guests={totalGuests}
+    onClick={() =>
+      navigate(`/rooms/${r._id}`, {
+        state: JSON.parse(sessionStorage.getItem("searchParams")),
+      })
+    }
+  />
           ))}
         </motion.div>
       </section>
