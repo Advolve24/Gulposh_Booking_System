@@ -74,7 +74,7 @@ export default function BookingViewPopup({ open, booking, onClose }) {
         className="
           fixed z-[9999]
           top-0 bottom-0 right-0
-          w-full sm:w-[420px]
+          w-[95vw] sm:w-[420px]
           bg-white rounded-xl
           shadow-2xl
           flex flex-col
@@ -105,7 +105,7 @@ export default function BookingViewPopup({ open, booking, onClose }) {
 
         {/* BODY */}
         <div className="p-4 space-y-4 overflow-y-auto">
-          <Info icon={Home} label="Property" value={booking.room?.name || "Villa"} />
+          <Info icon={Home} label="Room" value={booking.room?.name || "Villa"} />
 
           <div className="grid grid-cols-2 gap-3">
             <Info icon={Calendar} label="Check-in" value={dateFmt(booking.startDate)} />

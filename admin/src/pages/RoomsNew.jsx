@@ -297,13 +297,13 @@ export default function RoomsNew() {
     <AppLayout>
       <div
         className="
-    mx-auto
     w-full
     max-w-[330px]
     sm:max-w-[750px]
     lg:max-w-[900px]
-    px-2
-    sm:px-2
+    px-3
+    sm:px-0
+    py-3
     space-y-6
   "
       >

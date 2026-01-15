@@ -21,10 +21,9 @@ import InvoicePage from "./components/booking/InvoicePage";
 import BookingViewPage from "@/components/booking/BookingViewPage";
 import AdminInvoiceTemplate from "./components/AdminBookingPrint";
 import ProtectedRoute from "./components/ProtectedRoute";
+import BlockDates from "./pages/BlockDates";
 
-/* ================================
-   AUTH INITIALIZER (ONLY PLACE)
-================================ */
+
 function InitAuthWatcher({ children }) {
   const { init, ready } = useAuth();
   const ran = useRef(false);
@@ -147,6 +146,16 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AdminInvoiceTemplate />
+              </ProtectedRoute>
+            }
+          />
+
+
+          <Route
+            path="/block-dates"
+            element={
+              <ProtectedRoute>
+                <BlockDates />
               </ProtectedRoute>
             }
           />

@@ -9,13 +9,21 @@ import {
   X,
 } from "lucide-react";
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({
+  open,
+  collapsed,
+  onToggleCollapse,
+  onClose,
+}) {
   const nav = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
     { to: "/rooms", label: "Rooms", icon: BedDouble },
     { to: "/bookings", label: "Bookings", icon: CalendarDays },
+    { to: "/block-dates", label: "Calendar", icon: CalendarDays },
     { to: "/users", label: "Users", icon: Users },
   ];
+
+  
 
   return (
     <>
@@ -27,69 +35,102 @@ export default function Sidebar({ open, onClose }) {
         />
       )}
 
-      {/* SIDEBAR */}
       <aside
         className={`
-          bg-primary text-white w-64
-          flex flex-col
-          transition-transform duration-300
-
-          /* Mobile */
           fixed inset-y-0 left-0 z-50
+          bg-primary text-white
+          flex flex-col
+          transition-all duration-300
+          ${collapsed ? "lg:w-20" : "lg:w-64"}
+          w-64
           ${open ? "translate-x-0" : "-translate-x-full"}
-
-          /* Desktop */
-         lg:fixed lg:inset-y-0 lg:left-0 lg:translate-x-0
+          lg:translate-x-0
         `}
       >
         {/* HEADER */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-white/20 shrink-0">
-          <span className="font-semibold text-lg">Gulposh</span>
-          <button className="lg:hidden" onClick={onClose}>
+        {/* HEADER */}
+        <div className="relative h-16 flex items-center border-b border-white/20 px-4">
+          {/* BRAND */}
+          <span
+            className={`font-semibold text-lg transition-opacity duration-200
+      ${collapsed ? "opacity-0 pointer-events-none" : "opacity-100"}
+    `}
+          >
+            Gulposh
+          </span>
+
+          {/* COLLAPSE BUTTON */}
+          <button
+            onClick={onToggleCollapse}
+            className={`
+      hidden lg:flex items-center justify-center
+      absolute top-1/2 -translate-y-1/2
+      h-8 w-8 rounded-md
+      bg-primary/90 hover:bg-primary
+      border border-white/20
+      transition-all duration-300
+      ${collapsed ? "-right-4" : "right-2"}
+    `}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <span className="text-white text-lg leading-none">
+              {collapsed ? "›" : "‹"}
+            </span>
+          </button>
+
+          {/* MOBILE CLOSE */}
+          <button
+            className="lg:hidden ml-auto"
+            onClick={onClose}
+          >
             <X />
           </button>
         </div>
 
-        {/* NAV (grows naturally) */}
-        <nav className="flex-1 p-4 space-y-1">
+
+        {/* NAV */}
+        <nav className="flex-1 p-2 space-y-1">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition
-                 ${
-                   isActive
-                     ? "bg-white/20"
-                     : "hover:bg-white/10"
-                 }`
-              }
               onClick={onClose}
+              className={({ isActive }) =>
+                `
+                flex items-center gap-3 px-3 py-2 rounded-lg text-sm
+                transition justify-center lg:justify-start
+                ${isActive ? "bg-white/20" : "hover:bg-white/10"}
+              `
+              }
             >
-              <Icon size={18} />
-              {label}
+              <Icon size={18} className={`${collapsed ? " p-[6px] w-8 h-8 " : " "}`} />
+              <span className={`${collapsed ? "lg:hidden" : "lg:inline"}`}>
+                {label}
+              </span>
             </NavLink>
           ))}
         </nav>
 
-        {/* FOOTER (NO absolute positioning) */}
-        <div className="p-4 space-y-2 border-t border-white/20">
+        {/* FOOTER */}
+        <div className="p-2 border-t border-white/20 space-y-1">
           <NavLink
             to="/settings"
-            className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10"
-            onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 justify-center lg:justify-start"
           >
             <Settings size={18} />
-            Settings
+            <span className={`${collapsed ? "lg:hidden" : "lg:inline"}`}>
+              Settings
+            </span>
           </NavLink>
 
           <NavLink
             to="/logout"
-            className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-white/10"
-            onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 justify-center lg:justify-start"
           >
             <LogOut size={18} />
-            Logout
+            <span className={`${collapsed ? "lg:hidden" : "lg:inline"}`}>
+              Logout
+            </span>
           </NavLink>
         </div>
       </aside>
