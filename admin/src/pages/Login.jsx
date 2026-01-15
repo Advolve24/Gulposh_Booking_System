@@ -82,8 +82,8 @@ export default function Login() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#5b1f2b] text-white">
-              <Shield className="h-5 w-5" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#ba081c] text-white">
+              <img src="/FavIcon.png" alt="FavIcon" className="h-8 w-8" />
             </div>
             <span className="text-[24px] font-medium font-serif text-gray-800">
               Admin Portal
@@ -140,7 +140,7 @@ export default function Login() {
 
           <Button
             type="submit"
-            className="w-full h-11 bg-[#5b1f2b] hover:bg-[#4a1923]"
+            className="w-full h-11 bg-[#ba081c] hover:bg-[#ba081c]"
             disabled={loading}
           >
             {loading ? (
@@ -159,7 +159,7 @@ export default function Login() {
           <span>© {new Date().getFullYear()} Villa Gulposh</span>
           <Link
             to="https://gulposhbookingsystem.netlify.app/"
-            className="flex items-center gap-1 text-[#5b1f2b] hover:underline"
+            className="flex items-center gap-1 text-[#ba081c] hover:underline"
           >
             ← Back to site
           </Link>

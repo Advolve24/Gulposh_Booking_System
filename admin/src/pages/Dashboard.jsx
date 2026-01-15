@@ -37,6 +37,11 @@ import {
   createBlackout,
   deleteBlackout,
 } from "../api/admin";
+import MobileBookingCard from "@/components/MobileBookingCard";
+import BookingTable from "@/components/BookingTable";
+import BookingViewPopup from "@/components/BookingViewPopup";
+
+const toDateKey = (d) => format(d, "yyyy-MM-dd");
 
 
 
@@ -118,9 +123,7 @@ function StatCard({ icon: Icon, label, value, hint, hintColor, onClick }) {
 
 
 
-/* ===============================
-   DASHBOARD
-================================ */
+
 export default function Dashboard() {
   const [showBlockHint, setShowBlockHint] = useState(false);
   const [stats, setStats] = useState(null);
@@ -134,6 +137,8 @@ export default function Dashboard() {
   const [savingBlock, setSavingBlock] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const navigate = useNavigate();
+  const [selectedBooking, setSelectedBooking] = useState(null);
+
 
 
 
@@ -177,19 +182,7 @@ export default function Dashboard() {
         });
 
 
-        setBookings(
-          (bookingsRes || []).map((b) => ({
-            _id: b._id,
-            bookingId: b.bookingId || `BK${b._id.slice(-4)}`,
-            guestName: b.contactName || b.user?.name || "—",
-            roomName: b.room?.name || "Entire Villa",
-            guests: b.guests || 1,
-            status: b.status,
-            createdAt: new Date(b.createdAt),
-            checkIn: new Date(b.startDate),
-            checkOut: new Date(b.endDate),
-          }))
-        );
+        setBookings(bookingsRes || []);
 
         setBlackouts(
           (blackoutsRes || []).map((b) => ({
@@ -210,47 +203,38 @@ export default function Dashboard() {
   }, []);
 
 
-  const toDateOnly = (d) => {
-    if (!d) return null;
-    return new Date(Date.UTC(
-      d.getUTCFullYear(),
-      d.getUTCMonth(),
-      d.getUTCDate()
-    ));
-  };
 
   const isSameDay = (a, b) =>
-    a && b && toDateOnly(a).getTime() === toDateOnly(b).getTime();
+    a && b && toDateKey(a) === toDateKey(b);
 
   const getBookingCountForDate = (date) => {
-    const d = toDateOnly(date);
+    const key = toDateKey(date);
 
-    return bookings.filter((b) => {
-      const start = toDateOnly(b.checkIn);
-      const end = toDateOnly(b.checkOut);
-      return isWithinInterval(d, { start, end });
-    }).length;
+    return bookings.some((b) => {
+      const start = toDateKey(new Date(b.startDate));
+      const end = toDateKey(new Date(b.endDate));
+      return key >= start && key <= end;
+    });
   };
 
   const isDateBlocked = (date) => {
-    const d = toDateOnly(date);
+    const key = toDateKey(date);
 
     return blackouts.some((blk) => {
-      const from = toDateOnly(blk.from);
-      const to = toDateOnly(blk.to);
-      return isWithinInterval(d, { start: from, end: to });
+      const from = toDateKey(new Date(blk.from));
+      const to = toDateKey(new Date(blk.to));
+      return key >= from && key <= to;
     });
   };
 
   const getBlackoutForDate = (date) => {
-    const d = toDateOnly(date);
+    const key = toDateKey(date);
 
-    return blackouts.find((blk) =>
-      isWithinInterval(d, {
-        start: toDateOnly(blk.from),
-        end: toDateOnly(blk.to),
-      })
-    );
+    return blackouts.find((blk) => {
+      const from = toDateKey(new Date(blk.from));
+      const to = toDateKey(new Date(blk.to));
+      return key >= from && key <= to;
+    });
   };
 
 
@@ -473,7 +457,7 @@ export default function Dashboard() {
     sm:grid-cols-2
     md:grid-cols-4
     max-w-[320px] sm:max-w-full
-    py-4
+    py-0
   "
       >
 
@@ -549,8 +533,9 @@ export default function Dashboard() {
 
 
                 <button
+                  disabled={isSameMonth(currentMonth, startOfMonth(new Date()))}
                   onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
-                  className="text-xl"
+                  className="disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   ‹
                 </button>
@@ -576,61 +561,47 @@ export default function Dashboard() {
               </div>
 
               {/* MONTH GRID */}
-              <div className="grid grid-cols-7 gap-[2px] sm:gap-3 w-full">
-
+              <div className="grid grid-cols-7 gap-2">
                 {calendarDays.map((date) => {
-                  const bookingCount = getBookingCountForDate(date);
-                  const blocked = isDateBlocked(date);
-                  const isBooked = bookingCount > 0;
+                  const isBlocked = isDateBlocked(date);
+                  const hasBooking = getBookingCountForDate(date);
 
                   return (
                     <div
                       key={date.toISOString()}
-                      onClick={() => onCalendarDateClick(date)}
                       className={`
-                         aspect-square
-                          rounded-md sm:rounded-xl
-                          border
-                          flex items-center justify-center
-                          text-[10px] sm:text-sm
-                          font-semibold
-                          leading-none
-                          h-[50px] w-[80px]
-                          max-h-[36px] sm:max-h-none cursor-pointer
-
-                          ${!isSameMonth(date, currentMonth)
-                          ? "opacity-30 pointer-events-none"
-                          : ""}
-
-                          ${blocked
-                          ? "bg-red-50 border-red-300"
-                          : isBooked
-                            ? "bg-amber-50 border-amber-200 cursor-not-allowed"
-                            : "bg-white hover:border-primary"}
-                          `}
+          h-10 w-full rounded-lg
+          flex items-center justify-center
+          text-sm font-medium
+          border
+          ${isBlocked
+                          ? "bg-red-100 text-red-700 border-red-300"
+                          : hasBooking
+                            ? "bg-blue-100 text-blue-700 border-blue-300"
+                            : "bg-white border-border"
+                        }
+        `}
                     >
                       {format(date, "dd")}
                     </div>
-
                   );
                 })}
               </div>
+
             </>
           )}
         </div>
 
-        {/* ================= QUICK ACTIONS ================= */}
         <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3  max-w-[320px] sm:max-w-none">
 
           <h3 className="font-semibold">Quick Actions</h3>
           <Action icon={Plus} title="Add Room" desc="Create a new room listing" link="/rooms/new" />
           <Action icon={Home} title="Book Villa" desc="Book the entire property" link="/villa-booking" />
-          <Action icon={Ban} title="Block Dates" desc="Select dates directly in calendar" />
+          <Action icon={Ban} title="Block Dates" desc="Select dates directly in calendar" link="/block-dates" />
 
         </div>
       </div>
 
-      {/* ===== RECENT BOOKINGS ===== */}
       <div className="bg-card border border-border rounded-xl mt-6 p-4 sm:p-6">
         {/* HEADER */}
         <div className="flex items-center justify-between mb-4">
@@ -644,87 +615,43 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        {/* ================= DESKTOP TABLE (lg+) ================= */}
-        <div className="hidden lg:block overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="border-b">
-              <tr>
-                <th className="py-3 text-left">Booking ID</th>
-                <th className="py-3 text-left">Guest</th>
-                <th className="py-3 text-left">Room</th>
-                <th className="py-3 text-left">Check-in</th>
-                <th className="py-3 text-left">Check-out</th>
-                <th className="py-3 text-center">Guests</th>
-                <th className="py-3 text-center">Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {recentBookings.map((b) => (
-                <tr key={b._id} className="border-b last:border-b-0">
-                  <td className="py-4 text-primary">{b.bookingId}</td>
-                  <td className="py-4">{b.guestName}</td>
-                  <td className="py-4">{b.roomName}</td>
-                  <td className="py-4">{safeFormat(b.checkIn)}</td>
-                  <td className="py-4">{safeFormat(b.checkOut)}</td>
-                  <td className="py-4 text-center">{b.guests}</td>
-                  <td className="py-4 text-center">
-                    <StatusBadge status={b.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="hidden lg:block">
+          <BookingTable
+            bookings={recentBookings}
+            onRowClick={(b) => setSelectedBooking(b)}
+            onViewInvoice={(b) =>
+              navigate(`/bookings/${b._id}/invoice`)
+            }
+            onDownloadInvoice={(b) =>
+              navigate(`/bookings/${b._id}/invoice?download=true`)
+            }
+          />
         </div>
 
-        {/* ================= MOBILE + TABLET CARDS (md & below) ================= */}
         <div className="space-y-3 lg:hidden">
           {recentBookings.map((b) => (
-            <div
+            <MobileBookingCard
               key={b._id}
-              className="border rounded-xl p-4 bg-background"
-            >
-              {/* TOP ROW */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-base text-[14px] leading-tight">
-                    {b.guestName}
-                  </p>
-                  <p className="text-[12px]  text-muted-foreground break-all">
-                    {b.email}
-                  </p>
-                </div>
-
-                <StatusBadge status={b.status} />
-              </div>
-
-              {/* ROOM */}
-              <div className="mt-3 px-3 py-2 rounded-lg bg-muted text-[12px] font-medium">
-                {b.roomName}
-              </div>
-
-              {/* META INFO */}
-              <div className="mt-3 grid grid-cols-3 gap-2 text-[12px] text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>{safeFormat(b.checkIn, "MMM dd")}</span>
-                </div>
-
-                <div className="flex items-center gap-1.5 justify-center">
-                  <Moon className="h-4 w-4 text-muted-foreground" />
-                  <span>{b.nights} nights</span>
-                </div>
-
-                <div className="flex items-center gap-1.5 justify-end">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span>{b.guests} guests</span>
-                </div>
-              </div>
-
-            </div>
+              booking={b}
+              onOpen={(booking) => setSelectedBooking(booking)}
+              onViewInvoice={(booking) =>
+                navigate(`/bookings/${booking._id}/invoice`)
+              }
+              onDownloadInvoice={(booking) =>
+                navigate(`/bookings/${booking._id}/invoice?download=true`)
+              }
+            />
           ))}
         </div>
       </div>
+
+
+      <BookingViewPopup
+        open={!!selectedBooking}
+        booking={selectedBooking}
+        onClose={() => setSelectedBooking(null)}
+      />
+
 
     </AppLayout>
   );

@@ -28,9 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 
-/* ======================================================
-   ROOMS PAGE
-====================================================== */
+
 export default function Rooms() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +92,7 @@ export default function Rooms() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 py-6">
         {/* ================= TOOLBAR ================= */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           {/* LEFT */}
