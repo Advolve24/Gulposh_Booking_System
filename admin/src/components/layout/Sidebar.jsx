@@ -40,22 +40,21 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`
+  className={`
     fixed inset-y-0 left-0 z-50
     bg-primary text-white
     flex flex-col
 
-    /* WIDTH */
-    w-64 lg:${collapsed ? "w-20" : "w-64"}
+    w-64
+    ${collapsed ? "lg:w-20" : "lg:w-64"}
 
-    /* MOBILE SLIDE ONLY */
     ${open ? "translate-x-0" : "-translate-x-full"}
-    lg:translate-x-0 lg:transform-none
+    lg:translate-x-0
 
-    transition-transform duration-300
-    lg:transition-none
+    transition-[width,transform] duration-300
   `}
-      >
+>
+
 
 
 
