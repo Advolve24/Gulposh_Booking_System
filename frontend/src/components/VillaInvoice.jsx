@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { api } from "../api/http";
 import { format } from "date-fns";
 import { Download, Printer, ArrowLeft } from "lucide-react";
+
 
 export default function VillaInvoice() {
   const { id } = useParams();
@@ -12,6 +13,26 @@ export default function VillaInvoice() {
 
   const [booking, setBooking] = useState(null);
   const invoiceRef = useRef(null);
+  const [searchParams] = useSearchParams();
+  const isDownloadingRef = useRef(false);
+  const autoDownload = searchParams.get("download") === "1";
+
+
+
+  useEffect(() => {
+    if (!booking || !autoDownload) return;
+    if (isDownloadingRef.current) return;
+
+    isDownloadingRef.current = true;
+
+    const timer = setTimeout(() => {
+      generatePDF();
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [booking, autoDownload]);
+
+
 
   /* ================= FETCH BOOKING ================= */
   useEffect(() => {
@@ -47,26 +68,71 @@ export default function VillaInvoice() {
   const grandTotal = subTotal + taxAmount;
 
   /* ================= PDF ================= */
-  const generatePDF = async () => {
-    const canvas = await html2canvas(invoiceRef.current, {
+ const generatePDF = async () => {
+  // 🚫 prevent double clicks
+  if (isDownloadingRef.current) return;
+
+  isDownloadingRef.current = true;
+
+  const element = invoiceRef.current;
+  if (!element) {
+    isDownloadingRef.current = false;
+    return;
+  }
+
+  const originalWidth = element.style.width;
+
+  try {
+    // 👉 Force desktop layout
+    element.style.width = "1024px";
+
+    // 👉 Wait for images
+    const images = element.querySelectorAll("img");
+    await Promise.all(
+      [...images].map(
+        (img) =>
+          img.complete ||
+          new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          })
+      )
+    );
+
+    // 👉 Allow layout to settle
+    await new Promise((r) => setTimeout(r, 100));
+
+    const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
+      windowWidth: 1024,
     });
 
-    const imgData = canvas.toDataURL("image/png");
+    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
     const pdf = new jsPDF("p", "pt", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = (canvas.height * pageWidth) / canvas.width;
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, pageHeight);
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    // ✅ DOWNLOAD TRIGGERS IMMEDIATELY
     pdf.save(`invoice-${booking._id}.pdf`);
-  };
+  } catch (error) {
+    console.error("PDF generation failed:", error);
+  } finally {
+    // 🔓 Always restore
+    element.style.width = originalWidth;
+    isDownloadingRef.current = false;
+  }
+};
+
+
 
   return (
     <div className="min-h-screen bg-[#faf7f4] px-3 md:px-6 py-4 md:py-8">
-      <div className="max-w-5xl mx-auto flex gap-6">
+      <div className="max-w-6xl mx-auto flex gap-6">
 
         {/* ================= MAIN ================= */}
         <div className="flex-1">
@@ -262,8 +328,9 @@ export default function VillaInvoice() {
         {/* ================= DESKTOP STICKY ACTIONS ================= */}
         <div className="hidden md:flex flex-col gap-3 sticky top-24 h-fit">
           <button
+            disabled={autoDownload}
             onClick={generatePDF}
-            className="bg-primary text-white px-6 py-3 rounded-xl flex items-center gap-2"
+            className="bg-primary text-white px-6 py-3 rounded-xl flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
             Download PDF
@@ -282,12 +349,14 @@ export default function VillaInvoice() {
       {/* ================= MOBILE FIXED DOWNLOAD ================= */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t p-3 z-50">
         <button
+          disabled={autoDownload}
           onClick={generatePDF}
-          className="w-full bg-primary text-white py-3 rounded-xl flex items-center justify-center gap-2"
+          className="w-full bg-primary text-white py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60"
         >
           <Download className="w-4 h-4" />
           Download PDF
         </button>
+
       </div>
 
       {/* MOBILE SPACER */}

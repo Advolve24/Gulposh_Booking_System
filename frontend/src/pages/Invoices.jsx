@@ -25,14 +25,35 @@ export default function Invoices() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* ================= NAVIGATION ================= */
+  /* ================= VIEW INVOICE ================= */
   const viewInvoice = (id) => {
     navigate(`/invoice-view/${id}`);
   };
 
-  const downloadInvoice = (id) => {
-    navigate(`/invoice-download/${id}`);
-  };
+  /* ================= DIRECT DOWNLOAD (NO REDIRECT) ================= */
+  const downloadInvoice = async (id) => {
+  try {
+    const res = await api.get(`/invoice/${id}/download`, {
+      responseType: "blob",
+    });
+
+    const blob = new Blob([res.data], { type: "application/pdf" });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `invoice-${id.slice(-5).toUpperCase()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Invoice download failed", err);
+  }
+};
+
+
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
@@ -56,7 +77,72 @@ export default function Invoices() {
       ) : (
         <>
           {/* ================= MOBILE CARDS ================= */}
-          <div className="space-y-4 md:hidden">
+          <div className="space-y-3 md:hidden">
+            {bookings.map((b) => {
+              const shortId = b._id.slice(-5).toUpperCase();
+              const start = format(new Date(b.startDate), "dd MMM yy");
+              const end = format(new Date(b.endDate), "dd MMM yy");
+
+              return (
+                <div
+                  key={b._id}
+                  className="border rounded-xl bg-white p-3 shadow-sm"
+                >
+                  {/* TOP ROW */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="text-xs font-medium text-primary">
+                        #{shortId}
+                      </div>
+                      <div className="text-sm font-semibold leading-tight">
+                        {b.isVilla ? "Entire Villa" : b.room?.name || "—"}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-sm font-semibold">
+                        ₹{b.amount}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadInvoice(b._id);
+                        }}
+                        className="mt-1 inline-flex items-center gap-1 text-xs text-primary font-medium"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* DATES */}
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {start} – {end}
+                  </div>
+
+                  {/* VIEW CTA */}
+                  <button
+                    onClick={() => viewInvoice(b._id)}
+                    className="mt-2 w-full text-xs text-primary font-medium text-left"
+                  >
+                    View invoice →
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ================= DESKTOP TABLE ================= */}
+          <div className="hidden md:block bg-white border rounded-2xl overflow-hidden shadow-sm">
+            <div className="grid grid-cols-5 gap-4 px-6 py-4 bg-[#faf6f2] border-b text-sm font-medium">
+              <div>Booking ID</div>
+              <div>Room</div>
+              <div>Dates</div>
+              <div>Amount</div>
+              <div className="text-right">Actions</div>
+            </div>
+
             {bookings.map((b) => {
               const shortId = b._id.slice(-5).toUpperCase();
               const start = format(new Date(b.startDate), "dd MMM yy");
@@ -66,68 +152,7 @@ export default function Invoices() {
                 <div
                   key={b._id}
                   onClick={() => viewInvoice(b._id)}
-                  className="
-                    rounded-2xl
-                    border
-                    bg-white
-                    p-5
-                    space-y-2.5
-                    shadow-sm
-                    cursor-pointer
-                    active:scale-[0.98]
-                    transition
-                  "
-                >
-                  {/* BOOKING ID */}
-                  <div className="text-xs font-medium text-primary">
-                    #{shortId}
-                  </div>
-
-                  {/* TITLE */}
-                  <div className="text-base font-semibold leading-tight">
-                    {b.isVilla ? "Entire Villa" : b.room?.name || "—"}
-                  </div>
-
-                  {/* DATES */}
-                  <div className="text-sm text-muted-foreground">
-                    {start} – {end}
-                  </div>
-
-                  {/* AMOUNT */}
-                  <div className="pt-1 text-lg font-semibold">
-                    ₹{b.amount}
-                  </div>
-
-                  {/* CTA */}
-                  <div className="pt-2 text-sm text-primary font-medium">
-                    Tap to view invoice →
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* ================= DESKTOP TABLE ================= */}
-          <div className="hidden md:block bg-white border rounded-2xl overflow-hidden shadow-sm">
-            {/* TABLE HEADER */}
-            <div className="grid grid-cols-5 gap-4 px-6 py-4 bg-[#faf6f2] border-b text-sm font-medium">
-              <div>Booking ID</div>
-              <div>Room</div>
-              <div>Dates</div>
-              <div>Amount</div>
-              <div className="text-right">Actions</div>
-            </div>
-
-            {/* TABLE ROWS */}
-            {bookings.map((b) => {
-              const shortId = b._id.slice(-5).toUpperCase();
-              const start = format(new Date(b.startDate), "dd MMM yy");
-              const end = format(new Date(b.endDate), "dd MMM yy");
-
-              return (
-                <div
-                  key={b._id}
-                  className="grid grid-cols-5 gap-4 px-6 py-4 items-center border-b last:border-b-0"
+                  className="grid grid-cols-5 gap-4 px-6 py-4 items-center border-b last:border-b-0 cursor-pointer hover:bg-muted/40 transition"
                 >
                   <div className="font-medium text-primary">
                     #{shortId}
@@ -145,11 +170,13 @@ export default function Invoices() {
                     ₹{b.amount}
                   </div>
 
-                  <div className="flex justify-end gap-2">
+                  <div
+                    className="flex justify-end gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-lg flex items-center gap-1"
                       onClick={() => viewInvoice(b._id)}
                     >
                       <Eye className="w-4 h-4" />
@@ -158,7 +185,7 @@ export default function Invoices() {
 
                     <Button
                       size="sm"
-                      className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1"
+                      className="bg-primary text-primary-foreground"
                       onClick={() => downloadInvoice(b._id)}
                     >
                       <Download className="w-4 h-4" />

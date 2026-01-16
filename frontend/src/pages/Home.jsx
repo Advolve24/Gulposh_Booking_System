@@ -163,28 +163,28 @@ export default function Home() {
     }
   }, [totalGuests, navigate]);
 
- const onSearch = () => {
-  if (!hasValidRange || !hasGuests) {
-    alert("Please select dates and guests");
-    return;
-  }
+  const onSearch = () => {
+    if (!hasValidRange || !hasGuests) {
+      alert("Please select dates and guests");
+      return;
+    }
 
-  // ✅ 1. SAVE SEARCH DATA (THIS WAS MISSING)
-  sessionStorage.setItem(
-    "searchParams",
-    JSON.stringify({
-      range,
-      adults,
-      children,
-    })
-  );
+    // ✅ 1. SAVE SEARCH DATA (THIS WAS MISSING)
+    sessionStorage.setItem(
+      "searchParams",
+      JSON.stringify({
+        range,
+        adults,
+        children,
+      })
+    );
 
-  // ✅ 2. SHOW / SCROLL TO ROOMS SECTION
-  document.getElementById("results")?.scrollIntoView({
-    behavior: "smooth",
-    block: "start",
-  });
-};
+    // ✅ 2. SHOW / SCROLL TO ROOMS SECTION
+    document.getElementById("results")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
 
 
@@ -329,6 +329,13 @@ export default function Home() {
                       onChange={setRange}
                       disabledRanges={disabledAll}
                     />
+                    {/* <BookingCalendar
+                      onSelect={(range) => {
+                        console.log("CHECK-IN:", range.from);
+                        console.log("CHECK-OUT:", range.to);
+                      }}
+                    /> */}
+
                   </div>
                 </div>
 
@@ -403,7 +410,7 @@ export default function Home() {
               </div>
             </div>
             {/* ================= STATS ================= */}
-            <div className="hidden sm:block mt-20 w-[55%] mx-auto px-2">
+            <div className="hidden sm:block mt-[3.5rem] w-[55%] mx-auto px-2">
               <div
                 className="
       grid
@@ -499,15 +506,15 @@ export default function Home() {
           {filteredRooms.map((r) => (
             // <RoomCard key={r._id} room={r} range={range} guests={totalGuests} />
             <RoomCard key={r._id}
-    room={r}
-    range={range}
-    guests={totalGuests}
-    onClick={() =>
-      navigate(`/rooms/${r._id}`, {
-        state: JSON.parse(sessionStorage.getItem("searchParams")),
-      })
-    }
-  />
+              room={r}
+              range={range}
+              guests={totalGuests}
+              onClick={() =>
+                navigate(`/rooms/${r._id}`, {
+                  state: JSON.parse(sessionStorage.getItem("searchParams")),
+                })
+              }
+            />
           ))}
         </motion.div>
       </section>

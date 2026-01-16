@@ -74,25 +74,24 @@
   }
 }
 
-/* ===============================
+/* =====================================================
    CALENDAR WRAPPER
-================================ */
-
+===================================================== */
 .calendar-wrapper {
   position: relative;
 }
 
-/* ===============================
+/* =====================================================
    OUTSIDE NAV BUTTONS
-================================ */
-
+===================================================== */
 .airbnb-calendar .rdp-nav {
   display: none !important;
 }
+
 .calendar-nav {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 10%;
+  transform: translateY(-60%);
   z-index: 10;
   width: 36px;
   height: 36px;
@@ -100,29 +99,41 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+
+  outline: none;
+  box-shadow: none;
 }
 
-
+.calendar-nav:focus,
+.calendar-nav:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 
 .calendar-nav.left {
-  left: -5px;
+  left: 50px;
+  top: 11.5%;
 }
 
 .calendar-nav.right {
-  right: -48px;
+      right: 50px;
+    top: 11.5%;
 }
 
+/* =====================================================
+   DAY SIZE
+===================================================== */
 .w-9 {
   width: 2.55rem;
 }
 
-.h-9{
+.h-9 {
   height: 1.95rem;
 }
-/* ===============================
-   RANGE COLORS (STABLE)
-================================ */
 
+/* =====================================================
+   RANGE COLORS
+===================================================== */
 .airbnb-calendar .range-start,
 .airbnb-calendar .range-end,
 .airbnb-calendar .range-selected {
@@ -134,48 +145,39 @@
   background: hsl(var(--primary) / 0.15);
 }
 
-
-/* ===============================
-   HOVER PREVIEW (NO BLINK)
-================================ */
-
+/* =====================================================
+   HOVER PREVIEW
+===================================================== */
 .airbnb-calendar
   .range-start
   ~ .rdp-day:not(.range-end):not(.range-selected):not(.rdp-day_disabled):hover {
   background: hsl(var(--primary) / 0.15);
 }
 
-/* Disable hover on selected days */
-.airbnb-calendar
-  .rdp-day_selected:hover,
-.airbnb-calendar
-  .range-start:hover,
-.airbnb-calendar
-  .range-end:hover {
+.airbnb-calendar .rdp-day_selected:hover,
+.airbnb-calendar .range-start:hover,
+.airbnb-calendar .range-end:hover {
   background: inherit;
 }
 
-/* Smooth but stable */
 .airbnb-calendar .rdp-day {
   transition: background-color 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* ===============================
+/* =====================================================
    DISABLED DATE – HARD BAN MARK
-================================ */
-
-/* Ensure disabled day button is the stacking context */
+===================================================== */
 .airbnb-calendar button.rdp-day_disabled {
   position: relative;
   cursor: not-allowed;
   opacity: 0.45;
 }
 
-/* Draw ban slash ABOVE everything */
 .airbnb-calendar button.rdp-day_disabled::after {
   content: "";
   position: absolute;
-  z-index: 999;               /* 🔑 force top layer */
+  z-index: 5;
   width: 80%;
   height: 2px;
   background: rgba(0, 0, 0, 0.7);
@@ -185,49 +187,50 @@
   pointer-events: none;
 }
 
-/* Kill any range background on disabled days */
 .airbnb-calendar button.rdp-day_disabled.range-middle,
 .airbnb-calendar button.rdp-day_disabled.range-start,
 .airbnb-calendar button.rdp-day_disabled.range-end {
   background: transparent !important;
 }
 
-
-
-/* ===============================
-   RESPONSIVE WIDTH
-================================ */
-
+/* =====================================================
+   DESKTOP WIDTH
+===================================================== */
 @media (min-width: 768px) {
   .airbnb-calendar {
-    min-width: 640px;
+    /* min-width: 640px; */
     border-radius: 15px;
     padding: 10px 25px 20px 25px;
   }
 
   .calendar-nav.right {
-    right: -23rem;
+  right: 16px; /* inside the calendar */
+}
+
+.calendar-nav.left {
+  left: 16px;
+}
+
+
+  [data-radix-popper-content-wrapper] {
+    margin-left: 0px;
   }
 }
 
-/* ===============================
-   MOBILE CALENDAR CARD STYLE
-================================ */
-
-/* ===============================
-   MOBILE CALENDAR STYLING
-================================ */
-
+/* =====================================================
+   MOBILE STYLES
+===================================================== */
 @media (max-width: 767px) {
   [data-radix-popover-content] {
     overflow: visible !important;
     border-radius: 20px;
-    padding: 10px 25px 10px 25px;
+    padding: 15px 20px;
   }
+  
 
   .airbnb-calendar {
     border-radius: 16px;
-    padding: 20px 25px;
+    padding: 15px 20px;
     overflow: hidden;
   }
 
@@ -237,18 +240,7 @@
     background: #ffffff;
   }
 
-  /* ✅ MOBILE LEFT SHIFT */
-  [data-radix-popper-content-wrapper] {
+  /* [data-radix-popper-content-wrapper] {
     margin-left: -20px;
-  }
-}
-
-/* ===============================
-   DESKTOP CALENDAR OFFSET
-================================ */
-
-@media (min-width: 768px) {
-  [data-radix-popper-content-wrapper] {
-    margin-left: -110px;
-  }
+  } */
 }

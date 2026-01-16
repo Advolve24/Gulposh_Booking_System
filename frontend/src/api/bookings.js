@@ -14,3 +14,8 @@ export const cancelBooking = async (id) => {
   const { data } = await api.post(`/bookings/${id}/cancel`);
   return data;
 };
+
+export const getBlackouts = async () => {
+  const { data } = await api.get("/blackouts");
+  return data;
+};
