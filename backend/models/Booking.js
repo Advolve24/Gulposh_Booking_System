@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema(
   {
-    /* ================= BASIC ================= */
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     room: { type: mongoose.Schema.Types.ObjectId, ref: "Room" },
     isVilla: { type: Boolean, default: false },
@@ -13,30 +12,24 @@ const bookingSchema = new mongoose.Schema(
 
     guests: { type: Number, required: true, min: 1 },
 
-    /* ================= ROOM PRICING ================= */
     pricePerNight: { type: Number, required: true },
     roomTotal: { type: Number, required: true },
 
-    /* ================= MEALS ================= */
     withMeal: { type: Boolean, default: false },
 
     vegGuests: { type: Number, default: 0 },
     nonVegGuests: { type: Number, default: 0 },
 
-    // 🔥 IMPORTANT: LOCKED MEAL PRICES
     mealMeta: {
       vegPrice: { type: Number, default: 0 },
       nonVegPrice: { type: Number, default: 0 },
     },
 
     mealTotal: { type: Number, default: 0 },
-    roomTotal: { type: Number, default: 0 },
 
-    /* ================= FINAL ================= */
     amount: { type: Number, required: true },
     currency: { type: String, default: "INR" },
 
-    /* ================= CONTACT ================= */
     contactName: String,
     contactEmail: String,
     contactPhone: String,
@@ -49,20 +42,17 @@ const bookingSchema = new mongoose.Schema(
       pincode: String,
     },
 
-    /* ================= STATUS ================= */
     status: {
       type: String,
       enum: ["pending", "confirmed", "cancelled"],
       default: "confirmed",
     },
 
-    /* ================= PAYMENT ================= */
     paymentProvider: { type: String, default: "razorpay" },
     orderId: String,
     paymentId: String,
     signature: String,
 
-    /* ================= ADMIN ================= */
     adminMeta: {
       fullName: String,
       phone: String,

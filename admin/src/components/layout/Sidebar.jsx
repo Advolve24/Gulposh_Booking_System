@@ -40,22 +40,21 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`
+  className={`
     fixed inset-y-0 left-0 z-50
     bg-primary text-white
     flex flex-col
 
-    /* WIDTH */
-    w-64 lg:${collapsed ? "w-20" : "w-64"}
+    w-64
+    ${collapsed ? "lg:w-20" : "lg:w-64"}
 
-    /* MOBILE SLIDE ONLY */
     ${open ? "translate-x-0" : "-translate-x-full"}
-    lg:translate-x-0 lg:transform-none
+    lg:translate-x-0
 
-    transition-transform duration-300
-    lg:transition-none
+    transition-[width,transform] duration-300
   `}
-      >
+>
+
 
 
 
@@ -101,7 +100,7 @@ export default function Sidebar({
 
 
         {/* NAV */}
-        <nav className="flex-1 p-2 space-y-1">
+        <nav className="flex-1 p-2 space-y-3 md:space-y-1">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -109,8 +108,8 @@ export default function Sidebar({
               onClick={handleNavClick}
               className={({ isActive }) =>
                 `
-                flex items-center gap-3 px-3 py-2 rounded-lg text-sm
-                transition justify-center lg:justify-start
+                flex items-center gap-3 px-3 py-3 md:py-3 rounded-lg text-[14px] md:text-sm
+                transition justify-start lg:justify-start
                 ${isActive ? "bg-white/20" : "hover:bg-white/10"}
               `
               }

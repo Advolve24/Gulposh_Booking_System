@@ -301,9 +301,9 @@ export default function RoomsNew() {
     max-w-[330px]
     sm:max-w-[750px]
     lg:max-w-[900px]
-    px-3
+    px-0 md:px-0
     sm:px-0
-    py-3
+    py-0
     space-y-6
   "
       >

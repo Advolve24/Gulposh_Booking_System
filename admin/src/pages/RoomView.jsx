@@ -158,7 +158,7 @@ export default function AdminRoomView() {
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-4">
         {/* TOP BAR */}
         <div className="flex items-center justify-between gap-4">
           {/* BACK */}
@@ -242,17 +242,19 @@ export default function AdminRoomView() {
           <div className="space-y-8">
             <ImageSlider images={images} />
 
-            <div  className="space-y-1">
+            <div  className="space-y-1 flex md:flex-row flex-col items-start justify-between md:items-center">
               <h1 className="text-[20px] sm:text-2xl font-semibold">{room.name}</h1>
-              <p className="text-[14px] sm:text-muted-foreground">
+              <div className="flex gap-4 items-center">
+              <p className="text-[16px] md:text-[18px] font-bold sm:text-black">
                 ₹{room.pricePerNight.toLocaleString("en-IN")} / night
               </p>
               {/* ✅ MAX GUESTS */}
               {room.maxGuests && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm flex gap-2 items-center text-muted-foreground">
                  <Users className="h-4 w-4" /> <span className="font-medium text-foreground"> {room.maxGuests}</span> guests
                 </p>
               )}
+              </div>
             </div>
 
           
