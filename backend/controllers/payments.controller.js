@@ -193,25 +193,26 @@ export const verifyPayment = async (req, res) => {
       addressInfo: { address, country, state, city, pincode },
     });
 
-    /* ---------------- Email Notification ---------------- */
-    const emailToSend =
-      contactEmail ||
-      req.user?.email ||
-      null;
+const emailToSend =
+  contactEmail ||
+  req.user?.email ||
+  null;
 
-    if (emailToSend) {
-      try {
-        await sendBookingConfirmationMail({
-          to: emailToSend,
-          name: contactName,
-          room,
-          booking,
-        });
-        console.log("✅ Booking confirmation email sent to:", emailToSend);
-      } catch (mailErr) {
-        console.error("❌ Booking email failed:", mailErr);
-      }
-    } else {
+if (emailToSend) {
+  try {
+    await sendBookingConfirmationMail({
+      to: emailToSend,
+      name: contactName,
+      booking,
+      room,
+    });
+
+    console.log("✅ Booking confirmation email sent to:", emailToSend);
+  } catch (mailErr) {
+    console.error("❌ Booking email failed:", mailErr);
+  }
+}
+else {
       console.warn("⚠️ No email found to send booking confirmation");
     }
 
