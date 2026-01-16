@@ -205,9 +205,9 @@ export default function VillaBookingForm() {
 
   return (
     <AppLayout>
-    <div className="max-w-6xl mx-auto bg-white shadow-md rounded-2xl p-8 mt-6 mb-6">
+    <div className="w-full md:max-w-6xl bg-white shadow-md rounded-2xl p-4 md:p-8 mt-0 mb-6">
 
-      <div className="flex flex-wrap justify-between gap-8">
+      <div className="flex flex-wrap md:items-center justify-between gap-8">
         {/* Calendar */}
         <div className="w-full md:w-[50%]">
           <Label className="mb-2 block text-gray-600">Select Dates</Label>
@@ -217,13 +217,13 @@ export default function VillaBookingForm() {
             onSelect={setRange}
             disabled={[{ before: todayDateOnlyUTC() }, ...disabled]}
             numberOfMonths={1}
-            className="border rounded-lg shadow-sm w-[500px]"
+            className="border rounded-lg shadow-sm w-full md:w-[500px]"
           />
         </div>
 
         {/* Form */}
         <div className="w-full md:w-[45%] space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Guests</Label>
               <Input
@@ -247,7 +247,7 @@ export default function VillaBookingForm() {
           </div>
 
           {/* Personal Info */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Full Name</Label>
               <Input
@@ -346,7 +346,7 @@ export default function VillaBookingForm() {
           </div>
 
           {/* ID Details */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Government ID Number</Label>
               <Input
