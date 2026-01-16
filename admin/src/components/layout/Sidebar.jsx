@@ -57,8 +57,6 @@ export default function Sidebar({
 
 
 
-
-        {/* HEADER */}
         {/* HEADER */}
         <div className="relative h-16 flex items-center border-b border-white/20 px-4">
           {/* BRAND */}
@@ -126,7 +124,7 @@ export default function Sidebar({
         <div className="p-2 border-t border-white/20 space-y-1">
           <NavLink
             to="/settings"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 justify-center lg:justify-start"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 justify-start md:justify-center lg:justify-start"
           >
             <Settings size={18} />
             <span className={`${collapsed ? "lg:hidden" : "lg:inline"}`}>
@@ -136,7 +134,7 @@ export default function Sidebar({
 
           <NavLink
             to="/logout"
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 justify-center lg:justify-start"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 justify-start md:justify-center lg:justify-start"
           >
             <LogOut size={18} />
             <span className={`${collapsed ? "lg:hidden" : "lg:inline"}`}>
