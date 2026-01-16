@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/http";
 import { useAuth } from "../store/authStore";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CalendarIcon } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import {
   Select,
@@ -21,6 +22,7 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -33,7 +35,12 @@ import {
   getCitiesByState,
 } from "../lib/location";
 
+import { signInWithPhoneNumber } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { getRecaptchaVerifier } from "@/lib/recaptcha";
+
 /* ================= HELPERS ================= */
+const isValidPhone = (p) => /^[0-9]{10}$/.test(p);
 const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
 const toDateOnly = (d) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -41,13 +48,15 @@ const toDateOnly = (d) =>
 export default function Checkout() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, init, phoneLogin } = useAuth();
 
+  /* ================= ROOM ================= */
   const roomId = state?.roomId;
   const initialGuests = Number(state?.guests || 1);
 
   const [room, setRoom] = useState(null);
 
+  /* ================= FORM ================= */
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -63,18 +72,24 @@ export default function Checkout() {
     pincode: "",
   });
 
+  /* ================= GUESTS & MEALS ================= */
   const [guests, setGuests] = useState(String(initialGuests));
   const [withMeal, setWithMeal] = useState(false);
+  const [vegGuests, setVegGuests] = useState(0);
+  const [nonVegGuests, setNonVegGuests] = useState(0);
 
-  // ✅ EMPTY by default (NO ZERO)
-  const [vegGuests, setVegGuests] = useState("");
-  const [nonVegGuests, setNonVegGuests] = useState("");
-
+  /* ================= DATE RANGE ================= */
   const [range, setRange] = useState({
     from: state?.startDate ? new Date(state.startDate) : null,
     to: state?.endDate ? new Date(state.endDate) : null,
   });
 
+  /* ================= OTP ================= */
+  const [otpStep, setOtpStep] = useState("idle");
+  const [otp, setOtp] = useState("");
+  const pendingProceedRef = useRef(false);
+
+  /* ================= LOCATION DATA ================= */
   const countries = getAllCountries();
   const statesList = address.country
     ? getStatesByCountry(address.country)
@@ -84,19 +99,23 @@ export default function Checkout() {
       ? getCitiesByState(address.country, address.state)
       : [];
 
+  /* ================= LOAD ROOM ================= */
   useEffect(() => {
     if (!roomId) return navigate("/", { replace: true });
     api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
   }, [roomId, navigate]);
 
+  /* ================= AUTOFILL PROFILE ================= */
   useEffect(() => {
     if (!user) return;
+
     setForm({
       name: user.name || "",
       email: user.email || "",
       phone: user.phone || "",
       dob: user.dob ? new Date(user.dob) : null,
     });
+
     setAddress({
       address: user.address || "",
       country: user.country || "",
@@ -104,8 +123,10 @@ export default function Checkout() {
       city: user.city || "",
       pincode: user.pincode || "",
     });
-  }, [user]);
 
+    setOtpStep("verified");
+  }, [user]);
+  /* ================= CALCULATIONS ================= */
   const nights = useMemo(() => {
     if (!range.from || !range.to) return 0;
     return (
@@ -119,314 +140,487 @@ export default function Checkout() {
   const mealTotal =
     withMeal && room
       ? nights *
-      ((Number(vegGuests || 0) * room.mealPriceVeg) +
-        (Number(nonVegGuests || 0) * room.mealPriceNonVeg))
+      (vegGuests * room.mealPriceVeg +
+        nonVegGuests * room.mealPriceNonVeg)
       : 0;
-
-  const vegCount = Number(vegGuests || 0);
-  const nonVegCount = Number(nonVegGuests || 0);
-
-  const mealGuestMismatch =
-    withMeal && vegCount + nonVegCount !== Number(guests);
-
 
   const total = roomTotal + mealTotal;
 
+  /* ================= OTP ================= */
+  // const sendOtp = async () => {
+  //   if (!isValidPhone(form.phone)) {
+  //     toast.error("Invalid phone number");
+  //     return;
+  //   }
+  //   const verifier = getRecaptchaVerifier();
+  //   const res = await signInWithPhoneNumber(
+  //     auth,
+  //     `+91${form.phone}`,
+  //     verifier
+  //   );
+  //   window.confirmationResult = res;
+  //   setOtpStep("sent");
+  //   toast.success("OTP sent");
+  // };
+
+  // const verifyOtp = async () => {
+  //   await window.confirmationResult.confirm(otp);
+  //   await phoneLogin({
+  //     phone: form.phone,
+  //     name: form.name,
+  //     email: form.email,
+  //     dob: form.dob?.toISOString(),
+  //   });
+  //   await init();
+  //   setOtpStep("verified");
+
+  //   if (pendingProceedRef.current) {
+  //     pendingProceedRef.current = false;
+  //     proceedPayment();
+  //   }
+  // };
+
+  /* ================= PAYMENT ================= */
   const proceedPayment = async () => {
-    if (
-      withMeal &&
-      Number(vegGuests || 0) + Number(nonVegGuests || 0) !== Number(guests)
-    ) {
+    const g = Number(guests);
+
+    /* ================= VALIDATION ================= */
+    if (withMeal && vegGuests + nonVegGuests !== g) {
       toast.error("Veg + Non-Veg guests must equal total guests");
       return;
     }
 
+    /* ================= LOAD RAZORPAY ================= */
     const ok = await loadRazorpayScript();
-    if (!ok) return toast.error("Payment gateway failed");
+    if (!ok) {
+      toast.error("Failed to load payment gateway");
+      return;
+    }
 
+    /* ================= CREATE ORDER ================= */
     const { data } = await api.post("/payments/create-order", {
       roomId,
       startDate: toYMD(range.from),
       endDate: toYMD(range.to),
-      guests: Number(guests),
+      guests: g,
       withMeal,
-      vegGuests: Number(vegGuests || 0),
-      nonVegGuests: Number(nonVegGuests || 0),
+      vegGuests,
+      nonVegGuests,
       contactName: form.name,
       contactEmail: form.email,
       contactPhone: form.phone,
     });
 
+    /* ================= RAZORPAY ================= */
     const rzp = new window.Razorpay({
       key: data.key,
       amount: data.amount,
       currency: "INR",
       name: room.name,
+      description: `${room.name} booking`,
       order_id: data.orderId,
-      handler: () => navigate("/my-bookings"),
-      theme: { color: "#BA081C" },
+
+      prefill: {
+        name: form.name || "",
+        email: form.email || "",
+        contact: String(form.phone || ""),
+      },
+
+      notes: {
+        roomId,
+        guests: String(g),
+      },
+
+      /* ================= PAYMENT SUCCESS ================= */
+      handler: (resp) => {
+        // ✅ 1. INSTANT USER CONFIRMATION
+        toast.success(
+          "Payment successful 🎉 Your booking is being confirmed"
+        );
+
+        // ✅ 2. INSTANT REDIRECT
+        navigate("/my-bookings");
+
+        // ✅ 3. VERIFY IN BACKGROUND (NO await)
+        api.post("/payments/verify", {
+          ...resp,
+          roomId,
+          startDate: toYMD(range.from),
+          endDate: toYMD(range.to),
+          guests: g,
+          withMeal,
+          vegGuests,
+          nonVegGuests,
+          contactName: form.name,
+          contactEmail: form.email,
+          contactPhone: form.phone,
+          ...address,
+        }).catch((err) => {
+          console.error("Background verification failed:", err);
+          // optional: log to DB / Slack
+        });
+      },
+
+      modal: {
+        ondismiss: () => {
+          toast.info("Payment cancelled");
+        },
+      },
+
+      theme: {
+        color: "#BA081C",
+      },
     });
 
     rzp.open();
   };
 
+
+  const proceed = async () => {
+    if (!user) {
+      pendingProceedRef.current = true;
+      if (otpStep === "idle") sendOtp();
+      return toast.info("Verify mobile number to continue");
+    }
+    proceedPayment();
+  };
+
   if (!room) return null;
 
-  // ✅ SAFE IMAGE (NO PLACEHOLDER)
-  const roomImage =
-    room?.images?.length > 0
-      ? room.images[0]
-      : room?.image || room?.coverImage || null;
-
+  /* ================= UI ================= */
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      <button
-        onClick={() => navigate(-1)}
-        className="mb-4 flex items-center gap-1 text-sm text-muted-foreground"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back
-      </button>
+    <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6">
+      {/* reCAPTCHA – hidden, no layout impact */}
+      <div
+        id="recaptcha-container"
+        className="absolute inset-0 opacity-0 pointer-events-none"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-        {/* LEFT – IMAGE + NAME ONLY */}
-        <div className="lg:col-span-3">
-          <div className="sticky top-20 bg-white rounded-xl border overflow-hidden">
-            {roomImage && (
-              <img
-                src={roomImage}
-                alt={room.name}
-                className="h-64 w-full object-cover"
-              />
-            )}
-            <div className="p-4">
-              <h3 className="text-lg font-semibold">{room.name}</h3>
-            </div>
+      {/* BACK BUTTON */}
+      <div className="mb-4 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-black"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+      </div>
+
+      <div className="bg-white rounded-xl p-4 sm:p-6 space-y-6">
+
+        {/* ================= PROFILE ================= */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* NAME – FULL */}
+          <div className="col-span-2">
+            <Label>Name</Label>
+            <Input value={form.name} disabled className="truncate" />
+          </div>
+
+          {/* EMAIL – FULL */}
+          <div className="col-span-2">
+            <Label>Email</Label>
+            <Input
+              value={form.email}
+              className="truncate"
+              onChange={(e) =>
+                setForm((f) => ({ ...f, email: e.target.value }))
+              }
+            />
+          </div>
+
+          {/* DOB */}
+          <div className="col-span-1">
+            <Label>Date of Birth</Label>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="
+          w-full
+          justify-between
+          overflow-hidden
+          whitespace-nowrap
+        "
+                >
+                  {/* TEXT (SAFE & RESPONSIVE) */}
+                  <span className="truncate text-left">
+                    {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date"}
+                  </span>
+
+                  {/* ICON (NEVER SHRINKS) */}
+                  <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent
+                className="w-auto p-0"
+                align="start"
+                side="bottom"
+              >
+                <Calendar
+                  mode="single"
+                  selected={form.dob}
+                  onSelect={(d) =>
+                    setForm((f) => ({ ...f, dob: d }))
+                  }
+                  captionLayout="dropdown"
+                  fromYear={1950}
+                  toYear={new Date().getFullYear()}
+                  disabled={(date) => date > new Date()}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+
+          {/* PHONE */}
+          <div className="col-span-1">
+            <Label>Phone</Label>
+            <Input value={form.phone} disabled className="truncate" />
           </div>
         </div>
 
-        {/* RIGHT – FULL FORM */}
-        <div className="lg:col-span-7 bg-white rounded-xl p-4 sm:p-6 space-y-6">
-
-          {/* PROFILE */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <Label>Name</Label>
-              <Input value={form.name} disabled />
-            </div>
-
-            <div className="col-span-2">
-              <Label>Email</Label>
-              <Input
-                value={form.email}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, email: e.target.value }))
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Date of Birth</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {form.dob
-                      ? format(form.dob, "dd MMM yyyy")
-                      : "Select date"}
-                    <CalendarIcon className="h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0">
-                  <Calendar
-                    mode="single"
-                    selected={form.dob}
-                    onSelect={(d) =>
-                      setForm((f) => ({ ...f, dob: d }))
-                    }
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div>
-              <Label>Phone</Label>
-              <Input value={form.phone} disabled />
-            </div>
+        {/* ================= ADDRESS ================= */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {/* ADDRESS – FULL */}
+          <div className="col-span-2 md:col-span-3">
+            <Label>Address</Label>
+            <Input
+              value={address.address}
+              className="truncate"
+              onChange={(e) =>
+                setAddress((a) => ({ ...a, address: e.target.value }))
+              }
+            />
           </div>
 
-          {/* ADDRESS */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div className="col-span-2 md:col-span-3">
-              <Label>Address</Label>
-              <Input
-                value={address.address}
-                onChange={(e) =>
-                  setAddress((a) => ({ ...a, address: e.target.value }))
-                }
-              />
-            </div>
-
-            <SelectField
-              label="Country"
+          {/* COUNTRY */}
+          <div>
+            <Label>Country</Label>
+            <Select
               value={address.country}
-              onChange={(v) =>
+              onValueChange={(v) =>
                 setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
               }
-              options={countries.map((c) => ({
-                value: c.isoCode,
-                label: c.name,
-              }))}
-            />
-
-            <SelectField
-              label="State"
-              value={address.state}
-              onChange={(v) =>
-                setAddress((a) => ({ ...a, state: v, city: "" }))
-              }
-              options={statesList.map((s) => ({
-                value: s.isoCode,
-                label: s.name,
-              }))}
-            />
-
-            <SelectField
-              label="City"
-              value={address.city}
-              onChange={(v) =>
-                setAddress((a) => ({ ...a, city: v }))
-              }
-              options={citiesList.map((c) => ({
-                value: c.name,
-                label: c.name,
-              }))}
-            />
-
-            <div>
-              <Label>Pincode</Label>
-              <Input
-                value={address.pincode}
-                onChange={(e) =>
-                  setAddress((a) => ({
-                    ...a,
-                    pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-                  }))
-                }
-              />
-            </div>
-          </div>
-
-          {/* DATES */}
-          <div>
-            <Label>Check-in & Check-out</Label>
-            <CalendarRange value={range} onChange={setRange} />
-          </div>
-
-          {/* GUESTS */}
-          <div>
-            <Label>Guests</Label>
-            <Select value={guests} onValueChange={setGuests}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            >
+              <SelectTrigger className="truncate">
+                <SelectValue className="truncate" />
+              </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                {countries.map((c) => (
+                  <SelectItem key={c.isoCode} value={c.isoCode}>
+                    {c.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* MEALS */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-2">
-              <Checkbox checked={withMeal} onCheckedChange={setWithMeal} />
-              <Label>Include meals</Label>
-            </div>
+          {/* STATE */}
+          <div>
+            <Label>State</Label>
+            <Select
+              value={address.state}
+              onValueChange={(v) =>
+                setAddress((a) => ({ ...a, state: v, city: "" }))
+              }
+            >
+              <SelectTrigger className="truncate">
+                <SelectValue className="truncate" />
+              </SelectTrigger>
+              <SelectContent>
+                {statesList.map((s) => (
+                  <SelectItem key={s.isoCode} value={s.isoCode}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {withMeal && (
-              <div className="grid grid-cols-2 gap-4">
+          {/* CITY */}
+          <div>
+            <Label>City</Label>
+            <Select
+              value={address.city}
+              onValueChange={(v) =>
+                setAddress((a) => ({ ...a, city: v }))
+              }
+            >
+              <SelectTrigger className="truncate">
+                <SelectValue className="truncate" />
+              </SelectTrigger>
+              <SelectContent>
+                {citiesList.map((c) => (
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* PINCODE */}
+          <div>
+            <Label>Pincode</Label>
+            <Input
+              value={address.pincode}
+              className="truncate"
+              onChange={(e) =>
+                setAddress((a) => ({
+                  ...a,
+                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                }))
+              }
+            />
+          </div>
+        </div>
+
+        {/* ================= BOOKING DATES ================= */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div>
+            <Label>Check-in</Label>
+            <Input
+              value={range.from ? format(range.from, "dd MMM yyyy") : ""}
+              disabled
+              className="truncate"
+            />
+          </div>
+
+          <div>
+            <Label>Check-out</Label>
+            <Input
+              value={range.to ? format(range.to, "dd MMM yyyy") : ""}
+              disabled
+              className="truncate"
+            />
+          </div>
+
+          <div className="col-span-2 md:col-span-1">
+            <Label>Nights</Label>
+            <Input value={nights} disabled />
+          </div>
+        </div>
+
+        {/* ================= GUESTS ================= */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2 sm:col-span-1">
+            <Label>Guests</Label>
+            <Select
+              value={guests}
+              onValueChange={(v) => {
+                setGuests(v);
+                const g = Number(v);
+                if (vegGuests + nonVegGuests > g) {
+                  setVegGuests(0);
+                  setNonVegGuests(0);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* ================= MEALS ================= */}
+        <div className="space-y-3">
+          <div className="flex items-start gap-2">
+            <Checkbox
+              checked={withMeal}
+              onCheckedChange={(v) => {
+                setWithMeal(v);
+                if (!v) {
+                  setVegGuests(0);
+                  setNonVegGuests(0);
+                }
+              }}
+            />
+            <Label className="leading-snug">
+              Include meals
+              {room && (
+                <span className="block text-xs text-muted-foreground">
+                  Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg} per guest per night
+                </span>
+              )}
+            </Label>
+          </div>
+
+          {withMeal && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Veg Guests</Label>
                 <Input
                   type="number"
                   min={0}
-                  max={Number(guests) - nonVegCount}
-                  placeholder="Veg guests"
+                  max={Number(guests) - nonVegGuests}
                   value={vegGuests}
-                  onChange={(e) => {
-                    const val = Math.min(
-                      Number(e.target.value || 0),
-                      Number(guests) - nonVegCount
-                    );
-                    setVegGuests(val === 0 ? "" : String(val));
-                  }}
-                />
-
-                <Input
-                  type="number"
-                  min={0}
-                  max={Number(guests) - vegCount}
-                  placeholder="Non-veg guests"
-                  value={nonVegGuests}
-                  onChange={(e) => {
-                    const val = Math.min(
-                      Number(e.target.value || 0),
-                      Number(guests) - vegCount
-                    );
-                    setNonVegGuests(val === 0 ? "" : String(val));
-                  }}
+                  onChange={(e) =>
+                    setVegGuests(Math.max(0, Number(e.target.value)))
+                  }
                 />
               </div>
-            )}
-            {withMeal && mealGuestMismatch && (
-  <p className="text-sm text-red-600">
-    Veg + Non-Veg guests must equal total guests ({guests})
-  </p>
-)}
 
+              <div>
+                <Label>Non-Veg Guests</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={Number(guests) - vegGuests}
+                  value={nonVegGuests}
+                  onChange={(e) =>
+                    setNonVegGuests(Math.max(0, Number(e.target.value)))
+                  }
+                />
+              </div>
 
+              <div className="col-span-2 flex justify-between text-sm font-medium">
+                <span>Meal Charges</span>
+                <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
+        {/* ================= PRICE ================= */}
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span>Room ({nights} nights)</span>
+            <span>₹{roomTotal.toLocaleString("en-IN")}</span>
           </div>
+
+          {withMeal && (
+            <div className="flex justify-between">
+              <span>Meals</span>
+              <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+            </div>
+          )}
 
           <Separator />
 
-          {/* PRICE */}
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Room ({nights} nights)</span>
-              <span>₹{roomTotal.toLocaleString("en-IN")}</span>
-            </div>
-            {withMeal && (
-              <div className="flex justify-between">
-                <span>Meals</span>
-                <span>₹{mealTotal.toLocaleString("en-IN")}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-lg font-semibold">
-              <span>Total</span>
-              <span>₹{total.toLocaleString("en-IN")}</span>
-            </div>
+          <div className="flex justify-between text-lg font-semibold">
+            <span>Total</span>
+            <span>₹{total.toLocaleString("en-IN")}</span>
           </div>
-
-          <Button className="w-full h-12 bg-red-700" onClick={proceedPayment} disabled={withMeal && mealGuestMismatch}>
-            Proceed to Payment
-          </Button>
         </div>
-      </div>
-    </div>
-  );
-}
 
-/* SIMPLE SELECT HELPER */
-function SelectField({ label, value, onChange, options }) {
-  return (
-    <div>
-      <Label>{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Button className="w-full h-12 bg-red-700" onClick={proceed}>
+          Proceed to Payment
+        </Button>
+      </div>
     </div>
   );
 }
