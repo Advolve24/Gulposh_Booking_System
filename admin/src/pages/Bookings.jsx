@@ -47,12 +47,29 @@ export default function Booking() {
   const perPage = 8;
   const [params] = useSearchParams();
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [search, setSearch] = useState("");
 
 
   const filteredBookings = useMemo(() => {
-    if (status === "all") return bookings;
-    return bookings.filter(b => b.status === status);
-  }, [bookings, status]);
+    let data = bookings;
+
+    if (status !== "all") {
+      data = data.filter((b) => b.status === status);
+    }
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+
+      data = data.filter((b) =>
+        b._id.toLowerCase().includes(q) ||
+        b.user?.name?.toLowerCase().includes(q) ||
+        b.user?.email?.toLowerCase().includes(q) ||
+        b.user?.phone?.includes(q)
+      );
+    }
+
+    return data;
+  }, [bookings, status, search]);
 
 
 
@@ -85,32 +102,49 @@ export default function Booking() {
 
   return (
     <AppLayout>
-      <div className=" max-w-7xl space-y-6 py-0">
+      <div className="w-full md:max-w-7xl space-y-6 py-0">
 
         {/* FILTER */}
-        <div className="flex items-center justify-between gap-3">
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-[160px] h-10">
-              <div className="flex items-center gap-2">
-                <Filter size={14} />
-                <SelectValue placeholder="All Bookings" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="confirmed">Paid</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-start md:justify-between gap-3">
+            {/* STATUS FILTER */}
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-full md:w-[160px] h-10">
+                <div className="flex items-center gap-2">
+                  <Filter size={14} />
+                  <SelectValue placeholder="All Bookings" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="confirmed">Paid</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
 
+          <div className="flex md:w-auto w-full md:flex-row items-center gap-3">
+            {/* SEARCH INPUT */}
+            <input
+              type="text"
+              placeholder="Search booking / guest…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="
+        h-10 w-[83%] md:w-[240px]
+        border rounded-lg px-3 text-sm
+        focus:outline-none focus:ring-2 focus:ring-primary/30
+      "
+            />
+          {/* REFRESH */}
           <button
             onClick={loadBookings}
-            className="h-10 w-10 border rounded-lg flex items-center justify-center"
+            className="h-10 w-[14%] md:w-10 border rounded-lg flex items-center justify-center"
           >
             <RotateCcw size={16} />
           </button>
+          </div>
         </div>
+
 
         {/* DESKTOP TABLE */}
         <div className="hidden sm:block bg-card border rounded-xl">

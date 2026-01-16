@@ -35,14 +35,21 @@ export default function BookingViewPopup({
     1,
     Math.round(
       (new Date(booking.endDate) - new Date(booking.startDate)) /
-        86400000
+      86400000
     )
   );
 
   const handleClose = () => {
-    setVisible(false);
-    setTimeout(onClose, 250); // wait for slide-down
+    const isDesktop = window.matchMedia("(min-width: 640px)").matches;
+
+    if (isDesktop) {
+      onClose();
+    } else {
+      setVisible(false);
+      setTimeout(onClose, 250);
+    }
   };
+
 
   return createPortal(
     <>
@@ -55,7 +62,7 @@ export default function BookingViewPopup({
       />
 
       {/* WRAPPER */}
-      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
+      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center" onClick={handleClose}>
         {/* DRAWER / MODAL */}
         <div
           onClick={(e) => e.stopPropagation()}
