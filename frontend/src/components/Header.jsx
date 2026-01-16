@@ -42,8 +42,8 @@ export default function Header() {
 
         {/* ================= LOGO ================= */}
           <Link to="/" className="flex items-center gap-2">
-          <img src="/logo1.png" className="h-9" alt="logo" />
-          <img src="/logo2.png" className="h-6" alt="brand" />
+          <img src="/logo1.png" className="h-10" alt="logo" />
+          <img src="/logo2.png" className="h-7" alt="brand" />
         </Link>
 
         {/* ================= RIGHT ACTIONS ================= */}
