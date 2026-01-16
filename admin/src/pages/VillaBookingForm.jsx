@@ -335,7 +335,7 @@ export default function VillaBookingForm() {
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select ID Type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="Aadhaar">Aadhaar</SelectItem>
                   <SelectItem value="Passport">Passport</SelectItem>
                   <SelectItem value="Voter ID">Voter ID</SelectItem>
@@ -364,7 +364,7 @@ export default function VillaBookingForm() {
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select Payment Mode" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="Online">Online</SelectItem>
                 <SelectItem value="Card">Card</SelectItem>
                 <SelectItem value="UPI">UPI</SelectItem>
