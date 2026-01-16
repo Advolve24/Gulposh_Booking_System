@@ -146,24 +146,25 @@ export default function Checkout() {
 
   const total = roomTotal + mealTotal;
 
-  /* ================= PAYMENT ================= */
   const proceedPayment = async () => {
     const g = Number(guests);
 
-    /* ================= VALIDATION ================= */
     if (withMeal && vegGuests + nonVegGuests !== g) {
       toast.error("Veg + Non-Veg guests must equal total guests");
       return;
     }
 
-    /* ================= LOAD RAZORPAY ================= */
+     if (!form.email || !form.email.trim()) {
+    toast.error("Email is required for booking confirmation");
+    return;
+  }
+
     const ok = await loadRazorpayScript();
     if (!ok) {
       toast.error("Failed to load payment gateway");
       return;
     }
 
-    /* ================= CREATE ORDER ================= */
     const { data } = await api.post("/payments/create-order", {
       roomId,
       startDate: toYMD(range.from),
@@ -177,7 +178,6 @@ export default function Checkout() {
       contactPhone: form.phone,
     });
 
-    /* ================= RAZORPAY ================= */
     const rzp = new window.Razorpay({
       key: data.key,
       amount: data.amount,
@@ -197,34 +197,35 @@ export default function Checkout() {
         guests: String(g),
       },
 
-      /* ================= PAYMENT SUCCESS ================= */
-      handler: (resp) => {
-        // ✅ 1. INSTANT USER CONFIRMATION
-        toast.success(
-          "Payment successful 🎉 Your booking is being confirmed"
-        );
-         sessionStorage.removeItem("searchParams");
-        // ✅ 2. INSTANT REDIRECT
-        navigate("/my-bookings");
+      handler: async (resp) => {
+        try {
+          toast.loading("Confirming your booking...");
 
-        // ✅ 3. VERIFY IN BACKGROUND (NO await)
-        api.post("/payments/verify", {
-          ...resp,
-          roomId,
-          startDate: toYMD(range.from),
-          endDate: toYMD(range.to),
-          guests: g,
-          withMeal,
-          vegGuests,
-          nonVegGuests,
-          contactName: form.name,
-          contactEmail: form.email,
-          contactPhone: form.phone,
-          ...address,
-        }).catch((err) => {
-          console.error("Background verification failed:", err);
-          // optional: log to DB / Slack
-        });
+          const { data } = await api.post("/payments/verify", {
+            ...resp,
+            roomId,
+            startDate: toYMD(range.from),
+            endDate: toYMD(range.to),
+            guests: g,
+            withMeal,
+            vegGuests,
+            nonVegGuests,
+            contactName: form.name,
+            contactEmail: form.email,
+            contactPhone: form.phone,
+            ...address,
+          });
+
+          toast.success("Booking confirmed 🎉");
+          sessionStorage.removeItem("searchParams");
+
+          navigate(`/booking/${data.booking._id}`);
+        } catch (err) {
+          console.error("Payment verified but booking failed:", err);
+          toast.error(
+            "Payment successful, but booking confirmation failed. Please contact support."
+          );
+        }
       },
 
       modal: {
@@ -365,7 +366,7 @@ export default function Checkout() {
               <Label>Name</Label>
               <Input value={form.name} disabled className="truncate" />
             </div>
-            
+
             {/* EMAIL – FULL */}
             <div className="col-span-1">
               <Label>Email</Label>
@@ -377,7 +378,7 @@ export default function Checkout() {
                 }
               />
             </div>
-            
+
             {/* DOB */}
             <div className="col-span-1">
               <Label>Date of Birth</Label>
