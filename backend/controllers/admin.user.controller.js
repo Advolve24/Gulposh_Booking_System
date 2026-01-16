@@ -69,20 +69,34 @@ export const listUserBookingsAdmin = async (req, res) => {
     if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid user id" });
 
     const bookings = await Booking.find({ user: id })
-      .select("room startDate endDate status createdAt total withMeal")
+      .select(`
+  user room startDate endDate nights guests
+  status createdAt amount
+  withMeal vegGuests nonVegGuests
+  roomTotal mealTotal paymentId
+`)
       .populate("room", "name")
       .sort({ startDate: -1 });
 
-    res.json(bookings.map(b => ({
-      _id: b._id,
-      room: b.room ? { _id: b.room._id, name: b.room.name } : null,
-      startDate: b.startDate,
-      endDate: b.endDate,
-      status: b.status,
-      total: b.total ?? null,
-      withMeal: !!b.withMeal,
-      createdAt: b.createdAt,
-    })));
+   res.json(items.map(b => ({
+  _id: b._id,
+  user: b.user,
+  room: b.room,
+  startDate: b.startDate,
+  endDate: b.endDate,
+  nights: b.nights,
+  guests: b.guests,
+  withMeal: b.withMeal,
+  vegGuests: b.vegGuests,
+  nonVegGuests: b.nonVegGuests,
+  roomTotal: b.roomTotal,
+  mealTotal: b.mealTotal,
+  amount: b.amount,
+  paymentId: b.paymentId,
+  status: b.status,
+  createdAt: b.createdAt,
+})));
+
   } catch (err) {
     console.error("listUserBookingsAdmin error:", err);
     res.status(500).json({ message: "Failed to load bookings" });

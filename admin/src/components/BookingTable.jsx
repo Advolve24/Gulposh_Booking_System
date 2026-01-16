@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useMemo } from "react";
 
 /* ---------- helpers ---------- */
 
@@ -67,7 +68,7 @@ const nightsBetween = (from, to) => {
   return Math.max(1, Math.round((b - a) / 86400000));
 };
 
-/* ---------- component ---------- */
+
 
 export default function BookingTable({
   bookings,
@@ -75,6 +76,25 @@ export default function BookingTable({
   onViewInvoice,
   onDownloadInvoice,
 }) {
+
+
+  const sortedBookings = useMemo(() => {
+  return [...bookings].sort((a, b) => {
+    const aStart = new Date(a.startDate).getTime();
+    const bStart = new Date(b.startDate).getTime();
+
+    if (aStart !== bStart) {
+      return bStart - aStart;
+    }
+
+    const aEnd = new Date(a.endDate).getTime();
+    const bEnd = new Date(b.endDate).getTime();
+    return bEnd - aEnd;
+  });
+}, [bookings]);
+
+
+
   return (
     <div className="bg-card border rounded-xl overflow-x-auto">
       <table className="min-w-[1200px] w-full text-sm">
@@ -94,7 +114,7 @@ export default function BookingTable({
         </thead>
 
         <tbody>
-          {bookings.map((b) => {
+          {sortedBookings.map((b) => {
             const guests = guestLabel(b);
 
             return (

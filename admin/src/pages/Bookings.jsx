@@ -13,6 +13,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getBookingAdmin } from "@/api/admin";
+
 
 import {
   Select,
@@ -83,7 +85,7 @@ export default function Booking() {
 
   return (
     <AppLayout>
-      <div className=" max-w-7xl space-y-6 py-6">
+      <div className=" max-w-7xl space-y-6 py-0">
 
         {/* FILTER */}
         <div className="flex items-center justify-between gap-3">
@@ -115,7 +117,15 @@ export default function Booking() {
           <div className="relative overflow-x-auto">
             <BookingTable
               bookings={visible}
-              onRowClick={(b) => setSelectedBooking(b)}
+              onRowClick={async (b) => {
+                try {
+                  const full = await getBookingAdmin(b._id);
+                  setSelectedBooking(full);
+                } catch {
+                  toast.error("Failed to load booking details");
+                }
+              }}
+
               onViewInvoice={(b) => navigate(`/bookings/${b._id}/invoice`)}
               onDownloadInvoice={(b) =>
                 navigate(`/bookings/${b._id}/invoice?download=true`)
@@ -132,7 +142,14 @@ export default function Booking() {
             <MobileBookingCard
               key={b._id}
               booking={b}
-              onOpen={(booking) => setSelectedBooking(booking)}
+              onOpen={async (b) => {
+                try {
+                  const full = await getBookingAdmin(b._id);
+                  setSelectedBooking(full);
+                } catch {
+                  toast.error("Failed to load booking details");
+                }
+              }}
               onViewInvoice={(booking) =>
                 navigate(`/bookings/${booking._id}/invoice`)
               }

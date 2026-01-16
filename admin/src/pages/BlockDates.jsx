@@ -103,7 +103,7 @@ export default function BlockDates() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col md:flex-row justify-between gap-6 py-4 md:py-6">
+      <div className="flex flex-col w-full md:flex-row justify-between gap-6 py-2 md:py-0">
 
         <div className="w-full md:w-[60%] bg-card border rounded-xl p-4 md:p-6">
           <h2 className="font-semibold text-lg mb-4">

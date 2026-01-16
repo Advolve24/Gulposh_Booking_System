@@ -92,7 +92,7 @@ export default function Rooms() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 py-6">
+      <div className="space-y-6 w-full py-0">
         {/* ================= TOOLBAR ================= */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           {/* LEFT */}
@@ -152,7 +152,7 @@ export default function Rooms() {
             {/* ADD ROOM */}
             <Link
               to="/rooms/new"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+              className="inline-flex w-full md:w-auto items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
             >
               <Plus size={16} />
               Add Room

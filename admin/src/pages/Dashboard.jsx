@@ -40,6 +40,8 @@ import {
 import MobileBookingCard from "@/components/MobileBookingCard";
 import BookingTable from "@/components/BookingTable";
 import BookingViewPopup from "@/components/BookingViewPopup";
+import { getBookingAdmin } from "../api/admin";
+
 
 const toDateKey = (d) => format(d, "yyyy-MM-dd");
 
@@ -669,7 +671,14 @@ export default function Dashboard() {
         <div className="hidden lg:block">
           <BookingTable
             bookings={recentBookings}
-            onRowClick={(b) => setSelectedBooking(b)}
+            onRowClick={async (b) => {
+              try {
+                const full = await getBookingAdmin(b._id);
+                setSelectedBooking(full);
+              } catch {
+                toast.error("Failed to load booking details");
+              }
+            }}
             onViewInvoice={(b) =>
               navigate(`/bookings/${b._id}/invoice`)
             }
@@ -677,6 +686,7 @@ export default function Dashboard() {
               navigate(`/bookings/${b._id}/invoice?download=true`)
             }
           />
+
         </div>
 
         <div className="space-y-3 lg:hidden">
@@ -684,7 +694,14 @@ export default function Dashboard() {
             <MobileBookingCard
               key={b._id}
               booking={b}
-              onOpen={(booking) => setSelectedBooking(booking)}
+              onOpen={async (b) => {
+                try {
+                  const full = await getBookingAdmin(b._id);
+                  setSelectedBooking(full);
+                } catch {
+                  toast.error("Failed to load booking details");
+                }
+              }}
               onViewInvoice={(booking) =>
                 navigate(`/bookings/${booking._id}/invoice`)
               }

@@ -1,57 +1,11 @@
 import { useEffect } from "react";
-import { X, Home, Calendar, Moon, Users, Mail, Phone } from "lucide-react";
+import { X, Calendar, Users, CreditCard, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { createPortal } from "react-dom";
 
-/* ---------------- helpers ---------------- */
+const fmt = (d) => format(new Date(d), "dd MMM yyyy");
 
-const dateFmt = (d) => {
-  if (!d) return "—";
-  const dt = new Date(d);
-  return isNaN(dt.getTime()) ? "—" : format(dt, "dd MMM, yyyy");
-};
-
-const StatusBadge = ({ status }) => {
-  const map = {
-    confirmed: "bg-green-100 text-green-700",
-    pending: "bg-orange-100 text-orange-700",
-    cancelled: "bg-red-100 text-red-700",
-  };
-
-  return (
-    <span className={`px-3 py-1 rounded-full text-xs font-medium ${map[status]}`}>
-      {status}
-    </span>
-  );
-};
-
-export default function BookingViewPopup({ open, booking, onClose }) {
-  /* ---------------- SCROLL LOCK ---------------- */
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-      document.body.style.touchAction = "none";
-    } else {
-      document.body.style.overflow = "";
-      document.body.style.touchAction = "";
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-      document.body.style.touchAction = "";
-    };
-  }, [open]);
-
-  /* ---------------- ESC KEY ---------------- */
-  useEffect(() => {
-    if (!open) return;
-
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  /* ❗ Only hide UI, not component */
+export default function BookingViewPopup({ open, booking, onClose, onCancel }) {
   if (!open || !booking) return null;
 
   const nights = Math.max(
@@ -69,67 +23,122 @@ export default function BookingViewPopup({ open, booking, onClose }) {
         onClick={onClose}
       />
 
-      {/* POPUP */}
+      {/* MODAL */}
       <div
-        className="
-          fixed z-[9999]
-          top-0 bottom-0 right-0
-          w-[95vw] sm:w-[420px]
-          bg-white rounded-xl
-          shadow-2xl
-          flex flex-col
-        "
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+        onClick={onClose}
       >
-        {/* HEADER */}
-        <div className="p-4 border-b flex justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="font-semibold truncate">
-              {booking.user?.name || "Guest"}
-            </h2>
-            <p className="text-sm text-muted-foreground truncate">
-              {booking.user?.email || "—"}
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <StatusBadge status={booking.status} />
+        <div
+          className="bg-white w-full max-w-md rounded-2xl shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* HEADER */}
+          <div className="relative p-5 border-b">
+            <h2 className="text-xl font-semibold">
+              {booking.room?.name || "Villa"}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Booking ID: {booking._id.slice(-6)}
+            </p>
+
             <button
               onClick={onClose}
-              className="h-7 w-7 border rounded-md hover:bg-muted flex items-center justify-center"
+              className="absolute top-4 right-4 h-8 w-8 rounded-full border flex items-center justify-center"
             >
               <X size={14} />
             </button>
           </div>
-        </div>
 
-        {/* BODY */}
-        <div className="p-4 space-y-4 overflow-y-auto">
-          <Info icon={Home} label="Room" value={booking.room?.name || "Villa"} />
+          {/* BODY */}
+          <div className="p-5 space-y-3 text-sm">
+            {/* Dates */}
+            <div>
+              <span className="inline-block mb-2 text-xs px-3 py-1 bg-muted rounded-full">
+                CHECK-IN – CHECK-OUT
+              </span>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Info icon={Calendar} label="Check-in" value={dateFmt(booking.startDate)} />
-            <Info icon={Calendar} label="Check-out" value={dateFmt(booking.endDate)} />
-            <Info icon={Moon} label="Nights" value={nights} />
-            <Info icon={Users} label="Guests" value={`${booking.guests || 1}`} />
-          </div>
-
-          <Section title="Contact">
-            <hr></hr>
-            <RowC icon={Mail} value={booking.user?.email || "—"} />
-            <RowC icon={Phone} value={booking.user?.phone || "—"} />
-          </Section>
-
-          <Section title="Payment">
-            <hr></hr>
-            <Row label="Status" value={<StatusBadge status={booking.status} />} />
-            <Row label="Method" value="razorpay" />
-            <Row label="Amount" value={`₹${booking.amount?.toLocaleString("en-IN")}`} />
-            <Row label="Tax" value={`₹${(booking.amount * 0.18).toLocaleString("en-IN")}`} />
-            <div className="bg-gray-50 p-2 rounded">
-                <Row label="Grand Total" value={`₹${(booking.amount * 1.18).toLocaleString("en-IN")}`} />
+              <div className="flex items-start gap-3">
+                <Calendar size={18} className="mt-1 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">
+                    {fmt(booking.startDate)} – {fmt(booking.endDate)}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {nights} night(s)
+                  </p>
+                </div>
+              </div>
             </div>
-          </Section>
+
+
+
+            {/* Guests */}
+            <div className="flex items-start gap-3">
+              <Users size={18} className="mt-1 text-muted-foreground" />
+              <div>
+                <p className="font-medium">
+                  {booking.guests || 1} Guests
+                </p>
+                {booking.withMeal && (
+                  <p className="text-muted-foreground text-xs">
+                    Veg: {booking.vegGuests || 0} · Non-Veg:{" "}
+                    {booking.nonVegGuests || 0}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <hr />
+
+            <div>
+
+              <div className="space-y-2 text-sm">
+
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Mail size={14} />
+                  <span>{booking.user?.email || "—"}</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Phone size={14} />
+                  <span>{booking.user?.phone || "—"}</span>
+                </div>
+              </div>
+            </div>
+
+            <hr />
+
+            {/* Amount */}
+            <div className="space-y-2">
+              <Row label="Room Total" value={`₹${booking.roomTotal?.toLocaleString("en-IN")}`} />
+              <Row label="Meal Total" value={`₹${booking.mealTotal?.toLocaleString("en-IN")}`} />
+              <Row bold label="Total Amount" value={`₹${booking.amount?.toLocaleString("en-IN")}`} />
+            </div>
+
+            <hr />
+
+            {/* Payment */}
+            <div className="flex items-start gap-3">
+              <CreditCard size={18} className="mt-1 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Payment via Razorpay</p>
+                <p className="text-xs text-muted-foreground">
+                  Payment ID: {booking.paymentId || "—"}
+                </p>
+              </div>
+            </div>
+
+            {/* ACTION */}
+            {booking.status !== "cancelled" && (
+              <button
+                onClick={() => onCancel(booking._id)}
+                className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-medium"
+              >
+                Cancel Booking
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </>,
@@ -137,43 +146,11 @@ export default function BookingViewPopup({ open, booking, onClose }) {
   );
 }
 
-/* ---------------- UI helpers ---------------- */
-
-function Info({ label, value, icon: Icon }) {
+function Row({ label, value, bold }) {
   return (
-    <div className="border rounded-xl p-3 flex gap-3">
-      <Icon size={18} className="text-muted-foreground" />
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="font-medium">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function Section({ title, children }) {
-  return (
-    <div>
-      <p className="text-xs text-muted-foreground mb-2">{title}</p>
-      <div className="space-y-2">{children}</div>
-    </div>
-  );
-}
-
-function Row({ label, value }) {
-  return (
-    <div className="flex justify-between text-sm">
+    <div className={`flex justify-between ${bold ? "font-semibold" : ""}`}>
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
-    </div>
-  );
-}
-
-function RowC({ value, icon: Icon }) {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <Icon size={14} className="text-muted-foreground" />
-      <span className="font-medium">{value}</span>
+      <span>{value}</span>
     </div>
   );
 }

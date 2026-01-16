@@ -101,7 +101,7 @@ export default function Sidebar({
 
 
         {/* NAV */}
-        <nav className="flex-1 p-2 space-y-1">
+        <nav className="flex-1 p-2 space-y-3 md:space-y-1">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -109,8 +109,8 @@ export default function Sidebar({
               onClick={handleNavClick}
               className={({ isActive }) =>
                 `
-                flex items-center gap-3 px-3 py-2 rounded-lg text-sm
-                transition justify-center lg:justify-start
+                flex items-center gap-3 px-3 py-3 md:py-3 rounded-lg text-[14px] md:text-sm
+                transition justify-start lg:justify-start
                 ${isActive ? "bg-white/20" : "hover:bg-white/10"}
               `
               }
