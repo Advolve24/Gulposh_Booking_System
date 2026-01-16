@@ -146,40 +146,6 @@ export default function Checkout() {
 
   const total = roomTotal + mealTotal;
 
-  /* ================= OTP ================= */
-  // const sendOtp = async () => {
-  //   if (!isValidPhone(form.phone)) {
-  //     toast.error("Invalid phone number");
-  //     return;
-  //   }
-  //   const verifier = getRecaptchaVerifier();
-  //   const res = await signInWithPhoneNumber(
-  //     auth,
-  //     `+91${form.phone}`,
-  //     verifier
-  //   );
-  //   window.confirmationResult = res;
-  //   setOtpStep("sent");
-  //   toast.success("OTP sent");
-  // };
-
-  // const verifyOtp = async () => {
-  //   await window.confirmationResult.confirm(otp);
-  //   await phoneLogin({
-  //     phone: form.phone,
-  //     name: form.name,
-  //     email: form.email,
-  //     dob: form.dob?.toISOString(),
-  //   });
-  //   await init();
-  //   setOtpStep("verified");
-
-  //   if (pendingProceedRef.current) {
-  //     pendingProceedRef.current = false;
-  //     proceedPayment();
-  //   }
-  // };
-
   /* ================= PAYMENT ================= */
   const proceedPayment = async () => {
     const g = Number(guests);
@@ -237,7 +203,7 @@ export default function Checkout() {
         toast.success(
           "Payment successful 🎉 Your booking is being confirmed"
         );
-
+         sessionStorage.removeItem("searchParams");
         // ✅ 2. INSTANT REDIRECT
         navigate("/my-bookings");
 
@@ -287,9 +253,14 @@ export default function Checkout() {
 
   if (!room) return null;
 
+  const roomImage =
+    room?.images?.length > 0
+      ? room.images[0]
+      : room?.image || room?.coverImage || null;
+
   /* ================= UI ================= */
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6">
+    <div className="max-w-7xl mx-auto px-4 py-6">
       {/* reCAPTCHA – hidden, no layout impact */}
       <div
         id="recaptcha-container"
@@ -308,318 +279,377 @@ export default function Checkout() {
         </button>
       </div>
 
-      <div className="bg-white rounded-xl p-4 sm:p-6 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-2">
 
-        {/* ================= PROFILE ================= */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* NAME – FULL */}
-          <div className="col-span-2">
-            <Label>Name</Label>
-            <Input value={form.name} disabled className="truncate" />
+        {/* ================= LEFT 40% ================= */}
+        <aside className="hidden lg:block lg:col-span-2 bg-[#fffaf7] rounded-xl ">
+          <div className="sticky top-[120px] px-10 py-8">
+
+            {/* SMALL WHITE CARD */}
+            <div className="bg-white rounded-xl shadow-xl overflow-hidden">
+
+              {/* IMAGE – SHORT HEIGHT */}
+              <div>
+                {roomImage && (
+                  <img
+                    src={roomImage}
+                    alt={room.name}
+                    className=" w-full object-cover h-60"
+                  />
+                )}
+              </div>
+
+              {/* CONTENT */}
+              <div className="p-4 space-y-3 text-sm">
+
+                {/* TITLE */}
+                <div>
+                  <h3 className="text-base font-semibold leading-tight">
+                    {room.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    {guests} Guests · {withMeal ? "With Meals" : "Without Meals"}
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* DETAILS */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Check-in</span>
+                    <span>{range.from && format(range.from, "dd MMM yyyy")}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Check-out</span>
+                    <span>{range.to && format(range.to, "dd MMM yyyy")}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      {nights} Nights
+                    </span>
+                    <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+                  </div>
+
+                  {withMeal && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Meals</span>
+                      <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* TOTAL */}
+                <div className="flex justify-between font-semibold text-base">
+                  <span>Total</span>
+                  <span>₹{total.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+            </div>
           </div>
+        </aside>
 
-          {/* EMAIL – FULL */}
-          <div className="col-span-2">
-            <Label>Email</Label>
-            <Input
-              value={form.email}
-              className="truncate"
-              onChange={(e) =>
-                setForm((f) => ({ ...f, email: e.target.value }))
-              }
-            />
-          </div>
 
-          {/* DOB */}
-          <div className="col-span-1">
-            <Label>Date of Birth</Label>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="
-          w-full
-          justify-between
-          overflow-hidden
-          whitespace-nowrap
-        "
+
+        <section className="lg:col-span-3 bg-white rounded-2xl sm:px-10 space-y-2">
+
+          {/* ================= PROFILE ================= */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* NAME – FULL */}
+            <div className="col-span-1">
+              <Label>Name</Label>
+              <Input value={form.name} disabled className="truncate" />
+            </div>
+            
+            {/* EMAIL – FULL */}
+            <div className="col-span-1">
+              <Label>Email</Label>
+              <Input
+                value={form.email}
+                className="truncate"
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
+              />
+            </div>
+            
+            {/* DOB */}
+            <div className="col-span-1">
+              <Label>Date of Birth</Label>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="
+                          w-full
+                          justify-between
+                          overflow-hidden
+                          whitespace-nowrap
+                        "
+                  >
+                    {/* TEXT (SAFE & RESPONSIVE) */}
+                    <span className="truncate text-left">
+                      {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date"}
+                    </span>
+
+                    {/* ICON (NEVER SHRINKS) */}
+                    <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent
+                  className="w-auto p-0"
+                  align="start"
+                  side="bottom"
                 >
-                  {/* TEXT (SAFE & RESPONSIVE) */}
-                  <span className="truncate text-left">
-                    {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date"}
-                  </span>
+                  <Calendar
+                    mode="single"
+                    selected={form.dob}
+                    onSelect={(d) =>
+                      setForm((f) => ({ ...f, dob: d }))
+                    }
+                    captionLayout="dropdown"
+                    fromYear={1950}
+                    toYear={new Date().getFullYear()}
+                    disabled={(date) => date > new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            {/* PHONE */}
+            <div className="col-span-1">
+              <Label>Phone</Label>
+              <Input value={form.phone} disabled className="truncate" />
+            </div>
 
-                  {/* ICON (NEVER SHRINKS) */}
-                  <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
+          </div>
 
-              <PopoverContent
-                className="w-auto p-0"
-                align="start"
-                side="bottom"
+          {/* ================= ADDRESS ================= */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {/* ADDRESS – FULL */}
+            <div className="col-span-2 md:col-span-3">
+              <Label>Address</Label>
+              <Input
+                value={address.address}
+                className="truncate"
+                onChange={(e) =>
+                  setAddress((a) => ({ ...a, address: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* COUNTRY */}
+            <div>
+              <Label>Country</Label>
+              <Select
+                value={address.country}
+                onValueChange={(v) =>
+                  setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
+                }
               >
-                <Calendar
-                  mode="single"
-                  selected={form.dob}
-                  onSelect={(d) =>
-                    setForm((f) => ({ ...f, dob: d }))
-                  }
-                  captionLayout="dropdown"
-                  fromYear={1950}
-                  toYear={new Date().getFullYear()}
-                  disabled={(date) => date > new Date()}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-
-          {/* PHONE */}
-          <div className="col-span-1">
-            <Label>Phone</Label>
-            <Input value={form.phone} disabled className="truncate" />
-          </div>
-        </div>
-
-        {/* ================= ADDRESS ================= */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {/* ADDRESS – FULL */}
-          <div className="col-span-2 md:col-span-3">
-            <Label>Address</Label>
-            <Input
-              value={address.address}
-              className="truncate"
-              onChange={(e) =>
-                setAddress((a) => ({ ...a, address: e.target.value }))
-              }
-            />
-          </div>
-
-          {/* COUNTRY */}
-          <div>
-            <Label>Country</Label>
-            <Select
-              value={address.country}
-              onValueChange={(v) =>
-                setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
-              }
-            >
-              <SelectTrigger className="truncate">
-                <SelectValue className="truncate" />
-              </SelectTrigger>
-              <SelectContent>
-                {countries.map((c) => (
-                  <SelectItem key={c.isoCode} value={c.isoCode}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* STATE */}
-          <div>
-            <Label>State</Label>
-            <Select
-              value={address.state}
-              onValueChange={(v) =>
-                setAddress((a) => ({ ...a, state: v, city: "" }))
-              }
-            >
-              <SelectTrigger className="truncate">
-                <SelectValue className="truncate" />
-              </SelectTrigger>
-              <SelectContent>
-                {statesList.map((s) => (
-                  <SelectItem key={s.isoCode} value={s.isoCode}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* CITY */}
-          <div>
-            <Label>City</Label>
-            <Select
-              value={address.city}
-              onValueChange={(v) =>
-                setAddress((a) => ({ ...a, city: v }))
-              }
-            >
-              <SelectTrigger className="truncate">
-                <SelectValue className="truncate" />
-              </SelectTrigger>
-              <SelectContent>
-                {citiesList.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* PINCODE */}
-          <div>
-            <Label>Pincode</Label>
-            <Input
-              value={address.pincode}
-              className="truncate"
-              onChange={(e) =>
-                setAddress((a) => ({
-                  ...a,
-                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-                }))
-              }
-            />
-          </div>
-        </div>
-
-        {/* ================= BOOKING DATES ================= */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div>
-            <Label>Check-in</Label>
-            <Input
-              value={range.from ? format(range.from, "dd MMM yyyy") : ""}
-              disabled
-              className="truncate"
-            />
-          </div>
-
-          <div>
-            <Label>Check-out</Label>
-            <Input
-              value={range.to ? format(range.to, "dd MMM yyyy") : ""}
-              disabled
-              className="truncate"
-            />
-          </div>
-
-          <div className="col-span-2 md:col-span-1">
-            <Label>Nights</Label>
-            <Input value={nights} disabled />
-          </div>
-        </div>
-
-        {/* ================= GUESTS ================= */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2 sm:col-span-1">
-            <Label>Guests</Label>
-            <Select
-              value={guests}
-              onValueChange={(v) => {
-                setGuests(v);
-                const g = Number(v);
-                if (vegGuests + nonVegGuests > g) {
-                  setVegGuests(0);
-                  setNonVegGuests(0);
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* ================= MEALS ================= */}
-        <div className="space-y-3">
-          <div className="flex items-start gap-2">
-            <Checkbox
-              checked={withMeal}
-              onCheckedChange={(v) => {
-                setWithMeal(v);
-                if (!v) {
-                  setVegGuests(0);
-                  setNonVegGuests(0);
-                }
-              }}
-            />
-            <Label className="leading-snug">
-              Include meals
-              {room && (
-                <span className="block text-xs text-muted-foreground">
-                  Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg} per guest per night
-                </span>
-              )}
-            </Label>
-          </div>
-
-          {withMeal && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Veg Guests</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={Number(guests) - nonVegGuests}
-                  value={vegGuests}
-                  onChange={(e) =>
-                    setVegGuests(Math.max(0, Number(e.target.value)))
-                  }
-                />
-              </div>
-
-              <div>
-                <Label>Non-Veg Guests</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={Number(guests) - vegGuests}
-                  value={nonVegGuests}
-                  onChange={(e) =>
-                    setNonVegGuests(Math.max(0, Number(e.target.value)))
-                  }
-                />
-              </div>
-
-              <div className="col-span-2 flex justify-between text-sm font-medium">
-                <span>Meal Charges</span>
-                <span>₹{mealTotal.toLocaleString("en-IN")}</span>
-              </div>
+                <SelectTrigger className="truncate">
+                  <SelectValue className="truncate" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map((c) => (
+                    <SelectItem key={c.isoCode} value={c.isoCode}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-        </div>
 
-        <Separator />
+            {/* STATE */}
+            <div>
+              <Label>State</Label>
+              <Select
+                value={address.state}
+                onValueChange={(v) =>
+                  setAddress((a) => ({ ...a, state: v, city: "" }))
+                }
+              >
+                <SelectTrigger className="truncate">
+                  <SelectValue className="truncate" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statesList.map((s) => (
+                    <SelectItem key={s.isoCode} value={s.isoCode}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* ================= PRICE ================= */}
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span>Room ({nights} nights)</span>
-            <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+            {/* CITY */}
+            <div>
+              <Label>City</Label>
+              <Select
+                value={address.city}
+                onValueChange={(v) =>
+                  setAddress((a) => ({ ...a, city: v }))
+                }
+              >
+                <SelectTrigger className="truncate">
+                  <SelectValue className="truncate" />
+                </SelectTrigger>
+                <SelectContent>
+                  {citiesList.map((c) => (
+                    <SelectItem key={c.name} value={c.name}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* PINCODE */}
+            <div>
+              <Label>Pincode</Label>
+              <Input
+                value={address.pincode}
+                className="truncate"
+                onChange={(e) =>
+                  setAddress((a) => ({
+                    ...a,
+                    pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                  }))
+                }
+              />
+            </div>
           </div>
 
-          {withMeal && (
-            <div className="flex justify-between">
-              <span>Meals</span>
-              <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+          {/* ================= BOOKING DATES ================= */}
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+            <div>
+              <Label>Booking Dates</Label>
+              <CalendarRange value={range} onChange={setRange} />
             </div>
-          )}
+          </div>
+
+          {/* ================= GUESTS ================= */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2 sm:col-span-1">
+              <Label>Guests</Label>
+              <Select
+                value={guests}
+                onValueChange={(v) => {
+                  setGuests(v);
+                  const g = Number(v);
+                  if (vegGuests + nonVegGuests > g) {
+                    setVegGuests(0);
+                    setNonVegGuests(0);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* ================= MEALS ================= */}
+          <div className="space-y-3">
+            <div className="flex items-start gap-2">
+              <Checkbox
+                checked={withMeal}
+                onCheckedChange={(v) => {
+                  setWithMeal(v);
+                  if (!v) {
+                    setVegGuests(0);
+                    setNonVegGuests(0);
+                  }
+                }}
+              />
+              <Label className="leading-snug">
+                Include meals
+                {room && (
+                  <span className="block text-xs text-muted-foreground">
+                    Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg} per guest per night
+                  </span>
+                )}
+              </Label>
+            </div>
+
+            {withMeal && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Veg Guests</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={Number(guests) - nonVegGuests}
+                    value={vegGuests}
+                    onChange={(e) =>
+                      setVegGuests(Math.max(0, Number(e.target.value)))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label>Non-Veg Guests</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={Number(guests) - vegGuests}
+                    value={nonVegGuests}
+                    onChange={(e) =>
+                      setNonVegGuests(Math.max(0, Number(e.target.value)))
+                    }
+                  />
+                </div>
+
+                <div className="col-span-2 flex justify-between text-sm font-medium">
+                  <span>Meal Charges</span>
+                  <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+            )}
+          </div>
 
           <Separator />
 
-          <div className="flex justify-between text-lg font-semibold">
-            <span>Total</span>
-            <span>₹{total.toLocaleString("en-IN")}</span>
-          </div>
-        </div>
+          {/* ================= PRICE ================= */}
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>Room ({nights} nights)</span>
+              <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+            </div>
 
-        <Button className="w-full h-12 bg-red-700" onClick={proceed}>
-          Proceed to Payment
-        </Button>
+            {withMeal && (
+              <div className="flex justify-between">
+                <span>Meals</span>
+                <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+              </div>
+            )}
+
+            <Separator />
+
+            <div className="flex justify-between text-lg font-semibold">
+              <span>Total</span>
+              <span>₹{total.toLocaleString("en-IN")}</span>
+            </div>
+          </div>
+
+          <Button className="w-full h-12 bg-red-700 text-[16px]" onClick={proceed}>
+            Proceed to Payment
+          </Button>
+        </section>
       </div>
     </div>
   );
