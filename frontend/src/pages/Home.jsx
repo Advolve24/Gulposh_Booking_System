@@ -200,7 +200,7 @@ export default function Home() {
   className="
     relative isolate overflow-hidden
     w-full
-    items-center pt-10 pb-10 sm:pt-20 sm:pb-20"
+    items-center pt-10 pb-10 sm:pt-24 sm:pb-24"
     >
 
 
