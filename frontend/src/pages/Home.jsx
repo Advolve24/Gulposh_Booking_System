@@ -199,9 +199,8 @@ export default function Home() {
   ref={heroRef}
   className="
     relative isolate overflow-hidden
-    h-[85vh] sm:h-[92svh]
     w-full
-    items-center pt-10 sm:pt-14"
+    items-center pt-10 pb-10 sm:pt-14 sm:pb-14"
     >
 
 
