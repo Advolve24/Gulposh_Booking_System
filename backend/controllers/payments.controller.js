@@ -1,5 +1,3 @@
-// controllers/paymentController.js
-
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import Room from "../models/Room.js";
@@ -193,30 +191,21 @@ export const verifyPayment = async (req, res) => {
       addressInfo: { address, country, state, city, pincode },
     });
 
-    const emailToSend =
-      contactEmail ||
-      req.user?.email ||
-      null;
+    const emailToSend = contactEmail || req.user?.email;
 
     if (emailToSend) {
-      try {
-        sendBookingConfirmationMail({
-          to: emailToSend,
-          name: contactName,
-          booking,
-          room,
+      sendBookingConfirmationMail({
+        to: emailToSend,
+        name: contactName,
+        booking,
+        room,
+      })
+        .then(() => {
+          console.log("✅ Confirmation mail queued:", emailToSend);
         })
-          .then(() => {
-            console.log("✅ Booking confirmation email sent to:", emailToSend);
-          })
-          .catch((err) => {
-            console.error("❌ Booking email failed:", err);
-          });
-
-        console.log("✅ Booking confirmation email sent to:", emailToSend);
-      } catch (mailErr) {
-        console.error("❌ Booking email failed:", mailErr);
-      }
+        .catch((err) => {
+          console.error("❌ Mail error:", err.message);
+        });
     }
     else {
       console.warn("⚠️ No email found to send booking confirmation");

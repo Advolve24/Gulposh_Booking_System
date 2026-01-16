@@ -17,7 +17,7 @@ import blackoutRoutes from "./routes/blackout.routes.js";
 import adminBlackoutRoutes from "./routes/admin.blackout.routes.js";
 import adminUploadRoutes from "./routes/admin.upload.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js";
-import mailRoutes from "./routes/mail.js";
+import { verifySMTP } from "./utils/mailer.js";
 
 const app = express();
 
@@ -75,16 +75,18 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/blackouts", blackoutRoutes);
 app.use("/api/admin/blackouts", adminBlackoutRoutes);
 app.use("/api/invoice", invoiceRoutes);
-app.use("/api/mail", mailRoutes);
 
 /* ================= DB + START ================= */
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => {
     const port = process.env.PORT || 5000;
-    app.listen(port, () =>
-      console.log(`✅ Connected! Running on ${port}`)
-    );
+
+    app.listen(port, async () => {
+      console.log(`✅ Connected! Running on ${port}`);
+
+      await verifySMTP();
+    });
   })
   .catch((err) => {
     console.error("❌ MongoDB connection failed", err);
