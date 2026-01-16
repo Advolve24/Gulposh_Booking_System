@@ -4,203 +4,191 @@ import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { format } from "date-fns";
 import { ArrowLeft, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import AppLayout from "@/components/layout/AppLayout";
-import { listBookingsAdmin } from "@/api/admin";
+import { Button } from "@/components/ui/button";
+import { getBookingAdmin } from "@/api/admin";
 import { toast } from "sonner";
 
-/* ================= HELPERS ================= */
+/* ---------------- helpers ---------------- */
 
 const fmt = (d) => (d ? format(new Date(d), "dd MMM yyyy") : "—");
 
-const nightsBetween = (from, to) => {
-  if (!from || !to) return 0;
-  const s = new Date(from);
-  const e = new Date(to);
-  s.setHours(0, 0, 0, 0);
-  e.setHours(0, 0, 0, 0);
-  return Math.max(1, Math.round((e - s) / 86400000));
-};
-
-/* ================= PAGE ================= */
+/* ---------------- page ---------------- */
 
 export default function InvoicePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const invoiceRef = useRef(null);
+  const ref = useRef(null);
 
   const [booking, setBooking] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchInvoice();
+    (async () => {
+      try {
+        const data = await getBookingAdmin(id);
+        setBooking(data);
+      } catch {
+        toast.error("Failed to load invoice");
+      }
+    })();
   }, [id]);
 
-  const fetchInvoice = async () => {
-    try {
-      const data = await listBookingsAdmin();
-      const found = data.find((b) => b._id === id);
+  const downloadPDF = async () => {
+    const canvas = await html2canvas(ref.current, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+    });
 
-      if (!found) {
-        toast.error("Invoice not found");
-        return;
-      }
-      setBooking(found);
-    } catch {
-      toast.error("Failed to load invoice");
-    } finally {
-      setLoading(false);
-    }
+    const pdf = new jsPDF("p", "mm", "a4");
+    const w = pdf.internal.pageSize.getWidth();
+    const h = (canvas.height * w) / canvas.width;
+
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, w, h);
+    pdf.save(`Invoice-${booking._id}.pdf`);
   };
 
-  const handleDownload = async () => {
-    try {
-      const canvas = await html2canvas(invoiceRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-      });
+  if (!booking) return null;
+  
 
-      const img = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      const w = pdf.internal.pageSize.getWidth();
-      const h = (canvas.height * w) / canvas.width;
-
-      pdf.addImage(img, "PNG", 0, 0, w, h);
-      pdf.save(`Invoice-${booking.bookingId || booking._id}.pdf`);
-    } catch {
-      toast.error("Failed to download invoice");
-    }
-  };
-
-  if (loading || !booking) return null;
-
-  const nights = nightsBetween(booking.startDate, booking.endDate);
-
-  /* ===== Charges ===== */
-  const roomCharge = booking.amount || 0;
-
-  const meals = booking.meals || {}; // optional
-  const vegTotal = (meals.vegPrice || 0) * (meals.vegGuests || 0) * nights;
-  const nonVegTotal =
-    (meals.nonVegPrice || 0) * (meals.nonVegGuests || 0) * nights;
-  const comboTotal =
-    (meals.comboPrice || 0) * (meals.comboGuests || 0) * nights;
-
-  const subTotal = roomCharge + vegTotal + nonVegTotal + comboTotal;
-  const tax = Math.round(subTotal * 0.12);
-  const grandTotal = subTotal + tax;
+  const nights = booking.nights || 1;
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4">
-        {/* TOP BAR */}
-        <div className="flex items-center justify-between mb-3">
+      <div className="max-w-5xl px-0 py-0">
+        {/* top bar */}
+        <div className="flex justify-between mb-4">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-1 text-sm text-muted-foreground"
           >
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={14} /> Back to Invoices
           </button>
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleDownload}
-            className="gap-2"
-          >
-            <Download size={14} />
-            Download
-          </Button>
+          <div className="flex gap-2">
+            <Button size="lg" onClick={downloadPDF}>
+              <Download size={14} /> Download PDF
+            </Button>
+          </div>
         </div>
 
-        {/* ================= INVOICE ================= */}
+        {/* invoice */}
         <div
-          ref={invoiceRef}
-          className="bg-white border rounded-xl p-4 sm:p-6 space-y-6 text-sm"
+          ref={ref}
+          className="bg-white rounded-2xl border shadow-sm p-6 text-[13px]"
         >
-          {/* HEADER */}
-          <div className="flex gap-3 items-start">
-            <div className="h-10 w-10 rounded bg-primary text-white flex items-center justify-center font-semibold">
-              V
+          {/* header */}
+          <div className="flex justify-between mb-6">
+            <img src="/pdfLogo.png" className="h-14" />
+            <h1 className="text-xl font-semibold">Invoice</h1>
+          </div>
+
+          {/* address + invoice no */}
+          <div className="flex justify-between mb-6">
+            <div className="space-y-1">
+              <p className="font-semibold text-[16px]">Villa Address:</p>
+              <p className="text-[14px]">Villa Gulposh Vidyasagar Properties Pvt Ltd.</p>
+              <p className="text-[14px]">Kirawali, Karjat – 410201</p>
+              <p className="text-[14px]">stay@villagulposh.com</p>
+              <p className="text-[14px]">+91 98200 74617</p>
             </div>
-            <div className="flex-1">
-              <div className="font-semibold text-base">
-                Villa Gulposh Vidyasagar Properties Pvt Ltd.
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Kirawali, Karjat – 410201
-              </div>
-              <div className="text-xs text-muted-foreground">
-                stay@villagulposh.com · +91 98200 74617
-              </div>
+
+            <div className="text-right">
+              <p className="text-muted-foreground text-[16px]">Invoice Number</p>
+              <p className="font-semibold text-[14px]">
+                INV-{booking._id.slice(-6).toUpperCase()}
+              </p>
             </div>
           </div>
 
-          {/* BOOKING SUMMARY */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border rounded-lg p-3 text-xs">
-            <Meta label="Check-in">{fmt(booking.startDate)}</Meta>
-            <Meta label="Check-out">{fmt(booking.endDate)}</Meta>
-            <Meta label="Duration">{nights} Nights</Meta>
-            <Meta label="Guests">{booking.guests} Guests</Meta>
-            <Meta label="Room" className="sm:col-span-2">
-              {booking.room?.name || "Entire Villa"}
-            </Meta>
+          {/* guest + stay */}
+          <div className="grid grid-cols-[1.2fr_1fr] gap-4 mb-6 border rounded-xl p-3">
+            <div>
+              <p className="font-semibold mb-1 text-[16px]">Guest Info:</p>
+              <p className="text-[14px]">Name: {booking.user?.name}</p>
+              <p className="text-[14px]">Phone: {booking.user?.phone}</p>
+              <p className="text-[14px]">Email: {booking.user?.email}</p>
+            </div>
+
+            <div className="grid grid-cols-3 rounded-lg bg-muted/30 p-3 gap-3">
+              <Meta label="Check In">{fmt(booking.startDate)}</Meta>
+              <Meta label="Check Out">{fmt(booking.endDate)}</Meta>
+              <Meta label="Booking ID">
+                INV-{booking._id.slice(-6).toUpperCase()}
+              </Meta>
+              <Meta label="Nights">{nights}</Meta>
+              <Meta label="Rooms">1</Meta>
+              <Meta label="Room Type">{booking.room?.name}</Meta>
+            </div>
           </div>
 
-          {/* CHARGES TABLE */}
-          <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="px-4 py-2 text-left">Description</th>
-                  <th className="px-4 py-2 text-left">Rate</th>
-                  <th className="px-4 py-2 text-right">Total</th>
-                </tr>
-              </thead>
-
-              <tbody>
+          {/* table */}
+          <table className="w-full mb-6">
+            <thead className="bg-muted/40">
+              <tr>
+                <th className="text-left px-4 py-3">Description</th>
+                <th className="text-left px-4 py-3">Rate</th>
+                <th className="text-right px-4 py-3">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <Row
+                label="Room Charges"
+                rate={`₹${booking.pricePerNight} × ${nights}`}
+                total={booking.roomTotal}
+              />
+              {booking.vegGuests > 0 && (
                 <Row
-                  label="Room Charges"
-                  rate={`₹${Math.round(roomCharge / nights)} × ${nights} night(s)`}
-                  total={roomCharge}
+                  label="Veg Meal"
+                  rate={`₹${booking.room?.mealPriceVeg} × ${booking.vegGuests}`}
+                  total={
+                    booking.room?.mealPriceVeg * booking.vegGuests
+                  }
                 />
+              )}
+              {booking.nonVegGuests > 0 && (
+                <Row
+                  label="Non-Veg Meal"
+                  rate={`₹${booking.room?.mealPriceNonVeg} × ${booking.nonVegGuests}`}
+                  total={
+                    booking.room?.mealPriceNonVeg *
+                    booking.nonVegGuests
+                  }
+                />
+              )}
+            </tbody>
+          </table>
 
-                {vegTotal > 0 && (
-                  <Row
-                    label="Veg Meal"
-                    rate={`₹${meals.vegPrice} × ${meals.vegGuests} guest(s) × ${nights} night(s)`}
-                    total={vegTotal}
-                  />
-                )}
+          {/* totals + payment */}
+          <div className="grid grid-cols-2 mb-8">
+            <div>
+              <p className="font-semibold mb-1">Payment Info:</p>
+              <p>{booking.user?.name}</p>
+              <p>{booking.paymentProvider} – {booking.paymentId}</p>
+              <p>Amount: ₹{booking.amount}</p>
+            </div>
 
-                {nonVegTotal > 0 && (
-                  <Row
-                    label="Non-Veg Meal"
-                    rate={`₹${meals.nonVegPrice} × ${meals.nonVegGuests} guest(s) × ${nights} night(s)`}
-                    total={nonVegTotal}
-                  />
-                )}
-
-                {/* {comboTotal > 0 && (
-                  <Row
-                    label="Combo Meal"
-                    rate={`₹${meals.comboPrice} × ${meals.comboGuests} guest(s) × ${nights} night(s)`}
-                    total={comboTotal}
-                  />
-                )} */}
-              </tbody>
-            </table>
+            <div>
+              <Total label="SubTotal" value={booking.amount} />
+              <Total label="Tax 12%" value={Math.round(booking.amount * 0.12)} />
+              <div className="flex justify-between font-semibold mt-2">
+                <span>Grand Total</span>
+                <span className="text-[16px]">
+                  ₹{Math.round(booking.amount * 1.12).toLocaleString("en-IN")}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* TOTALS */}
-          <div className="max-w-sm ml-auto space-y-2">
-            <TotalRow label="SubTotal" value={subTotal} />
-            <TotalRow label="Tax 12%" value={tax} />
-            <div className="border-t pt-2 flex justify-between font-semibold text-base text-red-600">
-              <span>Grand Total</span>
-              <span>₹{grandTotal.toLocaleString("en-IN")}</span>
-            </div>
+          {/* signature */}
+          <div className="text-right mb-6">
+            <p className="italic mb-6">Signature</p>
+            <p className="font-semibold">Jhon Donate</p>
+            <p className="text-xs text-muted-foreground">Accounts Manager</p>
+          </div>
+
+          <div className="border-t pt-3 text-center text-[11px] text-muted-foreground">
+            Terms And Condition: Your use of the website constitutes agreement
+            to our Privacy Policy.
           </div>
         </div>
       </div>
@@ -208,34 +196,28 @@ export default function InvoicePage() {
   );
 }
 
-/* ================= SMALL COMPONENTS ================= */
+/* ---------------- small components ---------------- */
 
-function Meta({ label, children }) {
-  return (
-    <div>
-      <div className="text-muted-foreground text-[11px]">{label}</div>
-      <div className="font-medium">{children}</div>
-    </div>
-  );
-}
+const Meta = ({ label, children }) => (
+  <div>
+    <p className="text-[14px] text-muted-foreground">{label}</p>
+    <p className="font-medium text-[16px]">{children}</p>
+  </div>
+);
 
-function Row({ label, rate, total }) {
-  return (
-    <tr className="border-t">
-      <td className="px-4 py-2">{label}</td>
-      <td className="px-4 py-2 text-muted-foreground">{rate}</td>
-      <td className="px-4 py-2 text-right font-medium">
-        ₹{total.toLocaleString("en-IN")}
-      </td>
-    </tr>
-  );
-}
+const Row = ({ label, rate, total }) => (
+  <tr className="border-t">
+    <td className="px-4 py-3 text-[14px]">{label}</td>
+    <td className="px-4 py-3 text-[14px]">{rate}</td>
+    <td className="px-4 py-3 text-right text-[14px]">
+      ₹{total.toLocaleString("en-IN")}
+    </td>
+  </tr>
+);
 
-function TotalRow({ label, value }) {
-  return (
-    <div className="flex justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span>₹{value.toLocaleString("en-IN")}</span>
-    </div>
-  );
-}
+const Total = ({ label, value }) => (
+  <div className="flex justify-between text-sm py-1">
+    <span className="text-muted-foreground">{label}</span>
+    <span>₹{value.toLocaleString("en-IN")}</span>
+  </div>
+);

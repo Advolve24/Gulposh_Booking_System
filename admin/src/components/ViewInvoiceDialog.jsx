@@ -105,171 +105,143 @@ export default function InvoicePage() {
         </div>
 
         {/* ================= INVOICE ================= */}
-        <div
-          ref={invoiceRef}
-          className="bg-white border rounded-xl p-6 space-y-6 text-sm"
-        >
-          {/* HEADER */}
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-lg font-semibold">
-                {booking.property?.name || "Property"}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {booking.property?.address || ""}
-              </p>
-            </div>
+      <div
+  ref={invoiceRef}
+  className="bg-white rounded-2xl shadow-sm border p-8 font-sans text-[13px] leading-[1.45]"
+>
+  {/* TOP */}
+  <div className="flex justify-between items-start mb-6">
+    <div className="space-y-1">
+      <img src="/gulposh-logo.svg" className="h-9" alt="Gulposh" />
+      <p className="text-[11px] text-muted-foreground tracking-wide">
+        IN REPOSE
+      </p>
+    </div>
 
-            <div className="text-right">
-              <div className="text-base font-semibold">
-                TAX INVOICE
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Invoice No:{" "}
-                {booking.invoiceNo || booking._id}
-              </div>
-            </div>
-          </div>
+    <div className="text-right">
+      <h1 className="text-xl font-semibold">Invoice</h1>
+    </div>
+  </div>
 
-          {/* BILL + META */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border rounded-lg p-4">
-            {/* BILL TO */}
-            <div className="space-y-1">
-              <div className="font-medium">Bill To</div>
-              <div>{booking.user?.name || "—"}</div>
-              <div>{booking.user?.phone || "—"}</div>
-              <div className="text-muted-foreground">
-                {booking.user?.email || "—"}
-              </div>
-            </div>
+  {/* ADDRESS + INVOICE NO */}
+  <div className="flex justify-between mb-6">
+    <div className="text-sm space-y-1">
+      <p className="font-semibold">Villa Address:</p>
+      <p>Villa Gulposh Vidyasagar Properties Pvt Ltd.</p>
+      <p>Kirawali, Karjat – 410201</p>
+      <p>stay@villagulposh.com</p>
+      <p>+91 98200 74617</p>
+    </div>
 
-            {/* META */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <Meta label="Invoice Date">
-                {fmt(booking.createdAt)}
-              </Meta>
-              <Meta label="Booking ID">
-                {booking.bookingId || booking._id}
-              </Meta>
-              <Meta label="Order ID">
-                {booking._id}
-              </Meta>
-              <Meta label="Payment ID">
-                {booking.paymentId || "—"}
-              </Meta>
-            </div>
-          </div>
+    <div className="text-right text-sm">
+      <p className="text-muted-foreground">Invoice Number</p>
+      <p className="font-semibold">
+        INV-{booking._id.slice(-6).toUpperCase()}
+      </p>
+    </div>
+  </div>
 
-          {/* BOOKING DETAILS */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border rounded-lg p-4 text-xs">
-            <Meta label="Check-in">
-              {fmt(booking.startDate)}
-            </Meta>
-            <Meta label="Check-out">
-              {fmt(booking.endDate)}
-            </Meta>
-            <Meta label="Duration">
-              {nights} Nights
-            </Meta>
-            <Meta label="Guests">
-              {booking.guests} Guests
-            </Meta>
-          </div>
+  {/* GUEST + STAY CARD */}
+  <div className="grid grid-cols-[1.2fr_1fr] gap-4 mb-6 bg-muted/30 rounded-xl p-4">
+    <div className="space-y-1">
+      <p className="font-semibold">Guest Info:</p>
+      <p>Name: {booking.user?.name}</p>
+      <p>Phone: {booking.user?.phone}</p>
+      <p>Email: {booking.user?.email}</p>
+    </div>
 
-          {/* TABLE */}
-          <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="px-4 py-2 text-left">#</th>
-                  <th className="px-4 py-2 text-left">
-                    Description
-                  </th>
-                  <th className="px-4 py-2 text-center">
-                    Qty
-                  </th>
-                  <th className="px-4 py-2 text-right">
-                    Rate
-                  </th>
-                  <th className="px-4 py-2 text-right">
-                    Amount
-                  </th>
-                </tr>
-              </thead>
+    <div className="grid grid-cols-3 gap-3 text-sm">
+      <Meta label="Check In">{fmt(booking.startDate)}</Meta>
+      <Meta label="Check Out">{fmt(booking.endDate)}</Meta>
+      <Meta label="Booking ID">
+        INV-{booking._id.slice(-6).toUpperCase()}
+      </Meta>
 
-              <tbody>
-                <tr className="border-t">
-                  <td className="px-4 py-2">1</td>
-                  <td className="px-4 py-2">
-                    Room / Accommodation Charges
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    {nights} Nights
-                  </td>
-                  <td className="px-4 py-2 text-right">
-                    ₹{ratePerNight}
-                  </td>
-                  <td className="px-4 py-2 text-right">
-                    ₹
-                    {booking.amount.toLocaleString(
-                      "en-IN"
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      <Meta label="Nights">{booking.nights}</Meta>
+      <Meta label="Rooms">1</Meta>
+      <Meta label="Room Type">{booking.room?.name}</Meta>
+    </div>
+  </div>
 
-          {/* TOTAL */}
-          <div className="flex justify-end">
-            <div className="w-full sm:w-64 space-y-2">
-              <TotalRow label="Sub Total">
-                ₹
-                {booking.amount.toLocaleString(
-                  "en-IN"
-                )}
-              </TotalRow>
+  {/* TABLE */}
+  <div className="border rounded-xl overflow-hidden mb-6">
+    <table className="w-full text-sm">
+      <thead className="bg-muted/40">
+        <tr>
+          <th className="px-4 py-3 text-left font-medium">Description</th>
+          <th className="px-4 py-3 text-left font-medium">Rate</th>
+          <th className="px-4 py-3 text-right font-medium">Total</th>
+        </tr>
+      </thead>
 
-              <TotalRow label="Tax (0%)">
-                ₹0.00
-              </TotalRow>
+      <tbody>
+        <Row
+          label="Room Charges"
+          rate={`₹${booking.pricePerNight} × ${booking.nights}`}
+          total={booking.roomTotal}
+        />
 
-              <div className="border-t pt-2 flex justify-between font-semibold">
-                <span>Grand Total</span>
-                <span>
-                  ₹
-                  {booking.amount.toLocaleString(
-                    "en-IN"
-                  )}
-                </span>
-              </div>
-            </div>
-          </div>
+        {booking.vegGuests > 0 && (
+          <Row
+            label="Veg Meal"
+            rate={`₹${booking.room?.mealPriceVeg} × ${booking.vegGuests}`}
+            total={booking.room?.mealPriceVeg * booking.vegGuests}
+          />
+        )}
 
-          {/* FOOTER */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-4 border-t">
-            <div>
-              <div className="font-medium mb-1">
-                Payment Information
-              </div>
-              <div>Status: Paid</div>
-              <div>Method: Razorpay</div>
-              <div>
-                Transaction ID:{" "}
-                {booking.paymentId || "—"}
-              </div>
-            </div>
+        {booking.nonVegGuests > 0 && (
+          <Row
+            label="Non-Veg Meal"
+            rate={`₹${booking.room?.mealPriceNonVeg} × ${booking.nonVegGuests}`}
+            total={booking.room?.mealPriceNonVeg * booking.nonVegGuests}
+          />
+        )}
+      </tbody>
+    </table>
+  </div>
 
-            <div className="text-right italic">
-              Authorised Signature
-            </div>
-          </div>
+  {/* PAYMENT + TOTAL */}
+  <div className="grid grid-cols-2 gap-6 mb-8">
+    <div className="space-y-1 text-sm">
+      <p className="font-semibold">Payment Info:</p>
+      <p>{booking.user?.name}</p>
+      <p>
+        {booking.paymentProvider} – {booking.paymentId}
+      </p>
+      <p>Amount: ₹{booking.amount}</p>
+    </div>
 
-          <div className="text-[10px] text-muted-foreground text-center">
-            This is a computer-generated invoice and
-            does not require a physical signature.
-          </div>
-        </div>
+    <div className="text-sm">
+      <TotalRow label="SubTotal" value={booking.amount} />
+      <TotalRow label="Tax 12%" value={Math.round(booking.amount * 0.12)} />
+
+      <div className="flex justify-between font-semibold text-base mt-2">
+        <span>Grand Total</span>
+        <span>
+          ₹{(booking.amount * 1.12).toLocaleString("en-IN")}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {/* SIGNATURE */}
+  <div className="flex justify-end mb-6">
+    <div className="text-right">
+      <p className="italic mb-6">Signature</p>
+      <p className="font-semibold">Jhon Donate</p>
+      <p className="text-xs text-muted-foreground">
+        Accounts Manager
+      </p>
+    </div>
+  </div>
+
+  {/* FOOTER */}
+  <div className="border-t pt-3 text-center text-[11px] text-muted-foreground">
+    Terms And Condition: Your use of the website constitutes agreement
+    to our Privacy Policy.
+  </div>
+</div>
+
       </div>
     </AppLayout>
   );
@@ -280,21 +252,29 @@ export default function InvoicePage() {
 function Meta({ label, children }) {
   return (
     <div>
-      <div className="text-muted-foreground text-[11px]">
-        {label}
-      </div>
-      <div className="font-medium">{children}</div>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="font-medium">{children}</p>
     </div>
   );
 }
 
-function TotalRow({ label, children }) {
+function Row({ label, rate, total }) {
   return (
-    <div className="flex justify-between text-sm">
-      <span className="text-muted-foreground">
-        {label}
-      </span>
-      <span>{children}</span>
+    <tr className="border-t">
+      <td className="px-4 py-3">{label}</td>
+      <td className="px-4 py-3">{rate}</td>
+      <td className="px-4 py-3 text-right">
+        ₹{total.toLocaleString("en-IN")}
+      </td>
+    </tr>
+  );
+}
+
+function TotalRow({ label, value }) {
+  return (
+    <div className="flex justify-between py-1">
+      <span className="text-muted-foreground">{label}</span>
+      <span>₹{value.toLocaleString("en-IN")}</span>
     </div>
   );
 }
