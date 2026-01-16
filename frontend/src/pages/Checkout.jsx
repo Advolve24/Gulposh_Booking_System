@@ -198,35 +198,43 @@ export default function Checkout() {
       },
 
       handler: async (resp) => {
-        try {
-          toast.loading("Confirming your booking...");
+  let toastId;
 
-          const { data } = await api.post("/payments/verify", {
-            ...resp,
-            roomId,
-            startDate: toYMD(range.from),
-            endDate: toYMD(range.to),
-            guests: g,
-            withMeal,
-            vegGuests,
-            nonVegGuests,
-            contactName: form.name,
-            contactEmail: form.email,
-            contactPhone: form.phone,
-            ...address,
-          });
+  try {
+    // 🔄 show loading toast and keep its id
+    toastId = toast.loading("Confirming your booking...");
 
-          toast.success("Booking confirmed 🎉");
-          sessionStorage.removeItem("searchParams");
+    const { data } = await api.post("/payments/verify", {
+      ...resp,
+      roomId,
+      startDate: toYMD(range.from),
+      endDate: toYMD(range.to),
+      guests: g,
+      withMeal,
+      vegGuests,
+      nonVegGuests,
+      contactName: form.name,
+      contactEmail: form.email,
+      contactPhone: form.phone,
+      ...address,
+    });
 
-          navigate(`/booking/${data.booking._id}`);
-        } catch (err) {
-          console.error("Payment verified but booking failed:", err);
-          toast.error(
-            "Payment successful, but booking confirmation failed. Please contact support."
-          );
-        }
-      },
+    // ✅ replace loading toast
+    toast.success("Booking confirmed 🎉", { id: toastId });
+
+    sessionStorage.removeItem("searchParams");
+    navigate(`/booking/${data.booking._id}`);
+  } catch (err) {
+    console.error("Payment verified but booking failed:", err);
+
+    // ❌ replace loading toast with error
+    toast.error(
+      "Payment successful, but booking confirmation failed. Please contact support.",
+      { id: toastId }
+    );
+  }
+},
+
 
       modal: {
         ondismiss: () => {
