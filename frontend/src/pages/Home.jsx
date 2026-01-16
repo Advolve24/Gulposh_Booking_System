@@ -193,18 +193,15 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#fffaf7] text-[#2A201B]">
       {/* ======================================================
-          HERO (Exact like screenshot 2)
+          HERO 
       ====================================================== */}
       <section
-        ref={heroRef}
-        className="
-        relative isolate overflow-hidden
-        h-[85vh]
-        sm:h-[92svh]
-        w-full
-         
-      "
-      >
+  ref={heroRef}
+  className="
+    relative isolate overflow-hidden
+    w-full
+    items-center pt-10 pb-10 sm:pt-14 sm:pb-14"
+    >
 
 
         {/* ================= BACKGROUND ================= */}
@@ -227,7 +224,8 @@ export default function Home() {
         </div>
 
         {/* ================= CONTENT ================= */}
-        <div className="mx-auto max-w-7xl px-4 pt-10 sm:pt-14 pb-10 sm:pb-12 md:pt-14 md:pb-16">
+       <div className="mx-auto max-w-7xl px-4 text-center">
+
 
           {/* LOCATION PILL */}
           <motion.div
