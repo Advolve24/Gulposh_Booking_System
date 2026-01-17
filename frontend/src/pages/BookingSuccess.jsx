@@ -175,7 +175,7 @@ export default function BookingSuccess() {
                     <img
                         src={roomImage}
                         alt={room.name}
-                        className="h-30 md:h-full w-full object-cover"
+                        className="h-20 md:h-full w-full object-cover"
                     />
 
                     <div className="p-6 space-y-4">
@@ -266,7 +266,10 @@ export default function BookingSuccess() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
+                        {/* RIGHT — ADDRESS */}
+                        <div className="flex items-start gap-3">
                             {/* PHONE */}
                             <div className="flex items-start gap-3">
                                 <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
@@ -277,11 +280,6 @@ export default function BookingSuccess() {
                                     </div>
                                 </div>
                             </div>
-
-                        </div>
-
-                        {/* RIGHT — ADDRESS */}
-                        <div className="flex items-start gap-3">
                             <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
                             <div>
                                 <div className="text-xs text-muted-foreground mb-1">
