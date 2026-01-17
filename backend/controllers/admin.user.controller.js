@@ -277,6 +277,19 @@ export const createUserAdmin = async (req, res) => {
 };
 
 
+
+const nightsBetween = (from, to) => {
+  const a = new Date(from);
+  const b = new Date(to);
+
+  a.setHours(0, 0, 0, 0);
+  b.setHours(0, 0, 0, 0);
+
+  return Math.max(1, Math.round((b - a) / 86400000));
+};
+
+
+
 export const updateBookingAdmin = async (req, res) => {
   try {
     const { id } = req.params;
@@ -294,15 +307,30 @@ export const updateBookingAdmin = async (req, res) => {
       startDate,
       endDate,
       guests,
+
       withMeal,
       vegGuests = 0,
       nonVegGuests = 0,
       comboGuests = 0,
+
       status,
+
+      fullName,
+      phone,
+      govIdType,
+      govIdNumber,
+      amountPaid,
+      paymentMode,
     } = req.body || {};
 
     if (startDate) booking.startDate = new Date(startDate);
     if (endDate) booking.endDate = new Date(endDate);
+
+    if (booking.endDate <= booking.startDate) {
+      return res.status(400).json({
+        message: "Check-out date must be after check-in date",
+      });
+    }
 
     const nights = nightsBetween(booking.startDate, booking.endDate);
     booking.nights = nights;
@@ -332,28 +360,39 @@ export const updateBookingAdmin = async (req, res) => {
     const vegTotal = booking.vegGuests * vegPrice * nights;
     const nonVegTotal = booking.nonVegGuests * nonVegPrice * nights;
 
-    const mealTotal = booking.withMeal ? vegTotal + nonVegTotal : 0;
-    booking.mealTotal = mealTotal;
+    booking.mealTotal = booking.withMeal ? vegTotal + nonVegTotal : 0;
 
     booking.roomTotal = booking.pricePerNight * nights;
-
     booking.amount = booking.roomTotal + booking.mealTotal;
 
     if (status) booking.status = status;
 
+    booking.adminMeta = {
+      ...(booking.adminMeta || {}),
+      fullName: fullName ?? booking.adminMeta?.fullName,
+      phone: phone ?? booking.adminMeta?.phone,
+      govIdType: govIdType ?? booking.adminMeta?.govIdType,
+      govIdNumber: govIdNumber ?? booking.adminMeta?.govIdNumber,
+      amountPaid:
+        typeof amountPaid === "number"
+          ? amountPaid
+          : booking.adminMeta?.amountPaid,
+      paymentMode: paymentMode ?? booking.adminMeta?.paymentMode,
+    };
     await booking.save();
 
-    res.json({
+    return res.json({
       ok: true,
       booking,
     });
   } catch (err) {
     console.error("updateBookingAdmin error:", err);
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message || "Failed to update booking",
     });
   }
 };
+
 
 
 export const getBookingAdmin = async (req, res) => {

@@ -40,6 +40,7 @@ import {
 import MobileBookingCard from "@/components/MobileBookingCard";
 import BookingTable from "@/components/BookingTable";
 import BookingViewPopup from "@/components/BookingViewPopup";
+import EditBookingDialog from "@/components/EditBookingDialog";
 import { getBookingAdmin } from "../api/admin";
 
 
@@ -162,6 +163,20 @@ function UpcomingBookingCard({ booking }) {
 }
 
 
+const downloadInvoiceDirect = (bookingId) => {
+  const toastId = toast.loading("PDF is generating...");
+  const url = `${import.meta.env.VITE_API_URL}/invoice/${bookingId}/download`;
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_self";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => {
+    toast.success("Invoice downloaded", { id: toastId });
+  }, 2000);
+};
+
 
 export default function Dashboard() {
   const [showBlockHint, setShowBlockHint] = useState(false);
@@ -177,6 +192,7 @@ export default function Dashboard() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const navigate = useNavigate();
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [editBooking, setEditBooking] = useState(null);
 
 
   useEffect(() => {
@@ -702,8 +718,9 @@ export default function Dashboard() {
               navigate(`/bookings/${b._id}/invoice`)
             }
             onDownloadInvoice={(b) => {
-              navigate(`/bookings/${b._id}/invoice?download=true`);
+              downloadInvoiceDirect(b._id);
             }}
+            onEditBooking={(b) => setEditBooking(b)}
 
           />
 
@@ -726,9 +743,9 @@ export default function Dashboard() {
                 navigate(`/bookings/${booking._id}/invoice`)
               }
               onDownloadInvoice={(booking) => {
-                navigate(`/bookings/${booking._id}/invoice?download=true`);
+                downloadInvoiceDirect(booking._id);
               }}
-
+              onEditBooking={(b) => setEditBooking(b)}
 
             />
           ))}
@@ -742,6 +759,12 @@ export default function Dashboard() {
         onClose={() => setSelectedBooking(null)}
       />
 
+      <EditBookingDialog
+        open={!!editBooking}
+        booking={editBooking}
+        onOpenChange={() => setEditBooking(null)}
+        reload={bookings}
+      />
 
     </AppLayout>
   );

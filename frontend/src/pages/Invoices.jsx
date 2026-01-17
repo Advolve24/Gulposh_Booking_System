@@ -10,7 +10,6 @@ export default function Invoices() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  /* ================= LOAD BOOKINGS ================= */
   useEffect(() => {
     api
       .get("/bookings/mine")
@@ -25,34 +24,25 @@ export default function Invoices() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* ================= VIEW INVOICE ================= */
   const viewInvoice = (id) => {
     navigate(`/invoice-view/${id}`);
   };
 
-  /* ================= DIRECT DOWNLOAD (NO REDIRECT) ================= */
   const downloadInvoice = async (id) => {
-  try {
-    const res = await api.get(`/invoice/${id}/download`, {
-      responseType: "blob",
-    });
+  const res = await api.get(`/invoice/user/${id}/download`, {
+    responseType: "blob",
+  });
 
-    const blob = new Blob([res.data], { type: "application/pdf" });
-    const url = window.URL.createObjectURL(blob);
+  const blob = new Blob([res.data], { type: "application/pdf" });
+  const url = window.URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `invoice-${id.slice(-5).toUpperCase()}.pdf`;
-    document.body.appendChild(a);
-    a.click();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Invoice-${id.slice(-6)}.pdf`;
+  a.click();
 
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error("Invoice download failed", err);
-  }
+  window.URL.revokeObjectURL(url);
 };
-
 
 
   return (
@@ -76,7 +66,6 @@ export default function Invoices() {
         </div>
       ) : (
         <>
-          {/* ================= MOBILE CARDS ================= */}
           <div className="space-y-3 md:hidden">
             {bookings.map((b) => {
               const shortId = b._id.slice(-5).toUpperCase();

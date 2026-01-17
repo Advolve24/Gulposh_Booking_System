@@ -34,7 +34,6 @@ export default function VillaInvoice() {
 
 
 
-  /* ================= FETCH BOOKING ================= */
   useEffect(() => {
     api
       .get(`/bookings/${id}`)
@@ -50,7 +49,6 @@ export default function VillaInvoice() {
     );
   }
 
-  /* ================= CALCULATIONS ================= */
   const nights = booking.nights || 1;
   const roomTotal = booking.pricePerNight * nights;
 
@@ -67,8 +65,7 @@ export default function VillaInvoice() {
   const taxAmount = (subTotal * taxPercent) / 100;
   const grandTotal = subTotal + taxAmount;
 
-  /* ================= PDF ================= */
- const generatePDF = async () => {
+const generatePDF = async (isAuto = false) => {
   if (isDownloadingRef.current) return;
   isDownloadingRef.current = true;
 
@@ -81,11 +78,9 @@ export default function VillaInvoice() {
   let clone;
 
   try {
-    /* ================= CREATE OFFSCREEN CLONE ================= */
     clone = original.cloneNode(true);
 
     clone.style.width = "1024px";
-    clone.style.maxWidth = "1024px";
     clone.style.position = "fixed";
     clone.style.left = "-9999px";
     clone.style.top = "0";
@@ -94,22 +89,20 @@ export default function VillaInvoice() {
 
     document.body.appendChild(clone);
 
-    /* ================= WAIT FOR IMAGES ================= */
     const images = clone.querySelectorAll("img");
     await Promise.all(
       [...images].map(
         (img) =>
           img.complete ||
-          new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
+          new Promise((res) => {
+            img.onload = res;
+            img.onerror = res;
           })
       )
     );
 
     await new Promise((r) => setTimeout(r, 200));
 
-    /* ================= RENDER CANVAS ================= */
     const canvas = await html2canvas(clone, {
       scale: 2,
       useCORS: true,
@@ -119,13 +112,18 @@ export default function VillaInvoice() {
 
     const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-    /* ================= CREATE PDF ================= */
     const pdf = new jsPDF("p", "pt", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = (canvas.height * pageWidth) / canvas.width;
 
     pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, pageHeight);
-    pdf.save(`invoice-${booking._id}.pdf`);
+    pdf.save(`Villa-Gulposh-Invoice-${booking._id.slice(-6)}.pdf`);
+
+    if (isAuto) {
+      setTimeout(() => {
+        window.close();
+      }, 300);
+    }
   } catch (err) {
     console.error("PDF generation failed:", err);
   } finally {
@@ -133,6 +131,7 @@ export default function VillaInvoice() {
     isDownloadingRef.current = false;
   }
 };
+
 
   return (
     <div className="min-h-screen bg-[#faf7f4] px-3 md:px-6 py-4 md:py-8">

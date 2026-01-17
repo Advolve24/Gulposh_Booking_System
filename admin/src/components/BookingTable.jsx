@@ -74,23 +74,24 @@ export default function BookingTable({
   onRowClick,
   onViewInvoice,
   onDownloadInvoice,
+  onEditBooking,
 }) {
 
 
   const sortedBookings = useMemo(() => {
-  return [...bookings].sort((a, b) => {
-    const aStart = new Date(a.startDate).getTime();
-    const bStart = new Date(b.startDate).getTime();
+    return [...bookings].sort((a, b) => {
+      const aStart = new Date(a.startDate).getTime();
+      const bStart = new Date(b.startDate).getTime();
 
-    if (aStart !== bStart) {
-      return bStart - aStart;
-    }
+      if (aStart !== bStart) {
+        return bStart - aStart;
+      }
 
-    const aEnd = new Date(a.endDate).getTime();
-    const bEnd = new Date(b.endDate).getTime();
-    return bEnd - aEnd;
-  });
-}, [bookings]);
+      const aEnd = new Date(a.endDate).getTime();
+      const bEnd = new Date(b.endDate).getTime();
+      return bEnd - aEnd;
+    });
+  }, [bookings]);
 
 
 
@@ -194,6 +195,15 @@ export default function BookingTable({
                         }}
                       >
                         View Booking
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditBooking?.(b);
+                        }}
+                      >
+                        Edit Booking
                       </DropdownMenuItem>
 
                       <DropdownMenuItem

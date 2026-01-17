@@ -3,39 +3,37 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import AppLayout from "@/components/layout/AppLayout";
 import { useSearchParams } from "react-router-dom";
-import {
-  MoreHorizontal,
-  Calendar,
-  Users,
-  Moon,
-  RotateCcw,
-  CheckCircle,
-  XCircle,
-} from "lucide-react";
+import { MoreHorizontal, Calendar, Users, Moon, RotateCcw, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { getBookingAdmin } from "@/api/admin";
-
-
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Filter } from "lucide-react";
 import { listBookingsAdmin } from "@/api/admin";
 import BookingViewPopup from "@/components/BookingViewPopup";
 import BookingTable from "@/components/BookingTable";
 import MobileBookingCard from "@/components/MobileBookingCard";
+import EditBookingDialog from "@/components/EditBookingDialog";
+
+
+const downloadInvoiceDirect = (bookingId) => {
+  const toastId = toast.loading("PDF is generating...");
+
+  const url = `${import.meta.env.VITE_API_URL}/invoice/${bookingId}/download`;
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  setTimeout(() => {
+    toast.success("Invoice downloaded!", { id: toastId });
+  }, 2000);
+};
+
+
 
 
 export default function Booking() {
@@ -48,6 +46,7 @@ export default function Booking() {
   const [params] = useSearchParams();
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [search, setSearch] = useState("");
+  const [editBooking, setEditBooking] = useState(null);
 
 
   const filteredBookings = useMemo(() => {
@@ -106,21 +105,21 @@ export default function Booking() {
 
         {/* FILTER */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-start md:justify-between gap-3">
-            {/* STATUS FILTER */}
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-full md:w-[160px] h-10">
-                <div className="flex items-center gap-2">
-                  <Filter size={14} />
-                  <SelectValue placeholder="All Bookings" />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="confirmed">Paid</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* STATUS FILTER */}
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="w-full md:w-[160px] h-10">
+              <div className="flex items-center gap-2">
+                <Filter size={14} />
+                <SelectValue placeholder="All Bookings" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="confirmed">Paid</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
 
           <div className="flex md:w-auto w-full md:flex-row items-center gap-3">
             {/* SEARCH INPUT */}
@@ -135,13 +134,13 @@ export default function Booking() {
         focus:outline-none focus:ring-2 focus:ring-primary/30
       "
             />
-          {/* REFRESH */}
-          <button
-            onClick={loadBookings}
-            className="h-10 w-[14%] md:w-10 border rounded-lg flex items-center justify-center"
-          >
-            <RotateCcw size={16} />
-          </button>
+            {/* REFRESH */}
+            <button
+              onClick={loadBookings}
+              className="h-10 w-[14%] md:w-10 border rounded-lg flex items-center justify-center"
+            >
+              <RotateCcw size={16} />
+            </button>
           </div>
         </div>
 
@@ -161,15 +160,15 @@ export default function Booking() {
               }}
 
               onViewInvoice={(b) => navigate(`/bookings/${b._id}/invoice`)}
-              onDownloadInvoice={(b) =>
-                navigate(`/bookings/${b._id}/invoice?download=true`)
-              }
+              onDownloadInvoice={(b) => {
+                downloadInvoiceDirect(b._id);
+              }}
+              onEditBooking={(b) => setEditBooking(b)}
             />
 
           </div>
         </div>
 
-        {/* MOBILE VIEW */}
         {/* MOBILE VIEW */}
         <div className="sm:hidden space-y-3">
           {visible.map((b) => (
@@ -187,9 +186,10 @@ export default function Booking() {
               onViewInvoice={(booking) =>
                 navigate(`/bookings/${booking._id}/invoice`)
               }
-              onDownloadInvoice={(booking) =>
-                navigate(`/bookings/${booking._id}/invoice?download=true`)
-              }
+              onDownloadInvoice={(b) => {
+                downloadInvoiceDirect(b._id);
+              }}
+              onEditBooking={(b) => setEditBooking(b)}
             />
           ))}
         </div>
@@ -223,6 +223,13 @@ export default function Booking() {
           open={!!selectedBooking}
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
+        />
+
+        <EditBookingDialog
+          open={!!editBooking}
+          booking={editBooking}
+          onOpenChange={() => setEditBooking(null)}
+          reload={loadBookings}
         />
 
       </div>
