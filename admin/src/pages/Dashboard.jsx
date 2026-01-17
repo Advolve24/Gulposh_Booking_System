@@ -162,6 +162,20 @@ function UpcomingBookingCard({ booking }) {
 }
 
 
+const downloadInvoiceDirect = (bookingId) => {
+  const toastId = toast.loading("PDF is generating...");
+  const url = `${import.meta.env.VITE_API_URL}/invoice/${bookingId}/download`;
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_self";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => {
+    toast.success("Invoice downloaded", { id: toastId });
+  }, 2000);
+};
+
 
 export default function Dashboard() {
   const [showBlockHint, setShowBlockHint] = useState(false);
@@ -702,7 +716,7 @@ export default function Dashboard() {
               navigate(`/bookings/${b._id}/invoice`)
             }
             onDownloadInvoice={(b) => {
-              navigate(`/bookings/${b._id}/invoice?download=true`);
+              downloadInvoiceDirect(b._id);
             }}
 
           />
@@ -726,7 +740,7 @@ export default function Dashboard() {
                 navigate(`/bookings/${booking._id}/invoice`)
               }
               onDownloadInvoice={(booking) => {
-                navigate(`/bookings/${booking._id}/invoice?download=true`);
+                downloadInvoiceDirect(booking._id);
               }}
 
 

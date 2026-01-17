@@ -18,7 +18,6 @@ api.interceptors.request.use((config) => {
 
 let isRedirecting = false;
 
-
 api.interceptors.response.use(
   (res) => res,
   (err) => {
