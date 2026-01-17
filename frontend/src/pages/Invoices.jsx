@@ -28,19 +28,21 @@ export default function Invoices() {
     navigate(`/invoice-view/${id}`);
   };
 
-  const downloadInvoice = (id) => {
-  const iframe = document.createElement("iframe");
-  iframe.style.display = "none";
+  const downloadInvoice = async (id) => {
+  const res = await api.get(`/invoice/user/${id}/download`, {
+    responseType: "blob",
+  });
 
-  iframe.src = `/invoice-view/${id}?download=true`;
+  const blob = new Blob([res.data], { type: "application/pdf" });
+  const url = window.URL.createObjectURL(blob);
 
-  document.body.appendChild(iframe);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Invoice-${id.slice(-6)}.pdf`;
+  a.click();
 
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 3000);
+  window.URL.revokeObjectURL(url);
 };
-
 
 
   return (
