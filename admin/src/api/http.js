@@ -25,7 +25,6 @@ api.interceptors.response.use(
     const status = err.response?.status;
     const url = err.config?.url;
 
-    // Ignore auth errors during login / init
     if (
       status === 401 &&
       (url?.includes("/admin/login") || url?.includes("/admin/me"))

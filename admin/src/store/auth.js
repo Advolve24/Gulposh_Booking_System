@@ -18,10 +18,12 @@ export const useAuth = create((set) => ({
 
 
   login: async (email, password) => {
-    const user = await adminLogin(email, password);
-    set({ user });
-    return user;
-  },
+  await adminLogin(email, password);
+  const me = await adminMe();   
+  set({ user: me });
+  return me;
+},
+
 
   logout: async () => {
     try {
