@@ -8,6 +8,22 @@ const nightsBetween = (start, end) => {
   return Math.max(diff, 1);
 };
 
+const daysBetweenDates = (from, to) => {
+  const d1 = new Date(from);
+  const d2 = new Date(to);
+
+  d1.setHours(0, 0, 0, 0);
+  d2.setHours(0, 0, 0, 0);
+
+  return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+};
+
+const getRefundPolicy = (daysBeforeCheckIn) => {
+  if (daysBeforeCheckIn >= 10) return 100;
+  if (daysBeforeCheckIn >= 5) return 50;
+  return 0;
+};
+
 
 export const getMyBookings = async (req, res) => {
   try {
@@ -103,8 +119,14 @@ export const getBooking = async (req, res) => {
 };
 
 
+/* ======================================================
+   CANCEL MY BOOKING
+===================================================== */
+
 export const cancelMyBooking = async (req, res) => {
   try {
+    const { reason } = req.body;
+
     const booking = await Booking.findOne({
       _id: req.params.id,
       user: req.user.id,
@@ -114,21 +136,59 @@ export const cancelMyBooking = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    if (new Date(booking.startDate) <= new Date()) {
+    if (booking.status === "cancelled") {
+      return res.json({
+        ok: true,
+        booking,
+        message: "Booking already cancelled",
+      });
+    }
+
+    const today = new Date();
+    const checkIn = new Date(booking.startDate);
+
+    if (today >= checkIn) {
       return res.status(400).json({
         message: "Stay already started; cannot cancel",
       });
     }
 
-    if (booking.status === "cancelled") {
-      return res.json({ ok: true, booking });
-    }
+    // 📆 Days before check-in
+    const daysBeforeCheckIn = daysBetweenDates(today, checkIn);
+
+    // 💰 Refund calculation
+    const refundPercentage = getRefundPolicy(daysBeforeCheckIn);
+    const refundAmount = Math.round(
+      (booking.amount * refundPercentage) / 100
+    );
 
     booking.status = "cancelled";
+    booking.cancellation = {
+      cancelledAt: today,
+      cancelledBy: "user",
+      reason: reason || "User cancelled booking",
+      daysBeforeCheckIn,
+      refundPercentage,
+      refundAmount,
+      refundStatus:
+        refundPercentage > 0 ? "pending" : "rejected",
+    };
+
     await booking.save();
 
-    res.json({ ok: true, booking });
+    res.json({
+      ok: true,
+      message: "Booking cancelled successfully",
+      refund: {
+        daysBeforeCheckIn,
+        refundPercentage,
+        refundAmount,
+        refundStatus: booking.cancellation.refundStatus,
+      },
+      booking,
+    });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to cancel booking" });
   }
 };

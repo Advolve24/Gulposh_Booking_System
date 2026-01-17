@@ -23,6 +23,13 @@ const nightsBetween = (start, end) => {
   return Math.max(1, Math.round((eUTC - sUTC) / (1000 * 60 * 60 * 24)));
 };
 
+const daysDiff = (from, to) =>
+  Math.ceil(
+    (new Date(to).setHours(0, 0, 0, 0) -
+      new Date(from).setHours(0, 0, 0, 0)) /
+      86400000
+  );
+
 
 export const createAdminOrder = async (req, res) => {
   try {
@@ -207,6 +214,150 @@ export const verifyAdminPayment = async (req, res) => {
     console.error("verifyAdminPayment error:", err);
     res.status(400).json({
       message: err?.message || "Admin payment verification failed",
+    });
+  }
+};
+
+/* ======================================================
+   ADMIN CANCEL / RESCHEDULE (NEW)
+===================================================== */
+
+export const adminActionBooking = async (req, res) => {
+
+  if (booking.status === "cancelled") {
+  return res.json({
+    ok: true,
+    message: "Booking already cancelled",
+    booking,
+  });
+}
+
+  try {
+    const { bookingId } = req.params;
+    const {
+      actionType, // cancel | reschedule
+      reasonType, // user_request | maintenance
+      note,
+
+      newStartDate,
+      newEndDate,
+
+      refundPercentage,
+      refundAmount,
+    } = req.body || {};
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const now = new Date();
+
+    /* ================= RESCHEDULE ================= */
+    if (actionType === "reschedule") {
+      if (reasonType !== "maintenance") {
+        return res.status(400).json({
+          message: "Reschedule allowed only for maintenance",
+        });
+      }
+
+      const ns = new Date(newStartDate);
+      const ne = new Date(newEndDate);
+
+      if (isNaN(ns) || isNaN(ne)) {
+        return res.status(400).json({ message: "Invalid new dates" });
+      }
+
+      const oldStart = booking.startDate;
+      const oldEnd = booking.endDate;
+
+      const newNights = nightsBetween(ns, ne);
+
+      booking.startDate = ns;
+      booking.endDate = ne;
+      booking.nights = newNights;
+      booking.roomTotal = newNights * booking.pricePerNight;
+      booking.amount = booking.roomTotal + booking.mealTotal;
+
+      booking.adminAction = {
+        actionType: "reschedule",
+        reasonType: "maintenance",
+        note,
+        actedAt: now,
+        reschedule: {
+          oldStartDate: oldStart,
+          oldEndDate: oldEnd,
+          newStartDate: ns,
+          newEndDate: ne,
+          nights: newNights,
+        },
+      };
+
+      await booking.save();
+
+      return res.json({
+        ok: true,
+        message: "Booking rescheduled due to maintenance",
+        booking,
+      });
+    }
+
+    /* ================= CANCEL ================= */
+    if (actionType === "cancel") {
+      let finalRefundAmount = 0;
+      let finalRefundPercentage = 0;
+
+      if (reasonType === "maintenance") {
+        finalRefundPercentage = 100;
+        finalRefundAmount = booking.amount;
+      } else {
+        if (typeof refundAmount === "number") {
+          finalRefundAmount = refundAmount;
+          finalRefundPercentage = Math.round(
+            (refundAmount / booking.amount) * 100
+          );
+        } else if (typeof refundPercentage === "number") {
+          finalRefundPercentage = refundPercentage;
+          finalRefundAmount = Math.round(
+            (booking.amount * refundPercentage) / 100
+          );
+        }
+      }
+
+      booking.status = "cancelled";
+      booking.cancellation = {
+        cancelledAt: now,
+        cancelledBy: "admin",
+        reason: note,
+        daysBeforeCheckIn: daysDiff(now, booking.startDate),
+        refundPercentage: finalRefundPercentage,
+        refundAmount: finalRefundAmount,
+        refundStatus:
+          finalRefundAmount > 0 ? "pending" : "rejected",
+      };
+
+      booking.adminAction = {
+        actionType: "cancel",
+        reasonType,
+        note,
+        actedAt: now,
+      };
+
+      await booking.save();
+
+      return res.json({
+        ok: true,
+        message: "Booking cancelled by admin",
+        booking,
+      });
+    }
+
+    res.status(400).json({ message: "Invalid actionType" });
+  } catch (err) {
+    console.error("adminActionBooking error:", err);
+    res.status(500).json({
+      message: err?.message || "Admin action failed",
     });
   }
 };

@@ -160,26 +160,26 @@ export const listBookingsAdmin = async (req, res) => {
 };
 
 
-export const cancelBookingAdmin = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ message: "Invalid booking id" });
-    }
-    const b = await Booking.findById(id);
-    if (!b) return res.status(404).json({ message: "Booking not found" });
+// export const cancelBookingAdmin = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     if (!mongoose.isValidObjectId(id)) {
+//       return res.status(400).json({ message: "Invalid booking id" });
+//     }
+//     const b = await Booking.findById(id);
+//     if (!b) return res.status(404).json({ message: "Booking not found" });
 
-    if (b.status === "cancelled") {
-      return res.json({ ok: true, booking: b });
-    }
-    b.status = "cancelled";
-    await b.save();
-    res.json({ ok: true, booking: b });
-  } catch (err) {
-    console.error("cancelBookingAdmin error:", err);
-    res.status(500).json({ message: "Failed to cancel booking" });
-  }
-};
+//     if (b.status === "cancelled") {
+//       return res.json({ ok: true, booking: b });
+//     }
+//     b.status = "cancelled";
+//     await b.save();
+//     res.json({ ok: true, booking: b });
+//   } catch (err) {
+//     console.error("cancelBookingAdmin error:", err);
+//     res.status(500).json({ message: "Failed to cancel booking" });
+//   }
+// };
 
 
 export const updateUserAdmin = async (req, res) => {
