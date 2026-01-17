@@ -8,7 +8,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-/* ---------- helpers ---------- */
 
 const dateFmt = (d) =>
   d ? format(new Date(d), "dd MMM yy") : "—";
