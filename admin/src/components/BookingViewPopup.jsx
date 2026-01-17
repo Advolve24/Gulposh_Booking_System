@@ -135,15 +135,34 @@ export default function BookingViewPopup({
             <hr />
 
             {/* Contact */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Mail size={14} />
-                <span>{booking.user?.email || "—"}</span>
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone size={14} />
-                <span>{booking.user?.phone || "—"}</span>
-              </div>
+            {/* Email */}
+            <div className="flex items-center gap-2">
+              <Mail size={14} className="text-muted-foreground" />
+              {booking.user?.email ? (
+                <a
+                  href={`mailto:${booking.user.email}`}
+                  className="text-sm text-black hover:underline break-all"
+                >
+                  {booking.user.email}
+                </a>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div className="flex items-center gap-2">
+              <Phone size={14} className="text-muted-foreground" />
+              {booking.user?.phone ? (
+                <a
+                  href={`tel:${booking.user.phone}`}
+                  className="text-sm text-black hover:underline"
+                >
+                  {booking.user.phone}
+                </a>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
             </div>
 
             <hr />

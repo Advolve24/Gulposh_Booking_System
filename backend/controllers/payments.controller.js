@@ -1,5 +1,3 @@
-// controllers/paymentController.js
-
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import Room from "../models/Room.js";
@@ -59,8 +57,8 @@ export const createOrder = async (req, res) => {
     const roomTotal = nights * room.pricePerNight;
     const mealTotal = withMeal
       ? nights *
-        (vegGuests * room.mealPriceVeg +
-          nonVegGuests * room.mealPriceNonVeg)
+      (vegGuests * room.mealPriceVeg +
+        nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
     const amountINR = roomTotal + mealTotal;
@@ -160,8 +158,8 @@ export const verifyPayment = async (req, res) => {
     const roomTotal = nights * room.pricePerNight;
     const mealTotal = withMeal
       ? nights *
-        (vegGuests * room.mealPriceVeg +
-          nonVegGuests * room.mealPriceNonVeg)
+      (vegGuests * room.mealPriceVeg +
+        nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
     const amountINR = roomTotal + mealTotal;
@@ -193,25 +191,23 @@ export const verifyPayment = async (req, res) => {
       addressInfo: { address, country, state, city, pincode },
     });
 
-    /* ---------------- Email Notification ---------------- */
-    const emailToSend =
-      contactEmail ||
-      req.user?.email ||
-      null;
+    const emailToSend = contactEmail || req.user?.email;
 
     if (emailToSend) {
-      try {
-        await sendBookingConfirmationMail({
-          to: emailToSend,
-          name: contactName,
-          room,
-          booking,
+      sendBookingConfirmationMail({
+        to: emailToSend,
+        name: contactName,
+        booking,
+        room,
+      })
+        .then(() => {
+          console.log("✅ Confirmation mail queued:", emailToSend);
+        })
+        .catch((err) => {
+          console.error("❌ Mail error:", err.message);
         });
-        console.log("✅ Booking confirmation email sent to:", emailToSend);
-      } catch (mailErr) {
-        console.error("❌ Booking email failed:", mailErr);
-      }
-    } else {
+    }
+    else {
       console.warn("⚠️ No email found to send booking confirmation");
     }
 
