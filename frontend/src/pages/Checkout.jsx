@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft } from "lucide-react";
-
+import { MapPin, Users, Utensils, Check, User, ConciergeBell, } from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -154,10 +154,10 @@ export default function Checkout() {
       return;
     }
 
-     if (!form.email || !form.email.trim()) {
-    toast.error("Email is required for booking confirmation");
-    return;
-  }
+    if (!form.email || !form.email.trim()) {
+      toast.error("Email is required for booking confirmation");
+      return;
+    }
 
     const ok = await loadRazorpayScript();
     if (!ok) {
@@ -198,42 +198,44 @@ export default function Checkout() {
       },
 
       handler: async (resp) => {
-  let toastId;
+        let toastId;
 
-  try {
-    // 🔄 show loading toast and keep its id
-    toastId = toast.loading("Confirming your booking...");
+        try {
+          // 🔄 show loading toast and keep its id
+          toastId = toast.loading("Confirming your booking...");
 
-    const { data } = await api.post("/payments/verify", {
-      ...resp,
-      roomId,
-      startDate: toYMD(range.from),
-      endDate: toYMD(range.to),
-      guests: g,
-      withMeal,
-      vegGuests,
-      nonVegGuests,
-      contactName: form.name,
-      contactEmail: form.email,
-      contactPhone: form.phone,
-      ...address,
+          const { data } = await api.post("/payments/verify", {
+            ...resp,
+            roomId,
+            startDate: toYMD(range.from),
+            endDate: toYMD(range.to),
+            guests: g,
+            withMeal,
+            vegGuests,
+            nonVegGuests,
+            contactName: form.name,
+            contactEmail: form.email,
+            contactPhone: form.phone,
+            ...address,
+          });
+
+          // ✅ replace loading toast
+          toast.success("Booking confirmed 🎉", { id: toastId });
+
+          sessionStorage.removeItem("searchParams");
+          navigate(`/booking-success/${data.booking._id}`, {
+      replace: true,
     });
+        } catch (err) {
+          console.error("Payment verified but booking failed:", err);
 
-    // ✅ replace loading toast
-    toast.success("Booking confirmed 🎉", { id: toastId });
-
-    sessionStorage.removeItem("searchParams");
-    navigate(`/booking/${data.booking._id}`);
-  } catch (err) {
-    console.error("Payment verified but booking failed:", err);
-
-    // ❌ replace loading toast with error
-    toast.error(
-      "Payment successful, but booking confirmation failed. Please contact support.",
-      { id: toastId }
-    );
-  }
-},
+          // ❌ replace loading toast with error
+          toast.error(
+            "Payment successful, but booking confirmation failed. Please contact support.",
+            { id: toastId }
+          );
+        }
+      },
 
 
       modal: {
@@ -275,390 +277,464 @@ export default function Checkout() {
         id="recaptcha-container"
         className="absolute inset-0 opacity-0 pointer-events-none"
       />
+      {/* ================= CHECKOUT STEPS ================= */}
+      <div className="w-full flex justify-center mb-5">
+        <div
+          className="
+      flex items-center
+      gap-1 sm:gap-4
+      overflow-x-auto sm:overflow-visible
+      px-2
+    "
+        >
+
+          {/* STEP 1 — COMPLETED */}
+          <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 min-w-[90px] sm:min-w-0">
+            <div className="h-8 w-8 rounded-full bg-red-700 text-white flex items-center justify-center text-sm font-semibold mt-1">
+              ✓
+            </div>
+            <span className="text-xs sm:text-sm font-medium text-foreground text-center">
+              Select Room
+            </span>
+          </div>
+
+          {/* CONNECTOR */}
+          <div className=" flex w-10 h-[1px] sm:block sm:w-20 sm:h-[2px] bg-red-700" />
+
+          {/* STEP 2 — ACTIVE */}
+          <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 min-w-[90px] sm:min-w-0">
+            <div className="h-8 w-8 rounded-full bg-red-700 text-white ring-4 ring-red-100 flex items-center justify-center text-sm font-semibold mt-1">
+              2
+            </div>
+            <span className="text-xs sm:text-sm font-medium text-foreground text-center">
+              Guest Details
+            </span>
+          </div>
+
+          {/* CONNECTOR */}
+          <div className="flex w-10 h-[1px] sm:block sm:w-20 sm:h-[2px] bg-muted" />
+
+          {/* STEP 3 — UPCOMING */}
+          <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 min-w-[90px] sm:min-w-0">
+            <div className="h-8 w-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-semibold">
+              3
+            </div>
+            <span className="text-xs sm:text-sm font-medium text-muted-foreground text-center">
+              Payment
+            </span>
+          </div>
+
+        </div>
+      </div>
 
       {/* BACK BUTTON */}
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-2 flex items-center gap-2">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-black"
+          className="flex items-center gap-1 text-md text-muted-foreground hover:text-black"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
 
-        {/* ================= LEFT 40% ================= */}
-        <aside className="hidden lg:block lg:col-span-2 bg-[#fffaf7] rounded-xl ">
-          <div className="sticky top-[120px] px-10 py-8">
+        {/* ================= DESKTOP STICKY SUMMARY ================= */}
+       <aside className="hidden lg:block lg:col-span-4">
+          <div className="sticky top-[120px] px-4 py-0">
 
-            {/* SMALL WHITE CARD */}
-            <div className="bg-white rounded-xl shadow-xl overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
 
-              {/* IMAGE – SHORT HEIGHT */}
-              <div>
+              {/* IMAGE */}
+              <div className="relative">
                 {roomImage && (
                   <img
                     src={roomImage}
                     alt={room.name}
-                    className=" w-full object-cover h-60"
+                    className="h-56 w-full object-cover"
                   />
                 )}
+
+                {/* BADGE */}
+                <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                  Best Value
+                </span>
               </div>
 
               {/* CONTENT */}
-              <div className="p-4 space-y-3 text-sm">
+              <div className="p-5 space-y-4 text-sm">
 
                 {/* TITLE */}
-                <div>
-                  <h3 className="text-base font-semibold leading-tight">
-                    {room.name}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {guests} Guests · {withMeal ? "With Meals" : "Without Meals"}
-                  </p>
+                {/* LOCATION */}
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  <span>Pune, Maharashtra</span>
+                </div>
+
+                {/* GUESTS + MEALS */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span>{guests} Guests</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Utensils className="w-4 h-4" />
+                    <span>{withMeal ? "With Meals" : "Without Meals"}</span>
+                  </div>
+                </div>
+
+                {/* CHECK-IN / CHECK-OUT */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#faf7f4] rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">
+                      CHECK-IN
+                    </div>
+                    <div className="font-medium">
+                      {range.from && format(range.from, "dd MMM yyyy")}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Saturday, 2:00 PM
+                    </div>
+                  </div>
+
+                  <div className="bg-[#faf7f4] rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground mb-1">
+                      CHECK-OUT
+                    </div>
+                    <div className="font-medium">
+                      {range.to && format(range.to, "dd MMM yyyy")}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      Wednesday, 11:00 AM
+                    </div>
+                  </div>
                 </div>
 
                 <Separator />
 
-                {/* DETAILS */}
-                <div className="space-y-1.5">
+                {/* PRICE BREAKUP */}
+                <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Check-in</span>
-                    <span>{range.from && format(range.from, "dd MMM yyyy")}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Check-out</span>
-                    <span>{range.to && format(range.to, "dd MMM yyyy")}</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      {nights} Nights
+                    <span>
+                      Room ({nights} nights × ₹{room?.pricePerNight})
                     </span>
-                    <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+                    <span>
+                      ₹{roomTotal.toLocaleString("en-IN")}
+                    </span>
                   </div>
 
                   {withMeal && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Meals</span>
-                      <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                      <span>Meals</span>
+                      <span>
+                        ₹{mealTotal.toLocaleString("en-IN")}
+                      </span>
                     </div>
                   )}
+
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Taxes & Fees</span>
+                    <span>Included</span>
+                  </div>
                 </div>
 
                 <Separator />
 
                 {/* TOTAL */}
-                <div className="flex justify-between font-semibold text-base">
-                  <span>Total</span>
-                  <span>₹{total.toLocaleString("en-IN")}</span>
+                <div className="flex justify-between items-end">
+                  <div>
+                    <div className="text-sm font-medium">Total</div>
+                    <div className="text-xs text-muted-foreground">
+                      Including all taxes
+                    </div>
+                  </div>
+
+                  <div className="text-xl font-semibold text-red-600">
+                    ₹{total.toLocaleString("en-IN")}
+                  </div>
                 </div>
+
               </div>
             </div>
           </div>
         </aside>
 
 
+        <section className="lg:col-span-6 space-y-6">
 
-
-        <section className="lg:col-span-3 bg-white rounded-2xl sm:px-10 space-y-2">
-
-          {/* ================= PROFILE ================= */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* NAME – FULL */}
-            <div className="col-span-1">
-              <Label>Name</Label>
-              <Input value={form.name} disabled className="truncate" />
+          {/* ================= PERSONAL INFORMATION ================= */}
+          <div className="rounded-2xl border bg-white p-5 sm:p-6">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                <User className="h-5 w-5 text-red-700" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base">Personal Information</h3>
+                <p className="text-xs text-muted-foreground">
+                  Enter your details as they appear on your ID
+                </p>
+              </div>
             </div>
 
-            {/* EMAIL – FULL */}
-            <div className="col-span-1">
-              <Label>Email</Label>
-              <Input
-                value={form.email}
-                className="truncate"
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, email: e.target.value }))
-                }
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Full Name</Label>
+                <Input value={form.name} disabled />
+              </div>
+
+              <div>
+                <Label>Email Address</Label>
+                <Input
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Date of Birth</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <span>
+                        {form.dob
+                          ? format(form.dob, "dd MMM yyyy")
+                          : "Select date"}
+                      </span>
+                      <CalendarIcon className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0">
+                    <Calendar
+                      mode="single"
+                      selected={form.dob}
+                      onSelect={(d) =>
+                        setForm((f) => ({ ...f, dob: d }))
+                      }
+                      captionLayout="dropdown"
+                      fromYear={1950}
+                      toYear={new Date().getFullYear()}
+                      disabled={(d) => d > new Date()}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div>
+                <Label>Phone Number</Label>
+                <Input value={form.phone} disabled />
+              </div>
+            </div>
+          </div>
+
+          {/* ================= ADDRESS DETAILS ================= */}
+          <div className="rounded-2xl border bg-white p-5 sm:p-6">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-red-700" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base">Address Details</h3>
+                <p className="text-xs text-muted-foreground">
+                  Your billing address for this reservation
+                </p>
+              </div>
             </div>
 
-            {/* DOB */}
-            <div className="col-span-1">
-              <Label>Date of Birth</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="md:col-span-3">
+                <Label>Street Address</Label>
+                <Input
+                  value={address.address}
+                  onChange={(e) =>
+                    setAddress((a) => ({ ...a, address: e.target.value }))
+                  }
+                />
+              </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="
-                          w-full
-                          justify-between
-                          overflow-hidden
-                          whitespace-nowrap
-                        "
-                  >
-                    {/* TEXT (SAFE & RESPONSIVE) */}
-                    <span className="truncate text-left">
-                      {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date"}
-                    </span>
-
-                    {/* ICON (NEVER SHRINKS) */}
-                    <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-
-                <PopoverContent
-                  className="w-auto p-0"
-                  align="start"
-                  side="bottom"
+              <div>
+                <Label>Country</Label>
+                <Select
+                  value={address.country}
+                  onValueChange={(v) =>
+                    setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
+                  }
                 >
-                  <Calendar
-                    mode="single"
-                    selected={form.dob}
-                    onSelect={(d) =>
-                      setForm((f) => ({ ...f, dob: d }))
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {countries.map((c) => (
+                      <SelectItem key={c.isoCode} value={c.isoCode}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>State</Label>
+                <Select
+                  value={address.state}
+                  onValueChange={(v) =>
+                    setAddress((a) => ({ ...a, state: v, city: "" }))
+                  }
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {statesList.map((s) => (
+                      <SelectItem key={s.isoCode} value={s.isoCode}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>City</Label>
+                <Select
+                  value={address.city}
+                  onValueChange={(v) =>
+                    setAddress((a) => ({ ...a, city: v }))
+                  }
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {citiesList.map((c) => (
+                      <SelectItem key={c.name} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Pincode</Label>
+                <Input
+                  value={address.pincode}
+                  onChange={(e) =>
+                    setAddress((a) => ({
+                      ...a,
+                      pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ================= BOOKING PREFERENCES ================= */}
+          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+  <ConciergeBell className="h-5 w-5 text-red-700" />
+</div>
+              <div>
+                <h3 className="font-semibold text-base">Booking Preferences</h3>
+                <p className="text-xs text-muted-foreground">
+                  Customize your stay experience
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Number of Guests</Label>
+                <Select
+                  value={guests}
+                  onValueChange={(v) => {
+                    setGuests(v);
+                    setVegGuests(0);
+                    setNonVegGuests(0);
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* MEALS */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={withMeal}
+                  onCheckedChange={(v) => {
+                    setWithMeal(v);
+                    if (!v) {
+                      setVegGuests(0);
+                      setNonVegGuests(0);
                     }
-                    captionLayout="dropdown"
-                    fromYear={1950}
-                    toYear={new Date().getFullYear()}
-                    disabled={(date) => date > new Date()}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            {/* PHONE */}
-            <div className="col-span-1">
-              <Label>Phone</Label>
-              <Input value={form.phone} disabled className="truncate" />
-            </div>
-
-          </div>
-
-          {/* ================= ADDRESS ================= */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {/* ADDRESS – FULL */}
-            <div className="col-span-2 md:col-span-3">
-              <Label>Address</Label>
-              <Input
-                value={address.address}
-                className="truncate"
-                onChange={(e) =>
-                  setAddress((a) => ({ ...a, address: e.target.value }))
-                }
-              />
-            </div>
-
-            {/* COUNTRY */}
-            <div>
-              <Label>Country</Label>
-              <Select
-                value={address.country}
-                onValueChange={(v) =>
-                  setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
-                }
-              >
-                <SelectTrigger className="truncate">
-                  <SelectValue className="truncate" />
-                </SelectTrigger>
-                <SelectContent>
-                  {countries.map((c) => (
-                    <SelectItem key={c.isoCode} value={c.isoCode}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* STATE */}
-            <div>
-              <Label>State</Label>
-              <Select
-                value={address.state}
-                onValueChange={(v) =>
-                  setAddress((a) => ({ ...a, state: v, city: "" }))
-                }
-              >
-                <SelectTrigger className="truncate">
-                  <SelectValue className="truncate" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statesList.map((s) => (
-                    <SelectItem key={s.isoCode} value={s.isoCode}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* CITY */}
-            <div>
-              <Label>City</Label>
-              <Select
-                value={address.city}
-                onValueChange={(v) =>
-                  setAddress((a) => ({ ...a, city: v }))
-                }
-              >
-                <SelectTrigger className="truncate">
-                  <SelectValue className="truncate" />
-                </SelectTrigger>
-                <SelectContent>
-                  {citiesList.map((c) => (
-                    <SelectItem key={c.name} value={c.name}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* PINCODE */}
-            <div>
-              <Label>Pincode</Label>
-              <Input
-                value={address.pincode}
-                className="truncate"
-                onChange={(e) =>
-                  setAddress((a) => ({
-                    ...a,
-                    pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-                  }))
-                }
-              />
-            </div>
-          </div>
-
-          {/* ================= BOOKING DATES ================= */}
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-            <div>
-              <Label>Booking Dates</Label>
-              <CalendarRange value={range} onChange={setRange} />
-            </div>
-          </div>
-
-          {/* ================= GUESTS ================= */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 sm:col-span-1">
-              <Label>Guests</Label>
-              <Select
-                value={guests}
-                onValueChange={(v) => {
-                  setGuests(v);
-                  const g = Number(v);
-                  if (vegGuests + nonVegGuests > g) {
-                    setVegGuests(0);
-                    setNonVegGuests(0);
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* ================= MEALS ================= */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-2">
-              <Checkbox
-                checked={withMeal}
-                onCheckedChange={(v) => {
-                  setWithMeal(v);
-                  if (!v) {
-                    setVegGuests(0);
-                    setNonVegGuests(0);
-                  }
-                }}
-              />
-              <Label className="leading-snug">
-                Include meals
-                {room && (
+                  }}
+                />
+                <Label className="leading-snug">
+                  Include Meals
                   <span className="block text-xs text-muted-foreground">
                     Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg} per guest per night
                   </span>
-                )}
-              </Label>
-            </div>
-
-            {withMeal && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Veg Guests</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={Number(guests) - nonVegGuests}
-                    value={vegGuests}
-                    onChange={(e) =>
-                      setVegGuests(Math.max(0, Number(e.target.value)))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <Label>Non-Veg Guests</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={Number(guests) - vegGuests}
-                    value={nonVegGuests}
-                    onChange={(e) =>
-                      setNonVegGuests(Math.max(0, Number(e.target.value)))
-                    }
-                  />
-                </div>
-
-                <div className="col-span-2 flex justify-between text-sm font-medium">
-                  <span>Meal Charges</span>
-                  <span>₹{mealTotal.toLocaleString("en-IN")}</span>
-                </div>
+                </Label>
               </div>
-            )}
-          </div>
 
-          <Separator />
+              {withMeal && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Veg Guests</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={vegGuests}
+                      onChange={(e) =>
+                        setVegGuests(Number(e.target.value) || 0)
+                      }
+                    />
+                  </div>
 
-          {/* ================= PRICE ================= */}
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Room ({nights} nights)</span>
-              <span>₹{roomTotal.toLocaleString("en-IN")}</span>
-            </div>
-
-            {withMeal && (
-              <div className="flex justify-between">
-                <span>Meals</span>
-                <span>₹{mealTotal.toLocaleString("en-IN")}</span>
-              </div>
-            )}
-
-            <Separator />
-
-            <div className="flex justify-between text-lg font-semibold">
-              <span>Total</span>
-              <span>₹{total.toLocaleString("en-IN")}</span>
+                  <div>
+                    <Label>Non-Veg Guests</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={nonVegGuests}
+                      onChange={(e) =>
+                        setNonVegGuests(Number(e.target.value) || 0)
+                      }
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          <Button className="w-full h-12 bg-red-700 text-[16px]" onClick={proceed}>
+          {/* ================= CTA ================= */}
+          <Button
+            className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
+            onClick={proceed}
+          >
             Proceed to Payment
           </Button>
+
+          {/* ================= MOBILE FIXED CTA ================= */}
+<div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-3">
+  <Button
+    className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
+    onClick={proceed}
+  >
+    Proceed to Payment
+  </Button>
+</div>
+
+
         </section>
+
       </div>
     </div>
   );
