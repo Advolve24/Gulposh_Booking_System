@@ -68,6 +68,76 @@ const bookingSchema = new mongoose.Schema(
         default: "Cash",
       },
     },
+    /* ================= CANCELLATION ================= */
+    cancellation: {
+      cancelledAt: {
+        type: Date,
+      },
+
+      cancelledBy: {
+        type: String,
+        enum: ["user", "admin"],
+        default: "user",
+      },
+
+      reason: {
+        type: String,
+      },
+
+      daysBeforeCheckIn: {
+        type: Number,
+      },
+
+      refundPercentage: {
+        type: Number,
+        min: 0,
+        max: 100,
+      },
+
+      refundAmount: {
+        type: Number,
+        min: 0,
+      },
+
+      refundStatus: {
+        type: String,
+        enum: ["pending", "processed", "rejected"],
+        default: "pending",
+      },
+
+      refundProcessedAt: {
+        type: Date,
+      },
+
+      refundTransactionId: {
+        type: String,
+      },
+    },
+    /* ================= ADMIN ACTIONS ================= */
+    adminAction: {
+  actionType: {
+    type: String,
+    enum: ["cancel", "reschedule"],
+  },
+
+  reasonType: {
+    type: String,
+    enum: ["user_request", "maintenance"],
+  },
+
+  note: String,
+
+  actedAt: Date,
+
+  reschedule: {
+    oldStartDate: Date,
+    oldEndDate: Date,
+    newStartDate: Date,
+    newEndDate: Date,
+    nights: Number,
+  },
+},
+
   },
   { timestamps: true }
 );
