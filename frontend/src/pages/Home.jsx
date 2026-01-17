@@ -532,7 +532,7 @@ export default function Home() {
           <div className="absolute left-[-120px] top-[220px] h-[320px] w-[320px] rounded-full bg-[#f6efea]" />
         </div>
 
-        <div className="mx-auto max-w-7xl px-4 py-10 md:py-14">
+        <div className="mx-auto max-w-7xl px-4 py-4 md:py-14">
           {/* ================= HEADER ================= */}
           <motion.div
             initial="hidden"
@@ -561,7 +561,7 @@ export default function Home() {
             className="
      mt-6 sm:mt-14
     grid grid-cols-2
-    gap-5
+    gap-2 sm:gap-5
     sm:grid-cols-2
     lg:grid-cols-4
   "
@@ -685,7 +685,7 @@ export default function Home() {
 
             <div className="relative p-6 md:p-10 grid gap-8 md:grid-cols-[1.2fr_0.8fr] items-center">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] tracking-widest uppercase text-white/90 ring-1 ring-white/15 backdrop-blur">
+                <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] tracking-widest uppercase text-white/90 ring-1 ring-white/15 backdrop-blur">
                   Exclusive Experience
                 </div>
 
@@ -713,7 +713,7 @@ export default function Home() {
                   </li>
                 </ul>
 
-                <div className="mt-7 flex flex-wrap gap-3">
+                <div className="mt-7 mb-4 flex flex-wrap gap-3">
                   <Button
                     className="rounded-full bg-[#E3B26A] text-black hover:bg-[#d4a255]"
                     onClick={() => navigate("/entire-villa-form")}

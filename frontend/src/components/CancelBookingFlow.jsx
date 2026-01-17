@@ -110,7 +110,7 @@ export default function CancelBookingFlow({
         "
             >
                 {/* ================= HEADER ================= */}
-                <DialogHeader className="p-4 border-b flex items-center justify-between">
+                <DialogHeader className="p-4 border-b flex items-center justify-between ">
                     <h3 className="text-lg font-semibold">Cancel Booking</h3>
                     <button onClick={() => onOpenChange(false)}>
                     </button>
@@ -286,7 +286,7 @@ export default function CancelBookingFlow({
                 </div>
 
                 {/* ================= STICKY FOOTER ================= */}
-                <div className="p-4 border-t bg-white flex gap-2">
+                <div className="p-4 border-t bg-white flex gap-2 rounded-xl">
                     <Button
                         variant="outline"
                         className="flex-1"

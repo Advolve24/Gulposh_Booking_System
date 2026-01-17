@@ -11,8 +11,10 @@ import MyBookings from "./pages/MyBookings";
 import MyAccount from "./pages/MyAccount";
 import VillaInvoice from "./components/VillaInvoice";
 import Invoices from "./pages/Invoices";
+import BookingSuccess from "./pages/BookingSuccess";
 import EntireVillaform from "./pages/EntireVillaform";
 import ThankYou from "./pages/ThankYou";
+
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -48,6 +50,7 @@ export default function App() {
         <Route path="/my-account" element={<MyAccount />} />
         <Route path="/invoices" element={<Invoices />} />
         <Route path="/invoice-view/:id" element={<VillaInvoice />} />
+        <Route path="/booking-success/:id" element={<BookingSuccess />} />
         <Route path="/entire-villa-form" element={<EntireVillaform />} />
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="*" element={<Navigate to="/" replace />} />

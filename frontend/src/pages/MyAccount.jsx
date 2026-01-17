@@ -223,7 +223,7 @@ export default function MyAccount() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 space-y-10">
+    <div className="max-w-4xl mx-auto px-4 py-2 sm:py-8 space-y-6">
       <div id="recaptcha-container" />
 
       {/* HEADER */}

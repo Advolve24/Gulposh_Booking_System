@@ -7,7 +7,15 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import {
+  ChevronDown,
+  ExternalLink,
+  User,
+  Calendar,
+  FileText,
+  LogOut,
+} from "lucide-react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 export default function Header() {
@@ -34,19 +42,19 @@ export default function Header() {
       className="
         sticky top-0 z-50
         backdrop-blur-md
-        bg-white/50
+        bg-white/60
         border-b border-black/5
       "
     >
       <div className="max-w-7xl mx-auto px-6 h-[64px] flex items-center justify-between">
 
-        {/* ================= LOGO ================= */}
-          <Link to="/" className="flex items-center gap-2">
+        {/* LOGO */}
+        <Link to="/" className="flex items-center gap-2">
           <img src="/logo1.png" className="h-10" alt="logo" />
           <img src="/logo2.png" className="h-7" alt="brand" />
         </Link>
 
-        {/* ================= RIGHT ACTIONS ================= */}
+        {/* RIGHT */}
         <div className="flex items-center gap-4">
 
           {/* Visit website */}
@@ -65,7 +73,7 @@ export default function Header() {
             <ExternalLink className="h-4 w-4" />
           </a>
 
-          {/* Auth */}
+          {/* AUTH */}
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -74,11 +82,11 @@ export default function Header() {
                     flex items-center gap-2
                     px-3 py-1.5
                     rounded-full
-                    bg-white/60
+                    bg-white/70
                     backdrop-blur-md
                     border border-black/5
                     hover:bg-white
-                    transition
+                    transition  mt-2 mb-2
                   "
                 >
                   <div className="h-8 w-8 rounded-full bg-[#ba081c] text-white flex items-center justify-center text-sm font-semibold">
@@ -88,23 +96,88 @@ export default function Header() {
                 </button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem onClick={() => navigate("/my-account")}>
-                  My Account
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/bookings")}>
-                  My Bookings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/invoices")}>
-                  My Invoices
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={onLogout}
-                  className="text-red-600 focus:text-red-600"
+              {/* DROPDOWN */}
+              <DropdownMenuContent
+                align="end"
+                sideOffset={10}
+                className="
+                  w-[260px]
+                  rounded-2xl
+                  p-2
+                  shadow-xl
+                  border
+                  bg-white mt-2
+                "
+                asChild
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
                 >
-                  Logout
-                </DropdownMenuItem>
+                  <div>
+                    {/* USER INFO */}
+                    <div className="px-3 py-3 rounded-xl bg-muted mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-[#ba081c] text-white flex items-center justify-center font-semibold">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold truncate">
+                            {user.name || "Guest"}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {user.email}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* LINKS */}
+                    <DropdownMenuItem
+                      onClick={() => navigate("/my-account")}
+                      className="rounded-lg flex items-center gap-3 px-3 py-2"
+                    >
+                      <User className="w-4 h-4 text-muted-foreground" />
+                      My Account
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => navigate("/bookings")}
+                      className="rounded-lg flex items-center gap-3 px-3 py-2"
+                    >
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      My Bookings
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      onClick={() => navigate("/invoices")}
+                      className="rounded-lg flex items-center gap-3 px-3 py-2"
+                    >
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      My Invoices
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator className="my-2" />
+
+                    {/* LOGOUT */}
+                    <DropdownMenuItem
+                      onClick={onLogout}
+                      className="
+                        rounded-lg
+                        flex items-center gap-3
+                        px-3 py-2
+                        text-red-600
+                        focus:text-red-600
+                        focus:bg-red-50
+                      "
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </div>
+                </motion.div>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
