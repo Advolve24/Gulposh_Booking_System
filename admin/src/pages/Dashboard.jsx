@@ -45,7 +45,19 @@ import { getBookingAdmin } from "../api/admin";
 
 const toDateKey = (d) => format(d, "yyyy-MM-dd");
 
+const toDateOnly = (d) => {
+  const date = new Date(d);
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+};
 
+const isPastDate = (date) => {
+  const today = toDateOnly(new Date());
+  return toDateOnly(date) < today;
+};
 
 const toDateSafe = (v) => {
   if (!v) return null;
@@ -62,8 +74,6 @@ const percentChange = (current, previous) => {
   if (!previous || previous === 0) return 0;
   return Math.round(((current - previous) / previous) * 100);
 };
-
-
 
 function StatusBadge({ status }) {
   const map = {
@@ -169,8 +179,6 @@ export default function Dashboard() {
   const [selectedBooking, setSelectedBooking] = useState(null);
 
 
-
-
   useEffect(() => {
     const handleResize = () => {
       setIsDesktop(window.innerWidth >= 1024);
@@ -182,11 +190,6 @@ export default function Dashboard() {
 
 
 
-
-
-  /* ===============================
-     FETCH DATA
-  ================================ */
   useEffect(() => {
     (async () => {
       try {
@@ -307,6 +310,11 @@ export default function Dashboard() {
     const bookingCount = getBookingCountForDate(date);
     const blackout = getBlackoutForDate(date);
 
+    if (isPastDate(date)) {
+      toast.info("Past dates cannot be modified");
+      return;
+    }
+
     if (blackout) {
       if (!window.confirm("Unblock this date?")) return;
 
@@ -378,7 +386,6 @@ export default function Dashboard() {
     return days.some((d) => getBookingCountForDate(d) > 0);
   };
 
-  // CALCULATE CHANGES //
 
   const {
     bookingChange,
@@ -474,13 +481,20 @@ export default function Dashboard() {
   }, [bookings]);
 
   const upcomingBooking = useMemo(() => {
-    const today = startOfToday();
+    const today = toDateOnly(new Date());
 
     return bookings
-      .filter(b => new Date(b.startDate) >= today)
-      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0];
+      .filter((b) => {
+        if (!b.startDate) return false;
+        if (b.status === "cancelled") return false;
+        const checkIn = toDateOnly(b.startDate);
+        return checkIn >= today;
+      })
+      .sort(
+        (a, b) =>
+          toDateOnly(a.startDate) - toDateOnly(b.startDate)
+      )[0];
   }, [bookings]);
-
 
 
 
@@ -506,7 +520,9 @@ export default function Dashboard() {
           hint={`${bookingChange > 0 ? "+" : ""}${bookingChange}% from last month`}
           hintColor={bookingChange >= 0 ? "text-green-600" : "text-red-600"}
           onClick={() => navigate("/bookings")}
-          bg="#ebebeb"
+          bg="rgb(5 92 0)"
+          textColor="text-white"
+          iconColor="text-white"
           mobileFull
         />
 
@@ -539,7 +555,7 @@ export default function Dashboard() {
           hint={`${revenueChange > 0 ? "+" : ""}${revenueChange}% from last month`}
           hintColor={revenueChange >= 0 ? "text-green-300" : "text-red-300"}
           onClick={() => navigate("/bookings?paid=true")}
-          bg="#671e30"
+          bg="#671e2f"
           textColor="text-white"
           iconColor="text-white"
           mobileFull
@@ -611,24 +627,27 @@ export default function Dashboard() {
               {/* MONTH GRID */}
               <div className="grid grid-cols-7 gap-2">
                 {calendarDays.map((date) => {
-                  const isBlocked = isDateBlocked(date);
-                  const hasBooking = getBookingCountForDate(date);
+                  const past = isPastDate(date);
+                  const isBlocked = !past && isDateBlocked(date);
+                  const hasBooking = !past && getBookingCountForDate(date);
 
                   return (
                     <div
                       key={date.toISOString()}
                       className={`
-          h-10 w-full rounded-lg
-          flex items-center justify-center
-          text-sm font-medium
-          border
-          ${isBlocked
-                          ? "bg-red-100 text-red-700 border-red-300"
-                          : hasBooking
-                            ? "bg-green-100 text-green-700 border-green-300"
-                            : "bg-white border-border"
+    h-10 w-full rounded-lg
+    flex items-center justify-center
+    text-sm font-medium
+    border
+    ${past
+                          ? "bg-muted text-muted-foreground border-border cursor-not-allowed opacity-60"
+                          : isBlocked
+                            ? "bg-red-100 text-red-700 border-red-300"
+                            : hasBooking
+                              ? "bg-green-100 text-green-700 border-green-300"
+                              : "bg-white border-border hover:bg-muted cursor-pointer"
                         }
-        `}
+  `}
                     >
                       {format(date, "dd")}
                     </div>
@@ -682,9 +701,10 @@ export default function Dashboard() {
             onViewInvoice={(b) =>
               navigate(`/bookings/${b._id}/invoice`)
             }
-            onDownloadInvoice={(b) =>
-              navigate(`/bookings/${b._id}/invoice?download=true`)
-            }
+            onDownloadInvoice={(b) => {
+              navigate(`/bookings/${b._id}/invoice?download=true`);
+            }}
+
           />
 
         </div>
@@ -705,9 +725,11 @@ export default function Dashboard() {
               onViewInvoice={(booking) =>
                 navigate(`/bookings/${booking._id}/invoice`)
               }
-              onDownloadInvoice={(booking) =>
-                navigate(`/bookings/${booking._id}/invoice?download=true`)
-              }
+              onDownloadInvoice={(booking) => {
+                navigate(`/bookings/${booking._id}/invoice?download=true`);
+              }}
+
+
             />
           ))}
         </div>

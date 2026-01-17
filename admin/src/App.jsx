@@ -11,7 +11,7 @@ import { useAuth } from "./store/auth";
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
 import Dashboard from "./pages/Dashboard";
-import Rooms from "./pages/Rooms";           // ✅ ADDED
+import Rooms from "./pages/Rooms";           
 import RoomsNew from "./pages/RoomsNew";
 import Users from "./pages/Users";
 import Bookings from "./pages/Bookings";
@@ -34,13 +34,11 @@ function InitAuthWatcher({ children }) {
     init();
   }, [init]);
 
-  if (!ready) return null; // ⛔ wait here ONLY
+  if (!ready) return null; 
   return children;
 }
 
-/* ================================
-   APP
-================================ */
+
 export default function App() {
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
@@ -49,7 +47,6 @@ export default function App() {
     <BrowserRouter>
       <InitAuthWatcher>
         <Routes>
-          {/* ROOT */}
           <Route
             path="/"
             element={
@@ -61,11 +58,9 @@ export default function App() {
             }
           />
 
-          {/* AUTH */}
           <Route path="/login" element={<Login />} />
           <Route path="/logout" element={<Logout />} />
 
-          {/* ADMIN */}
           <Route
             path="/dashboard"
             element={
@@ -75,7 +70,6 @@ export default function App() {
             }
           />
 
-          {/* ✅ ROOMS LIST PAGE */}
           <Route
             path="/rooms"
             element={
@@ -160,7 +154,6 @@ export default function App() {
             }
           />
 
-          {/* FALLBACK */}
           <Route
             path="*"
             element={
