@@ -37,15 +37,22 @@ if (!user.passwordHash)
       { expiresIn: "60m" }
     );
 
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        isAdmin: true,
-      },
-    });
+    res.cookie("admin_token", token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 60 * 60 * 1000,
+});
+
+res.json({
+  user: {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    isAdmin: true,
+  },
+});
+
   } catch (err) {
     console.error("ADMIN LOGIN ERROR:", err);
     res.status(500).json({ message: "Admin login failed" });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation  } from "react-router-dom";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { format } from "date-fns";
@@ -9,16 +9,15 @@ import { Button } from "@/components/ui/button";
 import { getBookingAdmin } from "@/api/admin";
 import { toast } from "sonner";
 
-/* ---------------- helpers ---------------- */
 
 const fmt = (d) => (d ? format(new Date(d), "dd MMM yyyy") : "—");
 
-/* ---------------- page ---------------- */
 
 export default function InvoicePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const ref = useRef(null);
+  const location = useLocation();
 
   const [booking, setBooking] = useState(null);
 
@@ -32,6 +31,20 @@ export default function InvoicePage() {
       }
     })();
   }, [id]);
+
+  useEffect(() => {
+  if (!booking) return;
+
+  const params = new URLSearchParams(location.search);
+  const shouldDownload = params.get("download") === "true";
+
+  if (shouldDownload) {
+    setTimeout(() => {
+      downloadPDF();
+    }, 300);
+  }
+}, [booking, location.search]);
+
 
   const downloadPDF = async () => {
     const canvas = await html2canvas(ref.current, {

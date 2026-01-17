@@ -4,7 +4,7 @@ import { useAuth } from "../store/auth";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
-  withCredentials: false,
+  withCredentials: true,
 });
 
 
@@ -25,22 +25,18 @@ api.interceptors.response.use(
     const status = err.response?.status;
     const url = err.config?.url;
 
-    // 👇 ignore 401 for admin/me during init
     if (
-      (status === 401 || status === 403) &&
-      url?.includes("/admin/me")
+      status === 401 &&
+      (url?.includes("/admin/login") || url?.includes("/admin/me"))
     ) {
       return Promise.reject(err);
     }
 
-    if ((status === 401 || status === 403)) {
+    if (status === 401 || status === 403) {
       const { setUser } = useAuth.getState();
       setUser(null);
 
-      localStorage.removeItem("admin_token");
-      localStorage.removeItem("admin_user");
-
-      if (window.location.pathname !== "/login") {
+      if (!window.location.pathname.startsWith("/login")) {
         window.location.replace("/login");
       }
     }

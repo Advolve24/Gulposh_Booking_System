@@ -3,9 +3,6 @@ import User from "../models/User.js";
 import admin from "../config/firebaseAdmin.js";
 import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
 
-/* ===============================
-   HELPERS
-================================ */
 
 const normalizePhone = (phone = "") =>
   phone.replace(/\D/g, "").slice(-10);
@@ -24,9 +21,7 @@ const createRefreshToken = (user) =>
     { expiresIn: "10d" }
   );
 
-/* ===============================
-   FIREBASE OTP LOGIN
-================================ */
+
 export const firebaseLogin = async (req, res) => {
   try {
     const hdr = req.headers.authorization || "";
@@ -84,18 +79,14 @@ export const firebaseLogin = async (req, res) => {
   }
 };
 
-/* ===============================
-   LOGOUT
-================================ */
+
 export const logout = (_req, res) => {
   clearSessionCookie(res, "token", { path: "/" });
   clearSessionCookie(res, "refresh_token", { path: "/" });
   res.json({ message: "Logged out" });
 };
 
-/* ===============================
-   REFRESH SESSION
-================================ */
+
 export const refreshSession = async (req, res) => {
   try {
     const token = req.cookies?.refresh_token;
@@ -121,9 +112,7 @@ export const refreshSession = async (req, res) => {
   }
 };
 
-/* ===============================
-   GET MY PROFILE
-================================ */
+
 export const me = async (req, res) => {
   const user = await User.findById(req.user.id);
 
@@ -146,9 +135,7 @@ export const me = async (req, res) => {
   });
 };
 
-/* ===============================
-   UPDATE PROFILE
-================================ */
+
 export const updateMe = async (req, res) => {
   try {
     const {
@@ -181,7 +168,6 @@ export const updateMe = async (req, res) => {
     user.city = city || null;
     user.pincode = pincode || null;
 
-    // 🔥 CRITICAL FIX
     user.profileComplete = true;
 
     await user.save();

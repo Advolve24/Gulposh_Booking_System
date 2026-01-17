@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useMemo } from "react";
 
-/* ---------- helpers ---------- */
 
 const dateFmt = (d) =>
   d ? format(new Date(d), "dd MMM yy") : "—";
