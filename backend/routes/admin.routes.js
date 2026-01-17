@@ -27,7 +27,7 @@ router.get("/bookings", listBookingsAdmin);          // list first
 router.get("/bookings/:id", getBookingAdmin);        // view single
 router.put("/bookings/:id", updateBookingAdmin);     // update
 
-/* 🔥 SINGLE SOURCE OF TRUTH (ADMIN DECISION) */
+/* SINGLE SOURCE OF TRUTH (ADMIN DECISION) */
 router.post("/bookings/:id/action", adminActionBooking);
 // router.post("/bookings/:id/cancel", cancelBookingAdmin);
 // router.patch("/bookings/:id/cancel", cancelBookingAdmin);
