@@ -1,31 +1,20 @@
-// src/lib/recaptcha.js
 import { RecaptchaVerifier } from "firebase/auth";
 import { auth } from "./firebase";
 
-let recaptchaVerifier = null;
+let recaptchaVerifier;
 
 export const getRecaptchaVerifier = () => {
-  if (recaptchaVerifier) {
-    return recaptchaVerifier;
+  if (!recaptchaVerifier) {
+    recaptchaVerifier = new RecaptchaVerifier(
+      auth,
+      "recaptcha-container",
+      {
+        size: "invisible",
+        callback: () => {
+        },
+      }
+    );
   }
-
-  recaptchaVerifier = new RecaptchaVerifier(
-    auth,
-    "recaptcha-container",
-    {
-      size: "normal", // ✅ REQUIRED for iOS Safari
-      callback: () => {
-        console.log("reCAPTCHA verified");
-      },
-      "expired-callback": () => {
-        console.log("reCAPTCHA expired");
-      },
-    }
-  );
-
-  // ❗ MUST render explicitly
-  recaptchaVerifier.render();
-
   return recaptchaVerifier;
 };
 
