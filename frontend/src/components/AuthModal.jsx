@@ -187,8 +187,9 @@ export default function AuthModal() {
         {/* reCAPTCHA */}
         <div
   id="recaptcha-container"
-  className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50"
+  className="absolute inset-0 pointer-events-none opacity-0"
 />
+
 
         {/* HEADER */}
         <div className="relative h-48">
