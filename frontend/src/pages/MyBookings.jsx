@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMyBookings, cancelBooking } from "../api/bookings";
+import { getMyBookings } from "../api/bookings";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 
 import ViewBookingDialog from "@/components/ViewBookingDialog";
+import CancelBookingFlow from "@/components/CancelBookingFlow";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 /* ---------------- HELPERS ---------------- */
 
@@ -30,46 +32,23 @@ const calcNights = (start, end) => {
   return Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)));
 };
 
-/* ---------------- EMPTY STATE ---------------- */
-
-function EmptyState({ type, onExplore }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
-        <Calendar className="w-8 h-8 text-muted-foreground" />
-      </div>
-
-      <h3 className="text-2xl font-serif font-semibold mb-2">
-        {type === "upcoming" ? "No Upcoming Trips" : "No Past Trips"}
-      </h3>
-
-      <p className="text-sm text-muted-foreground max-w-sm mb-6">
-        {type === "upcoming"
-          ? "You don't have any upcoming reservations. Ready to plan your next getaway?"
-          : "You don’t have any past reservations yet."}
-      </p>
-
-      {type === "upcoming" && (
-        <Button className="rounded-xl px-6" onClick={onExplore}>
-          Explore Rooms
-        </Button>
-      )}
-    </div>
-  );
-}
-
 /* ---------------- PAGE ---------------- */
 
 export default function MyBookings() {
   const navigate = useNavigate();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("upcoming");
 
-  /* VIEW BOOKING MODAL */
+  /* VIEW BOOKING */
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState(null);
+
+  /* CANCEL FLOW */
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelBookingId, setCancelBookingId] = useState(null);
 
   /* ---------------- LOAD BOOKINGS ---------------- */
 
@@ -77,8 +56,8 @@ export default function MyBookings() {
     setLoading(true);
     try {
       setItems(await getMyBookings());
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to load bookings");
+    } catch {
+      toast.error("Failed to load bookings");
     } finally {
       setLoading(false);
     }
@@ -91,33 +70,37 @@ export default function MyBookings() {
   /* ---------------- FILTERS ---------------- */
 
   const upcoming = useMemo(
-    () => items.filter((b) => isFuture(b.startDate)),
+    () => items.filter((b) => isFuture(b.startDate) && b.status !== "cancelled"),
     [items]
   );
 
   const past = useMemo(
-    () => items.filter((b) => !isFuture(b.startDate)),
+    () => items.filter((b) => !isFuture(b.startDate) && b.status !== "cancelled"),
     [items]
   );
 
-  const list = tab === "upcoming" ? upcoming : past;
+  const cancelled = useMemo(
+    () => items.filter((b) => b.status === "cancelled"),
+    [items]
+  );
+
+  const list =
+    tab === "upcoming"
+      ? upcoming
+      : tab === "past"
+      ? past
+      : cancelled;
 
   /* ---------------- ACTIONS ---------------- */
-
-  const onCancel = async (id) => {
-    if (!confirm("Cancel this booking?")) return;
-    try {
-      await cancelBooking(id);
-      toast.success("Booking cancelled");
-      reload();
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to cancel booking");
-    }
-  };
 
   const openView = (id) => {
     setSelectedBookingId(id);
     setViewOpen(true);
+  };
+
+  const openCancel = (id) => {
+    setCancelBookingId(id);
+    setCancelOpen(true);
   };
 
   /* ---------------- UI ---------------- */
@@ -138,41 +121,32 @@ export default function MyBookings() {
 
         {/* TABS */}
         <div className="flex items-center gap-2 bg-[#faf6f2] p-2 rounded-xl w-fit">
-          <button
-            onClick={() => setTab("upcoming")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
-              ${tab === "upcoming"
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:text-foreground"
-              }`}
-          >
-            <Calendar className="w-4 h-4" />
-            Upcoming
-          </button>
-
-          <button
-            onClick={() => setTab("past")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
-              ${tab === "past"
-                ? "bg-primary text-primary-foreground shadow"
-                : "text-muted-foreground hover:text-foreground"
-              }`}
-          >
-            <Clock className="w-4 h-4" />
-            Past
-            {past.length > 0 && (
-              <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-white/40">
-                {past.length}
-              </span>
-            )}
-          </button>
+          {[
+            ["upcoming", "Upcoming"],
+            ["past", "Past"],
+            ["cancelled", "Cancelled"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition
+                ${
+                  tab === key
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }
+              `}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* CONTENT */}
         {loading ? (
-          <p className="text-sm">Loading…</p>
+          <p>Loading…</p>
         ) : list.length === 0 ? (
-          <EmptyState type={tab} onExplore={() => navigate("/")} />
+          <p className="text-muted-foreground">No bookings found.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {list.map((b) => {
@@ -181,118 +155,98 @@ export default function MyBookings() {
               return (
                 <div
                   key={b._id}
-                  role="button"
-                  tabIndex={0}
                   onClick={() => openView(b._id)}
                   className="
-    group
-    bg-white
-    rounded-2xl
-    overflow-hidden
-    border
-    shadow-sm
-    hover:shadow-xl
-    transition
-    cursor-pointer
-    focus:outline-none
-    focus:ring-2
-    focus:ring-primary/40
-  "
+                    group
+                    bg-white
+                    rounded-2xl
+                    border
+                    shadow-sm
+                    overflow-hidden
+                    cursor-pointer
+                    hover:shadow-lg
+                    transition
+                  "
                 >
                   {/* IMAGE */}
-                  <div className="relative h-48 overflow-hidden">
+                  <div className="h-40 overflow-hidden">
                     <img
                       src={b.room?.coverImage || "/placeholder.jpg"}
                       alt={b.room?.name}
-                      className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-700"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-
-                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-                      <div>
-                        <h3 className="text-white text-lg font-serif font-semibold">
-                          {b.room?.name}
-                        </h3>
-                        <p className="text-white/80 text-sm">Gulposh Villa</p>
-                      </div>
-
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-600/90 text-white">
-                        {b.status}
-                      </span>
-                    </div>
                   </div>
 
                   {/* CONTENT */}
                   <div className="p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="w-4 h-4 text-primary" />
+                    <h3 className="font-serif text-lg">
+                      {b.room?.name}
+                    </h3>
+
+                    <div className="text-sm text-muted-foreground">
                       {fmt(b.startDate)} → {fmt(b.endDate)}
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {nights} Nights
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {b.guests} Guests
-                      </div>
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                      <span>{nights} Nights</span>
+                      <span>{b.guests} Guests</span>
                     </div>
 
-                    <div className="border-t pt-3 flex items-center justify-between">
+                    <div className="flex justify-between items-center pt-3 border-t">
                       <div>
-                        <div className="text-xs text-muted-foreground">Total</div>
-                        <div className="text-lg font-semibold">₹{b.amount}</div>
+                        <div className="text-xs">Total</div>
+                        <div className="text-lg font-semibold">
+                          ₹{b.amount}
+                        </div>
                       </div>
 
-                      {/* VIEW BUTTON — SAFE */}
+                      <span
+                        className={`text-xs px-3 py-1 rounded-full font-medium
+                          ${
+                            b.status === "cancelled"
+                              ? "bg-red-100 text-red-600"
+                              : "bg-green-100 text-green-600"
+                          }
+                        `}
+                      >
+                        {b.status}
+                      </span>
+                    </div>
+
+                    {/* CANCEL BUTTON (UPCOMING ONLY) */}
+                    {tab === "upcoming" && b.status === "confirmed" && (
                       <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-xl flex items-center gap-2"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openView(b._id);
+                          openCancel(b._id);
                         }}
+                        className="w-full mt-3 rounded-xl bg-primary text-primary-foreground"
                       >
-                        <Eye className="w-4 h-4" />
-                        View
+                        Cancel Booking
                       </Button>
-                    </div>
-
-                    {/* CANCEL (UPCOMING ONLY) */}
-                    {tab === "upcoming" && b.status === "confirmed" && (
-                      <div className="pt-3 flex justify-center">
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onCancel(b._id);
-                          }}
-                          className="w-full max-w-[220px] rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
-                        >
-                          Cancel Booking
-                        </Button>
-                      </div>
                     )}
                   </div>
                 </div>
-
               );
-
             })}
           </div>
         )}
       </div>
 
-      {/* VIEW BOOKING POPUP */}
+      {/* VIEW BOOKING (RESPONSIVE) */}
       <ViewBookingDialog
         open={viewOpen}
         onOpenChange={setViewOpen}
         bookingId={selectedBookingId}
-        onCancelled={reload}
+        variant={isDesktop ? "dialog" : "drawer"}
+      />
+
+      {/* CANCEL FLOW */}
+      <CancelBookingFlow
+        bookingId={cancelBookingId}
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        onSuccess={reload}
       />
     </>
   );

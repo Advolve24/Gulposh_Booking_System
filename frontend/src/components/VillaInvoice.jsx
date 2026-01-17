@@ -69,25 +69,33 @@ export default function VillaInvoice() {
 
   /* ================= PDF ================= */
  const generatePDF = async () => {
-  // 🚫 prevent double clicks
   if (isDownloadingRef.current) return;
-
   isDownloadingRef.current = true;
 
-  const element = invoiceRef.current;
-  if (!element) {
+  const original = invoiceRef.current;
+  if (!original) {
     isDownloadingRef.current = false;
     return;
   }
 
-  const originalWidth = element.style.width;
+  let clone;
 
   try {
-    // 👉 Force desktop layout
-    element.style.width = "1024px";
+    /* ================= CREATE OFFSCREEN CLONE ================= */
+    clone = original.cloneNode(true);
 
-    // 👉 Wait for images
-    const images = element.querySelectorAll("img");
+    clone.style.width = "1024px";
+    clone.style.maxWidth = "1024px";
+    clone.style.position = "fixed";
+    clone.style.left = "-9999px";
+    clone.style.top = "0";
+    clone.style.background = "#ffffff";
+    clone.style.padding = "24px";
+
+    document.body.appendChild(clone);
+
+    /* ================= WAIT FOR IMAGES ================= */
+    const images = clone.querySelectorAll("img");
     await Promise.all(
       [...images].map(
         (img) =>
@@ -99,10 +107,10 @@ export default function VillaInvoice() {
       )
     );
 
-    // 👉 Allow layout to settle
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 200));
 
-    const canvas = await html2canvas(element, {
+    /* ================= RENDER CANVAS ================= */
+    const canvas = await html2canvas(clone, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
@@ -111,24 +119,20 @@ export default function VillaInvoice() {
 
     const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
+    /* ================= CREATE PDF ================= */
     const pdf = new jsPDF("p", "pt", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = (canvas.height * pageWidth) / canvas.width;
 
     pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, pageHeight);
-
-    // ✅ DOWNLOAD TRIGGERS IMMEDIATELY
     pdf.save(`invoice-${booking._id}.pdf`);
-  } catch (error) {
-    console.error("PDF generation failed:", error);
+  } catch (err) {
+    console.error("PDF generation failed:", err);
   } finally {
-    // 🔓 Always restore
-    element.style.width = originalWidth;
+    if (clone) document.body.removeChild(clone);
     isDownloadingRef.current = false;
   }
 };
-
-
 
   return (
     <div className="min-h-screen bg-[#faf7f4] px-3 md:px-6 py-4 md:py-8">

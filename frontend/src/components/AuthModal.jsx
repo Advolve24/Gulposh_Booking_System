@@ -203,11 +203,11 @@ export default function AuthModal() {
           </button>
 
           <img
-            src="/Gulposh-65-scaled-1.webp"
+            src="/login-popup.webp"
             alt="Gulposh Villa"
             className="h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10" />
+          <div className="absolute inset-0 " />
         </div>
 
         {/* BODY */}
