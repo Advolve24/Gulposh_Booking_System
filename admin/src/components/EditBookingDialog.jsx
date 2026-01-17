@@ -32,13 +32,20 @@ import { toDateOnlyFromAPIUTC, todayDateOnlyUTC } from "../lib/date";
 const GOV_ID_TYPES = ["Aadhaar", "Passport", "Voter ID", "Driving License"];
 const API_ROOT = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+const Field = ({ label, children }) => (
+  <div className="space-y-1">
+    <Label className="text-xs text-muted-foreground">{label}</Label>
+    {children}
+  </div>
+);
+
 
 const toYMD = (d) => {
   if (!d) return null;
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;    
+  return `${year}-${month}-${day}`;
 };
 
 
@@ -80,8 +87,8 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
         booking?.adminMeta?.amountPaid != null
           ? String(booking.adminMeta.amountPaid)
           : booking?.amount != null
-          ? String(booking.amount)
-          : "",
+            ? String(booking.amount)
+            : "",
       paymentMode: booking?.adminMeta?.paymentMode || "Cash",
       startDate: booking?.startDate ? new Date(booking.startDate) : null,
       endDate: booking?.endDate ? new Date(booking.endDate) : null,
@@ -200,177 +207,134 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Edit Booking</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-lg rounded-2xl p-0 overflow-hidden">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>Full Name</Label>
-            <Input
-              value={form.fullName}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, fullName: e.target.value }))
-              }
-            />
+        {/* ===== HEADER ===== */}
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-lg font-semibold">Edit Booking</h2>
+          <p className="text-xs text-muted-foreground">
+            Booking ID: #{booking._id.slice(-6)}
+          </p>
+        </div>
+
+        {/* ===== BODY ===== */}
+        <div className="px-6 py-2 space-y-6 text-sm">
+
+          {/* Dates */}
+          <div className="space-y-4">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted text-xs font-medium">
+              CHECK-IN – CHECK-OUT
+            </span>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Check-in */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-start">
+                    {form.startDate
+                      ? format(form.startDate, "dd MMM yyyy")
+                      : "Check-in"}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0">
+                  <Calendar
+                    mode="single"
+                    selected={form.startDate}
+                    onSelect={(d) => setForm(f => ({ ...f, startDate: d }))}
+                    disabled={disabledDates}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {/* Check-out */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="justify-start">
+                    {form.endDate
+                      ? format(form.endDate, "dd MMM yyyy")
+                      : "Check-out"}
+                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0">
+                  <Calendar
+                    mode="single"
+                    selected={form.endDate}
+                    onSelect={(d) => setForm(f => ({ ...f, endDate: d }))}
+                    disabled={disabledDates}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
-          <div>
-            <Label>Phone</Label>
-            <Input
-              value={form.phone}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, phone: e.target.value }))
-              }
-            />
+          {/* Guest Info */}
+          <div className="space-y-3">
+            <Field label="Full Name">
+              <Input value={form.fullName}
+                onChange={(e) => setForm(f => ({ ...f, fullName: e.target.value }))} />
+            </Field>
+
+            <Field label="Phone">
+              <Input value={form.phone}
+                onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Govt ID Type">
+                <Select value={form.govIdType}
+                  onValueChange={(v) => setForm(f => ({ ...f, govIdType: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select ID" /></SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {GOV_ID_TYPES.map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <Field label="Govt ID Number">
+                <Input value={form.govIdNumber}
+                  onChange={(e) => setForm(f => ({ ...f, govIdNumber: e.target.value }))} />
+              </Field>
+            </div>
           </div>
 
-          <div>
-            <Label>Government ID Type</Label>
-            <Select
-              value={form.govIdType}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, govIdType: v }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select ID" />
-              </SelectTrigger>
-              <SelectContent>
-                {GOV_ID_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Payment */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Amount Paid (₹)">
+              <Input type="number" value={form.amountPaid}
+                onChange={(e) => setForm(f => ({ ...f, amountPaid: e.target.value }))} />
+            </Field>
 
-          <div>
-            <Label>Government ID Number</Label>
-            <Input
-              value={form.govIdNumber}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, govIdNumber: e.target.value }))
-              }
-            />
-          </div>
-
-          {/* ✅ Check-in with disabled booked/blocked dates */}
-          <div>
-            <Label>Check-in</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={`w-full justify-start text-left font-normal ${
-                    !form.startDate && "text-muted-foreground"
-                  }`}
-                >
-                  {form.startDate
-                    ? format(form.startDate, "PPP")
-                    : "Select check-in date"}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={form.startDate}
-                  onSelect={(date) =>
-                    setForm((f) => ({ ...f, startDate: date }))
-                  }
-                  disabled={disabledDates}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* ✅ Check-out with disabled booked/blocked dates */}
-          <div>
-            <Label>Check-out</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={`w-full justify-start text-left font-normal ${
-                    !form.endDate && "text-muted-foreground"
-                  }`}
-                >
-                  {form.endDate
-                    ? format(form.endDate, "PPP")
-                    : "Select check-out date"}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={form.endDate}
-                  onSelect={(date) =>
-                    setForm((f) => ({ ...f, endDate: date }))
-                  }
-                  disabled={disabledDates}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div>
-            <Label>Guests</Label>
-            <Input value={String(booking.guests ?? "")} disabled />
-          </div>
-
-          <div>
-            <Label>Room Assigned</Label>
-            <Input value={booking.room?.name || "Entire Villa"} disabled />
-          </div>
-
-          <div>
-            <Label>Amount Paid (₹)</Label>
-            <Input
-              type="number"
-              inputMode="decimal"
-              value={form.amountPaid}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, amountPaid: e.target.value }))
-              }
-            />
-          </div>
-
-          <div>
-            <Label>Payment Mode</Label>
-            <Select
-              value={form.paymentMode}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, paymentMode: v }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Cash">Cash</SelectItem>
-                <SelectItem value="UPI">UPI</SelectItem>
-                <SelectItem value="Card">Card</SelectItem>
-                <SelectItem value="Online">Online</SelectItem>
-              </SelectContent>
-            </Select>
+            <Field label="Payment Mode">
+              <Select value={form.paymentMode}
+                onValueChange={(v) => setForm(f => ({ ...f, paymentMode: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="UPI">UPI</SelectItem>
+                  <SelectItem value="Card">Card</SelectItem>
+                  <SelectItem value="Online">Online</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
           </div>
         </div>
 
-        <DialogFooter className="gap-2 pt-4">
-          <Button variant="outline" onClick={handlePrint}>
-            Print PDF
+        {/* ===== FOOTER ===== */}
+        <div className="px-6 py-4 border-t flex justify-end gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Changes"}
           </Button>
-        </DialogFooter>
+        </div>
+
       </DialogContent>
     </Dialog>
+
   );
 }

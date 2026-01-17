@@ -40,6 +40,7 @@ import {
 import MobileBookingCard from "@/components/MobileBookingCard";
 import BookingTable from "@/components/BookingTable";
 import BookingViewPopup from "@/components/BookingViewPopup";
+import EditBookingDialog from "@/components/EditBookingDialog";
 import { getBookingAdmin } from "../api/admin";
 
 
@@ -191,6 +192,7 @@ export default function Dashboard() {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const navigate = useNavigate();
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [editBooking, setEditBooking] = useState(null);
 
 
   useEffect(() => {
@@ -718,6 +720,7 @@ export default function Dashboard() {
             onDownloadInvoice={(b) => {
               downloadInvoiceDirect(b._id);
             }}
+            onEditBooking={(b) => setEditBooking(b)}
 
           />
 
@@ -742,7 +745,7 @@ export default function Dashboard() {
               onDownloadInvoice={(booking) => {
                 downloadInvoiceDirect(booking._id);
               }}
-
+              onEditBooking={(b) => setEditBooking(b)}
 
             />
           ))}
@@ -756,6 +759,12 @@ export default function Dashboard() {
         onClose={() => setSelectedBooking(null)}
       />
 
+      <EditBookingDialog
+        open={!!editBooking}
+        booking={editBooking}
+        onOpenChange={() => setEditBooking(null)}
+        reload={bookings}
+      />
 
     </AppLayout>
   );

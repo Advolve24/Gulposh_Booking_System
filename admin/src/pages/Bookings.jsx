@@ -13,6 +13,7 @@ import { listBookingsAdmin } from "@/api/admin";
 import BookingViewPopup from "@/components/BookingViewPopup";
 import BookingTable from "@/components/BookingTable";
 import MobileBookingCard from "@/components/MobileBookingCard";
+import EditBookingDialog from "@/components/EditBookingDialog";
 
 
 const downloadInvoiceDirect = (bookingId) => {
@@ -45,6 +46,7 @@ export default function Booking() {
   const [params] = useSearchParams();
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [search, setSearch] = useState("");
+  const [editBooking, setEditBooking] = useState(null);
 
 
   const filteredBookings = useMemo(() => {
@@ -161,12 +163,12 @@ export default function Booking() {
               onDownloadInvoice={(b) => {
                 downloadInvoiceDirect(b._id);
               }}
+              onEditBooking={(b) => setEditBooking(b)}
             />
 
           </div>
         </div>
 
-        {/* MOBILE VIEW */}
         {/* MOBILE VIEW */}
         <div className="sm:hidden space-y-3">
           {visible.map((b) => (
@@ -187,6 +189,7 @@ export default function Booking() {
               onDownloadInvoice={(b) => {
                 downloadInvoiceDirect(b._id);
               }}
+              onEditBooking={(b) => setEditBooking(b)}
             />
           ))}
         </div>
@@ -220,6 +223,13 @@ export default function Booking() {
           open={!!selectedBooking}
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
+        />
+
+        <EditBookingDialog
+          open={!!editBooking}
+          booking={editBooking}
+          onOpenChange={() => setEditBooking(null)}
+          reload={loadBookings}
         />
 
       </div>

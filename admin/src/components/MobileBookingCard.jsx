@@ -50,13 +50,13 @@ const guestLabel = (b) => {
   return `${adults} Adults, ${children} Children`;
 };
 
-/* ---------- component ---------- */
 
 export default function MobileBookingCard({
   booking,
-  onOpen,          // 🔑 open popup
+  onOpen,          
   onViewInvoice,
   onDownloadInvoice,
+  onEditBooking
 }) {
   return (
     <div
@@ -95,12 +95,21 @@ export default function MobileBookingCard({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent
-             className="bg-white"
+              className="bg-white"
               align="end"
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuItem onClick={() => onOpen?.(booking)}>
                 View Booking
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditBooking?.(booking);
+                }}
+              >
+                Edit Booking
               </DropdownMenuItem>
 
               <DropdownMenuItem
