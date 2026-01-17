@@ -8,7 +8,6 @@ const rp = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-/* ================= UTILS ================= */
 
 const nightsBetween = (start, end) => {
   if (!start || !end) return 1;
@@ -24,10 +23,6 @@ const nightsBetween = (start, end) => {
   return Math.max(1, Math.round((eUTC - sUTC) / (1000 * 60 * 60 * 24)));
 };
 
-
-/* =========================================================
-   CREATE ADMIN ORDER (RAZORPAY ONLY – NO DB WRITE)
-========================================================= */
 
 export const createAdminOrder = async (req, res) => {
   try {
@@ -113,9 +108,6 @@ export const createAdminOrder = async (req, res) => {
   }
 };
 
-/* =========================================================
-   VERIFY ADMIN PAYMENT + CREATE BOOKING (FINAL SOURCE OF TRUTH)
-========================================================= */
 
 export const verifyAdminPayment = async (req, res) => {
   try {
@@ -138,7 +130,6 @@ export const verifyAdminPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid payment payload" });
     }
 
-    /* ===== VERIFY SIGNATURE ===== */
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expected = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -149,7 +140,6 @@ export const verifyAdminPayment = async (req, res) => {
       return res.status(400).json({ message: "Signature mismatch" });
     }
 
-    /* ===== DATES ===== */
     const sDate = new Date(startDate);
     const eDate = new Date(endDate);
     if (isNaN(sDate) || isNaN(eDate)) {
@@ -158,7 +148,6 @@ export const verifyAdminPayment = async (req, res) => {
 
     const nights = nightsBetween(sDate, eDate);
 
-    /* ===== ROOM ===== */
     const room = roomId
       ? await Room.findById(roomId)
       : await Room.findOne({ name: /villa/i });
@@ -167,7 +156,6 @@ export const verifyAdminPayment = async (req, res) => {
       return res.status(404).json({ message: "Room not found" });
     }
 
-    /* ===== LOCK ROOM & MEAL PRICES ===== */
     const pricePerNight =
       withMeal && room.priceWithMeal > 0
         ? room.priceWithMeal
@@ -178,7 +166,6 @@ export const verifyAdminPayment = async (req, res) => {
 
     const roomTotal = nights * pricePerNight;
 
-    /* ===== CREATE BOOKING (ALL VALUES FINAL) ===== */
     const booking = await Booking.create({
       user: userId,
       room: room._id,
@@ -189,11 +176,9 @@ export const verifyAdminPayment = async (req, res) => {
 
       guests: Number(guests),
 
-      /* ROOM */
       pricePerNight,
       roomTotal,
 
-      /* MEALS (LOCKED) */
       withMeal: !!withMeal,
       vegGuests: 0,
       nonVegGuests: 0,
@@ -203,16 +188,13 @@ export const verifyAdminPayment = async (req, res) => {
       },
       mealTotal: 0,
 
-      /* FINAL */
       amount: roomTotal,
       currency: "INR",
 
-      /* CONTACT */
       contactName: contactName || "",
       contactEmail: contactEmail || "",
       contactPhone: contactPhone || "",
 
-      /* PAYMENT */
       status: "confirmed",
       paymentProvider: "razorpay",
       orderId: razorpay_order_id,

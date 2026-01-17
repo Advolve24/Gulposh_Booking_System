@@ -1,8 +1,5 @@
 import Booking from "../models/Booking.js";
 
-/* ================================
-   HELPERS
-================================ */
 
 const nightsBetween = (start, end) => {
   const s = new Date(start);
@@ -11,9 +8,7 @@ const nightsBetween = (start, end) => {
   return Math.max(diff, 1);
 };
 
-/* ================================
-   GET MY BOOKINGS (LIST VIEW)
-================================ */
+
 export const getMyBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user.id })
@@ -42,9 +37,7 @@ export const getMyBookings = async (req, res) => {
   }
 };
 
-/* ================================
-   GET SINGLE BOOKING (VIEW POPUP)
-================================ */
+
 export const getBooking = async (req, res) => {
   try {
     const booking = await Booking.findOne({
@@ -78,36 +71,29 @@ export const getBooking = async (req, res) => {
       _id: booking._id,
       status: booking.status,
 
-      /* STAY */
       startDate: booking.startDate,
       endDate: booking.endDate,
       nights,
 
-      /* GUESTS */
       guests: booking.guests,
       vegGuests: booking.vegGuests || 0,
       nonVegGuests: booking.nonVegGuests || 0,
       comboGuests: booking.comboGuests || 0,
 
-      /* ROOM */
       room: booking.room,
 
-      /* USER */
       user: booking.user,
 
-      /* PRICING */
       pricePerNight: booking.pricePerNight,
       roomTotal: booking.roomTotal,
       mealTotal: booking.mealTotal,
       amount: booking.amount,
       currency: booking.currency || "INR",
 
-      /* PAYMENT */
       paymentProvider: booking.paymentProvider,
       orderId: booking.orderId,
       paymentId: booking.paymentId,
 
-      /* META */
       createdAt: booking.createdAt,
       updatedAt: booking.updatedAt,
     });
@@ -116,9 +102,7 @@ export const getBooking = async (req, res) => {
   }
 };
 
-/* ================================
-   CANCEL BOOKING
-================================ */
+
 export const cancelMyBooking = async (req, res) => {
   try {
     const booking = await Booking.findOne({

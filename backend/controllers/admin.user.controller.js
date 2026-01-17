@@ -301,21 +301,18 @@ export const updateBookingAdmin = async (req, res) => {
       status,
     } = req.body || {};
 
-    /* ================= DATES ================= */
     if (startDate) booking.startDate = new Date(startDate);
     if (endDate) booking.endDate = new Date(endDate);
 
     const nights = nightsBetween(booking.startDate, booking.endDate);
     booking.nights = nights;
 
-    /* ================= GUESTS ================= */
     if (typeof guests === "number" && guests > 0) {
       booking.guests = guests;
     }
 
     booking.withMeal = !!withMeal;
 
-    /* ================= MEAL VALIDATION ================= */
     const totalMealGuests =
       Number(vegGuests) + Number(nonVegGuests) + Number(comboGuests);
 
@@ -329,7 +326,6 @@ export const updateBookingAdmin = async (req, res) => {
     booking.nonVegGuests = Number(nonVegGuests) || 0;
     booking.comboGuests = Number(comboGuests) || 0;
 
-    /* ================= PRICES (LOCKED) ================= */
     const vegPrice = Number(booking.mealMeta?.vegPrice || 0);
     const nonVegPrice = Number(booking.mealMeta?.nonVegPrice || 0);
 
@@ -339,13 +335,10 @@ export const updateBookingAdmin = async (req, res) => {
     const mealTotal = booking.withMeal ? vegTotal + nonVegTotal : 0;
     booking.mealTotal = mealTotal;
 
-    /* ================= ROOM TOTAL ================= */
     booking.roomTotal = booking.pricePerNight * nights;
 
-    /* ================= FINAL AMOUNT ================= */
     booking.amount = booking.roomTotal + booking.mealTotal;
 
-    /* ================= STATUS ================= */
     if (status) booking.status = status;
 
     await booking.save();
@@ -373,7 +366,7 @@ export const getBookingAdmin = async (req, res) => {
 
     const booking = await Booking.findById(id)
       .populate("user", "name email phone createdAt")
-      .populate("room", "name pricePerNight mealPrices") // ✅ IMPORTANT
+      .populate("room", "name pricePerNight mealPrices") 
       .lean();
 
     if (!booking) {

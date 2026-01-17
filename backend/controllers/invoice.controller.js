@@ -59,17 +59,19 @@ export const downloadInvoicePDF = async (req, res) => {
       .populate("room", "name mealPriceVeg mealPriceNonVeg");
 
     if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
+      return res
+        .status(404)
+        .set("Content-Type", "text/plain")
+        .send("Booking not found");
     }
 
-    /* ================= INVOICE HTML ================= */
     const html = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="UTF-8" />
           <style>
-            body { font-family: Inter, Arial, sans-serif; padding: 32px; }
+            body { font-family: Arial, sans-serif; padding: 32px; }
             h1 { font-size: 22px; margin-bottom: 16px; }
             table { width: 100%; border-collapse: collapse; margin-top: 16px; }
             td { padding: 8px 0; }
@@ -81,8 +83,8 @@ export const downloadInvoicePDF = async (req, res) => {
           <h1>Invoice</h1>
 
           <p><strong>Invoice ID:</strong> INV-${booking._id
-            .slice(-6)
-            .toUpperCase()}</p>
+        .slice(-6)
+        .toUpperCase()}</p>
           <p><strong>Guest:</strong> ${booking.user?.name}</p>
           <p><strong>Phone:</strong> ${booking.user?.phone || "-"}</p>
 
@@ -94,38 +96,33 @@ export const downloadInvoicePDF = async (req, res) => {
               </td>
             </tr>
 
-            ${
-              booking.withMeal
-                ? `
-                <tr>
-                  <td>Meals</td>
-                  <td class="right">₹${booking.mealTotal}</td>
-                </tr>
-              `
-                : ""
-            }
+            ${booking.withMeal
+        ? `<tr><td>Meals</td><td class="right">₹${booking.mealTotal}</td></tr>`
+        : ""
+      }
 
             <tr>
               <td class="total">Total</td>
               <td class="right total">₹${booking.amount}</td>
             </tr>
           </table>
-
-          <p style="margin-top:40px;font-size:12px;color:#555">
-            Generated on ${new Date().toLocaleDateString()}
-          </p>
         </body>
       </html>
     `;
 
-    /* ================= PDF GENERATION ================= */
     const browser = await puppeteer.launch({
-      headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
     });
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.evaluateHandle("document.fonts.ready");
 
     const pdfBuffer = await page.pdf({
       format: "A4",
@@ -134,19 +131,24 @@ export const downloadInvoicePDF = async (req, res) => {
 
     await browser.close();
 
-    /* ================= 🔑 YOUR LINES GO HERE ================= */
+
+
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=invoice-${booking._id
-        .slice(-5)
+      `attachment; filename=Invoice-${booking._id
+        .slice(-6)
         .toUpperCase()}.pdf`
     );
+    res.setHeader("Cache-Control", "no-store");
 
-    res.send(pdfBuffer);
+    return res.end(pdfBuffer);
+
   } catch (err) {
     console.error("Invoice PDF error:", err);
-    res.status(500).json({ message: "Invoice PDF generation failed" });
+    res
+      .status(500)
+      .set("Content-Type", "text/plain")
+      .send("Failed to generate PDF");
   }
 };
-

@@ -1,8 +1,5 @@
 import Room from "../models/Room.js";
 
-/* --------------------------------
-   HELPERS
--------------------------------- */
 
 const toArray = (v) => {
   if (Array.isArray(v)) return v.filter(Boolean).map(String);
@@ -18,7 +15,6 @@ const toArray = (v) => {
 const normalizeReviews = (v) => {
   if (!v) return [];
 
-  // If already an array of objects
   if (Array.isArray(v)) {
     return v
       .filter(
@@ -35,7 +31,6 @@ const normalizeReviews = (v) => {
       }));
   }
 
-  // If sent as JSON string
   if (typeof v === "string") {
     try {
       const parsed = JSON.parse(v);
@@ -48,16 +43,13 @@ const normalizeReviews = (v) => {
   return [];
 };
 
-/* --------------------------------
-   CREATE ROOM
--------------------------------- */
 
 export const createRoom = async (req, res) => {
   try {
     const {
       name,
       pricePerNight,
-      maxGuests, // ✅ NEW
+      maxGuests, 
       mealPriceVeg,
       mealPriceNonVeg,
       mealPriceCombo,
@@ -79,7 +71,6 @@ export const createRoom = async (req, res) => {
       name: String(name).trim(),
       pricePerNight: Number(pricePerNight) || 0,
 
-      // ✅ MAX GUESTS
       maxGuests:
         maxGuests !== undefined
           ? Math.max(1, Number(maxGuests))
@@ -103,18 +94,14 @@ export const createRoom = async (req, res) => {
   }
 };
 
-/* --------------------------------
-   LIST ROOMS (ADMIN)
--------------------------------- */
+
 
 export const listRoomsAdmin = async (_req, res) => {
   const rooms = await Room.find().sort({ createdAt: -1 });
   res.json(rooms);
 };
 
-/* --------------------------------
-   GET ROOM (ADMIN)
--------------------------------- */
+
 
 export const getRoomAdmin = async (req, res) => {
   const room = await Room.findById(req.params.id);
@@ -124,16 +111,14 @@ export const getRoomAdmin = async (req, res) => {
   res.json(room);
 };
 
-/* --------------------------------
-   UPDATE ROOM
--------------------------------- */
+
 
 export const updateRoom = async (req, res) => {
   try {
     const {
       name,
       pricePerNight,
-      maxGuests, // ✅ NEW
+      maxGuests, 
       mealPriceVeg,
       mealPriceNonVeg,
       mealPriceCombo,
@@ -153,7 +138,6 @@ export const updateRoom = async (req, res) => {
       update.pricePerNight = Number(pricePerNight) || 0;
     }
 
-    // ✅ MAX GUESTS (ONLY UPDATE IF SENT)
     if (maxGuests !== undefined) {
       update.maxGuests = Math.max(1, Number(maxGuests));
     }
@@ -186,12 +170,10 @@ export const updateRoom = async (req, res) => {
       update.amenities = toArray(amenities);
     }
 
-    // HOUSE RULES (ONLY UPDATE IF SENT)
     if (houseRules !== undefined) {
       update.houseRules = toArray(houseRules);
     }
 
-    // REVIEWS (ONLY UPDATE IF SENT)
     if (reviews !== undefined) {
       update.reviews = normalizeReviews(reviews);
     }
@@ -210,9 +192,6 @@ export const updateRoom = async (req, res) => {
   }
 };
 
-/* --------------------------------
-   DELETE ROOM
--------------------------------- */
 
 export const deleteRoom = async (req, res) => {
   await Room.findByIdAndDelete(req.params.id);
