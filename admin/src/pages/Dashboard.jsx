@@ -103,6 +103,7 @@ function StatCard({
   textColor = "text-foreground",
   mobileFull = false,
   iconColor,
+  valueColor,
 }) {
   return (
     <div
@@ -123,7 +124,12 @@ function StatCard({
       {/* LEFT */}
       <div className={`flex md:w-auto w-[60%] flex-col gap-4 ${textColor}`}>
         <p className="text-sm opacity-80">{label}</p>
-        <h2 className="text-2xl font-semibold">{value}</h2>
+        <h2
+          className="text-2xl font-semibold"
+          style={valueColor ? { color: valueColor } : undefined}
+        >
+          {value}
+        </h2>
 
         {hint && (
           <p className={`hidden sm:block text-sm ${hintColor}`}>
@@ -533,8 +539,9 @@ export default function Dashboard() {
           icon={CalendarDays}
           label="Total Bookings"
           value={stats?.totalBookings ?? 0}
+          valueColor="#ffe400"          // yellow count
           hint={`${bookingChange > 0 ? "+" : ""}${bookingChange}% from last month`}
-          hintColor={bookingChange >= 0 ? "text-green-600" : "text-red-600"}
+          hintColor="text-white"        // ✅ force white
           onClick={() => navigate("/bookings")}
           bg="rgb(5 92 0)"
           textColor="text-white"
@@ -569,7 +576,7 @@ export default function Dashboard() {
           label="Total Revenue"
           value={`₹${(stats?.totalRevenue ?? 0).toLocaleString("en-IN")}`}
           hint={`${revenueChange > 0 ? "+" : ""}${revenueChange}% from last month`}
-          hintColor={revenueChange >= 0 ? "text-green-300" : "text-red-300"}
+          hintColor="text-[rgb(239_214_134)]"
           onClick={() => navigate("/bookings?paid=true")}
           bg="#671e2f"
           textColor="text-white"
@@ -580,7 +587,6 @@ export default function Dashboard() {
 
       </div>
 
-      {/* ===== CALENDAR + QUICK ACTIONS ===== */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
         {/* Calendar */}
         <div className="
