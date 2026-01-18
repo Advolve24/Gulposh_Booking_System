@@ -152,12 +152,15 @@ export const googleLogin = async (req, res) => {
 
     issueSession(res, user);
 
+    const isNewUser = !user.profileComplete;
+
     res.json({
       id: user._id,
       name: user.name,
       phone: user.phone,
       email: user.email,
       profileComplete: user.profileComplete,
+      isNewUser,
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
