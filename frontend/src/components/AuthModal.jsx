@@ -44,25 +44,24 @@ export default function AuthModal() {
     return () => clearInterval(t);
   }, [step, secondsLeft]);
 
-  /* ================= AUTO VERIFY OTP ================= */
 /* ================= AUTO VERIFY OTP (SAFE) ================= */
-useEffect(() => {
-  if (step !== "otp") return;
+// useEffect(() => {
+//   if (step !== "otp") return;
 
-  const otp = form.otp.replace(/\D/g, "");
+//   const otp = form.otp.replace(/\D/g, "");
 
-  if (otp.length !== 6) return;
-  if (!confirmationRef.current) return;
-  if (verifyingRef.current) return;
+//   if (otp.length !== 6) return;
+//   if (!confirmationRef.current) return;
+//   if (verifyingRef.current) return;
 
-  const timer = setTimeout(() => {
-    if (!verifyingRef.current) {
-      verifyOtp();
-    }
-  }, 300); // 🔑 REQUIRED delay for Firebase
+//   const timer = setTimeout(() => {
+//     if (!verifyingRef.current) {
+//       verifyOtp();
+//     }
+//   }, 300); // 🔑 REQUIRED delay for Firebase
 
-  return () => clearTimeout(timer);
-}, [form.otp, step]);
+//   return () => clearTimeout(timer);
+// }, [form.otp, step]);
 
 
 
@@ -281,13 +280,13 @@ useEffect(() => {
                 }
               />
 
-              {/* <Button
+              <Button
                 className="w-full h-11 bg-[#a11d2e]"
                 onClick={verifyOtp}
                 disabled={loading}
               >
                 {loading ? "Verifying..." : "Verify OTP"}
-              </Button> */}
+              </Button>
 
               <div className="text-xs text-center text-muted-foreground">
                 {secondsLeft > 0 ? (
