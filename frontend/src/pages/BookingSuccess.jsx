@@ -290,18 +290,26 @@ export default function BookingSuccess() {
                                     <div className="text-xs text-muted-foreground mb-1">
                                         Address
                                     </div>
-                                    <div className="font-medium leading-relaxed">
-                                        {(user?.address || booking.address?.address) && (
-                                            <>
-                                                {user?.address || booking.address?.address}
-                                                <br />
-                                            </>
-                                        )}
-                                        {user?.city || booking.address?.city},{" "}
-                                        {user?.state || booking.address?.state}{" "}
-                                        {user?.pincode || booking.address?.pincode}
-                                        <br />
-                                        {user?.country || booking.address?.country}
+                                    <div className="font-medium leading-relaxed space-y-1">
+
+                                        {/* ROW 1 — STREET */}
+                                        <div>
+                                            {user?.address || booking.address?.address || "—"}
+                                        </div>
+
+                                        {/* ROW 2 — CITY / STATE / PIN / COUNTRY */}
+                                        <div>
+                                            {(user?.city || booking.address?.city) && (
+                                                <>
+                                                    {user?.city || booking.address?.city},{" "}
+                                                </>
+                                            )}
+                                            {user?.state || booking.address?.state}{" "}
+                                            {user?.pincode || booking.address?.pincode}
+                                            {", "}
+                                            {user?.country || booking.address?.country}
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
