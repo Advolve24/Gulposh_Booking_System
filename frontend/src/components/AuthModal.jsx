@@ -47,47 +47,51 @@ export default function AuthModal() {
   }, [step, secondsLeft]);
 
   /* ================= GOOGLE INIT & RENDER ================= */
-  useEffect(() => {
-    if (!showAuthModal) return;
-    if (!window.google?.accounts?.id) return;
+ useEffect(() => {
+  if (!showAuthModal || googleRenderedRef.current) return;
 
-    window.google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      callback: handleGoogleResponse,
+  const loadGoogleScript = () =>
+    new Promise((resolve, reject) => {
+      if (window.google?.accounts?.id) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+
+      script.onload = resolve;
+      script.onerror = reject;
+
+      document.body.appendChild(script);
     });
 
-    const container = document.getElementById("google-btn");
-    if (container && !googleRenderedRef.current) {
-      window.google.accounts.id.renderButton(container, {
-        theme: "outline",
-        size: "large",
-        text: "continue_with",
-        shape: "pill",
-        width: 320,
-      });
-      googleRenderedRef.current = true;
-    }
-  }, [showAuthModal]);
-
-  /* ================= GOOGLE LOGIN ================= */
-  const handleGoogleResponse = async (response) => {
-    try {
-      setLoading(true);
-
-      const res = await api.post("/auth/google-login", {
-        idToken: response.credential,
+  loadGoogleScript()
+    .then(() => {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
       });
 
-      closeAuth();
-      toast.success("Welcome to Gulposh ✨");
-      handlePostAuthRedirect(res.data);
-    } catch (err) {
-      console.error(err);
-      toast.error("Google login failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      const container = document.getElementById("google-btn");
+      if (container) {
+        window.google.accounts.id.renderButton(container, {
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          shape: "pill",
+          width: 320,
+        });
+        googleRenderedRef.current = true;
+      }
+    })
+    .catch(() => {
+      console.error("Failed to load Google OAuth script");
+    });
+}, [showAuthModal]);
+
 
   /* ================= POST AUTH REDIRECT ================= */
   const handlePostAuthRedirect = (user) => {
