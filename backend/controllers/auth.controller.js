@@ -109,14 +109,38 @@ export const googleLogin = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
+
     const googleId = payload.sub;
-    const email = payload.email;
+    const email = payload.email?.toLowerCase() || null;
     const name = payload.name || null;
 
-    let user = await User.findOne({
-      $or: [{ googleId }, { email }],
-    });
+    let user = null;
 
+    // 1️⃣ First priority: existing Google user
+    user = await User.findOne({ googleId });
+
+    // 2️⃣ Second priority: OTP user with same email
+    if (!user && email) {
+      user = await User.findOne({ email });
+    }
+
+    // 3️⃣ If user exists → LINK Google
+    if (user) {
+      if (!user.googleId) {
+        user.googleId = googleId;
+      }
+      if (!user.email && email) {
+        user.email = email;
+      }
+      if (!user.name && name) {
+        user.name = name;
+      }
+
+      user.authProvider = "google";
+      await user.save();
+    }
+
+    // 4️⃣ If truly new user → CREATE
     if (!user) {
       user = await User.create({
         googleId,
@@ -124,11 +148,6 @@ export const googleLogin = async (req, res) => {
         name,
         authProvider: "google",
       });
-    } else if (!user.googleId) {
-      user.googleId = googleId;
-      user.authProvider = "google";
-      if (!user.name && name) user.name = name;
-      await user.save();
     }
 
     issueSession(res, user);
@@ -136,6 +155,7 @@ export const googleLogin = async (req, res) => {
     res.json({
       id: user._id,
       name: user.name,
+      phone: user.phone,
       email: user.email,
       profileComplete: user.profileComplete,
       isAdmin: !!user.isAdmin,
