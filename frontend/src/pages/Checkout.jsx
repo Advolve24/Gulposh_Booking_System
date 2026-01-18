@@ -74,6 +74,7 @@ export default function Checkout() {
 
   const [bookedAll, setBookedAll] = useState([]);
 const [blackoutRanges, setBlackoutRanges] = useState([]);
+const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
 
   /* ================= GUESTS & MEALS ================= */
   const [guests, setGuests] = useState(String(initialGuests));
