@@ -16,6 +16,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
+import {api} from "@/api/http";
 
 const OTP_TIMER = 60;
 const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
@@ -24,7 +25,7 @@ export default function AuthModal() {
   const { showAuthModal, closeAuth, firebaseLoginWithToken } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState("phone"); // phone | otp
+  const [step, setStep] = useState("choice"); // choice | phone | otp
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ phone: "", otp: "" });
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
@@ -32,6 +33,7 @@ export default function AuthModal() {
   const confirmationRef = useRef(null);
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
+  const googleRenderedRef = useRef(false);
 
   /* ================= TIMER ================= */
   useEffect(() => {
@@ -44,32 +46,76 @@ export default function AuthModal() {
     return () => clearInterval(t);
   }, [step, secondsLeft]);
 
-/* ================= AUTO VERIFY OTP (SAFE) ================= */
-// useEffect(() => {
-//   if (step !== "otp") return;
+  /* ================= GOOGLE INIT & RENDER ================= */
+  useEffect(() => {
+    if (!showAuthModal) return;
+    if (!window.google?.accounts?.id) return;
 
-//   const otp = form.otp.replace(/\D/g, "");
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: handleGoogleResponse,
+    });
 
-//   if (otp.length !== 6) return;
-//   if (!confirmationRef.current) return;
-//   if (verifyingRef.current) return;
+    const container = document.getElementById("google-btn");
+    if (container && !googleRenderedRef.current) {
+      window.google.accounts.id.renderButton(container, {
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        shape: "pill",
+        width: 320,
+      });
+      googleRenderedRef.current = true;
+    }
+  }, [showAuthModal]);
 
-//   const timer = setTimeout(() => {
-//     if (!verifyingRef.current) {
-//       verifyOtp();
-//     }
-//   }, 300); // 🔑 REQUIRED delay for Firebase
+  /* ================= GOOGLE LOGIN ================= */
+  const handleGoogleResponse = async (response) => {
+    try {
+      setLoading(true);
 
-//   return () => clearTimeout(timer);
-// }, [form.otp, step]);
+      const res = await api.post("/auth/google-login", {
+        idToken: response.credential,
+      });
 
+      closeAuth();
+      toast.success("Welcome to Gulposh ✨");
+      handlePostAuthRedirect(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Google login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  /* ================= POST AUTH REDIRECT ================= */
+  const handlePostAuthRedirect = (user) => {
+    const raw = sessionStorage.getItem("postAuthRedirect");
+    sessionStorage.removeItem("postAuthRedirect");
+
+    if (raw) {
+      const { redirectTo, bookingState } = JSON.parse(raw);
+      if (!user.profileComplete) {
+        navigate("/complete-profile", {
+          replace: true,
+          state: { redirectTo, bookingState },
+        });
+        return;
+      }
+      navigate(redirectTo, { replace: true, state: bookingState });
+      return;
+    }
+
+    navigate("/", { replace: true });
+  };
 
   /* ================= CLEAN RESET ================= */
   const resetFlow = () => {
     sendingRef.current = false;
     verifyingRef.current = false;
     confirmationRef.current = null;
+    googleRenderedRef.current = false;
 
     if (window.recaptchaVerifier) {
       window.recaptchaVerifier.clear();
@@ -77,7 +123,7 @@ export default function AuthModal() {
     }
 
     setForm({ phone: "", otp: "" });
-    setStep("phone");
+    setStep("choice");
     setSecondsLeft(OTP_TIMER);
     setLoading(false);
   };
@@ -95,7 +141,6 @@ export default function AuthModal() {
     setLoading(true);
 
     try {
-      // ensure single recaptcha instance
       const verifier =
         window.recaptchaVerifier ||
         getRecaptchaVerifier(auth, "recaptcha-container");
@@ -111,18 +156,11 @@ export default function AuthModal() {
       confirmationRef.current = confirmation;
       setStep("otp");
       setSecondsLeft(OTP_TIMER);
-
       toast.success("OTP sent successfully");
     } catch (err) {
       console.error(err);
+      toast.error("Failed to send OTP. Try again.");
 
-      if (err?.code === "auth/too-many-requests") {
-        toast.error("Too many attempts. Please wait a minute.");
-      } else {
-        toast.error("Failed to send OTP. Try again.");
-      }
-
-      // cleanup on failure
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
         window.recaptchaVerifier = null;
@@ -138,10 +176,7 @@ export default function AuthModal() {
     if (verifyingRef.current) return;
 
     const otp = form.otp.replace(/\D/g, "");
-    if (otp.length !== 6) {
-      toast.error("Enter valid 6-digit OTP");
-      return;
-    }
+    if (otp.length !== 6) return;
 
     if (!confirmationRef.current) {
       toast.error("OTP expired. Please resend.");
@@ -160,24 +195,7 @@ export default function AuthModal() {
 
       closeAuth();
       toast.success("Welcome to Gulposh ✨");
-
-      const raw = sessionStorage.getItem("postAuthRedirect");
-      sessionStorage.removeItem("postAuthRedirect");
-
-      if (raw) {
-        const { redirectTo, bookingState } = JSON.parse(raw);
-        if (!user.profileComplete) {
-          navigate("/complete-profile", {
-            replace: true,
-            state: { redirectTo, bookingState },
-          });
-          return;
-        }
-        navigate(redirectTo, { replace: true, state: bookingState });
-        return;
-      }
-
-      navigate("/", { replace: true });
+      handlePostAuthRedirect(user);
     } catch (err) {
       console.error(err);
       toast.error("Invalid OTP. Please resend.");
@@ -187,6 +205,19 @@ export default function AuthModal() {
       setLoading(false);
     }
   };
+
+  /* ================= AUTO VERIFY OTP ================= */
+  useEffect(() => {
+    if (
+      step === "otp" &&
+      form.otp.length === 6 &&
+      confirmationRef.current &&
+      !verifyingRef.current &&
+      !loading
+    ) {
+      verifyOtp();
+    }
+  }, [form.otp, step]);
 
   return (
     <Dialog
@@ -207,10 +238,9 @@ export default function AuthModal() {
 
         {/* reCAPTCHA */}
         <div
-  id="recaptcha-container"
-  className="absolute inset-0 pointer-events-none opacity-0"
-/>
-
+          id="recaptcha-container"
+          className="absolute inset-0 pointer-events-none opacity-0"
+        />
 
         {/* HEADER */}
         <div className="relative h-48">
@@ -229,14 +259,31 @@ export default function AuthModal() {
             alt="Gulposh Villa"
             className="h-full w-full object-cover"
           />
-          <div className="absolute inset-0 " />
         </div>
 
         {/* BODY */}
         <div className="px-5 py-5 space-y-4">
-          <h2 className="text-lg font-semibold">
-            {step === "phone" ? "Sign in" : "Verify OTP"}
-          </h2>
+          <h2 className="text-lg font-semibold">Sign in</h2>
+
+          {step === "choice" && (
+            <>
+              <div className="flex justify-center">
+                <div id="google-btn" />
+              </div>
+
+              <div className="text-center text-xs text-muted-foreground">
+                or
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full h-11 rounded-xl"
+                onClick={() => setStep("phone")}
+              >
+                Continue with Mobile OTP
+              </Button>
+            </>
+          )}
 
           {step === "phone" && (
             <>
@@ -279,14 +326,6 @@ export default function AuthModal() {
                   })
                 }
               />
-
-              <Button
-                className="w-full h-11 bg-[#a11d2e]"
-                onClick={verifyOtp}
-                disabled={loading}
-              >
-                {loading ? "Verifying..." : "Verify OTP"}
-              </Button>
 
               <div className="text-xs text-center text-muted-foreground">
                 {secondsLeft > 0 ? (
