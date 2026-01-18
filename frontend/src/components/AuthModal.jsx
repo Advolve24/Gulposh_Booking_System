@@ -44,6 +44,23 @@ export default function AuthModal() {
     return () => clearInterval(t);
   }, [step, secondsLeft]);
 
+  /* ================= AUTO VERIFY OTP ================= */
+useEffect(() => {
+  if (step !== "otp") return;
+
+  const otp = form.otp.replace(/\D/g, "");
+
+  if (
+    otp.length === 6 &&
+    confirmationRef.current &&
+    !verifyingRef.current &&
+    !loading
+  ) {
+    verifyOtp();
+  }
+}, [form.otp, step]);
+
+
   /* ================= CLEAN RESET ================= */
   const resetFlow = () => {
     sendingRef.current = false;
@@ -259,13 +276,13 @@ export default function AuthModal() {
                 }
               />
 
-              <Button
+              {/* <Button
                 className="w-full h-11 bg-[#a11d2e]"
                 onClick={verifyOtp}
                 disabled={loading}
               >
                 {loading ? "Verifying..." : "Verify OTP"}
-              </Button>
+              </Button> */}
 
               <div className="text-xs text-center text-muted-foreground">
                 {secondsLeft > 0 ? (
