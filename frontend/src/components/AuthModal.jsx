@@ -45,20 +45,25 @@ export default function AuthModal() {
   }, [step, secondsLeft]);
 
   /* ================= AUTO VERIFY OTP ================= */
+/* ================= AUTO VERIFY OTP (SAFE) ================= */
 useEffect(() => {
   if (step !== "otp") return;
 
   const otp = form.otp.replace(/\D/g, "");
 
-  if (
-    otp.length === 6 &&
-    confirmationRef.current &&
-    !verifyingRef.current &&
-    !loading
-  ) {
-    verifyOtp();
-  }
+  if (otp.length !== 6) return;
+  if (!confirmationRef.current) return;
+  if (verifyingRef.current) return;
+
+  const timer = setTimeout(() => {
+    if (!verifyingRef.current) {
+      verifyOtp();
+    }
+  }, 300); // 🔑 REQUIRED delay for Firebase
+
+  return () => clearTimeout(timer);
 }, [form.otp, step]);
+
 
 
   /* ================= CLEAN RESET ================= */
