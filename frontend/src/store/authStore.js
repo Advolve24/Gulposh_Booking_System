@@ -56,6 +56,27 @@ export const useAuth = create((set, get) => ({
     return user;
   },
 
+  /* ================= GOOGLE OAUTH LOGIN ================= */
+  googleLoginWithToken: async (idToken) => {
+    // 1️⃣ Create backend session
+    await api.post(
+      "/auth/google-login",
+      { idToken },
+      { withCredentials: true }
+    );
+
+    // 2️⃣ Fetch profile
+    const { data } = await api.get("/auth/me");
+
+    const user = normalizeUser(data);
+
+    // 3️⃣ Save user ONLY (NO REDIRECT HERE)
+    set({ user, showAuthModal: false });
+
+    return user;
+  },
+
+
   /* ================= AFTER PROFILE UPDATE ================= */
   refreshUser: async () => {
     const { data } = await api.get("/auth/me");
