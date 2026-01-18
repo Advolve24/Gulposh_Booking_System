@@ -67,13 +67,21 @@ export const firebaseLogin = async (req, res) => {
       $or: [{ firebaseUid }, { phone }],
     });
 
+    let isNewUser = false;
+
+    // 🔹 NEW USER
     if (!user) {
       user = await User.create({
         firebaseUid,
         phone,
         authProvider: "firebase",
+        profileComplete: false, // 🔐 ONLY HERE
       });
-    } else if (!user.firebaseUid) {
+      isNewUser = true;
+    }
+
+    // 🔹 LINK OLD USER
+    else if (!user.firebaseUid) {
       user.firebaseUid = firebaseUid;
       user.authProvider = "firebase";
       await user.save();
@@ -84,7 +92,9 @@ export const firebaseLogin = async (req, res) => {
     res.json({
       id: user._id,
       phone: user.phone,
+      authProvider: user.authProvider,
       profileComplete: user.profileComplete,
+      isNewUser, // 🔑 FRONTEND USES THIS
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
@@ -92,6 +102,7 @@ export const firebaseLogin = async (req, res) => {
     res.status(401).json({ message: "Invalid Firebase token" });
   }
 };
+
 
 /* ===============================
    GOOGLE OAUTH LOGIN
@@ -159,6 +170,7 @@ export const googleLogin = async (req, res) => {
       name: user.name,
       phone: user.phone,
       email: user.email,
+      authProvider: user.authProvider,
       profileComplete: user.profileComplete,
       isNewUser,
       isAdmin: !!user.isAdmin,
@@ -228,6 +240,7 @@ export const me = async (req, res) => {
     state: user.state,
     city: user.city,
     pincode: user.pincode,
+    authProvider: user.authProvider,
     profileComplete: user.profileComplete,
     isAdmin: !!user.isAdmin,
   });
