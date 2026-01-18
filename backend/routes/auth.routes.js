@@ -1,6 +1,7 @@
 import express from "express";
 import {
   firebaseLogin,
+  googleLogin,
   logout,
   me,
   refreshSession,
@@ -14,8 +15,12 @@ const router = express.Router();
    AUTH
 ================================ */
 
+
 // Firebase OTP → Backend JWT
 router.post("/firebase-login", firebaseLogin);
+
+// Google OAuth → Backend JWT
+router.post("/google-login", googleLogin);
 
 // Logout + refresh
 router.post("/logout", logout);

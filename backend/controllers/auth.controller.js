@@ -1,8 +1,14 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import admin from "../config/firebaseAdmin.js";
+import { OAuth2Client } from "google-auth-library";
 import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
 
+/* ===============================
+   HELPERS
+================================ */
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const normalizePhone = (phone = "") =>
   phone.replace(/\D/g, "").slice(-10);
@@ -21,6 +27,25 @@ const createRefreshToken = (user) =>
     { expiresIn: "10d" }
   );
 
+const issueSession = (res, user) => {
+  const accessToken = createAccessToken(user);
+  const refreshToken = createRefreshToken(user);
+
+  setSessionCookie(res, "token", accessToken, {
+    path: "/",
+    persistent: false,
+  });
+
+  setSessionCookie(res, "refresh_token", refreshToken, {
+    path: "/",
+    persistent: true,
+    days: 10,
+  });
+};
+
+/* ===============================
+   FIREBASE PHONE LOGIN
+================================ */
 
 export const firebaseLogin = async (req, res) => {
   try {
@@ -46,26 +71,15 @@ export const firebaseLogin = async (req, res) => {
       user = await User.create({
         firebaseUid,
         phone,
-        profileComplete: false,
+        authProvider: "firebase",
       });
     } else if (!user.firebaseUid) {
       user.firebaseUid = firebaseUid;
+      user.authProvider = "firebase";
       await user.save();
     }
 
-    const accessToken = createAccessToken(user);
-    const refreshToken = createRefreshToken(user);
-
-    setSessionCookie(res, "token", accessToken, {
-      path: "/",
-      persistent: false,
-    });
-
-    setSessionCookie(res, "refresh_token", refreshToken, {
-      path: "/",
-      persistent: true,
-      days: 10,
-    });
+    issueSession(res, user);
 
     res.json({
       id: user._id,
@@ -79,6 +93,62 @@ export const firebaseLogin = async (req, res) => {
   }
 };
 
+/* ===============================
+   GOOGLE OAUTH LOGIN
+================================ */
+
+export const googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken)
+      return res.status(400).json({ message: "Google token missing" });
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const googleId = payload.sub;
+    const email = payload.email;
+    const name = payload.name || null;
+
+    let user = await User.findOne({
+      $or: [{ googleId }, { email }],
+    });
+
+    if (!user) {
+      user = await User.create({
+        googleId,
+        email,
+        name,
+        authProvider: "google",
+      });
+    } else if (!user.googleId) {
+      user.googleId = googleId;
+      user.authProvider = "google";
+      if (!user.name && name) user.name = name;
+      await user.save();
+    }
+
+    issueSession(res, user);
+
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      profileComplete: user.profileComplete,
+      isAdmin: !!user.isAdmin,
+    });
+  } catch (err) {
+    console.error("googleLogin error:", err);
+    res.status(401).json({ message: "Invalid Google token" });
+  }
+};
+
+/* ===============================
+   LOGOUT
+================================ */
 
 export const logout = (_req, res) => {
   clearSessionCookie(res, "token", { path: "/" });
@@ -86,6 +156,9 @@ export const logout = (_req, res) => {
   res.json({ message: "Logged out" });
 };
 
+/* ===============================
+   REFRESH SESSION
+================================ */
 
 export const refreshSession = async (req, res) => {
   try {
@@ -112,10 +185,12 @@ export const refreshSession = async (req, res) => {
   }
 };
 
+/* ===============================
+   CURRENT USER
+================================ */
 
 export const me = async (req, res) => {
   const user = await User.findById(req.user.id);
-
   if (!user)
     return res.status(401).json({ message: "Unauthorized" });
 
@@ -135,6 +210,9 @@ export const me = async (req, res) => {
   });
 };
 
+/* ===============================
+   UPDATE PROFILE
+================================ */
 
 export const updateMe = async (req, res) => {
   try {
@@ -160,15 +238,13 @@ export const updateMe = async (req, res) => {
     }
 
     user.name = name.trim();
-    user.email = email?.trim() || null;
+    user.email = email?.trim() || user.email;
     user.dob = new Date(dob);
     user.address = address || null;
     user.country = country || null;
     user.state = state || null;
     user.city = city || null;
     user.pincode = pincode || null;
-
-    user.profileComplete = true;
 
     await user.save();
 
@@ -183,7 +259,7 @@ export const updateMe = async (req, res) => {
       state: user.state,
       city: user.city,
       pincode: user.pincode,
-      profileComplete: true,
+      profileComplete: user.profileComplete,
     });
   } catch (err) {
     console.error("updateMe error:", err);
