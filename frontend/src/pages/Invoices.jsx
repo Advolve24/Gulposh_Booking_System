@@ -29,20 +29,20 @@ export default function Invoices() {
   };
 
   const downloadInvoice = async (id) => {
-  const res = await api.get(`/invoice/user/${id}/download`, {
-    responseType: "blob",
-  });
+    const res = await api.get(`/invoice/user/${id}/download`, {
+      responseType: "blob",
+    });
 
-  const blob = new Blob([res.data], { type: "application/pdf" });
-  const url = window.URL.createObjectURL(blob);
+    const blob = new Blob([res.data], { type: "application/pdf" });
+    const url = window.URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Invoice-${id.slice(-6)}.pdf`;
-  a.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Invoice-${id.slice(-6)}.pdf`;
+    a.click();
 
-  window.URL.revokeObjectURL(url);
-};
+    window.URL.revokeObjectURL(url);
+  };
 
 
   return (
@@ -71,6 +71,7 @@ export default function Invoices() {
               const shortId = b._id.slice(-5).toUpperCase();
               const start = format(new Date(b.startDate), "dd MMM yy");
               const end = format(new Date(b.endDate), "dd MMM yy");
+              const isCancelled = b.status === "cancelled";
 
               return (
                 <div
@@ -93,15 +94,21 @@ export default function Invoices() {
                         ₹{b.amount}
                       </div>
                       <button
+                        disabled={isCancelled}
                         onClick={(e) => {
                           e.stopPropagation();
-                          downloadInvoice(b._id);
+                          if (!isCancelled) downloadInvoice(b._id);
                         }}
-                        className="mt-1 inline-flex items-center gap-1 text-xs text-primary font-medium"
+                        className={`mt-1 inline-flex items-center gap-1 text-xs font-medium
+                          ${isCancelled
+                            ? "text-muted-foreground cursor-not-allowed"
+                            : "text-primary"}
+                            `}
                       >
                         <Download className="w-3.5 h-3.5" />
-                        Download
+                        {isCancelled ? "Unavailable" : "Download"}
                       </button>
+
                     </div>
                   </div>
 
@@ -111,12 +118,18 @@ export default function Invoices() {
                   </div>
 
                   {/* VIEW CTA */}
-                  <button
-                    onClick={() => viewInvoice(b._id)}
-                    className="mt-2 w-full text-xs text-primary font-medium text-left"
-                  >
-                    View invoice →
-                  </button>
+                  {isCancelled ? (
+                    <div className="mt-2 text-xs text-red-600 font-medium">
+                      Booking cancelled – invoice unavailable
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => viewInvoice(b._id)}
+                      className="mt-2 w-full text-xs text-primary font-medium text-left"
+                    >
+                      View invoice →
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -136,13 +149,21 @@ export default function Invoices() {
               const shortId = b._id.slice(-5).toUpperCase();
               const start = format(new Date(b.startDate), "dd MMM yy");
               const end = format(new Date(b.endDate), "dd MMM yy");
+              const isCancelled = b.status === "cancelled";
 
               return (
                 <div
                   key={b._id}
-                  onClick={() => viewInvoice(b._id)}
-                  className="grid grid-cols-5 gap-4 px-6 py-4 items-center border-b last:border-b-0 cursor-pointer hover:bg-muted/40 transition"
+                  onClick={() => {
+                    if (!isCancelled) viewInvoice(b._id);
+                  }}
+                  className={`grid grid-cols-5 gap-4 px-6 py-4 items-center border-b last:border-b-0 transition
+               ${isCancelled
+                      ? "bg-muted/30 text-muted-foreground cursor-not-allowed"
+                      : "cursor-pointer hover:bg-muted/40"}
+                    `}
                 >
+
                   <div className="font-medium text-primary">
                     #{shortId}
                   </div>
@@ -166,7 +187,8 @@ export default function Invoices() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => viewInvoice(b._id)}
+                      disabled={isCancelled}
+                      onClick={() => !isCancelled && viewInvoice(b._id)}
                     >
                       <Eye className="w-4 h-4" />
                       View
@@ -174,13 +196,19 @@ export default function Invoices() {
 
                     <Button
                       size="sm"
-                      className="bg-primary text-primary-foreground"
-                      onClick={() => downloadInvoice(b._id)}
+                      disabled={isCancelled}
+                      className={
+                        isCancelled
+                          ? "bg-muted text-muted-foreground cursor-not-allowed"
+                          : "bg-primary text-primary-foreground"
+                      }
+                      onClick={() => !isCancelled && downloadInvoice(b._id)}
                     >
                       <Download className="w-4 h-4" />
                       Download
                     </Button>
                   </div>
+
                 </div>
               );
             })}
