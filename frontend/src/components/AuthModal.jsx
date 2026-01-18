@@ -16,7 +16,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
-import {api} from "@/api/http";
+import { api } from "@/api/http";
 
 const OTP_TIMER = 60;
 const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
@@ -25,7 +25,7 @@ export default function AuthModal() {
   const { showAuthModal, closeAuth, firebaseLoginWithToken } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState("choice"); // choice | phone | otp
+  const [step, setStep] = useState("choice");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ phone: "", otp: "" });
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
@@ -35,63 +35,79 @@ export default function AuthModal() {
   const verifyingRef = useRef(false);
   const googleRenderedRef = useRef(false);
 
+  /* ================= GOOGLE CALLBACK (🔥 MISSING PART) ================= */
+  const handleGoogleResponse = async (response) => {
+    try {
+      setLoading(true);
+
+      const res = await api.post("/auth/google-login", {
+        idToken: response.credential,
+      });
+
+      closeAuth();
+      toast.success("Welcome to Gulposh ✨");
+      handlePostAuthRedirect(res.data);
+    } catch (err) {
+      console.error("Google login failed:", err);
+      toast.error("Google login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================= GOOGLE INIT & RENDER ================= */
+  useEffect(() => {
+    if (!showAuthModal || googleRenderedRef.current) return;
+
+    const loadGoogleScript = () =>
+      new Promise((resolve, reject) => {
+        if (window.google?.accounts?.id) {
+          resolve();
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.onload = resolve;
+        script.onerror = reject;
+
+        document.body.appendChild(script);
+      });
+
+    loadGoogleScript()
+      .then(() => {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+        });
+
+        const container = document.getElementById("google-btn");
+        if (container) {
+          window.google.accounts.id.renderButton(container, {
+            theme: "outline",
+            size: "large",
+            text: "continue_with",
+            shape: "pill",
+            width: 320,
+          });
+          googleRenderedRef.current = true;
+        }
+      })
+      .catch(() => {
+        console.error("Failed to load Google OAuth script");
+      });
+  }, [showAuthModal]);
+
   /* ================= TIMER ================= */
   useEffect(() => {
     if (step !== "otp" || secondsLeft <= 0) return;
-
     const t = setInterval(() => {
       setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
     }, 1000);
-
     return () => clearInterval(t);
   }, [step, secondsLeft]);
-
-  /* ================= GOOGLE INIT & RENDER ================= */
- useEffect(() => {
-  if (!showAuthModal || googleRenderedRef.current) return;
-
-  const loadGoogleScript = () =>
-    new Promise((resolve, reject) => {
-      if (window.google?.accounts?.id) {
-        resolve();
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-
-      script.onload = resolve;
-      script.onerror = reject;
-
-      document.body.appendChild(script);
-    });
-
-  loadGoogleScript()
-    .then(() => {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse,
-      });
-
-      const container = document.getElementById("google-btn");
-      if (container) {
-        window.google.accounts.id.renderButton(container, {
-          theme: "outline",
-          size: "large",
-          text: "continue_with",
-          shape: "pill",
-          width: 320,
-        });
-        googleRenderedRef.current = true;
-      }
-    })
-    .catch(() => {
-      console.error("Failed to load Google OAuth script");
-    });
-}, [showAuthModal]);
-
 
   /* ================= POST AUTH REDIRECT ================= */
   const handlePostAuthRedirect = (user) => {
@@ -110,7 +126,6 @@ export default function AuthModal() {
       navigate(redirectTo, { replace: true, state: bookingState });
       return;
     }
-
     navigate("/", { replace: true });
   };
 
@@ -135,7 +150,6 @@ export default function AuthModal() {
   /* ================= SEND OTP ================= */
   const sendOtp = async () => {
     if (sendingRef.current) return;
-
     if (!isValidPhone(form.phone)) {
       toast.error("Enter a valid 10-digit mobile number");
       return;
@@ -164,11 +178,6 @@ export default function AuthModal() {
     } catch (err) {
       console.error(err);
       toast.error("Failed to send OTP. Try again.");
-
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
     } finally {
       sendingRef.current = false;
       setLoading(false);
@@ -182,26 +191,18 @@ export default function AuthModal() {
     const otp = form.otp.replace(/\D/g, "");
     if (otp.length !== 6) return;
 
-    if (!confirmationRef.current) {
-      toast.error("OTP expired. Please resend.");
-      resetFlow();
-      return;
-    }
-
     verifyingRef.current = true;
     setLoading(true);
 
     try {
       const result = await confirmationRef.current.confirm(otp);
       const idToken = await result.user.getIdToken(true);
-
       const user = await firebaseLoginWithToken(idToken);
 
       closeAuth();
       toast.success("Welcome to Gulposh ✨");
       handlePostAuthRedirect(user);
     } catch (err) {
-      console.error(err);
       toast.error("Invalid OTP. Please resend.");
       setForm((f) => ({ ...f, otp: "" }));
       verifyingRef.current = false;
@@ -240,13 +241,11 @@ export default function AuthModal() {
           <h2>Authentication</h2>
         </VisuallyHidden>
 
-        {/* reCAPTCHA */}
         <div
           id="recaptcha-container"
           className="absolute inset-0 pointer-events-none opacity-0"
         />
 
-        {/* HEADER */}
         <div className="relative h-48">
           <button
             onClick={() => {
@@ -265,7 +264,6 @@ export default function AuthModal() {
           />
         </div>
 
-        {/* BODY */}
         <div className="px-5 py-5 space-y-4">
           <h2 className="text-lg font-semibold">Sign in</h2>
 
@@ -286,63 +284,6 @@ export default function AuthModal() {
               >
                 Continue with Mobile OTP
               </Button>
-            </>
-          )}
-
-          {step === "phone" && (
-            <>
-              <Label>Mobile Number</Label>
-              <Input
-                className="h-11 rounded-xl"
-                placeholder="Enter 10 digit phone number"
-                inputMode="numeric"
-                value={form.phone}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                  })
-                }
-              />
-
-              <Button
-                className="w-full h-11 bg-[#a11d2e]"
-                onClick={sendOtp}
-                disabled={loading}
-              >
-                {loading ? "Sending..." : "Continue"}
-              </Button>
-            </>
-          )}
-
-          {step === "otp" && (
-            <>
-              <Label>Enter OTP</Label>
-              <Input
-                className="h-11 text-center tracking-[0.35em] font-semibold"
-                inputMode="numeric"
-                autoFocus
-                value={form.otp}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    otp: e.target.value.replace(/\D/g, "").slice(0, 6),
-                  })
-                }
-              />
-
-              <div className="text-xs text-center text-muted-foreground">
-                {secondsLeft > 0 ? (
-                  <>Resend OTP in <b>{secondsLeft}s</b></>
-                ) : (
-                  <button
-                    onClick={sendOtp}
-                    className="text-primary underline"
-                  >
-                    Resend OTP
-                  </button>
-                )}
-              </div>
             </>
           )}
         </div>
