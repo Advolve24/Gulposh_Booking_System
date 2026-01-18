@@ -57,20 +57,25 @@ export const useAuth = create((set, get) => ({
   },
 
   /* ================= GOOGLE OAUTH LOGIN ================= */
-  googleLoginWithToken: async (idToken) => {
-    // 1️⃣ Create backend session
-    const { data } = await api.post(
-      "/auth/google-login",
-      { idToken },
-      { withCredentials: true }
-    );
+googleLoginWithToken: async (idToken) => {
+  // 1️⃣ Create backend session (sets cookies)
+  await api.post(
+    "/auth/google-login",
+    { idToken },
+    { withCredentials: true }
+  );
 
-    // ✅ USE LOGIN RESPONSE DIRECTLY
-    const user = normalizeUser(data);
+  // 2️⃣ Fetch authenticated user (READS COOKIES)
+  const { data } = await api.get("/auth/me");
 
-    set({ user, showAuthModal: false });
-    return user;
-  },
+  const user = normalizeUser(data);
+
+  // 3️⃣ Save user
+  set({ user, showAuthModal: false });
+
+  return user;
+},
+
 
 
   /* ================= AFTER PROFILE UPDATE ================= */
