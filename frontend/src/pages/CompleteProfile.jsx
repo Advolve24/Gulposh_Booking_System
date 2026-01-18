@@ -40,9 +40,13 @@ export default function CompleteProfile() {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
 
+  // ✅ detect login provider
+  const isGoogleLogin = user?.authProvider === "google";
+
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phone: "",
     dob: null,
     address: "",
     country: "",
@@ -58,13 +62,14 @@ export default function CompleteProfile() {
     }
   }, [user, navigate]);
 
-  /* 🔁 PREFILL FROM USER (IMPORTANT) */
+  /* 🔁 PREFILL FROM USER */
   useEffect(() => {
     if (!user) return;
 
     setForm({
       name: user.name || "",
       email: user.email || "",
+      phone: user.phone || "",
       dob: user.dob ? new Date(user.dob) : null,
       address: user.address || "",
       country: user.country || "",
@@ -108,12 +113,18 @@ export default function CompleteProfile() {
       return;
     }
 
+    if (isGoogleLogin && form.phone.length !== 10) {
+      toast.error("Mobile number is required");
+      return;
+    }
+
     try {
       setLoading(true);
 
       await api.put("/auth/me", {
         name: form.name.trim(),
         email: form.email || null,
+        phone: isGoogleLogin ? form.phone : null,
         dob: form.dob.toISOString(),
         address: form.address || null,
         country: form.country || null,
@@ -123,7 +134,7 @@ export default function CompleteProfile() {
       });
 
       // 🔥 refresh auth store
-      const updatedUser = await init();
+      await init();
 
       toast.success("Profile completed successfully 🎉");
 
@@ -178,6 +189,24 @@ export default function CompleteProfile() {
               }
             />
           </div>
+
+          {/* ✅ SHOW PHONE ONLY FOR GOOGLE LOGIN */}
+          {isGoogleLogin && (
+            <div>
+              <Label>Mobile Number</Label>
+              <Input
+                inputMode="numeric"
+                placeholder="Enter mobile number"
+                value={form.phone}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                  }))
+                }
+              />
+            </div>
+          )}
 
           <div className="sm:col-span-2">
             <Label>Date of Birth</Label>
