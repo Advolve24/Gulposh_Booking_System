@@ -255,6 +255,7 @@ export const updateMe = async (req, res) => {
     const {
       name,
       email,
+      phone, // ✅ accept phone from frontend
       dob,
       address,
       country,
@@ -273,6 +274,9 @@ export const updateMe = async (req, res) => {
       });
     }
 
+    /* ===============================
+       BASIC FIELDS
+    ================================ */
     user.name = name.trim();
     user.email = email?.trim() || user.email;
     user.dob = new Date(dob);
@@ -281,6 +285,33 @@ export const updateMe = async (req, res) => {
     user.state = state || null;
     user.city = city || null;
     user.pincode = pincode || null;
+
+    /* ===============================
+       🔐 PHONE LOGIC (IMPORTANT)
+    ================================ */
+    if (user.authProvider === "google") {
+      if (!phone) {
+        return res.status(400).json({
+          message: "Mobile number is required",
+        });
+      }
+
+      // normalize phone
+      const normalizedPhone = phone.replace(/\D/g, "").slice(-10);
+
+      if (normalizedPhone.length !== 10) {
+        return res.status(400).json({
+          message: "Invalid mobile number",
+        });
+      }
+
+      user.phone = normalizedPhone;
+    }
+
+    /* ===============================
+       PROFILE COMPLETE FLAG
+    ================================ */
+    user.profileComplete = true;
 
     await user.save();
 
