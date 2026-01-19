@@ -241,12 +241,17 @@ export const deleteUserAdmin = async (req, res) => {
 export const createUserAdmin = async (req, res) => {
   try {
     let { name, email, phone, password, isAdmin } = req.body || {};
-    if (!email) return res.status(400).json({ message: "Email is required" });
 
-    const normalizedEmail = String(email).trim().toLowerCase();
-    const exists = await User.findOne({ email: normalizedEmail });
-    if (exists) return res.status(400).json({ message: "Email already in use" });
+    let normalizedEmail = null;
 
+    if (email) {
+      normalizedEmail = String(email).trim().toLowerCase();
+
+      const exists = await User.findOne({ email: normalizedEmail });
+      if (exists) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+    }
     if (!password || String(password).length < 6) {
       password = Math.random().toString(36).slice(-10);
     }
@@ -254,7 +259,7 @@ export const createUserAdmin = async (req, res) => {
 
     const user = await User.create({
       name: (name || "").trim(),
-      email: normalizedEmail,
+      email: normalizedEmail || null,
       phone: (phone || "").trim(),
       passwordHash,
       isAdmin: !!isAdmin,
