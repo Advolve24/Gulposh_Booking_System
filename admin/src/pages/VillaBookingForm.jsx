@@ -14,6 +14,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Calendar as CalendarIcon } from "lucide-react";
 import { addDays, format } from "date-fns";
 import AppLayout from "@/components/layout/AppLayout";
+import { Country, State, City } from "country-state-city";
 
 const toDateKey = (date) => format(date, "yyyy-MM-dd");
 
@@ -24,6 +25,12 @@ export default function VillaBookingForm() {
   const [loading, setLoading] = useState(false);
   const [bookedDates, setBookedDates] = useState(new Set());
   const [blockedRanges, setBlockedRanges] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [countryCode, setCountryCode] = useState("IN");
+  const [stateCode, setStateCode] = useState("");
+  const [cityName, setCityName] = useState("");
 
   const [userId, setUserId] = useState(null);
   const [userChecked, setUserChecked] = useState(false);
@@ -55,24 +62,58 @@ export default function VillaBookingForm() {
     return true;
   };
 
+
+  const onCountryChange = (code) => {
+    const country = countries.find((c) => c.isoCode === code);
+    setCountryCode(code);
+    setStateCode("");
+    setCityName("");
+    setForm((f) => ({
+      ...f,
+      country: country?.name || "",
+      state: "",
+      city: "",
+    }));
+    setStates(State.getStatesOfCountry(code));
+    setCities([]);
+  };
+
+  const onStateChange = (code) => {
+    const state = states.find((s) => s.isoCode === code);
+    setStateCode(code);
+    setCityName("");
+    setForm((f) => ({
+      ...f,
+      state: state?.name || "",
+      city: "",
+    }));
+    setCities(City.getCitiesOfState(countryCode, code));
+  };
+
+  const onCityChange = (name) => {
+    setCityName(name);
+    setForm((f) => ({ ...f, city: name }));
+  };
+
+
   const [form, setForm] = useState({
-  name: "",
-  email: "",
-  phone: "",
-  dob: null,
+    name: "",
+    email: "",
+    phone: "",
+    dob: null,
 
-  address: "",
-  country: "India",
-  state: "",
-  city: "",
-  pincode: "",
+    address: "",
+    country: "India",
+    state: "",
+    city: "",
+    pincode: "",
 
-  guests: 1,
-  customAmount: "",
-  govIdType: "",
-  govIdNumber: "",
-  paymentMode: "Online",
-});
+    guests: 1,
+    customAmount: "",
+    govIdType: "",
+    govIdNumber: "",
+    paymentMode: "Online",
+  });
 
   useEffect(() => {
     (async () => {
@@ -109,6 +150,12 @@ export default function VillaBookingForm() {
     })();
   }, []);
 
+  useEffect(() => {
+    const all = Country.getAllCountries();
+    setCountries(all);
+  }, []);
+
+
 
   const checkUserByPhone = async () => {
     if (!/^[6-9]\d{9}$/.test(form.phone)) {
@@ -123,23 +170,63 @@ export default function VillaBookingForm() {
 
       setUserChecked(true);
 
-      if (data.exists) {
-        setUserId(data.user.id);
-        setForm((f) => ({
-          ...f,
-          name: data.user.name || "",
-          email: data.user.email || "",
-          dob: data.user.dob ? new Date(data.user.dob) : null,
-        }));
-        toast.success("User found! Details auto-filled.");
-      } else {
+      if (!data.exists) {
         setUserId(null);
-        toast.info("User not found. Please enter details to register.");
+        toast.info("User not found. Please enter details.");
+        return;
       }
-    } catch {
+
+      const u = data.user;
+      setUserId(u.id);
+
+      /* ===== COUNTRY ===== */
+      const allCountries = Country.getAllCountries();
+      const countryObj =
+        allCountries.find((c) => c.name === u.country) ||
+        allCountries.find((c) => c.isoCode === "IN");
+
+      const countryISO = countryObj.isoCode;
+
+      /* ===== STATES ===== */
+      const stateList = State.getStatesOfCountry(countryISO);
+      const stateObj = stateList.find((s) => s.name === u.state);
+
+      const stateISO = stateObj?.isoCode || "";
+
+      /* ===== CITIES ===== */
+      const cityList = stateISO
+        ? City.getCitiesOfState(countryISO, stateISO)
+        : [];
+
+      /* ===== SET UI STATE (Selects) ===== */
+      setCountryCode(countryISO);
+      setStateCode(stateISO);
+      setCityName(u.city || "");
+
+      setStates(stateList);
+      setCities(cityList);
+
+      /* ===== SET FORM DATA (DB VALUES) ===== */
+      setForm((f) => ({
+        ...f,
+        name: u.name || "",
+        email: u.email || "",
+        dob: u.dob ? new Date(u.dob) : null,
+
+        address: u.address || "",
+        country: countryObj.name,
+        state: u.state || "",
+        city: u.city || "",
+        pincode: u.pincode || "",
+      }));
+
+      toast.success("User found! Details auto-filled.");
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to check user");
     }
   };
+
 
   const ensureUserExists = async () => {
     if (userId) return userId;
@@ -183,29 +270,29 @@ export default function VillaBookingForm() {
 
       /* ===== CASH BOOKING ===== */
       if (form.paymentMode === "Cash") {
-       await api.post("/admin/villa-verify", {
-  userId: uid,
-  startDate: start,
-  endDate: end,
-  guests: form.guests,
-  customAmount: form.customAmount,
+        await api.post("/admin/villa-verify", {
+          userId: uid,
+          startDate: start,
+          endDate: end,
+          guests: form.guests,
+          customAmount: form.customAmount,
 
-  contactName: form.name,
-  contactEmail: form.email,
-  contactPhone: form.phone,
+          contactName: form.name,
+          contactEmail: form.email,
+          contactPhone: form.phone,
 
-  addressInfo: {
-    address: form.address,
-    country: form.country,
-    state: form.state,
-    city: form.city,
-    pincode: form.pincode,
-  },
+          addressInfo: {
+            address: form.address,
+            country: form.country,
+            state: form.state,
+            city: form.city,
+            pincode: form.pincode,
+          },
 
-  govIdType: form.govIdType,
-  govIdNumber: form.govIdNumber,
-  paymentMode: "Cash",
-});
+          govIdType: form.govIdType,
+          govIdNumber: form.govIdNumber,
+          paymentMode: "Cash",
+        });
 
         toast.success("Booking confirmed (Cash)");
         return navigate("/dashboard");
@@ -246,6 +333,13 @@ export default function VillaBookingForm() {
             govIdType: form.govIdType,
             govIdNumber: form.govIdNumber,
             paymentMode: "Online",
+            addressInfo: {
+              address: form.address,
+              country: form.country,
+              state: form.state,
+              city: form.city,
+              pincode: form.pincode,
+            },
             razorpay_order_id: resp.razorpay_order_id,
             razorpay_payment_id: resp.razorpay_payment_id,
             razorpay_signature: resp.razorpay_signature,
@@ -266,292 +360,342 @@ export default function VillaBookingForm() {
 
 
   return (
-  <AppLayout>
-    <div className="w-full md:max-w-6xl bg-white shadow-md rounded-2xl p-4 md:p-8 mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+    <AppLayout>
+      <div className="w-full md:max-w-6xl mb-4">
+        <div className="flex gap-5 relative">
 
-        {/* ================= CALENDAR ================= */}
-        <div>
-          <Label className="mb-2 block text-gray-600">Select Booking Dates</Label>
-          <Calendar
-            mode="range"
-            numberOfMonths={1}
-            fromDate={todayDateOnlyUTC()}
-            selected={range}
-            onSelect={(r) => {
-              if (!r?.from) {
-                setRange(undefined);
-                return;
-              }
-
-              if (r.to && !isRangeValid(r.from, r.to)) {
-                toast.error("Selected range includes booked or blocked dates");
-                return;
-              }
-
-              setRange(r);
-            }}
-            disabled={(date) =>
-              date < todayDateOnlyUTC() ||
-              isBooked(date) ||
-              isBlocked(date)
-            }
-            className="border rounded-xl shadow-sm w-full"
-          />
-
-          {/* Selected dates summary */}
-          <div className="mt-4 p-3 bg-gray-50 border rounded-lg text-sm">
-            <strong>Selected Dates:</strong>{" "}
-            {range?.from && range?.to
-              ? `${format(range.from, "dd MMM yyyy")} → ${format(range.to, "dd MMM yyyy")}`
-              : "Not selected"}
-          </div>
-        </div>
-
-        {/* ================= FORM ================= */}
-        <div className="space-y-6">
-
-          {/* ================= SECTION 1: MOBILE ================= */}
-          <div className="border rounded-xl p-4 bg-[#faf8f4] space-y-3">
-            <h3 className="font-semibold text-gray-800">1. Mobile Verification</h3>
-
-            <Label>Mobile Number</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="10-digit mobile number"
-                maxLength={10}
-                value={form.phone}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, phone: e.target.value }))
+          {/* ================= CALENDAR ================= */}
+          <div className="w-[44%]">
+            <Label className="mb-4 block text-gray-600">Select Booking Dates</Label>
+            <Calendar
+              mode="range"
+              numberOfMonths={1}
+              fromDate={todayDateOnlyUTC()}
+              selected={range}
+              onSelect={(r) => {
+                if (!r?.from) {
+                  setRange(undefined);
+                  return;
                 }
-              />
-              <Button type="button" onClick={checkUserByPhone} variant="secondary">
-                Check
-              </Button>
-            </div>
 
-            {userChecked && userId && (
-              <p className="text-sm text-green-600 font-medium">
-                ✔ User found. Details auto-filled.
-              </p>
-            )}
+                if (r.to && !isRangeValid(r.from, r.to)) {
+                  toast.error("Selected range includes booked or blocked dates");
+                  return;
+                }
 
-            {userChecked && !userId && (
-              <p className="text-sm text-orange-600 font-medium">
-                ⚠ User not found. Please enter details.
-              </p>
-            )}
-          </div>
+                setRange(r);
+              }}
+              disabled={(date) =>
+                date < todayDateOnlyUTC() ||
+                isBooked(date) ||
+                isBlocked(date)
+              }
+              className="border bg-white rounded-xl shadow-sm w-full"
+            />
 
-          {/* ================= SECTION 2: USER DETAILS ================= */}
-          <div className="border rounded-xl p-4 space-y-4">
-            <h3 className="font-semibold text-gray-800">2. User Details</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Full Name</Label>
-                <Input
-                  disabled={!!userId}
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div>
-                <Label>Email</Label>
-                <Input
-                  disabled={!!userId}
-                  type="email"
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, email: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <Label>Date of Birth</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={!!userId}
-                      className="justify-between w-full"
-                    >
-                      {form.dob ? format(form.dob, "dd MMM yyyy") : "Select DOB"}
-                      <CalendarIcon className="h-4 w-4 opacity-60" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="p-0">
-                    <Calendar
-                      mode="single"
-                      captionLayout="dropdown"
-                      selected={form.dob}
-                      onSelect={(d) =>
-                        setForm((f) => ({ ...f, dob: d }))
-                      }
-                      fromYear={1950}
-                      toYear={new Date().getFullYear()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+            {/* Selected dates summary */}
+            <div className="mt-4 p-3 bg-white border rounded-lg text-sm">
+              <strong>Selected Dates:</strong>{" "}
+              {range?.from && range?.to
+                ? `${format(range.from, "dd MMM yyyy")} → ${format(range.to, "dd MMM yyyy")}`
+                : "Not selected"}
             </div>
           </div>
 
-          {/* ================= SECTION 3: ADDRESS ================= */}
-          <div className="border rounded-xl p-4 space-y-4">
-            <h3 className="font-semibold text-gray-800">3. Address Details</h3>
+          {/* ================= FORM ================= */}
+          <div className="space-y-6 w-[55%] bg-white shadow-md rounded-2xl p-4 md:p-4">
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <Label>Street Address</Label>
+            {/* ================= SECTION 1: MOBILE ================= */}
+            <div className="border rounded-xl p-4 bg-[#faf8f4] space-y-1">
+              <h3 className="font-semibold text-gray-800">1. Mobile Verification</h3>
+
+              <Label className="font-[400]">Mobile Number</Label>
+              <div className="flex gap-2">
                 <Input
-                  value={form.address}
+                  className="mt-1 rounded-[8px] h-10"
+                  placeholder="10-digit mobile number"
+                  maxLength={10}
+                  value={form.phone}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, address: e.target.value }))
+                    setForm((f) => ({ ...f, phone: e.target.value }))
                   }
                 />
+                <Button type="button" className="h-10 mt-1" onClick={checkUserByPhone} variant="secondary">
+                  Check
+                </Button>
               </div>
 
-              <div>
-                <Label>Country</Label>
-                <Input
-                  value={form.country}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, country: e.target.value }))
-                  }
-                />
-              </div>
+              {userChecked && userId && (
+                <p className="text-sm text-green-600 font-medium">
+                  ✔ User found. Details auto-filled.
+                </p>
+              )}
 
-              <div>
-                <Label>State</Label>
-                <Input
-                  value={form.state}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, state: e.target.value }))
-                  }
-                />
-              </div>
+              {userChecked && !userId && (
+                <p className="text-sm text-orange-600 font-medium">
+                  ⚠ User not found. Please enter details.
+                </p>
+              )}
+            </div>
 
-              <div>
-                <Label>City</Label>
-                <Input
-                  value={form.city}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, city: e.target.value }))
-                  }
-                />
-              </div>
+            {/* ================= SECTION 2: USER DETAILS ================= */}
+            <div className="border rounded-xl p-4 space-y-4">
+              <h3 className="font-semibold text-gray-800">2. User Details</h3>
 
-              <div>
-                <Label>Pincode</Label>
-                <Input
-                  maxLength={6}
-                  value={form.pincode}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, pincode: e.target.value }))
-                  }
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="font-[400]">Full Name</Label>
+                  <Input
+                    className="h-10 rounded-[8px] mt-1"
+                    placeholder="Enter User's Full Name"
+                    disabled={!!userId}
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, name: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label className="font-[400]">Email</Label>
+                  <Input
+                    className="h-10 rounded-[8px] mt-1"
+                    placeholder="Enter User's Email ID"
+                    disabled={!!userId}
+                    type="email"
+                    value={form.email}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, email: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label className="font-[400]">Date of Birth</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!!userId}
+                        className="justify-between w-full mt-1 h-10"
+                      >
+                        {form.dob ? format(form.dob, "dd MMM yyyy") : "Select DOB"}
+                        <CalendarIcon className="h-4 w-4 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0">
+                      <Calendar
+                        mode="single"
+                        captionLayout="dropdown"
+                        selected={form.dob}
+                        onSelect={(d) =>
+                          setForm((f) => ({ ...f, dob: d }))
+                        }
+                        fromYear={1950}
+                        toYear={new Date().getFullYear()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* ================= SECTION 4: BOOKING DETAILS ================= */}
-          <div className="border rounded-xl p-4 space-y-4">
-            <h3 className="font-semibold text-gray-800">4. Booking Details</h3>
+            {/* ================= SECTION 3: ADDRESS ================= */}
+            <div className="border rounded-xl p-4 space-y-4">
+              <h3 className="font-semibold text-gray-800">3. Address Details</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Guests</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={form.guests}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, guests: e.target.value }))
-                  }
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Label className="font-[400]">Street Address</Label>
+                  <Input
+                    className="mt-1 h-10 rounded-[8px]"
+                    placeholder="Enter User's Street Address"
+                    value={form.address}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, address: e.target.value }))
+                    }
+                  />
+                </div>
 
-              <div>
-                <Label>Custom Amount (₹)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.customAmount}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, customAmount: e.target.value }))
-                  }
-                />
-              </div>
+                <div>
+                  <Label className="font-[400]">Country</Label>
+                  <Select
+                    value={countryCode}
+                    onValueChange={(code) => {
+                      setCountryCode(code);
+                      onCountryChange(code);
+                    }}
+                  >
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder="Select Country" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white max-h-64">
+                      {countries.map((c) => (
+                        <SelectItem key={c.isoCode} value={c.isoCode}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div>
-                <Label>Government ID Type</Label>
-                <Select
-                  value={form.govIdType}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, govIdType: v }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select ID Type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    <SelectItem value="Aadhaar">Aadhaar</SelectItem>
-                    <SelectItem value="Passport">Passport</SelectItem>
-                    <SelectItem value="Voter ID">Voter ID</SelectItem>
-                    <SelectItem value="Driving License">Driving License</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <Label className="font-[400]">State</Label>
+                  <Select
+                    value={stateCode}
+                    onValueChange={(code) => {
+                      setStateCode(code);
+                      onStateChange(code);
+                    }}
+                    disabled={!states.length}
+                  >
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder="Select State" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white max-h-64">
+                      {states.map((s) => (
+                        <SelectItem key={s.isoCode} value={s.isoCode}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div>
-                <Label>Government ID Number</Label>
-                <Input
-                  value={form.govIdNumber}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, govIdNumber: e.target.value }))
-                  }
-                />
-              </div>
+                <div>
+                  <Label className="font-[400]">City</Label>
+                  <Select
+                    value={cityName}
+                    onValueChange={(name) => {
+                      setCityName(name);
+                      onCityChange(name);
+                    }}
+                    disabled={!cities.length}
+                  >
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder="Select City" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white max-h-64">
+                      {cities.map((c, i) => (
+                        <SelectItem key={i} value={c.name}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="md:col-span-2">
-                <Label>Payment Mode</Label>
-                <Select
-                  value={form.paymentMode}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, paymentMode: v }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white">
-                    <SelectItem value="Online">Online</SelectItem>
-                    <SelectItem value="Cash">Cash</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Label className="font-[400]">Pincode</Label>
+                  <Input
+                    className="h-10 mt-1 rounded-[8px]"
+                    placeholder="Pincode"
+                    maxLength={6}
+                    value={form.pincode}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, pincode: e.target.value }))
+                    }
+                  />
+                </div>
               </div>
             </div>
+
+
+            <div className="border rounded-xl p-4 space-y-4">
+              <h3 className="font-semibold text-gray-800">4. Booking Details</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="font-[400]">Guests</Label>
+                  <Input
+                    className="h-10 mt-1 rounded-[8px]"
+                    type="number"
+                    min="1"
+                    value={form.guests}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, guests: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label className="font-[400]">Custom Amount (₹)</Label>
+                  <Input
+                    className="h-10 mt-1 rounded-[8px]"
+                    type="number"
+                    min="0"
+                    value={form.customAmount}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, customAmount: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label className="font-[400]">Government ID Type</Label>
+                  <Select
+                    value={form.govIdType}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, govIdType: v }))
+                    }
+                  >
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder="Select ID Type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="Aadhaar">Aadhaar</SelectItem>
+                      <SelectItem value="Passport">Passport</SelectItem>
+                      <SelectItem value="Voter ID">Voter ID</SelectItem>
+                      <SelectItem value="Driving License">Driving License</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="font-[400]">Government ID Number</Label>
+                  <Input
+                    className="mt-1 h-10"
+                    value={form.govIdNumber}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, govIdNumber: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label className="font-[400]">Payment Mode</Label>
+                  <Select
+                    value={form.paymentMode}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, paymentMode: v }))
+                    }
+                  >
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="Online">Online</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* ================= SUBMIT ================= */}
+            <Button
+              onClick={submit}
+              disabled={loading || !userChecked}
+              className="w-full text-lg py-5 font-semibold rounded-xl"
+            >
+              {loading ? "Processing..." : "Proceed to Confirm Booking"}
+            </Button>
+
           </div>
-
-          {/* ================= SUBMIT ================= */}
-          <Button
-            onClick={submit}
-            disabled={loading || !userChecked}
-            className="w-full text-lg py-5 font-semibold rounded-xl"
-          >
-            {loading ? "Processing..." : "Proceed to Confirm Booking"}
-          </Button>
-
         </div>
       </div>
-    </div>
-  </AppLayout>
-);
+    </AppLayout>
+  );
 }

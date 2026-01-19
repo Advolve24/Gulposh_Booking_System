@@ -55,7 +55,7 @@ export default function AppLayout({ children }) {
       >
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 md:mt-16 mt-1">
+        <main className="flex-1 p-4 md:p-6 md:mt-16 mt-1">
           <div className="flex flex-col items-center md:block w-full max-w-screen-xl">
             {children}
           </div>
