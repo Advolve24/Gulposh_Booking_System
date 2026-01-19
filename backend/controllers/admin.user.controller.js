@@ -44,7 +44,7 @@ export const getUserAdmin = async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid user id" });
 
-    const user = await User.findById(id).select("name email phone mobile dob createdAt");
+    const user = await User.findById(id).select("name email phone mobile address country state city pincode dob createdAt");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
@@ -53,6 +53,11 @@ export const getUserAdmin = async (req, res) => {
       email: user.email || "",
       phone: user.phone ?? user.mobile ?? "",
       dob: user.dob || null,
+      address: user.address || "",
+      country: user.country || "",
+      state: user.state || "",
+      city: user.city || "",
+      pincode: user.pincode || "",
       createdAt: user.createdAt
     });
   } catch (err) {
@@ -121,7 +126,7 @@ export const listBookingsAdmin = async (req, res) => {
 
     let items = await Booking.find(filter)
       .select("user room startDate endDate guests status createdAt amount note withMeal adminMeta total")
-      .populate("user", "name email phone")
+      .populate("user", "name email phone createdAt address country state city pincode")
       .populate("room", "name")
       .sort({ createdAt: -1 })
       .lean();
