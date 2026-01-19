@@ -287,7 +287,7 @@ export default function VillaBookingForm() {
           <div className="w-full md:w-[45%] space-y-5">
 
             {/* ===== USER CHECK ===== */}
-            <div className="border rounded-xl p-4 bg-gray-50 space-y-3">
+            <div className="border rounded-xl p-4 bg-[#faf8f4] space-y-3">
               <Label>Customer Mobile Number</Label>
 
               <div className="flex gap-2">
@@ -390,12 +390,14 @@ export default function VillaBookingForm() {
                   <PopoverContent className="p-0">
                     <Calendar
                       mode="single"
+                      captionLayout="dropdown"
                       selected={form.dob}
                       onSelect={(d) =>
                         setForm((f) => ({ ...f, dob: d }))
                       }
                       fromYear={1950}
                       toYear={new Date().getFullYear()}
+                      initialFocus
                     />
                   </PopoverContent>
                 </Popover>
