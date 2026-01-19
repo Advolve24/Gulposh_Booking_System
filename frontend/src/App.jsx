@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import RoomPage from "./pages/RoomPage";
 import Checkout from "./pages/Checkout";
 import Header from "./components/Header";
+import Footer from "./components/Footer";
 import { useAuth } from "./store/authStore";
 import AuthModal from "./components/AuthModal"; 
 import MyBookings from "./pages/MyBookings";
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/thank-you" element={<ThankYou />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Footer />
     </BrowserRouter>
   );
 }

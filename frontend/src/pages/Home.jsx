@@ -747,52 +747,6 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
-      <footer className="bg-[#A11D2E] text-white">
-        <div
-          className="
-      max-w-7xl mx-auto
-      px-4 py-4
-      shadow-[0_-6px_20px_-10px_rgba(0,0,0,0.35)]
-    "
-        >
-          <div
-            className="
-        flex flex-col
-        gap-3
-        text-xs font-medium
-        md:flex-row md:items-center md:justify-between
-      "
-          >
-            {/* LEFT */}
-            <div className="text-white/90">
-              © {new Date().getFullYear()} Gulposh Villa. All rights reserved.
-            </div>
-
-            {/* RIGHT */}
-            <div className="flex gap-6">
-              <button
-                className="
-            text-white/80
-            hover:text-white
-            transition-colors
-          "
-              >
-                Privacy Policy
-              </button>
-
-              <button
-                className="
-            text-white/80
-            hover:text-white
-            transition-colors
-          "
-              >
-                Terms of Service
-              </button>
-            </div>
-          </div>
-        </div>
-      </footer>
 
     </div>
   );
