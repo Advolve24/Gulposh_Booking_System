@@ -329,10 +329,9 @@ export default function CancelBookingFlow({
                 </ul>
               </div>
             </>
-          )}
+)}
 
-
-          {/* STEP 4 — CONFIRM */}
+{/* STEP 4 — CONFIRM */}
           {step === 4 && (
             <div className="space-y-4">
               {/* Warning box */}
@@ -442,9 +441,12 @@ export default function CancelBookingFlow({
 --------------------------------------------- */
 function InfoRow({ label, children }) {
   return (
-    <div className="flex justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{children}</span>
+    <div className="flex justify-between items-center">
+      <span className="text-gray-500">{label}</span>
+      <span className="font-medium text-gray-900">
+        {children}
+      </span>
     </div>
   );
 }
+
