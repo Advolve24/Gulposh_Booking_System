@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Eye, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import PDFDocument from "pdfkit";
 
 export default function Invoices() {
   const [bookings, setBookings] = useState([]);
@@ -28,33 +29,38 @@ export default function Invoices() {
     navigate(`/invoice-view/${id}`);
   };
 
-  const downloadInvoice = async (id) => {
+  const downloadInvoicePDF = async (req, res) => {
   try {
-    const res = await api.get(`/invoice/user/${id}/download`, {
-      responseType: "blob",
-      withCredentials: true, // ✅ REQUIRED
-    });
+    const bookingId = req.params.id;
 
-    const blob = new Blob([res.data], { type: "application/pdf" });
+    const booking = await Booking.findById(bookingId).populate("room");
+    if (!booking) {
+      return res.status(404).send("Invoice not found");
+    }
 
-    // ✅ Safari-safe download
-    const fileURL = window.URL.createObjectURL(blob);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Invoice-${bookingId.slice(-6)}.pdf`
+    );
 
-    const a = document.createElement("a");
-    a.href = fileURL;
-    a.download = `Invoice-${id.slice(-6).toUpperCase()}.pdf`;
+    const doc = new PDFDocument({ margin: 40 });
+    doc.pipe(res);
 
-    // iOS Safari needs this
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    doc.fontSize(18).text("Villa Gulposh", { align: "center" });
+    doc.moveDown();
 
-    window.URL.revokeObjectURL(fileURL);
+    doc.fontSize(12).text(`Booking ID: ${booking._id}`);
+    doc.text(`Room: ${booking.room?.name || "Entire Villa"}`);
+    doc.text(`Amount Paid: ₹${booking.amount}`);
+    doc.text(`Status: ${booking.status}`);
+
+    doc.end();
   } catch (err) {
-    console.error("Invoice download failed", err);
+    console.error("PDF generation failed:", err);
+    res.status(500).send("Failed to generate invoice");
   }
-};
-
+}
 
 
   return (
@@ -109,7 +115,7 @@ export default function Invoices() {
                         disabled={isCancelled}
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (!isCancelled) downloadInvoice(b._id);
+                          if (!isCancelled) downloadInvoicePDF(b._id);
                         }}
                         className={`mt-1 inline-flex items-center gap-1 text-xs font-medium
                           ${isCancelled
@@ -214,7 +220,7 @@ export default function Invoices() {
                           ? "bg-muted text-muted-foreground cursor-not-allowed"
                           : "bg-primary text-primary-foreground"
                       }
-                      onClick={() => !isCancelled && downloadInvoice(b._id)}
+                      onClick={() => !isCancelled && downloadInvoicePDF(b._id)}
                     >
                       <Download className="w-4 h-4" />
                       Download
