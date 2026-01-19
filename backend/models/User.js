@@ -2,20 +2,18 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    /* ================= OTP IDENTITY ================= */
     firebaseUid: {
       type: String,
       unique: true,
       sparse: true,
     },
 
-    /* ================= BASIC INFO ================= */
     name: {
       type: String,
       trim: true,
       minlength: 2,
       maxlength: 50,
-      default: null, // OTP users start empty
+      default: null,
     },
 
     phone: {
@@ -40,7 +38,6 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    /* ================= ADDRESS INFO ================= */
     address: { type: String, default: null },
     country: { type: String, default: null },
     state: { type: String, default: null },
@@ -51,34 +48,22 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-     /* ================= AUTH PROVIDERS ================= */
-
-    // Firebase Phone Auth UID
-    firebaseUid: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
-
-    // Google OAuth unique ID (payload.sub)
     googleId: {
       type: String,
       unique: true,
       sparse: true,
     },
 
-    // Which provider user used initially
     authProvider: {
       type: String,
-      enum: ["firebase", "google"],
+      enum: ["firebase", "google", "password"],
       required: true,
     },
 
 
-    /* ================= AUTH ================= */
     passwordHash: {
       type: String,
-      select: false, // used ONLY for admin users
+      select: false,
     },
 
     isAdmin: {
@@ -89,7 +74,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-/* ================= VIRTUAL ================= */
 userSchema.virtual("profileComplete").get(function () {
   return Boolean(this.name && this.dob);
 });

@@ -78,24 +78,24 @@ export const listUserBookingsAdmin = async (req, res) => {
       .populate("room", "name")
       .sort({ startDate: -1 });
 
-   res.json(items.map(b => ({
-  _id: b._id,
-  user: b.user,
-  room: b.room,
-  startDate: b.startDate,
-  endDate: b.endDate,
-  nights: b.nights,
-  guests: b.guests,
-  withMeal: b.withMeal,
-  vegGuests: b.vegGuests,
-  nonVegGuests: b.nonVegGuests,
-  roomTotal: b.roomTotal,
-  mealTotal: b.mealTotal,
-  amount: b.amount,
-  paymentId: b.paymentId,
-  status: b.status,
-  createdAt: b.createdAt,
-})));
+    res.json(items.map(b => ({
+      _id: b._id,
+      user: b.user,
+      room: b.room,
+      startDate: b.startDate,
+      endDate: b.endDate,
+      nights: b.nights,
+      guests: b.guests,
+      withMeal: b.withMeal,
+      vegGuests: b.vegGuests,
+      nonVegGuests: b.nonVegGuests,
+      roomTotal: b.roomTotal,
+      mealTotal: b.mealTotal,
+      amount: b.amount,
+      paymentId: b.paymentId,
+      status: b.status,
+      createdAt: b.createdAt,
+    })));
 
   } catch (err) {
     console.error("listUserBookingsAdmin error:", err);
@@ -258,6 +258,7 @@ export const createUserAdmin = async (req, res) => {
       phone: (phone || "").trim(),
       passwordHash,
       isAdmin: !!isAdmin,
+      authProvider: "password",
     });
 
     const payload = {
@@ -405,7 +406,7 @@ export const getBookingAdmin = async (req, res) => {
 
     const booking = await Booking.findById(id)
       .populate("user", "name email phone createdAt")
-      .populate("room", "name pricePerNight mealPrices") 
+      .populate("room", "name pricePerNight mealPrices")
       .lean();
 
     if (!booking) {
