@@ -192,7 +192,22 @@ export const updateUserAdmin = async (req, res) => {
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const { name, email, phone, dob } = req.body || {};
+    const {
+      name,
+      email,
+      phone,
+      dob,
+      address,
+      country,
+      state,
+      city,
+      pincode,
+    } = req.body || {};
+    if (address !== undefined) user.address = address;
+    if (country !== undefined) user.country = country;
+    if (state !== undefined) user.state = state;
+    if (city !== undefined) user.city = city;
+    if (pincode !== undefined) user.pincode = pincode;
     if (name !== undefined) user.name = String(name).trim();
     if (email !== undefined) user.email = String(email).trim();
     if (phone !== undefined) {
@@ -258,11 +273,16 @@ export const createUserAdmin = async (req, res) => {
     const passwordHash = await bcrypt.hash(String(password), 10);
 
     const user = await User.create({
-      name: (name || "").trim(),
-      email: normalizedEmail || null,
-      phone: (phone || "").trim(),
+      name,
+      email,
+      phone,
+      address: null,
+      country: null,
+      state: null,
+      city: null,
+      pincode: null,
       passwordHash,
-      isAdmin: !!isAdmin,
+      isAdmin,
       authProvider: "password",
     });
 
@@ -457,6 +477,13 @@ export const checkUserByPhoneAdmin = async (req, res) => {
         email: user.email,
         dob: user.dob,
         phone: user.phone,
+
+        address: user.address || "",
+        country: user.country || "",
+        state: user.state || "",
+        city: user.city || "",
+        pincode: user.pincode || "",
+
         profileComplete: user.profileComplete,
       },
     });

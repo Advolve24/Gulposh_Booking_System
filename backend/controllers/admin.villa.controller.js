@@ -35,7 +35,6 @@ export const createVillaOrder = async (req, res) => {
       userId,
     } = req.body || {};
 
-    /* ================= USER VALIDATION ================= */
     if (!userId) {
       return res.status(400).json({
         message: "User must be verified via OTP before booking",
@@ -49,7 +48,6 @@ export const createVillaOrder = async (req, res) => {
       });
     }
 
-    /* ================= INPUT VALIDATION ================= */
     if (!startDate || !endDate || !guests || !customAmount) {
       return res.status(400).json({
         message: "startDate, endDate, guests, customAmount are required",
@@ -63,12 +61,10 @@ export const createVillaOrder = async (req, res) => {
       });
     }
 
-    /* ================= AMOUNT CALCULATION ================= */
     const amountINR = nights * Number(customAmount);
     const amountPaise = Math.round(amountINR * 100);
     const receipt = `villa_admin_${Date.now().toString(36)}`;
 
-    /* ================= RAZORPAY ORDER ================= */
     const order = await rp.orders.create({
       amount: amountPaise,
       currency: "INR",
@@ -86,7 +82,6 @@ export const createVillaOrder = async (req, res) => {
       },
     });
 
-    /* ================= RESPONSE ================= */
     return res.json({
       key: process.env.RAZORPAY_KEY_ID,
       orderId: order.id,
@@ -131,6 +126,7 @@ export const verifyVillaPayment = async (req, res) => {
       govIdNumber,
       paymentMode,
       userId,
+      addressInfo,
     } = req.body || {};
 
     if (!userId) {
@@ -146,7 +142,16 @@ export const verifyVillaPayment = async (req, res) => {
       });
     }
 
-    /* ================= DATE & AMOUNT ================= */
+    if (addressInfo) {
+      await User.findByIdAndUpdate(userId, {
+        address: addressInfo.address || user.address,
+        country: addressInfo.country || user.country,
+        state: addressInfo.state || user.state,
+        city: addressInfo.city || user.city,
+        pincode: addressInfo.pincode || user.pincode,
+      });
+    }
+
     const sDate = new Date(startDate);
     const eDate = new Date(endDate);
 
