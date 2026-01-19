@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const fmt = (d) => (d ? format(new Date(d), "dd MMM yyyy") : "—");
 
@@ -15,6 +16,7 @@ export default function MobileUserCard({
   onView,
   onEdit,
   onDelete,
+  onBookings
 }) {
   return (
     <div
@@ -49,6 +51,9 @@ export default function MobileUserCard({
             <DropdownMenuContent className="bg-white" align="end">
               <DropdownMenuItem onClick={onView}>View</DropdownMenuItem>
               <DropdownMenuItem onClick={onEdit}>Edit</DropdownMenuItem>
+              <DropdownMenuItem onClick={onBookings}>
+                See all bookings
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDelete}
                 className="text-red-600 focus:text-red-600"

@@ -373,10 +373,10 @@ export default function VillaBookingForm() {
   return (
     <AppLayout>
       <div className="w-full md:max-w-6xl mb-4">
-        <div className="flex gap-5 relative">
+        <div className="flex flex-col md:flex-row gap-5 relative">
 
           {/* ================= CALENDAR ================= */}
-          <div className="w-[44%]">
+          <div className="w-full md:w-[44%]">
             <Label className="mb-4 block text-gray-600">Select Booking Dates</Label>
             <Calendar
               mode="range"
@@ -414,7 +414,7 @@ export default function VillaBookingForm() {
           </div>
 
           {/* ================= FORM ================= */}
-          <div className="space-y-6 w-[55%] bg-white shadow-md rounded-2xl p-4 md:p-4">
+          <div className="space-y-6 w-full md:w-[55%] bg-white shadow-md rounded-2xl p-4 md:p-4">
 
             {/* ================= SECTION 1: MOBILE ================= */}
             <div className="border rounded-xl p-4 bg-[#faf8f4] space-y-1">
