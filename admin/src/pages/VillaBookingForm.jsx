@@ -198,7 +198,7 @@ export default function VillaBookingForm() {
       const ok = await loadRazorpayScript();
       if (!ok) throw new Error("Razorpay failed to load");
 
-      await api.post("/admin/villa-order", {
+      const { data: order } = await api.post("/admin/villa-order", {
         userId: uid,
         startDate: start,
         endDate: end,
@@ -229,16 +229,15 @@ export default function VillaBookingForm() {
             govIdType: form.govIdType,
             govIdNumber: form.govIdNumber,
             paymentMode: "Online",
+            razorpay_order_id: resp.razorpay_order_id,
+            razorpay_payment_id: resp.razorpay_payment_id,
+            razorpay_signature: resp.razorpay_signature,
           });
 
           toast.success("Booking confirmed successfully!");
           navigate("/dashboard");
         },
-        modal: {
-          ondismiss: () => toast("Payment cancelled"),
-        },
       });
-
       rzp.open();
     } catch (err) {
       toast.error(err.message || "Booking failed");
