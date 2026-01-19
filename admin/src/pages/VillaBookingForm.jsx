@@ -68,39 +68,39 @@ export default function VillaBookingForm() {
   });
 
   useEffect(() => {
-  (async () => {
-    try {
-      const [bookings, blackouts] = await Promise.all([
-        listBookingsAdmin({ limit: 500 }),
-        listBlackouts(),
-      ]);
+    (async () => {
+      try {
+        const [bookings, blackouts] = await Promise.all([
+          listBookingsAdmin({ limit: 500 }),
+          listBlackouts(),
+        ]);
 
-      const bookedSet = new Set();
+        const bookedSet = new Set();
 
-      (bookings || []).forEach((b) => {
-        let d = toDateKey(new Date(b.startDate));
-        const end = toDateKey(new Date(b.endDate));
+        (bookings || []).forEach((b) => {
+          let d = toDateKey(new Date(b.startDate));
+          const end = toDateKey(new Date(b.endDate));
 
-        while (d <= end) {
-          bookedSet.add(d);
-          d = toDateKey(addDays(new Date(d), 1));
-        }
-      });
+          while (d <= end) {
+            bookedSet.add(d);
+            d = toDateKey(addDays(new Date(d), 1));
+          }
+        });
 
-      setBookedDates(bookedSet);
+        setBookedDates(bookedSet);
 
-      setBlockedRanges(
-        (blackouts || []).map((b) => ({
-          fromKey: toDateKey(new Date(b.from)),
-          toKey: toDateKey(new Date(b.to)),
-        }))
-      );
-    } catch (err) {
-      console.error("Availability load failed:", err);
-      toast.error("Failed to load availability");
-    }
-  })();
-}, []);
+        setBlockedRanges(
+          (blackouts || []).map((b) => ({
+            fromKey: toDateKey(new Date(b.from)),
+            toKey: toDateKey(new Date(b.to)),
+          }))
+        );
+      } catch (err) {
+        console.error("Availability load failed:", err);
+        toast.error("Failed to load availability");
+      }
+    })();
+  }, []);
 
 
   const checkUserByPhone = async () => {
@@ -134,7 +134,6 @@ export default function VillaBookingForm() {
     }
   };
 
-  /* ================= CREATE USER IF REQUIRED ================= */
   const ensureUserExists = async () => {
     if (userId) return userId;
 
@@ -146,11 +145,11 @@ export default function VillaBookingForm() {
         ? form.dob.toISOString().split("T")[0]
         : null,
     };
-
     const { data } = await api.post("/admin/users", payload);
-    setUserId(data.id);
-    return data.id;
+    setUserId(data._id);
+    return data._id;
   };
+
 
   /* ================= VALIDATION ================= */
   const validateForm = () => {
@@ -203,12 +202,13 @@ export default function VillaBookingForm() {
         userId: uid,
         startDate: start,
         endDate: end,
-        guests: form.guests,
-        customAmount: form.customAmount,
+        guests: Number(form.guests),
+        customAmount: Number(form.customAmount),
         contactName: form.name,
         contactEmail: form.email,
         contactPhone: form.phone,
       });
+
 
       const rzp = new window.Razorpay({
         key: order.key,
@@ -221,8 +221,8 @@ export default function VillaBookingForm() {
             userId: uid,
             startDate: start,
             endDate: end,
-            guests: form.guests,
-            customAmount: form.customAmount,
+            guests: Number(form.guests),
+            customAmount: Number(form.customAmount),
             contactName: form.name,
             contactEmail: form.email,
             contactPhone: form.phone,
@@ -237,11 +237,7 @@ export default function VillaBookingForm() {
           toast.success("Booking confirmed successfully!");
           navigate("/dashboard");
         },
-        modal: {
-          ondismiss: () => toast("Payment cancelled"),
-        },
       });
-
       rzp.open();
     } catch (err) {
       toast.error(err.message || "Booking failed");

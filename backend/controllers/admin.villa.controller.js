@@ -133,10 +133,9 @@ export const verifyVillaPayment = async (req, res) => {
       userId,
     } = req.body || {};
 
-    /* ================= USER VALIDATION ================= */
     if (!userId) {
       return res.status(400).json({
-        message: "User must be verified via OTP before booking",
+        message: "User is required for admin booking",
       });
     }
 
