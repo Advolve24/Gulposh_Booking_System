@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Eye, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function Invoices() {
   const [bookings, setBookings] = useState([]);
