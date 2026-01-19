@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/http";
+import { listBookingsAdmin, listBlackouts } from "@/api/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,33 +68,39 @@ export default function VillaBookingForm() {
   });
 
   useEffect(() => {
-    (async () => {
-      try {
-        const [bookedRes, blackoutRes] = await Promise.all([
-          api.get("/bookings"),
-          api.get("/blackouts"),
-        ]);
-        const bookedSet = new Set();
-        (bookedRes.data || []).forEach((b) => {
-          let d = toDateKey(new Date(b.startDate));
-          const end = toDateKey(new Date(b.endDate));
-          while (d <= end) {
-            bookedSet.add(d);
-            d = toDateKey(addDays(new Date(d), 1));
-          }
-        });
-        setBookedDates(bookedSet);
-        setBlockedRanges(
-          (blackoutRes.data || []).map((b) => ({
-            fromKey: toDateKey(new Date(b.from)),
-            toKey: toDateKey(new Date(b.to)),
-          }))
-        );
-      } catch {
-        toast.error("Failed to load availability");
-      }
-    })();
-  }, []);
+  (async () => {
+    try {
+      const [bookings, blackouts] = await Promise.all([
+        listBookingsAdmin({ limit: 500 }),
+        listBlackouts(),
+      ]);
+
+      const bookedSet = new Set();
+
+      (bookings || []).forEach((b) => {
+        let d = toDateKey(new Date(b.startDate));
+        const end = toDateKey(new Date(b.endDate));
+
+        while (d <= end) {
+          bookedSet.add(d);
+          d = toDateKey(addDays(new Date(d), 1));
+        }
+      });
+
+      setBookedDates(bookedSet);
+
+      setBlockedRanges(
+        (blackouts || []).map((b) => ({
+          fromKey: toDateKey(new Date(b.from)),
+          toKey: toDateKey(new Date(b.to)),
+        }))
+      );
+    } catch (err) {
+      console.error("Availability load failed:", err);
+      toast.error("Failed to load availability");
+    }
+  })();
+}, []);
 
 
   const checkUserByPhone = async () => {
