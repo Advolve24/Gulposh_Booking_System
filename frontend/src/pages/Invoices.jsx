@@ -29,20 +29,32 @@ export default function Invoices() {
   };
 
   const downloadInvoice = async (id) => {
+  try {
     const res = await api.get(`/invoice/user/${id}/download`, {
       responseType: "blob",
+      withCredentials: true, // ✅ REQUIRED
     });
 
     const blob = new Blob([res.data], { type: "application/pdf" });
-    const url = window.URL.createObjectURL(blob);
+
+    // ✅ Safari-safe download
+    const fileURL = window.URL.createObjectURL(blob);
 
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `Invoice-${id.slice(-6)}.pdf`;
-    a.click();
+    a.href = fileURL;
+    a.download = `Invoice-${id.slice(-6).toUpperCase()}.pdf`;
 
-    window.URL.revokeObjectURL(url);
-  };
+    // iOS Safari needs this
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    window.URL.revokeObjectURL(fileURL);
+  } catch (err) {
+    console.error("Invoice download failed", err);
+  }
+};
+
 
 
   return (
