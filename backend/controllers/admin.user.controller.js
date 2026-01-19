@@ -418,3 +418,46 @@ export const getBookingAdmin = async (req, res) => {
     res.status(500).json({ message: "Failed to load booking details" });
   }
 };
+
+
+
+export const checkUserByPhoneAdmin = async (req, res) => {
+  try {
+    const phone = (req.params.phone || "")
+      .replace(/\D/g, "")
+      .slice(-10);
+
+    if (!phone || phone.length !== 10) {
+      return res.status(400).json({
+        message: "Invalid phone number",
+      });
+    }
+
+    const user = await User.findOne({ phone });
+
+    if (!user) {
+      return res.json({
+        exists: false,
+        message: "User not found",
+      });
+    }
+
+    return res.json({
+      exists: true,
+      message: "User found",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        dob: user.dob,
+        phone: user.phone,
+        profileComplete: user.profileComplete,
+      },
+    });
+  } catch (err) {
+    console.error("checkUserByPhoneAdmin error:", err);
+    return res.status(500).json({
+      message: "Failed to check user",
+    });
+  }
+};

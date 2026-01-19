@@ -2,13 +2,20 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    /* ================= OTP IDENTITY ================= */
+    firebaseUid: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
     /* ================= BASIC INFO ================= */
     name: {
       type: String,
       trim: true,
       minlength: 2,
       maxlength: 50,
-      default: null, // 🔑 important: OTP users start empty
+      default: null, // OTP users start empty
     },
 
     phone: {
@@ -34,33 +41,12 @@ const userSchema = new mongoose.Schema(
     },
 
     /* ================= ADDRESS INFO ================= */
-    address: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-
-    country: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-
-    state: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-
-    city: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-
+    address: { type: String, default: null },
+    country: { type: String, default: null },
+    state: { type: String, default: null },
+    city: { type: String, default: null },
     pincode: {
       type: String,
-      trim: true,
       match: [/^\d{6}$/, "Pincode must be 6 digits"],
       default: null,
     },
@@ -92,7 +78,7 @@ const userSchema = new mongoose.Schema(
     /* ================= AUTH ================= */
     passwordHash: {
       type: String,
-      select: false,
+      select: false, // used ONLY for admin users
     },
 
     isAdmin: {
@@ -103,12 +89,11 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-/* ================= VIRTUAL: PROFILE COMPLETE ================= */
+/* ================= VIRTUAL ================= */
 userSchema.virtual("profileComplete").get(function () {
   return Boolean(this.name && this.dob);
 });
 
-/* Ensure virtuals are included */
 userSchema.set("toJSON", { virtuals: true });
 userSchema.set("toObject", { virtuals: true });
 
