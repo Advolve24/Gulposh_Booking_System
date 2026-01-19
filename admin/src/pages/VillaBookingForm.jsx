@@ -155,6 +155,10 @@ export default function VillaBookingForm() {
     setCountries(all);
   }, []);
 
+useEffect(() => {
+  if (!countries.length) return;
+  onCountryChange(countryCode);
+}, [countries]);
 
 
   const checkUserByPhone = async () => {
