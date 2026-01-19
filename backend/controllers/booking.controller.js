@@ -125,7 +125,7 @@ export const getBooking = async (req, res) => {
 
 export const cancelMyBooking = async (req, res) => {
   try {
-    const { reason } = req.body;
+  const { reason } = req.body || {};
 
     const booking = await Booking.findOne({
       _id: req.params.id,

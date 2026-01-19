@@ -175,7 +175,7 @@ export default function BookingSuccess() {
                     <img
                         src={roomImage}
                         alt={room.name}
-                        className="h-30 md:h-full w-full object-cover"
+                        className="h-20 md:h-full w-full object-cover"
                     />
 
                     <div className="p-6 space-y-4">
@@ -242,7 +242,7 @@ export default function BookingSuccess() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
 
-                        {/* LEFT — USER INFO */}
+                        {/* ================= LEFT — USER INFO ================= */}
                         <div className="space-y-4">
 
                             {/* NAME */}
@@ -267,39 +267,56 @@ export default function BookingSuccess() {
                                 </div>
                             </div>
 
+                        </div>
+
+                        {/* ================= RIGHT — CONTACT & ADDRESS ================= */}
+                        <div className="space-y-4">
+
                             {/* PHONE */}
                             <div className="flex items-start gap-3">
                                 <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
                                 <div>
                                     <div className="text-xs text-muted-foreground">Phone Number</div>
                                     <div className="font-medium">
-                                        {user?.phone || booking.contactPhone}
+                                        {user?.phone || booking.contactPhone || "—"}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ADDRESS */}
+                            <div className="flex items-start gap-3">
+                                <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                <div>
+                                    <div className="text-xs text-muted-foreground mb-1">
+                                        Address
+                                    </div>
+                                    <div className="font-medium leading-relaxed space-y-1">
+
+                                        {/* ROW 1 — STREET */}
+                                        <div>
+                                            {user?.address || booking.address?.address || "—"}
+                                        </div>
+
+                                        {/* ROW 2 — CITY / STATE / PIN / COUNTRY */}
+                                        <div>
+                                            {(user?.city || booking.address?.city) && (
+                                                <>
+                                                    {user?.city || booking.address?.city},{" "}
+                                                </>
+                                            )}
+                                            {user?.state || booking.address?.state}{" "}
+                                            {user?.pincode || booking.address?.pincode}
+                                            {", "}
+                                            {user?.country || booking.address?.country}
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
 
                         </div>
-
-                        {/* RIGHT — ADDRESS */}
-                        <div className="flex items-start gap-3">
-                            <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
-                            <div>
-                                <div className="text-xs text-muted-foreground mb-1">
-                                    Address
-                                </div>
-                                <div className="font-medium leading-relaxed">
-                                    {user?.address || booking.address?.address}
-                                    <br />
-                                    {user?.city || booking.address?.city},{" "}
-                                    {user?.state || booking.address?.state}{" "}
-                                    {user?.pincode || booking.address?.pincode}
-                                    <br />
-                                    {user?.country || booking.address?.country}
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
+
                 </div>
 
 

@@ -6,8 +6,8 @@ import {
   DialogOverlay,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
@@ -17,38 +17,148 @@ import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
+/* =====================================================
+   CONSTANTS
+===================================================== */
+
 const OTP_TIMER = 60;
 const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
 
+/* =====================================================
+   COMPONENT
+===================================================== */
+
 export default function AuthModal() {
-  const { showAuthModal, closeAuth, firebaseLoginWithToken } = useAuth();
+  const {
+    showAuthModal,
+    closeAuth,
+    firebaseLoginWithToken,
+    googleLoginWithToken,
+  } = useAuth();
+
   const navigate = useNavigate();
 
-  const [step, setStep] = useState("phone"); // phone | otp
-  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState("choice"); // choice | phone | otp
   const [form, setForm] = useState({ phone: "", otp: "" });
+  const [loading, setLoading] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
 
   const confirmationRef = useRef(null);
+  const googleRenderedRef = useRef(false);
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
 
-  /* ================= TIMER ================= */
+  /* =====================================================
+     GOOGLE OAUTH CALLBACK
+  ===================================================== */
+
+  const handleGoogleResponse = async (response) => {
+    try {
+      setLoading(true);
+
+      const user = await googleLoginWithToken(response.credential);
+
+      closeAuth();
+      toast.success("Welcome to Gulposh ✨");
+      handlePostAuthRedirect(user);
+    } catch (err) {
+      console.error(err);
+      toast.error("Google login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =====================================================
+     GOOGLE SCRIPT INIT
+  ===================================================== */
+
+  useEffect(() => {
+    if (!showAuthModal || googleRenderedRef.current) return;
+
+    const loadGoogleScript = () =>
+      new Promise((resolve, reject) => {
+        if (window.google?.accounts?.id) return resolve();
+
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      });
+
+    loadGoogleScript()
+      .then(() => {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+        });
+
+        const container = document.getElementById("google-btn");
+        if (container) {
+          window.google.accounts.id.renderButton(container, {
+            theme: "outline",
+            size: "large",
+            shape: "pill",
+            width: 320,
+          });
+          googleRenderedRef.current = true;
+        }
+      })
+      .catch(() => toast.error("Google login failed"));
+  }, [showAuthModal]);
+
+  /* =====================================================
+     OTP TIMER
+  ===================================================== */
+
   useEffect(() => {
     if (step !== "otp" || secondsLeft <= 0) return;
 
-    const t = setInterval(() => {
-      setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
+    const timer = setInterval(() => {
+      setSecondsLeft((s) => s - 1);
     }, 1000);
 
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, [step, secondsLeft]);
 
-  /* ================= CLEAN RESET ================= */
+  /* =====================================================
+     POST AUTH REDIRECT
+  ===================================================== */
+
+  const handlePostAuthRedirect = (user) => {
+    const raw = sessionStorage.getItem("postAuthRedirect");
+    sessionStorage.removeItem("postAuthRedirect");
+
+    if (raw) {
+      const { redirectTo, bookingState } = JSON.parse(raw);
+
+      if (!user.profileComplete) {
+        navigate("/complete-profile", {
+          replace: true,
+          state: { redirectTo, bookingState },
+        });
+        return;
+      }
+
+      navigate(redirectTo, { replace: true, state: bookingState });
+      return;
+    }
+
+    navigate("/", { replace: true });
+  };
+
+  /* =====================================================
+     RESET FLOW
+  ===================================================== */
+
   const resetFlow = () => {
+    confirmationRef.current = null;
+    googleRenderedRef.current = false;
     sendingRef.current = false;
     verifyingRef.current = false;
-    confirmationRef.current = null;
 
     if (window.recaptchaVerifier) {
       window.recaptchaVerifier.clear();
@@ -56,17 +166,20 @@ export default function AuthModal() {
     }
 
     setForm({ phone: "", otp: "" });
-    setStep("phone");
+    setStep("choice");
     setSecondsLeft(OTP_TIMER);
     setLoading(false);
   };
 
-  /* ================= SEND OTP ================= */
+  /* =====================================================
+     SEND OTP
+  ===================================================== */
+
   const sendOtp = async () => {
     if (sendingRef.current) return;
 
     if (!isValidPhone(form.phone)) {
-      toast.error("Enter a valid 10-digit mobile number");
+      toast.error("Enter valid 10-digit mobile number");
       return;
     }
 
@@ -74,59 +187,38 @@ export default function AuthModal() {
     setLoading(true);
 
     try {
-      // ensure single recaptcha instance
       const verifier =
         window.recaptchaVerifier ||
         getRecaptchaVerifier(auth, "recaptcha-container");
 
       window.recaptchaVerifier = verifier;
 
-      const confirmation = await signInWithPhoneNumber(
+      confirmationRef.current = await signInWithPhoneNumber(
         auth,
         `+91${form.phone}`,
         verifier
       );
 
-      confirmationRef.current = confirmation;
       setStep("otp");
       setSecondsLeft(OTP_TIMER);
-
-      toast.success("OTP sent successfully");
+      toast.success("OTP sent");
     } catch (err) {
-      console.error(err);
-
-      if (err?.code === "auth/too-many-requests") {
-        toast.error("Too many attempts. Please wait a minute.");
-      } else {
-        toast.error("Failed to send OTP. Try again.");
-      }
-
-      // cleanup on failure
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
+      toast.error("Failed to send OTP");
     } finally {
       sendingRef.current = false;
       setLoading(false);
     }
   };
 
-  /* ================= VERIFY OTP ================= */
+  /* =====================================================
+     VERIFY OTP
+  ===================================================== */
+
   const verifyOtp = async () => {
     if (verifyingRef.current) return;
 
     const otp = form.otp.replace(/\D/g, "");
-    if (otp.length !== 6) {
-      toast.error("Enter valid 6-digit OTP");
-      return;
-    }
-
-    if (!confirmationRef.current) {
-      toast.error("OTP expired. Please resend.");
-      resetFlow();
-      return;
-    }
+    if (otp.length !== 6) return;
 
     verifyingRef.current = true;
     setLoading(true);
@@ -139,33 +231,35 @@ export default function AuthModal() {
 
       closeAuth();
       toast.success("Welcome to Gulposh ✨");
-
-      const raw = sessionStorage.getItem("postAuthRedirect");
-      sessionStorage.removeItem("postAuthRedirect");
-
-      if (raw) {
-        const { redirectTo, bookingState } = JSON.parse(raw);
-        if (!user.profileComplete) {
-          navigate("/complete-profile", {
-            replace: true,
-            state: { redirectTo, bookingState },
-          });
-          return;
-        }
-        navigate(redirectTo, { replace: true, state: bookingState });
-        return;
-      }
-
-      navigate("/", { replace: true });
-    } catch (err) {
-      console.error(err);
-      toast.error("Invalid OTP. Please resend.");
+      handlePostAuthRedirect(user);
+    } catch {
+      toast.error("Invalid OTP");
       setForm((f) => ({ ...f, otp: "" }));
       verifyingRef.current = false;
     } finally {
       setLoading(false);
     }
   };
+
+  /* =====================================================
+     AUTO VERIFY OTP
+  ===================================================== */
+
+  useEffect(() => {
+    if (
+      step === "otp" &&
+      form.otp.length === 6 &&
+      confirmationRef.current &&
+      !verifyingRef.current &&
+      !loading
+    ) {
+      verifyOtp();
+    }
+  }, [form.otp, step]);
+
+  /* =====================================================
+     UI
+  ===================================================== */
 
   return (
     <Dialog
@@ -184,13 +278,11 @@ export default function AuthModal() {
           <h2>Authentication</h2>
         </VisuallyHidden>
 
-        {/* reCAPTCHA */}
         <div
           id="recaptcha-container"
-          className="absolute inset-0 pointer-events-none opacity-0"
+          className="absolute inset-0 opacity-0 pointer-events-none"
         />
 
-        {/* HEADER */}
         <div className="relative h-48">
           <button
             onClick={() => {
@@ -204,40 +296,51 @@ export default function AuthModal() {
 
           <img
             src="/login-popup.webp"
-            alt="Gulposh Villa"
+            alt="Gulposh"
             className="h-full w-full object-cover"
           />
-          <div className="absolute inset-0 " />
         </div>
 
-        {/* BODY */}
         <div className="px-5 py-5 space-y-4">
-          <h2 className="text-lg font-semibold">
-            {step === "phone" ? "Sign in" : "Verify OTP"}
-          </h2>
+          <h2 className="text-lg font-semibold">Sign in</h2>
+
+          {step === "choice" && (
+            <>
+              <div className="flex justify-center">
+                <div id="google-btn" />
+              </div>
+
+              <div className="text-center text-xs text-muted-foreground">
+                or
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full h-11 rounded-xl"
+                onClick={() => setStep("phone")}
+              >
+                Continue with Mobile OTP
+              </Button>
+            </>
+          )}
 
           {step === "phone" && (
             <>
               <Label>Mobile Number</Label>
               <Input
-                className="h-11 rounded-xl"
-                placeholder="Enter 10 digit phone number"
-                inputMode="numeric"
+                placeholder="Enter 10-digit mobile number"
                 value={form.phone}
                 onChange={(e) =>
-                  setForm({
-                    ...form,
-                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                  })
+                  setForm({ ...form, phone: e.target.value })
                 }
               />
 
               <Button
-                className="w-full h-11 bg-[#a11d2e]"
+                className="w-full h-11 rounded-xl"
                 onClick={sendOtp}
                 disabled={loading}
               >
-                {loading ? "Sending..." : "Continue"}
+                Send OTP
               </Button>
             </>
           )}
@@ -246,46 +349,35 @@ export default function AuthModal() {
             <>
               <Label>Enter OTP</Label>
               <Input
-                className="h-11 text-center tracking-[0.35em] font-semibold"
-                inputMode="numeric"
-                autoFocus
+                placeholder="6-digit OTP"
                 value={form.otp}
                 onChange={(e) =>
-                  setForm({
-                    ...form,
-                    otp: e.target.value.replace(/\D/g, "").slice(0, 6),
-                  })
+                  setForm({ ...form, otp: e.target.value })
                 }
               />
 
               <Button
-                className="w-full h-11 bg-[#a11d2e]"
+                className="w-full h-11 rounded-xl"
+                disabled={loading || form.otp.length !== 6}
                 onClick={verifyOtp}
-                disabled={loading}
               >
-                {loading ? "Verifying..." : "Verify OTP"}
+                Verify OTP
               </Button>
 
-              <div className="text-xs text-center text-muted-foreground">
-                {secondsLeft > 0 ? (
-                  <>Resend OTP in <b>{secondsLeft}s</b></>
-                ) : (
-                  <button
-                    onClick={sendOtp}
-                    className="text-primary underline"
-                  >
-                    Resend OTP
-                  </button>
-                )}
+              <div className="text-center text-xs text-muted-foreground">
+                {secondsLeft > 0
+                  ? `Resend OTP in ${secondsLeft}s`
+                  : "You can resend OTP"}
               </div>
             </>
           )}
         </div>
 
         <div className="px-4 py-2 text-center text-[11px] border-t text-muted-foreground">
-          🔒 Secured login • No spam • Privacy protected
+          🔒 Secure login • No spam • Privacy protected
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+

@@ -12,6 +12,11 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft } from "lucide-react";
 import { MapPin, Users, Utensils, Check, User, ConciergeBell, } from "lucide-react";
 import {
+  toDateOnly,
+  toDateOnlyFromAPI,
+  toDateOnlyFromAPIUTC,
+} from "../lib/date";
+import {
   Select,
   SelectTrigger,
   SelectContent,
@@ -39,11 +44,6 @@ import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
-/* ================= HELPERS ================= */
-const isValidPhone = (p) => /^[0-9]{10}$/.test(p);
-const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
-const toDateOnly = (d) =>
-  new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
 export default function Checkout() {
   const { state } = useLocation();
@@ -72,6 +72,10 @@ export default function Checkout() {
     pincode: "",
   });
 
+  const [bookedAll, setBookedAll] = useState([]);
+const [blackoutRanges, setBlackoutRanges] = useState([]);
+const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
+
   /* ================= GUESTS & MEALS ================= */
   const [guests, setGuests] = useState(String(initialGuests));
   const [withMeal, setWithMeal] = useState(false);
@@ -83,6 +87,32 @@ export default function Checkout() {
     from: state?.startDate ? new Date(state.startDate) : null,
     to: state?.endDate ? new Date(state.endDate) : null,
   });
+
+  const disabledAll = useMemo(
+  () => mergeRanges([...blackoutRanges, ...bookedAll]),
+  [blackoutRanges, bookedAll]
+);
+
+function mergeRanges(ranges) {
+  if (!ranges?.length) return [];
+  const sorted = ranges
+    .map((r) => ({ from: new Date(r.from), to: new Date(r.to) }))
+    .sort((a, b) => a.from - b.from);
+
+  const out = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const last = out[out.length - 1];
+    const cur = sorted[i];
+    const nextDay = new Date(last.to);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    if (cur.from <= nextDay) {
+      if (cur.to > last.to) last.to = cur.to;
+    } else out.push(cur);
+  }
+  return out;
+}
+
 
   /* ================= OTP ================= */
   const [otpStep, setOtpStep] = useState("idle");
@@ -98,6 +128,29 @@ export default function Checkout() {
     address.country && address.state
       ? getCitiesByState(address.country, address.state)
       : [];
+
+      useEffect(() => {
+  // global bookings + blocked
+  api.get("/rooms/disabled/all").then(({ data }) =>
+    setBookedAll(
+      (data || []).map((b) => ({
+        from: toDateOnlyFromAPIUTC(b.from || b.startDate),
+        to: toDateOnlyFromAPIUTC(b.to || b.endDate),
+      }))
+    )
+  );
+
+  // global blackouts
+  api.get("/blackouts").then(({ data }) =>
+    setBlackoutRanges(
+      (data || []).map((b) => ({
+        from: toDateOnlyFromAPI(b.from),
+        to: toDateOnlyFromAPI(b.to),
+      }))
+    )
+  );
+}, []);
+
 
   /* ================= LOAD ROOM ================= */
   useEffect(() => {
@@ -127,13 +180,14 @@ export default function Checkout() {
     setOtpStep("verified");
   }, [user]);
   /* ================= CALCULATIONS ================= */
-  const nights = useMemo(() => {
-    if (!range.from || !range.to) return 0;
-    return (
-      (toDateOnly(range.to) - toDateOnly(range.from)) /
-      (1000 * 60 * 60 * 24)
-    );
-  }, [range]);
+ const nights = useMemo(() => {
+  if (!range.from || !range.to) return 0;
+  return (
+    (toDateOnly(range.to) - toDateOnly(range.from)) /
+    (1000 * 60 * 60 * 24)
+  );
+}, [range]);
+
 
   const roomTotal = nights * (room?.pricePerNight || 0);
 
@@ -224,8 +278,8 @@ export default function Checkout() {
 
           sessionStorage.removeItem("searchParams");
           navigate(`/booking-success/${data.booking._id}`, {
-      replace: true,
-    });
+            replace: true,
+          });
         } catch (err) {
           console.error("Payment verified but booking failed:", err);
 
@@ -342,7 +396,7 @@ export default function Checkout() {
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
 
         {/* ================= DESKTOP STICKY SUMMARY ================= */}
-       <aside className="hidden lg:block lg:col-span-4">
+        <aside className="hidden lg:block lg:col-span-4">
           <div className="sticky top-[120px] px-4 py-0">
 
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -629,11 +683,13 @@ export default function Checkout() {
           </div>
 
           {/* ================= BOOKING PREFERENCES ================= */}
-          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-4">
+          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-6">
+
+            {/* HEADER */}
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-  <ConciergeBell className="h-5 w-5 text-red-700" />
-</div>
+                <ConciergeBell className="h-5 w-5 text-red-700" />
+              </div>
               <div>
                 <h3 className="font-semibold text-base">Booking Preferences</h3>
                 <p className="text-xs text-muted-foreground">
@@ -642,9 +698,28 @@ export default function Checkout() {
               </div>
             </div>
 
+            {/* ================= DATE SELECTION ================= */}
+            <div className="space-y-2">
+              <Label>Check-in / Check-out</Label>
+
+              <CalendarRange
+                value={range}
+                onChange={setRange}
+                disabledRanges={disabledAll} // ✅ booked + blackout (global)
+              />
+
+              {!range?.from && (
+                <p className="text-xs text-muted-foreground">
+                  Select your stay dates to continue
+                </p>
+              )}
+            </div>
+
+
+            {/* ================= GUEST COUNT ================= */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label>Number of Guests</Label>
+                <Label>Total Guests</Label>
                 <Select
                   value={guests}
                   onValueChange={(v) => {
@@ -653,18 +728,24 @@ export default function Checkout() {
                     setNonVegGuests(0);
                   }}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                      <SelectItem key={n} value={String(n)}>
+                        {n}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* MEALS */}
-            <div className="space-y-3 pt-2">
+            {/* ================= MEALS ================= */}
+            <div className="space-y-4 pt-2">
+
+              {/* TOGGLE */}
               <div className="flex items-start gap-3">
                 <Checkbox
                   checked={withMeal}
@@ -679,40 +760,70 @@ export default function Checkout() {
                 <Label className="leading-snug">
                   Include Meals
                   <span className="block text-xs text-muted-foreground">
-                    Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg} per guest per night
+                    Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg}
+                    <br />
+                    <span className="italic">
+                      per guest per night
+                    </span>
                   </span>
                 </Label>
               </div>
 
+              {/* MEAL COUNTERS */}
               {withMeal && (
                 <div className="grid grid-cols-2 gap-4">
+
+                  {/* VEG */}
                   <div>
                     <Label>Veg Guests</Label>
                     <Input
                       type="number"
                       min={0}
+                      max={Number(guests) - nonVegGuests}
                       value={vegGuests}
-                      onChange={(e) =>
-                        setVegGuests(Number(e.target.value) || 0)
-                      }
+                      onChange={(e) => {
+                        const v = Math.min(
+                          Number(e.target.value) || 0,
+                          Number(guests) - nonVegGuests
+                        );
+                        setVegGuests(v);
+                      }}
                     />
                   </div>
 
+                  {/* NON-VEG */}
                   <div>
                     <Label>Non-Veg Guests</Label>
                     <Input
                       type="number"
                       min={0}
+                      max={Number(guests) - vegGuests}
                       value={nonVegGuests}
-                      onChange={(e) =>
-                        setNonVegGuests(Number(e.target.value) || 0)
-                      }
+                      onChange={(e) => {
+                        const v = Math.min(
+                          Number(e.target.value) || 0,
+                          Number(guests) - vegGuests
+                        );
+                        setNonVegGuests(v);
+                      }}
                     />
                   </div>
+
+                  {/* VALIDATION MESSAGE */}
+                  <div className="col-span-2 text-xs text-muted-foreground">
+                    Selected: {vegGuests + nonVegGuests} / {guests} guests
+                    {vegGuests + nonVegGuests !== Number(guests) && (
+                      <span className="text-red-600 ml-2">
+                        (Veg + Non-Veg must equal total guests)
+                      </span>
+                    )}
+                  </div>
+
                 </div>
               )}
             </div>
           </div>
+
 
           {/* ================= CTA ================= */}
           <Button
@@ -723,14 +834,14 @@ export default function Checkout() {
           </Button>
 
           {/* ================= MOBILE FIXED CTA ================= */}
-<div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-3">
-  <Button
-    className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
-    onClick={proceed}
-  >
-    Proceed to Payment
-  </Button>
-</div>
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-3">
+            <Button
+              className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
+              onClick={proceed}
+            >
+              Proceed to Payment
+            </Button>
+          </div>
 
 
         </section>

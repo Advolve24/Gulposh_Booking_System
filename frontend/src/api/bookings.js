@@ -10,8 +10,8 @@ export const getBooking = async (id) => {
   return data;
 };
 
-export const cancelBooking = async (id) => {
-  const { data } = await api.post(`/bookings/${id}/cancel`);
+export const cancelBooking = async (id, payload) => {
+  const { data } = await api.post(`/bookings/${id}/cancel`, payload);
   return data;
 };
 

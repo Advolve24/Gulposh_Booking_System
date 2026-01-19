@@ -51,6 +51,30 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+     /* ================= AUTH PROVIDERS ================= */
+
+    // Firebase Phone Auth UID
+    firebaseUid: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    // Google OAuth unique ID (payload.sub)
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    // Which provider user used initially
+    authProvider: {
+      type: String,
+      enum: ["firebase", "google"],
+      required: true,
+    },
+
+
     /* ================= AUTH ================= */
     passwordHash: {
       type: String,
