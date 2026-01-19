@@ -16,34 +16,6 @@ import AppLayout from "@/components/layout/AppLayout";
 
 const toDateKey = (date) => format(date, "yyyy-MM-dd");
 
-const isBooked = (date) => bookedDates.has(toDateKey(date));
-
-const isBlocked = (date) => {
-  const key = toDateKey(date);
-  return blockedRanges.some(
-    (b) => key >= b.fromKey && key <= b.toKey
-  );
-};
-
-const isRangeValid = (from, to) => {
-  let d = toDateKey(from);
-  const end = toDateKey(to);
-
-  while (d <= end) {
-    if (bookedDates.has(d)) return false;
-    if (
-      blockedRanges.some(
-        (b) => d >= b.fromKey && d <= b.toKey
-      )
-    ) {
-      return false;
-    }
-    d = toDateKey(addDays(new Date(d), 1));
-  }
-  return true;
-};
-
-
 export default function VillaBookingForm() {
   const navigate = useNavigate();
   const [range, setRange] = useState();
@@ -54,6 +26,33 @@ export default function VillaBookingForm() {
 
   const [userId, setUserId] = useState(null);
   const [userChecked, setUserChecked] = useState(false);
+
+  const isBooked = (date) => bookedDates.has(toDateKey(date));
+
+  const isBlocked = (date) => {
+    const key = toDateKey(date);
+    return blockedRanges.some(
+      (b) => key >= b.fromKey && key <= b.toKey
+    );
+  };
+
+  const isRangeValid = (from, to) => {
+    let d = toDateKey(from);
+    const end = toDateKey(to);
+
+    while (d <= end) {
+      if (bookedDates.has(d)) return false;
+      if (
+        blockedRanges.some(
+          (b) => d >= b.fromKey && d <= b.toKey
+        )
+      ) {
+        return false;
+      }
+      d = toDateKey(addDays(new Date(d), 1));
+    }
+    return true;
+  };
 
   const [form, setForm] = useState({
     name: "",
