@@ -155,10 +155,10 @@ export default function VillaBookingForm() {
     setCountries(all);
   }, []);
 
-useEffect(() => {
-  if (!countries.length) return;
-  onCountryChange(countryCode);
-}, [countries]);
+  useEffect(() => {
+    if (!countries.length) return;
+    onCountryChange(countryCode);
+  }, [countries]);
 
 
   const checkUserByPhone = async () => {
@@ -186,14 +186,21 @@ useEffect(() => {
       /* ===== COUNTRY ===== */
       const allCountries = Country.getAllCountries();
       const countryObj =
-        allCountries.find((c) => c.name === u.country) ||
-        allCountries.find((c) => c.isoCode === "IN");
+        allCountries.find(
+          (c) =>
+            c.name === u.country ||
+            c.isoCode === u.country
+        ) || allCountries.find((c) => c.isoCode === "IN");
 
       const countryISO = countryObj.isoCode;
 
       /* ===== STATES ===== */
       const stateList = State.getStatesOfCountry(countryISO);
-      const stateObj = stateList.find((s) => s.name === u.state);
+      const stateObj = stateList.find(
+        (s) =>
+          s.name === u.state ||
+          s.isoCode === u.state
+      );
 
       const stateISO = stateObj?.isoCode || "";
 
