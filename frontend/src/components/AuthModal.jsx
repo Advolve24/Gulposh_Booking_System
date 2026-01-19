@@ -13,7 +13,11 @@ import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
-import { signInWithPhoneNumber } from "firebase/auth";
+import {
+  signInWithPhoneNumber,
+  GoogleAuthProvider,
+  signInWithRedirect,
+} from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
@@ -33,7 +37,6 @@ export default function AuthModal() {
     showAuthModal,
     closeAuth,
     firebaseLoginWithToken,
-    googleLoginWithToken,
   } = useAuth();
 
   const navigate = useNavigate();
@@ -44,71 +47,27 @@ export default function AuthModal() {
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
 
   const confirmationRef = useRef(null);
-  const googleRenderedRef = useRef(false);
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
 
   /* =====================================================
-     GOOGLE OAUTH CALLBACK
+     GOOGLE LOGIN (FIREBASE REDIRECT)
+     ✅ WORKS ON iPHONE SAFARI
   ===================================================== */
 
-  const handleGoogleResponse = async (response) => {
+  const handleGoogleLogin = () => {
     try {
-      setLoading(true);
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: "select_account",
+      });
 
-      const user = await googleLoginWithToken(response.credential);
-
-      closeAuth();
-      toast.success("Welcome to Gulposh ✨");
-      handlePostAuthRedirect(user);
+      signInWithRedirect(auth, provider);
     } catch (err) {
       console.error(err);
       toast.error("Google login failed");
-    } finally {
-      setLoading(false);
     }
   };
-
-  /* =====================================================
-     GOOGLE SCRIPT INIT
-  ===================================================== */
-
-  useEffect(() => {
-    if (!showAuthModal || googleRenderedRef.current) return;
-
-    const loadGoogleScript = () =>
-      new Promise((resolve, reject) => {
-        if (window.google?.accounts?.id) return resolve();
-
-        const script = document.createElement("script");
-        script.src = "https://accounts.google.com/gsi/client";
-        script.async = true;
-        script.defer = true;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.body.appendChild(script);
-      });
-
-    loadGoogleScript()
-      .then(() => {
-        window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-          callback: handleGoogleResponse,
-        });
-
-        const container = document.getElementById("google-btn");
-        if (container) {
-          window.google.accounts.id.renderButton(container, {
-            theme: "outline",
-            size: "large",
-            shape: "pill",
-            width: 320,
-          });
-          googleRenderedRef.current = true;
-        }
-      })
-      .catch(() => toast.error("Google login failed"));
-  }, [showAuthModal]);
 
   /* =====================================================
      OTP TIMER
@@ -156,7 +115,6 @@ export default function AuthModal() {
 
   const resetFlow = () => {
     confirmationRef.current = null;
-    googleRenderedRef.current = false;
     sendingRef.current = false;
     verifyingRef.current = false;
 
@@ -172,7 +130,7 @@ export default function AuthModal() {
   };
 
   /* =====================================================
-     SEND OTP
+     SEND OTP (VISIBLE reCAPTCHA — iOS SAFE)
   ===================================================== */
 
   const sendOtp = async () => {
@@ -189,7 +147,9 @@ export default function AuthModal() {
     try {
       const verifier =
         window.recaptchaVerifier ||
-        getRecaptchaVerifier(auth, "recaptcha-container");
+        getRecaptchaVerifier(auth, "recaptcha-container", {
+          size: "normal", // ✅ IMPORTANT FOR iOS
+        });
 
       window.recaptchaVerifier = verifier;
 
@@ -203,6 +163,7 @@ export default function AuthModal() {
       setSecondsLeft(OTP_TIMER);
       toast.success("OTP sent");
     } catch (err) {
+      console.error(err);
       toast.error("Failed to send OTP");
     } finally {
       sendingRef.current = false;
@@ -232,7 +193,8 @@ export default function AuthModal() {
       closeAuth();
       toast.success("Welcome to Gulposh ✨");
       handlePostAuthRedirect(user);
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Invalid OTP");
       setForm((f) => ({ ...f, otp: "" }));
       verifyingRef.current = false;
@@ -278,10 +240,8 @@ export default function AuthModal() {
           <h2>Authentication</h2>
         </VisuallyHidden>
 
-        <div
-          id="recaptcha-container"
-          className="absolute inset-0 opacity-0 pointer-events-none"
-        />
+        {/* ✅ MUST BE VISIBLE FOR iOS */}
+        <div id="recaptcha-container" className="px-4 pt-3" />
 
         <div className="relative h-48">
           <button
@@ -306,9 +266,13 @@ export default function AuthModal() {
 
           {step === "choice" && (
             <>
-              <div className="flex justify-center">
-                <div id="google-btn" />
-              </div>
+              <Button
+                className="w-full h-11 rounded-xl"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+              >
+                Continue with Google
+              </Button>
 
               <div className="text-center text-xs text-muted-foreground">
                 or
