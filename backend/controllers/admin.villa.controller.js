@@ -162,30 +162,36 @@ export const verifyVillaPayment = async (req, res) => {
 
     const amountINR = nights * Number(customAmount);
 
-    /* ================= CASH BOOKING ================= */
     if (paymentMode === "Cash") {
+      const roomTotal = nights * Number(customAmount);
+
       const booking = await Booking.create({
         user: user._id,
+        isVilla: true,
+
         startDate: sDate,
         endDate: eDate,
+        nights,
+
         guests,
-        withMeal: false,
+        pricePerNight: Number(customAmount),
+        roomTotal,             
+        amount: roomTotal,     
+        currency: "INR",
+
+        status: "confirmed",
+        paymentProvider: "offline",
+
         contactName,
         contactEmail,
         contactPhone,
-        currency: "INR",
-        pricePerNight: Number(customAmount),
-        nights,
-        amount: amountINR,
-        status: "confirmed",
-        paymentProvider: "offline",
-        isVilla: true,
+
         adminMeta: {
           fullName: contactName,
           phone: contactPhone,
           govIdType,
           govIdNumber,
-          amountPaid: amountINR,
+          amountPaid: roomTotal,
           paymentMode: "Cash",
         },
       });
@@ -193,7 +199,6 @@ export const verifyVillaPayment = async (req, res) => {
       return res.json({ ok: true, booking });
     }
 
-    /* ================= RAZORPAY SIGNATURE ================= */
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -206,7 +211,6 @@ export const verifyVillaPayment = async (req, res) => {
       });
     }
 
-    /* ================= FINAL BOOKING ================= */
     const booking = await Booking.create({
       user: user._id,
       startDate: sDate,
