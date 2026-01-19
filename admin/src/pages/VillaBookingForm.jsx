@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/http";
+import { listBookingsAdmin, listBlackouts } from "@/api/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,34 +17,6 @@ import AppLayout from "@/components/layout/AppLayout";
 
 const toDateKey = (date) => format(date, "yyyy-MM-dd");
 
-const isBooked = (date) => bookedDates.has(toDateKey(date));
-
-const isBlocked = (date) => {
-  const key = toDateKey(date);
-  return blockedRanges.some(
-    (b) => key >= b.fromKey && key <= b.toKey
-  );
-};
-
-const isRangeValid = (from, to) => {
-  let d = toDateKey(from);
-  const end = toDateKey(to);
-
-  while (d <= end) {
-    if (bookedDates.has(d)) return false;
-    if (
-      blockedRanges.some(
-        (b) => d >= b.fromKey && d <= b.toKey
-      )
-    ) {
-      return false;
-    }
-    d = toDateKey(addDays(new Date(d), 1));
-  }
-  return true;
-};
-
-
 export default function VillaBookingForm() {
   const navigate = useNavigate();
   const [range, setRange] = useState();
@@ -54,6 +27,33 @@ export default function VillaBookingForm() {
 
   const [userId, setUserId] = useState(null);
   const [userChecked, setUserChecked] = useState(false);
+
+  const isBooked = (date) => bookedDates.has(toDateKey(date));
+
+  const isBlocked = (date) => {
+    const key = toDateKey(date);
+    return blockedRanges.some(
+      (b) => key >= b.fromKey && key <= b.toKey
+    );
+  };
+
+  const isRangeValid = (from, to) => {
+    let d = toDateKey(from);
+    const end = toDateKey(to);
+
+    while (d <= end) {
+      if (bookedDates.has(d)) return false;
+      if (
+        blockedRanges.some(
+          (b) => d >= b.fromKey && d <= b.toKey
+        )
+      ) {
+        return false;
+      }
+      d = toDateKey(addDays(new Date(d), 1));
+    }
+    return true;
+  };
 
   const [form, setForm] = useState({
     name: "",
@@ -68,33 +68,39 @@ export default function VillaBookingForm() {
   });
 
   useEffect(() => {
-    (async () => {
-      try {
-        const [bookedRes, blackoutRes] = await Promise.all([
-          api.get("/bookings"),
-          api.get("/blackouts"),
-        ]);
-        const bookedSet = new Set();
-        (bookedRes.data || []).forEach((b) => {
-          let d = toDateKey(new Date(b.startDate));
-          const end = toDateKey(new Date(b.endDate));
-          while (d <= end) {
-            bookedSet.add(d);
-            d = toDateKey(addDays(new Date(d), 1));
-          }
-        });
-        setBookedDates(bookedSet);
-        setBlockedRanges(
-          (blackoutRes.data || []).map((b) => ({
-            fromKey: toDateKey(new Date(b.from)),
-            toKey: toDateKey(new Date(b.to)),
-          }))
-        );
-      } catch {
-        toast.error("Failed to load availability");
-      }
-    })();
-  }, []);
+  (async () => {
+    try {
+      const [bookings, blackouts] = await Promise.all([
+        listBookingsAdmin({ limit: 500 }),
+        listBlackouts(),
+      ]);
+
+      const bookedSet = new Set();
+
+      (bookings || []).forEach((b) => {
+        let d = toDateKey(new Date(b.startDate));
+        const end = toDateKey(new Date(b.endDate));
+
+        while (d <= end) {
+          bookedSet.add(d);
+          d = toDateKey(addDays(new Date(d), 1));
+        }
+      });
+
+      setBookedDates(bookedSet);
+
+      setBlockedRanges(
+        (blackouts || []).map((b) => ({
+          fromKey: toDateKey(new Date(b.from)),
+          toKey: toDateKey(new Date(b.to)),
+        }))
+      );
+    } catch (err) {
+      console.error("Availability load failed:", err);
+      toast.error("Failed to load availability");
+    }
+  })();
+}, []);
 
 
   const checkUserByPhone = async () => {
@@ -410,7 +416,7 @@ export default function VillaBookingForm() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select ID Type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="Aadhaar">Aadhaar</SelectItem>
                     <SelectItem value="Passport">Passport</SelectItem>
                     <SelectItem value="Voter ID">Voter ID</SelectItem>
@@ -440,7 +446,7 @@ export default function VillaBookingForm() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="Online">Online</SelectItem>
                     <SelectItem value="Cash">Cash</SelectItem>
                   </SelectContent>
