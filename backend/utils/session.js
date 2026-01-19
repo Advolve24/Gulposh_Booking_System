@@ -1,22 +1,63 @@
+/**
+ * Session Cookie Utilities
+ * iOS + Safari + Google OAuth compatible
+ */
+
 export function setSessionCookie(
   res,
   name,
   value,
-  { path = "/", persistent = false, days = 7 } = {}
+  {
+    path = "/",
+    persistent = false,
+    days = 7,
+    domain,
+  } = {}
 ) {
+  const isProduction = process.env.NODE_ENV === "production";
+
   res.cookie(name, value, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+
+    /**
+     * REQUIRED for iOS + Google OAuth
+     * Safari drops SameSite=None cookies unless secure=true
+     */
+    secure: true,
+
+    /**
+     * OAuth-safe configuration
+     */
+    sameSite: "none",
+
+    /**
+     * Path & domain
+     */
     path,
-    maxAge: persistent ? days * 24 * 60 * 60 * 1000 : undefined,
+    ...(domain ? { domain } : {}),
+
+    /**
+     * Expiry
+     */
+    ...(persistent
+      ? { maxAge: days * 24 * 60 * 60 * 1000 }
+      : {}),
   });
 }
 
-export function clearSessionCookie(res, name, { path = "/" } = {}) {
+export function clearSessionCookie(
+  res,
+  name,
+  {
+    path = "/",
+    domain,
+  } = {}
+) {
   res.clearCookie(name, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
     path,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    ...(domain ? { domain } : {}),
   });
 }
