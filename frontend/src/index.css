@@ -244,3 +244,23 @@
     margin-left: -20px;
   } */
 }
+
+/* ===============================
+   MOBILE FULL CALENDAR SLIDE
+================================ */
+@media (max-width: 767px) {
+  .calendar-slide {
+    transition: transform 260ms ease, opacity 260ms ease;
+    will-change: transform;
+  }
+
+  .calendar-slide.slide-left {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  .calendar-slide.slide-right {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
