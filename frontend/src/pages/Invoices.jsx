@@ -28,31 +28,21 @@ export default function Invoices() {
     navigate(`/invoice-view/${id}`);
   };
 
-  const downloadInvoice = async (id) => {
-  try {
-    const res = await api.get(`/invoice/user/${id}/download`, {
-      responseType: "blob",
-      withCredentials: true, // ✅ REQUIRED
-    });
+  const downloadInvoiceDirect = (bookingId) => {
+  const toastId = toast.loading("PDF is generating...");
 
-    const blob = new Blob([res.data], { type: "application/pdf" });
+  const url = `${import.meta.env.VITE_API_URL}/invoice/${bookingId}/download`;
 
-    // ✅ Safari-safe download
-    const fileURL = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 
-    const a = document.createElement("a");
-    a.href = fileURL;
-    a.download = `Invoice-${id.slice(-6).toUpperCase()}.pdf`;
-
-    // iOS Safari needs this
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    window.URL.revokeObjectURL(fileURL);
-  } catch (err) {
-    console.error("Invoice download failed", err);
-  }
+  setTimeout(() => {
+    toast.success("Invoice downloaded!", { id: toastId });
+  }, 2000);
 };
 
 
@@ -109,7 +99,7 @@ export default function Invoices() {
                         disabled={isCancelled}
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (!isCancelled) downloadInvoice(b._id);
+                          if (!isCancelled) downloadInvoiceDirect(b._id);
                         }}
                         className={`mt-1 inline-flex items-center gap-1 text-xs font-medium
                           ${isCancelled
@@ -214,7 +204,7 @@ export default function Invoices() {
                           ? "bg-muted text-muted-foreground cursor-not-allowed"
                           : "bg-primary text-primary-foreground"
                       }
-                      onClick={() => !isCancelled && downloadInvoice(b._id)}
+                      onClick={() => !isCancelled && downloadInvoiceDirect(b._id)}
                     >
                       <Download className="w-4 h-4" />
                       Download
