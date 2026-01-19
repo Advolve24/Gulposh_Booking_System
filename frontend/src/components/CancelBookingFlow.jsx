@@ -332,88 +332,72 @@ export default function CancelBookingFlow({
           )}
 
           {/* STEP 4 — CONFIRM */}
-          {step === 4 && (
+          {step === 3 && (
             <div className="space-y-4">
-              {/* Warning box */}
+
               <div className="flex gap-3 bg-red-50 border border-red-200 p-3 rounded-lg text-red-700">
                 <AlertTriangle className="w-4 h-4 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium">
-                    Are you sure you want to cancel?
-                  </p>
-                  <p className="text-xs text-red-600">
-                    This action cannot be undone. Please review your cancellation details
-                    below.
+                <div>
+                  <p className="font-medium">Are you sure?</p>
+                  <p className="text-xs">
+                    This action cannot be undone.
                   </p>
                 </div>
               </div>
 
-              {/* Summary card */}
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                 <InfoRow label="Booking">
-                  {preview.bookingName}
+                  {booking.room?.name}
                 </InfoRow>
-
                 <InfoRow label="Reference">
-                  {preview.reference}
+                  {booking._id.slice(-8).toUpperCase()}
                 </InfoRow>
+                <InfoRow label="Reason">{reason}</InfoRow>
 
-                <InfoRow label="Reason">
-                  {preview.reason}
+                <Separator />
+
+                <InfoRow label="Refund">
+                  <span className="text-green-600 font-semibold">
+                    ₹{refundAmount.toLocaleString("en-IN")}
+                  </span>
                 </InfoRow>
-
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <span className="text-gray-600 font-medium">
-                    Refund Amount
-                  </span>
-                  <span className="font-semibold text-green-600">
-                    ₹{preview.refundAmount.toLocaleString("en-IN")}
-                  </span>
-                </div>
               </div>
 
-              {/* Policy checkbox */}
-              <label className="flex items-start gap-3 text-xs text-gray-700">
-                <Checkbox
-                  checked={agree}
-                  onCheckedChange={setAgree}
-                />
+              <label className="flex items-start gap-3 text-xs">
+                <Checkbox checked={agree} onCheckedChange={setAgree} />
                 <span>
-                  I understand and agree to the cancellation policy. I acknowledge that
-                  this action is irreversible and the refund will be processed according
-                  to the stated terms.
+                  I understand and agree to the cancellation policy.
                 </span>
               </label>
             </div>
           )}
-
         </div>
         {/* ================= FOOTER ================= */}
-        {step === 3 && (
-          <div className="p-4 border-t bg-white flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setStep(step - 1)}
-              disabled={step === 0}
-            >
-              Back
-            </Button>
+         <div className="p-4 border-t bg-white flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => setStep(step - 1)}
+            disabled={step === 0 || loading}
+          >
+            Back
+          </Button>
 
-            <Button
-              className="flex-1"
-              disabled={
-                loading ||
-                (step === 1 && !reason) ||
-                (step === 3 && !agree)
-              }
-              onClick={step === 3 ? handleCancel : () => setStep(step + 1)}
-            >
-              {step === 3 ? "Confirm Cancellation" : "Continue"}
-            </Button>
-          </div>
-        )}
-
+          <Button
+            className="flex-1 bg-red-600 hover:bg-red-700"
+            disabled={
+              loading ||
+              (step === 1 && !reason) ||
+              (step === 3 && !agree)
+            }
+            onClick={() => {
+              if (step === 3) handleCancel();
+              else setStep(step + 1);
+            }}
+          >
+            {step === 3 ? "Confirm Cancellation" : "Continue"}
+          </Button>
+        </div>
       </Content>
     </Container>
   );
