@@ -175,8 +175,8 @@ export const verifyVillaPayment = async (req, res) => {
 
         guests,
         pricePerNight: Number(customAmount),
-        roomTotal,             
-        amount: roomTotal,     
+        roomTotal,
+        amount: roomTotal,
         currency: "INR",
 
         status: "confirmed",
@@ -211,31 +211,39 @@ export const verifyVillaPayment = async (req, res) => {
       });
     }
 
+    const roomTotal = nights * Number(customAmount);
+
     const booking = await Booking.create({
       user: user._id,
+      isVilla: true,
+
       startDate: sDate,
       endDate: eDate,
-      guests,
-      withMeal: false,
-      contactName,
-      contactEmail,
-      contactPhone,
-      currency: "INR",
-      pricePerNight: Number(customAmount),
       nights,
-      amount: amountINR,
+
+      guests,
+      pricePerNight: Number(customAmount),
+      roomTotal,              // ✅ REQUIRED
+      amount: roomTotal,      // ✅ REQUIRED
+      currency: "INR",
+
       status: "confirmed",
       paymentProvider: "razorpay",
+
       orderId: razorpay_order_id,
       paymentId: razorpay_payment_id,
       signature: razorpay_signature,
-      isVilla: true,
+
+      contactName,
+      contactEmail,
+      contactPhone,
+
       adminMeta: {
         fullName: contactName,
         phone: contactPhone,
         govIdType,
         govIdNumber,
-        amountPaid: amountINR,
+        amountPaid: roomTotal,
         paymentMode: "Online",
       },
     });
