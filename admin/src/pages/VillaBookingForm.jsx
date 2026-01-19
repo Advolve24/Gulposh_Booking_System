@@ -56,16 +56,23 @@ export default function VillaBookingForm() {
   };
 
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    dob: null,
-    guests: 1,
-    customAmount: "",
-    govIdType: "",
-    govIdNumber: "",
-    paymentMode: "Online",
-  });
+  name: "",
+  email: "",
+  phone: "",
+  dob: null,
+
+  address: "",
+  country: "India",
+  state: "",
+  city: "",
+  pincode: "",
+
+  guests: 1,
+  customAmount: "",
+  govIdType: "",
+  govIdNumber: "",
+  paymentMode: "Online",
+});
 
   useEffect(() => {
     (async () => {
@@ -176,19 +183,29 @@ export default function VillaBookingForm() {
 
       /* ===== CASH BOOKING ===== */
       if (form.paymentMode === "Cash") {
-        await api.post("/admin/villa-verify", {
-          userId: uid,
-          startDate: start,
-          endDate: end,
-          guests: form.guests,
-          customAmount: form.customAmount,
-          contactName: form.name,
-          contactEmail: form.email,
-          contactPhone: form.phone,
-          govIdType: form.govIdType,
-          govIdNumber: form.govIdNumber,
-          paymentMode: "Cash",
-        });
+       await api.post("/admin/villa-verify", {
+  userId: uid,
+  startDate: start,
+  endDate: end,
+  guests: form.guests,
+  customAmount: form.customAmount,
+
+  contactName: form.name,
+  contactEmail: form.email,
+  contactPhone: form.phone,
+
+  addressInfo: {
+    address: form.address,
+    country: form.country,
+    state: form.state,
+    city: form.city,
+    pincode: form.pincode,
+  },
+
+  govIdType: form.govIdType,
+  govIdNumber: form.govIdNumber,
+  paymentMode: "Cash",
+});
 
         toast.success("Booking confirmed (Cash)");
         return navigate("/dashboard");
@@ -249,106 +266,87 @@ export default function VillaBookingForm() {
 
 
   return (
-    <AppLayout>
-      <div className="w-full md:max-w-6xl bg-white shadow-md rounded-2xl p-4 md:p-8 mt-0 mb-6">
-        <div className="flex flex-wrap md:items-center justify-between gap-8">
+  <AppLayout>
+    <div className="w-full md:max-w-6xl bg-white shadow-md rounded-2xl p-4 md:p-8 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
 
-          {/* ================= CALENDAR ================= */}
-          <div className="w-full md:w-[50%]">
-            <Label className="mb-2 block text-gray-600">Select Dates</Label>
-            <Calendar
-              mode="range"
-              numberOfMonths={1}
-              fromDate={todayDateOnlyUTC()}
-              selected={range}
-              onSelect={(r) => {
-                if (!r?.from) {
-                  setRange(undefined);
-                  return;
-                }
-
-                if (r.to && !isRangeValid(r.from, r.to)) {
-                  toast.error("Selected range includes booked or blocked dates");
-                  return;
-                }
-
-                setRange(r);
-              }}
-              disabled={(date) =>
-                date < todayDateOnlyUTC() ||
-                isBooked(date) ||
-                isBlocked(date)
+        {/* ================= CALENDAR ================= */}
+        <div>
+          <Label className="mb-2 block text-gray-600">Select Booking Dates</Label>
+          <Calendar
+            mode="range"
+            numberOfMonths={1}
+            fromDate={todayDateOnlyUTC()}
+            selected={range}
+            onSelect={(r) => {
+              if (!r?.from) {
+                setRange(undefined);
+                return;
               }
-              className="border rounded-lg shadow-sm w-full md:w-[500px]"
-            />
+
+              if (r.to && !isRangeValid(r.from, r.to)) {
+                toast.error("Selected range includes booked or blocked dates");
+                return;
+              }
+
+              setRange(r);
+            }}
+            disabled={(date) =>
+              date < todayDateOnlyUTC() ||
+              isBooked(date) ||
+              isBlocked(date)
+            }
+            className="border rounded-xl shadow-sm w-full"
+          />
+
+          {/* Selected dates summary */}
+          <div className="mt-4 p-3 bg-gray-50 border rounded-lg text-sm">
+            <strong>Selected Dates:</strong>{" "}
+            {range?.from && range?.to
+              ? `${format(range.from, "dd MMM yyyy")} → ${format(range.to, "dd MMM yyyy")}`
+              : "Not selected"}
+          </div>
+        </div>
+
+        {/* ================= FORM ================= */}
+        <div className="space-y-6">
+
+          {/* ================= SECTION 1: MOBILE ================= */}
+          <div className="border rounded-xl p-4 bg-[#faf8f4] space-y-3">
+            <h3 className="font-semibold text-gray-800">1. Mobile Verification</h3>
+
+            <Label>Mobile Number</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="10-digit mobile number"
+                maxLength={10}
+                value={form.phone}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, phone: e.target.value }))
+                }
+              />
+              <Button type="button" onClick={checkUserByPhone} variant="secondary">
+                Check
+              </Button>
+            </div>
+
+            {userChecked && userId && (
+              <p className="text-sm text-green-600 font-medium">
+                ✔ User found. Details auto-filled.
+              </p>
+            )}
+
+            {userChecked && !userId && (
+              <p className="text-sm text-orange-600 font-medium">
+                ⚠ User not found. Please enter details.
+              </p>
+            )}
           </div>
 
-          {/* ================= FORM ================= */}
-          <div className="w-full md:w-[45%] space-y-5">
+          {/* ================= SECTION 2: USER DETAILS ================= */}
+          <div className="border rounded-xl p-4 space-y-4">
+            <h3 className="font-semibold text-gray-800">2. User Details</h3>
 
-            {/* ===== USER CHECK ===== */}
-            <div className="border rounded-xl p-4 bg-[#faf8f4] space-y-3">
-              <Label>Customer Mobile Number</Label>
-
-              <div className="flex gap-2">
-                <Input
-                  placeholder="10-digit mobile number"
-                  maxLength={10}
-                  value={form.phone}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, phone: e.target.value }))
-                  }
-                />
-                <Button
-                  type="button"
-                  onClick={checkUserByPhone}
-                  variant="secondary"
-                >
-                  Check User
-                </Button>
-              </div>
-
-              {userChecked && userId && (
-                <p className="text-sm text-green-600 font-medium">
-                  ✔ User found. Details auto-filled.
-                </p>
-              )}
-
-              {userChecked && !userId && (
-                <p className="text-sm text-orange-600 font-medium">
-                  ⚠ User not found. Please enter details to register.
-                </p>
-              )}
-            </div>
-
-            {/* ===== BOOKING DETAILS ===== */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Guests</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={form.guests}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, guests: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div>
-                <Label>Custom Amount (₹)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.customAmount}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, customAmount: e.target.value }))
-                  }
-                />
-              </div>
-            </div>
-
-            {/* ===== PERSONAL INFO ===== */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Full Name</Label>
@@ -373,7 +371,7 @@ export default function VillaBookingForm() {
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className="md:col-span-2">
                 <Label>Date of Birth</Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -381,7 +379,7 @@ export default function VillaBookingForm() {
                       type="button"
                       variant="outline"
                       disabled={!!userId}
-                      className="justify-between"
+                      className="justify-between w-full"
                     >
                       {form.dob ? format(form.dob, "dd MMM yyyy") : "Select DOB"}
                       <CalendarIcon className="h-4 w-4 opacity-60" />
@@ -401,6 +399,95 @@ export default function VillaBookingForm() {
                     />
                   </PopoverContent>
                 </Popover>
+              </div>
+            </div>
+          </div>
+
+          {/* ================= SECTION 3: ADDRESS ================= */}
+          <div className="border rounded-xl p-4 space-y-4">
+            <h3 className="font-semibold text-gray-800">3. Address Details</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label>Street Address</Label>
+                <Input
+                  value={form.address}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, address: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Country</Label>
+                <Input
+                  value={form.country}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, country: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>State</Label>
+                <Input
+                  value={form.state}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, state: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>City</Label>
+                <Input
+                  value={form.city}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, city: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Pincode</Label>
+                <Input
+                  maxLength={6}
+                  value={form.pincode}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, pincode: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ================= SECTION 4: BOOKING DETAILS ================= */}
+          <div className="border rounded-xl p-4 space-y-4">
+            <h3 className="font-semibold text-gray-800">4. Booking Details</h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Guests</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={form.guests}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, guests: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Custom Amount (₹)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.customAmount}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, customAmount: e.target.value }))
+                  }
+                />
               </div>
 
               <div>
@@ -433,7 +520,7 @@ export default function VillaBookingForm() {
                 />
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <Label>Payment Mode</Label>
                 <Select
                   value={form.paymentMode}
@@ -451,18 +538,20 @@ export default function VillaBookingForm() {
                 </Select>
               </div>
             </div>
-
-            {/* ===== SUBMIT ===== */}
-            <Button
-              onClick={submit}
-              disabled={loading || !userChecked}
-              className="w-full text-lg py-5 font-semibold rounded-xl"
-            >
-              {loading ? "Processing..." : "Confirm Booking"}
-            </Button>
           </div>
+
+          {/* ================= SUBMIT ================= */}
+          <Button
+            onClick={submit}
+            disabled={loading || !userChecked}
+            className="w-full text-lg py-5 font-semibold rounded-xl"
+          >
+            {loading ? "Processing..." : "Proceed to Confirm Booking"}
+          </Button>
+
         </div>
       </div>
-    </AppLayout>
-  );
+    </div>
+  </AppLayout>
+);
 }
