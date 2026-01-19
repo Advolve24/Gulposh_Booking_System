@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { AlertTriangle, Clock, Check } from "lucide-react";
+import {toast} from "sonner";
 
 import {
   Dialog,
@@ -89,24 +90,36 @@ export default function CancelBookingFlow({
     Math.round((booking.amount * refundPercent) / 100);
 
   /* ================= FINAL CANCEL ================= */
-  const handleCancel = async () => {
-    if (!agree || !reason) return;
+  /* ================= FINAL CANCEL ================= */
+const handleCancel = async () => {
+  if (!agree || !reason) return;
 
-    setLoading(true);
-    try {
-      await cancelBooking(bookingId, {
-        reason,
-        notes,
-      });
+  const toastId = toast.loading("Cancelling your booking...");
 
-      onOpenChange(false);
-      onSuccess?.();
-    } catch (err) {
-      console.error("Cancel booking failed:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    await cancelBooking(bookingId, {
+      reason,
+      notes,
+    });
+
+    toast.success("Booking cancelled successfully", {
+      id: toastId,
+    });
+
+    onOpenChange(false);
+    onSuccess?.();
+  } catch (err) {
+    console.error("Cancel booking failed:", err);
+
+    toast.error("Failed to cancel booking. Please try again.", {
+      id: toastId,
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const Container = isDesktop ? Dialog : Drawer;
   const Content = isDesktop ? DialogContent : DrawerContent;
