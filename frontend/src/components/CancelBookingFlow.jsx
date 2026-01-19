@@ -389,7 +389,7 @@ export default function CancelBookingFlow({
 
         </div>
         {/* ================= FOOTER ================= */}
-        {step !== 4 && (
+        {step === 3 && (
           <div className="p-4 border-t bg-white flex gap-2">
             <Button
               variant="outline"
