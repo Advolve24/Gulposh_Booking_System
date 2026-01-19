@@ -37,7 +37,7 @@ import {
 import MobileUserCard from "@/components/MobileUserCard";
 import UserViewDialog from "@/components/UserViewDialog";
 import UserEditDialog from "@/components/UserEditDialog";
-
+import { useNavigate } from "react-router-dom";
 import { CalendarIcon, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -50,6 +50,7 @@ export default function Users() {
   const [q, setQ] = useState("");
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
+  const navigate = useNavigate();
 
   const [activeUser, setActiveUser] = useState(null);
 
@@ -201,82 +202,88 @@ export default function Users() {
               <>
                 {/* ===== MOBILE VIEW ===== */}
                 <div className="space-y-4 md:hidden">
-  {paginatedUsers.map((u) => (
-    <MobileUserCard
-      key={u._id}
-      user={u}
-      onView={() => openView(u._id)}
-      onEdit={() => openEdit(u._id)}
-      onDelete={() => removeUser(u._id)}
-    />
-  ))}
-</div>
+                  {paginatedUsers.map((u) => (
+                    <MobileUserCard
+                      key={u._id}
+                      user={u}
+                      onView={() => openView(u._id)}
+                      onEdit={() => openEdit(u._id)}
+                      onDelete={() => removeUser(u._id)}
+                      onBookings={() => navigate(`/bookings?user=${u._id}`)}
+                    />
+                  ))}
+                </div>
 
 
                 {/* ===== DESKTOP VIEW ===== */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="min-w-full text-sm">
-                   <thead className="text-muted-foreground border-b">
-  <tr>
-    <th className="py-3 pr-4 text-left">Name</th>
-    <th className="py-3 pr-4 text-left">Email</th>
-    <th className="py-3 pr-4 text-left">Phone</th>
-    <th className="py-3 pr-4 text-left">DOB</th>
-    <th className="py-3 pr-4 text-left">Created</th>
-    <th className="py-3 pr-4 text-right">Actions</th>
-  </tr>
-</thead>
+                    <thead className="text-muted-foreground border-b">
+                      <tr>
+                        <th className="py-3 pr-4 text-left">Name</th>
+                        <th className="py-3 pr-4 text-left">Email</th>
+                        <th className="py-3 pr-4 text-left">Phone</th>
+                        <th className="py-3 pr-4 text-left">DOB</th>
+                        <th className="py-3 pr-4 text-left">Created</th>
+                        <th className="py-3 pr-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
 
 
-                   <tbody>
-  {paginatedUsers.map((u) => (
-    <tr
-      key={u._id}
-      onClick={() => openView(u._id)}
-      className="
+                    <tbody>
+                      {paginatedUsers.map((u) => (
+                        <tr
+                          key={u._id}
+                          onClick={() => openView(u._id)}
+                          className="
         border-b last:border-0
         cursor-pointer
         hover:bg-muted/40
         transition
       "
-    >
-      <td className="py-3 pr-4 font-medium">{u.name || "—"}</td>
-      <td className="py-3 pr-4">{u.email || "—"}</td>
-      <td className="py-3 pr-4">{u.phone || u.mobile || "—"}</td>
-      <td className="py-3 pr-4">{fmt(u.dob)}</td>
-      <td className="py-3 pr-4">{fmt(u.createdAt)}</td>
+                        >
+                          <td className="py-3 pr-4 font-medium">{u.name || "—"}</td>
+                          <td className="py-3 pr-4">{u.email || "—"}</td>
+                          <td className="py-3 pr-4">{u.phone || u.mobile || "—"}</td>
+                          <td className="py-3 pr-4">{fmt(u.dob)}</td>
+                          <td className="py-3 pr-4">{fmt(u.createdAt)}</td>
 
-      {/* ACTIONS — stop row click */}
-      <td
-        className="py-3 pr-2 text-right"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="ghost">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
+                          {/* ACTIONS — stop row click */}
+                          <td
+                            className="py-3 pr-2 text-right"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
 
-          <DropdownMenuContent className="bg-white" align="end">
-            <DropdownMenuItem onClick={() => openView(u._id)}>
-              View
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => openEdit(u._id)}>
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => removeUser(u._id)}
-              className="text-red-600 focus:text-red-600"
-            >
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </td>
-    </tr>
-  ))}
-</tbody>
+                              <DropdownMenuContent className="bg-white" align="end">
+                                <DropdownMenuItem className="cursor-pointer" onClick={() => openView(u._id)}>
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="cursor-pointer" onClick={() => openEdit(u._id)}>
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="cursor-pointer"
+                                  onClick={() => navigate(`/bookings?user=${u._id}`)}
+                                >
+                                  See all bookings
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => removeUser(u._id)}
+                                  className="cursor-pointer text-red-600 focus:text-red-600"
+                                >
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
 
                   </table>
                 </div>
@@ -285,73 +292,73 @@ export default function Users() {
           </CardContent>
 
           {total > PAGE_SIZE && (
-  <div className="flex items-center justify-between px-4 py-3 border-t text-sm">
-    <span className="text-muted-foreground">
-      Showing {(page - 1) * PAGE_SIZE + paginatedUsers.length} of {total}
-    </span>
+            <div className="flex items-center justify-between px-4 py-3 border-t text-sm">
+              <span className="text-muted-foreground">
+                Showing {(page - 1) * PAGE_SIZE + paginatedUsers.length} of {total}
+              </span>
 
-    <div className="flex gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={page === 1}
-        onClick={() => setPage((p) => Math.max(1, p - 1))}
-      >
-        Prev
-      </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Prev
+                </Button>
 
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={page === totalPages}
-        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-      >
-        Next
-      </Button>
-    </div>
-  </div>
-)}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
 
         </Card>
 
       </div>
 
       <UserViewDialog
-  open={viewOpen}
-  onOpenChange={setViewOpen}
-  user={activeUser}
-/>
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        user={activeUser}
+      />
 
 
-<UserEditDialog
-  open={editOpen}
-  onOpenChange={setEditOpen}
-  user={activeUser}
-  onSave={async (data) => {
-    if (!activeUser?._id) return;
+      <UserEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        user={activeUser}
+        onSave={async (data) => {
+          if (!activeUser?._id) return;
 
-    setSaving(true);
-    try {
-      const updated = await updateUserAdmin(activeUser._id, {
-        ...data,
-        dob: data.dob ? data.dob.toISOString() : null,
-      });
+          setSaving(true);
+          try {
+            const updated = await updateUserAdmin(activeUser._id, {
+              ...data,
+              dob: data.dob ? data.dob.toISOString() : null,
+            });
 
-      setUsers((prev) =>
-        prev.map((u) =>
-          u._id === activeUser._id ? { ...u, ...updated } : u
-        )
-      );
+            setUsers((prev) =>
+              prev.map((u) =>
+                u._id === activeUser._id ? { ...u, ...updated } : u
+              )
+            );
 
-      toast.success("User updated");
-      setEditOpen(false);
-    } catch {
-      toast.error("Update failed");
-    } finally {
-      setSaving(false);
-    }
-  }}
-/>
+            toast.success("User updated");
+            setEditOpen(false);
+          } catch {
+            toast.error("Update failed");
+          } finally {
+            setSaving(false);
+          }
+        }}
+      />
 
     </AppLayout>
   );

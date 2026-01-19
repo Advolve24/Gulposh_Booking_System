@@ -79,6 +79,56 @@ export default function UserViewDialog({ open, onOpenChange, user }) {
                   />
                 </div>
               </div>
+
+              <hr />
+
+              {/* ADDRESS INFO */}
+              <div>
+                <span className="inline-block mb-2 text-xs px-3 py-1 bg-muted rounded-full">
+                  ADDRESS INFO
+                </span>
+
+                <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+                  {/* Full width */}
+                  <div className="col-span-3">
+                    <Row
+                      icon={User}
+                      label="Street Address"
+                      value={user.address || "—"}
+                    />
+                  </div>
+
+                  {/* One line: Country | State | City */}
+                  <Row
+                    icon={User}
+                    label="Country"
+                    value={user.country || "—"}
+                  />
+                  <Row
+                    icon={User}
+                    label="State"
+                    value={user.state || "—"}
+                  />
+
+                  <Row
+                    icon={User}
+                    label="City"
+                    value={user.city || "—"}
+                  />
+                  <div /> {/* spacer to keep grid aligned */}
+
+                  {/* Full width */}
+                  <div className="col-span-3">
+                    <Row
+                      icon={User}
+                      label="Pincode"
+                      value={user.pincode || "—"}
+                    />
+                  </div>
+                </div>
+
+              </div>
+
             </div>
           </>
         )}

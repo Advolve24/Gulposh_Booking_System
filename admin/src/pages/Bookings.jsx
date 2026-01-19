@@ -47,28 +47,30 @@ export default function Booking() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [search, setSearch] = useState("");
   const [editBooking, setEditBooking] = useState(null);
+  const userFilter = params.get("user");
 
 
   const filteredBookings = useMemo(() => {
-    let data = bookings;
-
-    if (status !== "all") {
-      data = data.filter((b) => b.status === status);
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-
-      data = data.filter((b) =>
-        b._id.toLowerCase().includes(q) ||
-        b.user?.name?.toLowerCase().includes(q) ||
-        b.user?.email?.toLowerCase().includes(q) ||
-        b.user?.phone?.includes(q)
-      );
-    }
-
-    return data;
-  }, [bookings, status, search]);
+  let data = bookings;
+  if (status !== "all") {
+    data = data.filter((b) => b.status === status);
+  }
+  if (userFilter) {
+    data = data.filter(
+      (b) => b.user?._id === userFilter
+    );
+  }
+  if (search.trim()) {
+    const q = search.toLowerCase();
+    data = data.filter((b) =>
+      b._id.toLowerCase().includes(q) ||
+      b.user?.name?.toLowerCase().includes(q) ||
+      b.user?.email?.toLowerCase().includes(q) ||
+      b.user?.phone?.includes(q)
+    );
+  }
+  return data;
+}, [bookings, status, search, userFilter]);
 
 
 
