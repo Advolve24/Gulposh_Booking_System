@@ -32,34 +32,43 @@ export const createVillaOrder = async (req, res) => {
       contactName,
       contactEmail,
       contactPhone,
-      dob,
+      userId,
     } = req.body || {};
 
+    /* ================= USER VALIDATION ================= */
+    if (!userId) {
+      return res.status(400).json({
+        message: "User must be verified via OTP before booking",
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid user. OTP verification required.",
+      });
+    }
+
+    /* ================= INPUT VALIDATION ================= */
     if (!startDate || !endDate || !guests || !customAmount) {
       return res.status(400).json({
         message: "startDate, endDate, guests, customAmount are required",
       });
     }
 
-    let user = await User.findOne({ email: contactEmail });
-    if (!user) {
-      user = await User.create({
-        name: contactName,
-        email: contactEmail,
-        phone: contactPhone,
-        dob: dob ? new Date(dob) : null,
-        passwordHash: await bcrypt.hash(Math.random().toString(36).slice(-8), 10),
+    const nights = nightsBetween(startDate, endDate);
+    if (!nights) {
+      return res.status(400).json({
+        message: "Invalid date range",
       });
-      console.log("👤 New user created by admin:", user._id);
     }
 
-    const nights = nightsBetween(startDate, endDate);
-    if (!nights) return res.status(400).json({ message: "Invalid date range" });
-
+    /* ================= AMOUNT CALCULATION ================= */
     const amountINR = nights * Number(customAmount);
     const amountPaise = Math.round(amountINR * 100);
     const receipt = `villa_admin_${Date.now().toString(36)}`;
 
+    /* ================= RAZORPAY ORDER ================= */
     const order = await rp.orders.create({
       amount: amountPaise,
       currency: "INR",
@@ -74,25 +83,34 @@ export const createVillaOrder = async (req, res) => {
         contactName,
         contactEmail,
         contactPhone,
-        dob,
       },
     });
 
-    res.json({
+    /* ================= RESPONSE ================= */
+    return res.json({
       key: process.env.RAZORPAY_KEY_ID,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      computed: { nights, customAmount, amountINR },
+      computed: {
+        nights,
+        customAmount,
+        amountINR,
+      },
       userId: user._id,
     });
   } catch (err) {
     console.error("createVillaOrder error:", err);
-    res.status(400).json({
-      message: err?.error?.description || err?.message || "Failed to create villa order",
+
+    return res.status(400).json({
+      message:
+        err?.error?.description ||
+        err?.message ||
+        "Failed to create villa order",
     });
   }
 };
+
 
 
 
@@ -112,30 +130,39 @@ export const verifyVillaPayment = async (req, res) => {
       govIdType,
       govIdNumber,
       paymentMode,
-      dob,
       userId,
     } = req.body || {};
 
-    if (!userId && !contactEmail) {
-      return res.status(400).json({ message: "User information missing" });
-    }
-
-    let user = userId ? await User.findById(userId) : await User.findOne({ email: contactEmail });
-    if (!user) {
-      user = await User.create({
-        name: contactName,
-        email: contactEmail,
-        phone: contactPhone,
-        password: Math.random().toString(36).slice(-8),
+    /* ================= USER VALIDATION ================= */
+    if (!userId) {
+      return res.status(400).json({
+        message: "User must be verified via OTP before booking",
       });
-      console.log("👤 User created during verification:", user._id);
     }
 
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid user. OTP verification required.",
+      });
+    }
+
+    /* ================= DATE & AMOUNT ================= */
     const sDate = new Date(startDate);
     const eDate = new Date(endDate);
-    const nights = Math.max(1, Math.round((eDate - sDate) / (1000 * 60 * 60 * 24)));
+
+    if (isNaN(sDate) || isNaN(eDate)) {
+      return res.status(400).json({ message: "Invalid booking dates" });
+    }
+
+    const nights = Math.max(
+      1,
+      Math.round((eDate - sDate) / (1000 * 60 * 60 * 24))
+    );
+
     const amountINR = nights * Number(customAmount);
 
+    /* ================= CASH BOOKING ================= */
     if (paymentMode === "Cash") {
       const booking = await Booking.create({
         user: user._id,
@@ -162,20 +189,24 @@ export const verifyVillaPayment = async (req, res) => {
           paymentMode: "Cash",
         },
       });
+
       return res.json({ ok: true, booking });
     }
 
+    /* ================= RAZORPAY SIGNATURE ================= */
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-    const expected = crypto
+    const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(body)
       .digest("hex");
 
-    if (expected !== razorpay_signature) {
-      console.log("❌ Signature mismatch");
-      return res.status(400).json({ message: "Signature mismatch" });
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({
+        message: "Signature mismatch",
+      });
     }
 
+    /* ================= FINAL BOOKING ================= */
     const booking = await Booking.create({
       user: user._id,
       startDate: sDate,
@@ -208,6 +239,8 @@ export const verifyVillaPayment = async (req, res) => {
     return res.json({ ok: true, booking });
   } catch (err) {
     console.error("verifyVillaPayment error:", err);
-    res.status(400).json({ message: err?.message || "Villa payment verification failed" });
+    return res.status(400).json({
+      message: err?.message || "Villa payment verification failed",
+    });
   }
 };

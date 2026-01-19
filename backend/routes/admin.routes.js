@@ -2,7 +2,8 @@ import express from "express";
 import { requireAdminSession } from "../middleware/adminSession.js";
 import { createRoom, listRoomsAdmin, deleteRoom, getRoomAdmin, updateRoom } from "../controllers/admin.room.controller.js";
 import { getAdminStats } from "../controllers/admin.stats.controller.js";
-import { listUsersAdmin, getUserAdmin, listUserBookingsAdmin, listBookingsAdmin, updateUserAdmin, deleteUserAdmin,  createUserAdmin, updateBookingAdmin,  getBookingAdmin } from "../controllers/admin.user.controller.js";
+import { listUsersAdmin, getUserAdmin, listUserBookingsAdmin, listBookingsAdmin, updateUserAdmin, deleteUserAdmin,  createUserAdmin, 
+  updateBookingAdmin,  getBookingAdmin, checkUserByPhoneAdmin } from "../controllers/admin.user.controller.js";
 import { createVillaOrder, verifyVillaPayment } from "../controllers/admin.villa.controller.js";
 import { adminGlobalSearch } from "../controllers/admin.search.controller.js";
 import {
@@ -21,13 +22,13 @@ router.get("/rooms/:id", getRoomAdmin);
 router.put("/rooms/:id", updateRoom);
 router.get("/users", listUsersAdmin);
 router.get("/users/:id", getUserAdmin);
+router.get("/users/check-phone/:phone", checkUserByPhoneAdmin);
 router.get("/users/:id/bookings", listUserBookingsAdmin);
 
-router.get("/bookings", listBookingsAdmin);          // list first
-router.get("/bookings/:id", getBookingAdmin);        // view single
-router.put("/bookings/:id", updateBookingAdmin);     // update
+router.get("/bookings", listBookingsAdmin);          
+router.get("/bookings/:id", getBookingAdmin);        
+router.put("/bookings/:id", updateBookingAdmin);    
 
-/* SINGLE SOURCE OF TRUTH (ADMIN DECISION) */
 router.post("/bookings/:id/action", adminActionBooking);
 // router.post("/bookings/:id/cancel", cancelBookingAdmin);
 // router.patch("/bookings/:id/cancel", cancelBookingAdmin);
