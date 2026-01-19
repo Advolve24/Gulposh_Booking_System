@@ -26,6 +26,7 @@ const ALLOWED_ORIGINS = [
   "http://localhost:5174",
   "https://gulposhbookingsystem.netlify.app",
   "https://gulposhadminsystem.netlify.app",
+  "https://gulposh-booking-system.vercel.app"
 ];
 
 app.use(
