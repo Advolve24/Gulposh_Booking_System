@@ -199,7 +199,7 @@
 @media (min-width: 768px) {
   .airbnb-calendar {
     /* min-width: 640px; */
-    border-radius: 15px;
+    border-radius: 20px;
     padding: 10px 25px 20px 25px;
   }
 
@@ -229,7 +229,7 @@
   
 
   .airbnb-calendar {
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 15px 20px;
     overflow: hidden;
   }
@@ -246,12 +246,19 @@
 }
 
 /* ===============================
-   MOBILE FULL CALENDAR SLIDE
+   FULL CALENDAR SLIDE (MOBILE)
 ================================ */
 @media (max-width: 767px) {
+  .calendar-viewport {
+    position: relative;
+    overflow: hidden;          /* 🔥 CLIPS SLIDE */
+    width: 100%;
+    border-radius: 20px;       /* match calendar */
+  }
   .calendar-slide {
     transition: transform 260ms ease, opacity 260ms ease;
     will-change: transform;
+    touch-action: pan-y;
   }
 
   .calendar-slide.slide-left {
