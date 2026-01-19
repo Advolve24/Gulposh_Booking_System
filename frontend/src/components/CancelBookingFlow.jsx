@@ -83,7 +83,7 @@ export default function CancelBookingFlow({
 
   const refundPercent =
     daysBeforeCheckin >= 14 ? 100 :
-    daysBeforeCheckin >= 7 ? 50 : 0;
+      daysBeforeCheckin >= 7 ? 50 : 0;
 
   const refundAmount =
     Math.round((booking.amount * refundPercent) / 100);
@@ -136,9 +136,8 @@ export default function CancelBookingFlow({
           {STEPS.map((_, i) => (
             <span
               key={i}
-              className={`h-2 w-2 rounded-full ${
-                i === step ? "bg-red-600" : "bg-muted"
-              }`}
+              className={`h-2 w-2 rounded-full ${i === step ? "bg-red-600" : "bg-muted"
+                }`}
             />
           ))}
         </div>
@@ -219,57 +218,195 @@ export default function CancelBookingFlow({
           {/* STEP 3 — REFUND */}
           {step === 2 && (
             <>
-              <div className="rounded-xl border bg-white p-4 space-y-3">
-                <div className="flex items-center gap-2 text-muted-foreground">
+              {/* ================= SUMMARY CARD ================= */}
+              <div className="rounded-2xl border bg-white p-4 space-y-4">
+
+                {/* DAYS LEFT */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="w-4 h-4" />
                   {daysBeforeCheckin} days until check-in
                 </div>
 
                 <Separator />
 
-                <InfoRow label="Total Paid">
-                  ₹{booking.amount.toLocaleString("en-IN")}
-                </InfoRow>
+                {/* TOTAL PAID */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Paid</span>
+                  <span className="font-medium">
+                    ₹{booking.amount.toLocaleString("en-IN")}
+                  </span>
+                </div>
 
-                <InfoRow label="Cancellation Fee">
-                  <span className="text-red-600">
+                {/* CANCELLATION FEE */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cancellation Fee</span>
+                  <span className="text-red-600 font-medium">
                     - ₹{(booking.amount - refundAmount).toLocaleString("en-IN")}
                   </span>
-                </InfoRow>
+                </div>
 
                 <Separator />
 
-                <InfoRow label="Refund Amount">
-                  <span className="text-green-600 font-semibold">
+                {/* REFUND AMOUNT */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="font-medium">Refund Amount</span>
+                  <span className="text-green-600 font-semibold text-base">
                     ₹{refundAmount.toLocaleString("en-IN")}
                   </span>
-                </InfoRow>
+                </div>
               </div>
 
-              <div className="bg-green-50 text-green-700 rounded-lg p-3 text-sm">
-                ✔ Estimated refund {refundPercent}% (final refund decided by hotel)
+              {/* ================= REFUND STATUS BANNER ================= */}
+              <div className="flex items-start gap-2 bg-green-50 text-green-700 rounded-xl p-3 text-sm">
+                <Check className="w-4 h-4 mt-0.5" />
+                <span>
+                  You’ll receive <strong>{refundPercent}% refund</strong> within
+                  <strong> 5–7 business days</strong>
+                </span>
+              </div>
+
+              {/* ================= CANCELLATION POLICY ================= */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Cancellation Policy</h4>
+
+                <div className="rounded-xl border overflow-hidden">
+
+                  {/* 14+ DAYS */}
+                  <div
+                    className={`flex justify-between items-center px-4 py-3 text-sm ${refundPercent === 100
+                      ? "bg-red-50 border-l-4 border-red-500"
+                      : "bg-white"
+                      }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-red-500" />
+                      <span>14+ days before check-in</span>
+                    </div>
+                    <span className="text-green-600 font-medium">100% refund</span>
+                  </div>
+
+                  <Separator />
+
+                  {/* 7–13 DAYS */}
+                  <div
+                    className={`flex justify-between items-center px-4 py-3 text-sm ${refundPercent === 50
+                      ? "bg-yellow-50 border-l-4 border-yellow-500"
+                      : "bg-white"
+                      }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-yellow-500" />
+                      <span>7–13 days before check-in</span>
+                    </div>
+                    <span className="text-yellow-600 font-medium">50% refund</span>
+                  </div>
+
+                  <Separator />
+
+                  {/* &lt; 7 DAYS */}
+                  <div
+                    className={`flex justify-between items-center px-4 py-3 text-sm ${refundPercent === 0
+                      ? "bg-gray-100 border-l-4 border-gray-400"
+                      : "bg-white"
+                      }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-gray-400" />
+                      <span>Less than 7 days before check-in</span>
+                    </div>
+                    <span className="text-red-600 font-medium">0% refund</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* ================= REFUND TIMELINE ================= */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Refund Timeline</h4>
+                <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-5">
+                  <li>Refund initiated within 24 hours of confirmation</li>
+                  <li>Amount credited to original payment method</li>
+                  <li>Processing time: 5–7 business days</li>
+                </ul>
               </div>
             </>
           )}
+
 
           {/* STEP 4 — CONFIRM */}
-          {step === 3 && (
-            <>
-              <div className="flex gap-2 bg-red-50 p-3 rounded-lg text-red-700">
+          {step === 4 && (
+            <div className="space-y-4">
+              {/* Warning box */}
+              <div className="flex gap-3 bg-red-50 border border-red-200 p-3 rounded-lg text-red-700">
                 <AlertTriangle className="w-4 h-4 mt-0.5" />
-                This action cannot be undone.
+                <div className="text-sm">
+                  <p className="font-medium">
+                    Are you sure you want to cancel?
+                  </p>
+                  <p className="text-xs text-red-600">
+                    This action cannot be undone. Please review your cancellation details
+                    below.
+                  </p>
+                </div>
               </div>
 
-              <InfoRow label="Estimated Refund">
-                ₹{refundAmount.toLocaleString("en-IN")}
-              </InfoRow>
+              {/* Summary card */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm">
+                <InfoRow label="Booking">
+                  {preview.bookingName}
+                </InfoRow>
 
-              <label className="flex items-start gap-3 text-xs">
-                <Checkbox checked={agree} onCheckedChange={setAgree} />
-                I understand and agree to the cancellation policy.
+                <InfoRow label="Reference">
+                  {preview.reference}
+                </InfoRow>
+
+                <InfoRow label="Reason">
+                  {preview.reason}
+                </InfoRow>
+
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="text-gray-600 font-medium">
+                    Refund Amount
+                  </span>
+                  <span className="font-semibold text-green-600">
+                    ₹{preview.refundAmount.toLocaleString("en-IN")}
+                  </span>
+                </div>
+              </div>
+
+              {/* Policy checkbox */}
+              <label className="flex items-start gap-3 text-xs text-gray-700">
+                <Checkbox
+                  checked={agree}
+                  onCheckedChange={setAgree}
+                />
+                <span>
+                  I understand and agree to the cancellation policy. I acknowledge that
+                  this action is irreversible and the refund will be processed according
+                  to the stated terms.
+                </span>
               </label>
-            </>
+
+              {/* Footer buttons */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setStep(3)}
+                >
+                  Back
+                </Button>
+
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                  disabled={!agree || loading}
+                  onClick={confirmCancellation}
+                >
+                  Confirm Cancellation
+                </Button>
+              </div>
+            </div>
           )}
+
         </div>
 
         {/* ================= FOOTER ================= */}

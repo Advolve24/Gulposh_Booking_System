@@ -158,10 +158,21 @@ export default function Home() {
   }, [rooms, disabledAll, range, totalGuests, hasValidRange, hasGuests]);
 
   useEffect(() => {
-    if (totalGuests > 10) {
-      navigate("/entire-villa-form");
-    }
-  }, [totalGuests, navigate]);
+  if (totalGuests > 10) {
+    // ✅ Save search params for autofill
+    sessionStorage.setItem(
+      "searchParams",
+      JSON.stringify({
+        range,
+        adults,
+        children,
+      })
+    );
+
+    // ✅ Redirect to Entire Villa flow
+    navigate("/entire-villa-form");
+  }
+}, [totalGuests, range, adults, children, navigate]);
 
   const onSearch = () => {
     if (!hasValidRange || !hasGuests) {

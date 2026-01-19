@@ -139,6 +139,34 @@ export default function EntireVilla() {
     });
   }, [user]);
 
+  /* ================= PREFILL FROM SEARCH CARD ================= */
+useEffect(() => {
+  const raw = sessionStorage.getItem("searchParams");
+  if (!raw) return;
+
+  try {
+    const { range: searchRange, adults = 0, children = 0 } =
+      JSON.parse(raw);
+
+    // ✅ Set date range if available
+    if (searchRange?.from && searchRange?.to) {
+      setRange({
+        from: new Date(searchRange.from),
+        to: new Date(searchRange.to),
+      });
+    }
+
+    // ✅ Total guests = adults + children
+    const totalGuests = Number(adults) + Number(children);
+    if (totalGuests > 0) {
+      setGuests(String(totalGuests));
+    }
+  } catch (err) {
+    console.error("Invalid searchParams:", err);
+  }
+}, []);
+
+
   /* ================= LOAD BLOCKED DATES ================= */
   useEffect(() => {
     api.get("/rooms/disabled/all").then(({ data }) =>
@@ -398,7 +426,7 @@ export default function EntireVilla() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                  {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22].map((n) => (
                     <SelectItem key={n} value={String(n)}>
                       {n}
                     </SelectItem>
