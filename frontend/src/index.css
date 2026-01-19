@@ -246,12 +246,13 @@
 }
 
 /* ===============================
-   MOBILE FULL CALENDAR SLIDE
+   FULL CALENDAR SLIDE (MOBILE)
 ================================ */
 @media (max-width: 767px) {
   .calendar-slide {
     transition: transform 260ms ease, opacity 260ms ease;
     will-change: transform;
+    touch-action: pan-y;
   }
 
   .calendar-slide.slide-left {

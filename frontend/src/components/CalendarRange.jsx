@@ -45,8 +45,13 @@ export default function CalendarRange({
 
   const [month, setMonth] = useState(new Date());
 
-  /* 🔥 NEW: slide direction (mobile only) */
+  /* 🔥 slide animation state */
   const [slideDir, setSlideDir] = useState(null); // "left" | "right" | null
+
+  /* 🔥 swipe tracking */
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const SWIPE_THRESHOLD = 50;
 
   const selectingRef = useRef(false);
 
@@ -70,6 +75,44 @@ export default function CalendarRange({
     if (from && to) {
       selectingRef.current = false;
       setTimeout(() => setOpen(false), 120);
+    }
+  };
+
+  /* ===============================
+     TOUCH HANDLERS (MOBILE ONLY)
+  ============================== */
+  const onTouchStart = (e) => {
+    if (isDesktop || selectingRef.current) return;
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const onTouchMove = (e) => {
+    if (isDesktop || selectingRef.current) return;
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (isDesktop || selectingRef.current) return;
+
+    const deltaX = touchStartX.current - touchEndX.current;
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+
+    // 👉 swipe left
+    if (deltaX > 0) {
+      setSlideDir("left");
+      setTimeout(() => {
+        setMonth((m) => addMonths(m, 1));
+        setSlideDir(null);
+      }, 260);
+    }
+
+    // 👈 swipe right
+    if (deltaX < 0) {
+      setSlideDir("right");
+      setTimeout(() => {
+        setMonth((m) => subMonths(m, 1));
+        setSlideDir(null);
+      }, 260);
     }
   };
 
@@ -132,7 +175,6 @@ export default function CalendarRange({
     <div className="calendar-wrapper">
       {/* NAV */}
       <button
-        type="button"
         className="calendar-nav left"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
@@ -151,7 +193,6 @@ export default function CalendarRange({
       </button>
 
       <button
-        type="button"
         className="calendar-nav right"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
@@ -169,7 +210,7 @@ export default function CalendarRange({
         <ChevronRight size={20} />
       </button>
 
-      {/* 🔥 FULL CALENDAR SLIDE (MOBILE ONLY) */}
+      {/* 🔥 SLIDING CALENDAR */}
       <div
         className={`calendar-slide ${
           slideDir === "left"
@@ -178,6 +219,9 @@ export default function CalendarRange({
             ? "slide-right"
             : ""
         }`}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         <Calendar
           mode="range"
@@ -227,10 +271,7 @@ export default function CalendarRange({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className="w-full h-14 grid grid-cols-2 rounded-xl"
-        >
+        <Button variant="outline" className="w-full h-14 grid grid-cols-2 rounded-xl">
           <DateBox label="Check in" value={value?.from} />
           <DateBox label="Check out" value={value?.to} />
         </Button>
