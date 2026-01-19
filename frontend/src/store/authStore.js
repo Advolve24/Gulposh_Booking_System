@@ -56,35 +56,27 @@ export const useAuth = create((set, get) => ({
     return user;
   },
 
- /* ================= HANDLE GOOGLE REDIRECT ================= */
-  handleRedirectResult: async () => {
-    try {
-      const result = await getRedirectResult(auth);
+  /* ================= GOOGLE OAUTH LOGIN ================= */
+googleLoginWithToken: async (idToken) => {
+  // 1️⃣ Create backend session (sets cookies)
+  await api.post(
+    "/auth/google-login",
+    { idToken },
+    { withCredentials: true }
+  );
 
-      if (!result?.user) return null;
+  // 2️⃣ Fetch authenticated user (READS COOKIES)
+  const { data } = await api.get("/auth/me");
 
-      console.log("✅ Firebase Google redirect success");
+  const user = normalizeUser(data);
 
-      const idToken = await result.user.getIdToken(true);
+  // 3️⃣ Save user
+  set({ user, showAuthModal: false });
 
-      // 🔐 Create backend session
-      await api.post(
-        "/auth/google-login",
-        { idToken },
-        { withCredentials: true }
-      );
+  return user;
+},
 
-      // 👤 Fetch authenticated user
-      const { data } = await api.get("/auth/me");
-      const user = normalizeUser(data);
 
-      set({ user, showAuthModal: false });
-      return user;
-    } catch (err) {
-      console.error("❌ Google redirect failed", err);
-      return null;
-    }
-  },
 
   /* ================= AFTER PROFILE UPDATE ================= */
   refreshUser: async () => {
