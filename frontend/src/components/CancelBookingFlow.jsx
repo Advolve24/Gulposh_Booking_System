@@ -329,9 +329,9 @@ export default function CancelBookingFlow({
                 </ul>
               </div>
             </>
-)}
+          )}
 
-{/* STEP 4 — CONFIRM */}
+          {/* STEP 4 — CONFIRM */}
           {step === 4 && (
             <div className="space-y-4">
               {/* Warning box */}
@@ -384,53 +384,36 @@ export default function CancelBookingFlow({
                   to the stated terms.
                 </span>
               </label>
-
-              {/* Footer buttons */}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setStep(3)}
-                >
-                  Back
-                </Button>
-
-                <Button
-                  className="flex-1 bg-red-600 hover:bg-red-700"
-                  disabled={!agree || loading}
-                  onClick={confirmCancellation}
-                >
-                  Confirm Cancellation
-                </Button>
-              </div>
             </div>
           )}
 
         </div>
-
         {/* ================= FOOTER ================= */}
-        <div className="p-4 border-t bg-white flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => setStep(step - 1)}
-            disabled={step === 0}
-          >
-            Back
-          </Button>
+        {step !== 4 && (
+          <div className="p-4 border-t bg-white flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setStep(step - 1)}
+              disabled={step === 0}
+            >
+              Back
+            </Button>
 
-          <Button
-            className="flex-1"
-            disabled={
-              loading ||
-              (step === 1 && !reason) ||
-              (step === 3 && !agree)
-            }
-            onClick={step === 3 ? handleCancel : () => setStep(step + 1)}
-          >
-            {step === 3 ? "Confirm Cancellation" : "Continue"}
-          </Button>
-        </div>
+            <Button
+              className="flex-1"
+              disabled={
+                loading ||
+                (step === 1 && !reason) ||
+                (step === 3 && !agree)
+              }
+              onClick={step === 3 ? handleCancel : () => setStep(step + 1)}
+            >
+              {step === 3 ? "Confirm Cancellation" : "Continue"}
+            </Button>
+          </div>
+        )}
+
       </Content>
     </Container>
   );
