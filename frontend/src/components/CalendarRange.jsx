@@ -212,13 +212,7 @@ export default function CalendarRange({
 
       {/* 🔥 SLIDING CALENDAR */}
       <div
-        className={`calendar-slide ${
-          slideDir === "left"
-            ? "slide-left"
-            : slideDir === "right"
-            ? "slide-right"
-            : ""
-        }`}
+        className="calendar-viewport"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
