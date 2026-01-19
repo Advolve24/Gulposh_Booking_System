@@ -1,11 +1,23 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../api/http";
+import { toast } from "sonner";
+
+import { useAuth } from "../store/authStore";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { Separator } from "@/components/ui/separator";
+
+import {
+  MapPin,
+  Users,
+  User,
+  ConciergeBell,
+  ArrowLeft,
+} from "lucide-react";
+
 import {
   Select,
   SelectTrigger,
@@ -13,23 +25,42 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
+
 import CalendarRange from "../components/CalendarRange";
+
 import {
   getAllCountries,
   getStatesByCountry,
   getCitiesByState,
 } from "../lib/location";
-import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
+
+import {
+  toDateOnlyFromAPI,
+  toDateOnlyFromAPIUTC,
+} from "../lib/date";
+
+import { format } from "date-fns";
+
+/* =====================================================
+   COMPONENT
+===================================================== */
 
 export default function EntireVilla() {
   const navigate = useNavigate();
+  const location = useLocation();
 
+  const { user, init, openAuth } = useAuth();
+
+  /* ================= PERSONAL INFO ================= */
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     dob: null,
-    range: { from: null, to: null },
+  });
+
+  /* ================= ADDRESS ================= */
+  const [address, setAddress] = useState({
     address: "",
     country: "",
     state: "",
@@ -37,248 +68,366 @@ export default function EntireVilla() {
     pincode: "",
   });
 
-  const [countries, setCountries] = useState([]);
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
-  const [disabledAll, setDisabledAll] = useState([]);
+  /* ================= BOOKING ================= */
+  const [range, setRange] = useState({ from: null, to: null });
+  const [guests, setGuests] = useState("1");
 
-  // Load countries on mount
+  /* ================= BLOCKED DATES ================= */
+  const [bookedAll, setBookedAll] = useState([]);
+  const [blackoutRanges, setBlackoutRanges] = useState([]);
+
+  const disabledAll = useMemo(
+    () => [...bookedAll, ...blackoutRanges],
+    [bookedAll, blackoutRanges]
+  );
+
+  /* ================= LOCATION DATA ================= */
+  const countries = getAllCountries();
+  const states =
+    address.country ? getStatesByCountry(address.country) : [];
+  const cities =
+    address.country && address.state
+      ? getCitiesByState(address.country, address.state)
+      : [];
+
+  /* ================= INIT AUTH SESSION ================= */
   useEffect(() => {
-    setCountries(getAllCountries());
-  }, []);
+    init();
+  }, [init]);
 
-  // Update states/cities dynamically
+  /* ================= AUTH GUARD ================= */
   useEffect(() => {
-    if (form.country) setStates(getStatesByCountry(form.country));
-    else setStates([]);
-    setCities([]);
-  }, [form.country]);
+    if (!user) {
+      // open login modal
+      openAuth();
 
-  useEffect(() => {
-    if (form.country && form.state)
-      setCities(getCitiesByState(form.country, form.state));
-    else setCities([]);
-  }, [form.state, form.country]);
-
-  // Fetch blocked dates (same logic as checkout)
-  useEffect(() => {
-    (async () => {
-      try {
-        const [bookingsRes, blackoutsRes] = await Promise.all([
-          api.get("/rooms/disabled/all"),
-          api.get("/blackouts"),
-        ]);
-
-        const bookings = (bookingsRes.data || []).map((b) => ({
-          from: toDateOnlyFromAPIUTC(b.from || b.startDate),
-          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
-        }));
-
-        const blackouts = (blackoutsRes.data || []).map((b) => ({
-          from: toDateOnlyFromAPI(b.from),
-          to: toDateOnlyFromAPI(b.to),
-        }));
-
-        setDisabledAll([...bookings, ...blackouts]);
-      } catch (err) {
-        console.error("Failed to load disabled ranges:", err);
-        setDisabledAll([]);
-      }
-    })();
-  }, []);
-
-  // Handle submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name || !form.email || !form.phone) {
-      toast.error("Please fill all required fields");
+      // remember return path
+      sessionStorage.setItem(
+        "postAuthRedirect",
+        JSON.stringify({
+          redirectTo: location.pathname,
+        })
+      );
       return;
     }
 
-    if (!form.range.from || !form.range.to) {
+    if (!user.profileComplete) {
+      navigate("/complete-profile", {
+        replace: true,
+        state: { redirectTo: location.pathname },
+      });
+    }
+  }, [user, navigate, openAuth, location.pathname]);
+
+  /* ================= AUTOFILL FROM PROFILE ================= */
+  useEffect(() => {
+    if (!user || !user.profileComplete) return;
+
+    setForm({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      dob: user.dob ? new Date(user.dob) : null,
+    });
+
+    setAddress({
+      address: user.address || "",
+      country: user.country || "",
+      state: user.state || "",
+      city: user.city || "",
+      pincode: user.pincode || "",
+    });
+  }, [user]);
+
+  /* ================= LOAD BLOCKED DATES ================= */
+  useEffect(() => {
+    api.get("/rooms/disabled/all").then(({ data }) =>
+      setBookedAll(
+        (data || []).map((b) => ({
+          from: toDateOnlyFromAPIUTC(b.from || b.startDate),
+          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
+        }))
+      )
+    );
+
+    api.get("/blackouts").then(({ data }) =>
+      setBlackoutRanges(
+        (data || []).map((b) => ({
+          from: toDateOnlyFromAPI(b.from),
+          to: toDateOnlyFromAPI(b.to),
+        }))
+      )
+    );
+  }, []);
+
+  /* ================= SUBMIT ENQUIRY ================= */
+  const submitEnquiry = async () => {
+    if (!form.name || !form.email || !form.phone) {
+      toast.error("Please complete personal details");
+      return;
+    }
+
+    if (!range.from || !range.to) {
       toast.error("Please select check-in and check-out dates");
       return;
     }
 
+    if (
+      !address.address ||
+      !address.country ||
+      !address.state ||
+      !address.city ||
+      !address.pincode
+    ) {
+      toast.error("Please complete your address details");
+      return;
+    }
+
     try {
-      await api.post("/mail/send-entire-villa", form);
-      toast.success("Form submitted successfully!");
-      navigate("/thank-you");
+      await api.post("/mail/send-entire-villa", {
+        ...form,
+        ...address,
+        guests,
+        startDate: range.from,
+        endDate: range.to,
+      });
+
+      toast.success("Enquiry sent successfully ✨");
+      navigate("/thank-you", { replace: true });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to send enquiry. Try again.");
+      toast.error("Failed to send enquiry. Please try again.");
     }
   };
 
-  // Handle phone number input (digits only)
-  const handlePhoneChange = (e) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
-    setForm((f) => ({ ...f, phone: digits }));
-  };
-
+  /* ================= UI ================= */
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
-      <h1 className="text-2xl font-semibold">Book the Entire Villa</h1>
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* BACK */}
+      <div className="mb-4 flex items-center gap-2">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1 text-muted-foreground hover:text-black"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+      </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="border rounded-xl p-6 shadow-sm space-y-6"
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Basic Info */}
-          <div>
-            <Label>Name</Label>
-            <Input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Your full name"
-            />
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+
+        {/* ================= LEFT SUMMARY ================= */}
+        <aside className="hidden lg:block lg:col-span-4 px-4">
+          <div className="sticky top-[120px]">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+
+              <img
+                src="/EntireVilla.webp"
+                alt="Entire Villa"
+                className="h-56 w-full object-cover"
+              />
+
+              <div className="p-5 space-y-4 text-sm">
+
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  <span>Karjat, Maharashtra</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  <span>{guests} Guests</span>
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#faf7f4] rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground">
+                      CHECK-IN
+                    </div>
+                    <div className="font-medium">
+                      {range.from && format(range.from, "dd MMM yyyy")}
+                    </div>
+                  </div>
+
+                  <div className="bg-[#faf7f4] rounded-xl p-3">
+                    <div className="text-xs text-muted-foreground">
+                      CHECK-OUT
+                    </div>
+                    <div className="font-medium">
+                      {range.to && format(range.to, "dd MMM yyyy")}
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <p className="text-xs text-muted-foreground">
+                  This is an enquiry request. Our team will contact you
+                  to confirm availability and pricing.
+                </p>
+
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* ================= RIGHT FORM ================= */}
+        <section className="lg:col-span-6 space-y-6">
+
+          {/* PERSONAL INFO */}
+          <div className="rounded-2xl border bg-white p-5 sm:p-6">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                <User className="h-5 w-5 text-red-700" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base">
+                  Personal Information
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  As per your profile
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Full Name</Label>
+                <Input value={form.name} disabled />
+              </div>
+
+              <div>
+                <Label>Email</Label>
+                <Input value={form.email} disabled />
+              </div>
+
+              <div>
+                <Label>Phone</Label>
+                <Input value={form.phone} disabled />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              placeholder="you@example.com"
-            />
+          {/* ADDRESS */}
+          <div className="rounded-2xl border bg-white p-5 sm:p-6">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-red-700" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base">
+                  Address Details
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  From your profile
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="md:col-span-3">
+                <Label>Street Address</Label>
+                <Input value={address.address} disabled />
+              </div>
+
+              <div>
+                <Label>Country</Label>
+                <Input
+                  value={
+                    countries.find((c) => c.isoCode === address.country)
+                      ?.name || ""
+                  }
+                  disabled
+                />
+              </div>
+
+              <div>
+                <Label>State</Label>
+                <Input
+                  value={
+                    states.find((s) => s.isoCode === address.state)?.name ||
+                    ""
+                  }
+                  disabled
+                />
+              </div>
+
+              <div>
+                <Label>City</Label>
+                <Input value={address.city} disabled />
+              </div>
+
+              <div>
+                <Label>Pincode</Label>
+                <Input value={address.pincode} disabled />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <Label>Phone</Label>
-            <Input
-              type="tel"
-              inputMode="numeric"
-              maxLength={10}
-              value={form.phone}
-              onChange={handlePhoneChange}
-              placeholder="10-digit mobile number"
-            />
+          {/* BOOKING PREF */}
+          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-6">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                <ConciergeBell className="h-5 w-5 text-red-700" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base">
+                  Booking Preferences
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Select stay details
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <Label>Check-in / Check-out</Label>
+              <CalendarRange
+                value={range}
+                onChange={setRange}
+                disabledRanges={disabledAll}
+              />
+            </div>
+
+            <div>
+              <Label>Total Guests</Label>
+              <Select value={guests} onValueChange={setGuests}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div>
-            <Label>Date of Birth</Label>
-            <Input
-              type="date"
-              value={form.dob ? format(form.dob, "yyyy-MM-dd") : ""}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, dob: new Date(e.target.value) }))
-              }
-            />
-          </div>
+          {/* CTA */}
+          <Button
+            className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
+            onClick={submitEnquiry}
+          >
+            Submit Enquiry
+          </Button>
 
-          {/* Check-in/Check-out as Range */}
-          <div className="sm:col-span-2">
-            <Label>Check-in / Check-out</Label>
-            <CalendarRange
-              value={form.range}
-              onChange={(range) => setForm((f) => ({ ...f, range }))}
-              numberOfMonths={1}
-              disabledRanges={disabledAll}
-            />
-          </div>
-
-          {/* Address Section */}
-          <div className="sm:col-span-2">
-            <Label>Address</Label>
-            <Input
-              value={form.address}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, address: e.target.value }))
-              }
-              placeholder="Street, Apartment, Landmark"
-            />
-          </div>
-
-          {/* Country */}
-          <div>
-            <Label>Country</Label>
-            <Select
-              value={form.country}
-              onValueChange={(v) =>
-                setForm((f) => ({
-                  ...f,
-                  country: v,
-                  state: "",
-                  city: "",
-                }))
-              }
+          {/* MOBILE CTA */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-3">
+            <Button
+              className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
+              onClick={submitEnquiry}
             >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {countries.map((c) => (
-                  <SelectItem key={c.isoCode} value={c.isoCode}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              Submit Enquiry
+            </Button>
           </div>
 
-          {/* State */}
-          <div>
-            <Label>State</Label>
-            <Select
-              value={form.state}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, state: v, city: "" }))
-              }
-              disabled={!form.country}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select state" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {states.map((s) => (
-                  <SelectItem key={s.isoCode} value={s.isoCode}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* City */}
-          <div>
-            <Label>City</Label>
-            <Select
-              value={form.city}
-              onValueChange={(v) => setForm((f) => ({ ...f, city: v }))}
-              disabled={!form.state}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select city" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {cities.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Pincode */}
-          <div>
-            <Label>Pincode</Label>
-            <Input
-              value={form.pincode}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, pincode: e.target.value }))
-              }
-              placeholder="Postal code"
-            />
-          </div>
-        </div>
-
-        <Button type="submit" className="w-full">
-          Submit
-        </Button>
-      </form>
+        </section>
+      </div>
     </div>
   );
 }

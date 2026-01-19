@@ -306,21 +306,22 @@ export default function AuthModal() {
 
           {step === "choice" && (
             <>
-              <div className="flex justify-center">
-                <div id="google-btn" />
-              </div>
-
-              <div className="text-center text-xs text-muted-foreground">
-                or
-              </div>
-
+             
               <Button
                 variant="outline"
-                className="w-full h-11 rounded-xl"
+                className="w-full h-10 rounded-3xl"
                 onClick={() => setStep("phone")}
               >
                 Continue with Mobile OTP
               </Button>
+
+              <div className="text-center text-xs text-muted-foreground">
+                or
+              </div>
+               <div className="flex justify-center">
+                <div id="google-btn" />
+              </div>
+              
             </>
           )}
 
