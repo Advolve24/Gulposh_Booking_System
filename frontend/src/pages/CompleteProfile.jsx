@@ -63,9 +63,8 @@ export default function CompleteProfile() {
   const [cities, setCities] = useState([]);
 
   /* ---------------- VERIFICATION FLAGS ---------------- */
-  const [phoneVerified, setPhoneVerified] = useState(
-    isPhoneLogin && !!user?.phone
-  );
+  const [phoneVerified, setPhoneVerified] = useState(false);
+
   const [emailVerified, setEmailVerified] = useState(
     isGoogleLogin && !!user?.email
   );
@@ -269,8 +268,10 @@ export default function CompleteProfile() {
           </div>
 
           {/* MOBILE */}
+          {/* MOBILE */}
           <div>
             <Label>Mobile</Label>
+
             <div className="flex gap-2">
               <Input
                 value={form.phone}
@@ -282,6 +283,7 @@ export default function CompleteProfile() {
                   }))
                 }
               />
+
               {phoneVerified ? (
                 <CheckCircle className="text-green-600 mt-2" />
               ) : isGoogleLogin ? (
@@ -290,12 +292,22 @@ export default function CompleteProfile() {
                     Verify OTP
                   </Button>
                 ) : (
-                  <Button size="sm" onClick={sendPhoneOTP}>
+                  <Button
+                    size="sm"
+                    disabled={form.phone.length !== 10}
+                    onClick={sendPhoneOTP}
+                  >
                     Send OTP
                   </Button>
                 )
               ) : null}
             </div>
+
+            {!phoneVerified && isGoogleLogin && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Mobile number verification required
+              </p>
+            )}
 
             {otpSent && !phoneVerified && (
               <Input
@@ -309,27 +321,58 @@ export default function CompleteProfile() {
             )}
           </div>
 
+
           {/* DOB */}
           <div className="sm:col-span-2">
             <Label>Date of Birth</Label>
+
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start">
-                  {form.dob ? format(form.dob, "PPP") : "Select date"}
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date of birth"}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0">
+
+              <PopoverContent className="p-0 w-auto">
                 <Calendar
                   mode="single"
+                  captionLayout="dropdown-buttons"
                   selected={form.dob}
-                  onSelect={(d) =>
-                    setForm((f) => ({ ...f, dob: d }))
-                  }
+                  onSelect={(date) => {
+                    if (!date) return;
+                    setForm((f) => ({ ...f, dob: date }));
+                  }}
+                  fromYear={new Date().getFullYear() - 100}
+                  toYear={new Date().getFullYear() - 18}
+                  disabled={(date) => {
+                    const today = new Date();
+                    const minDate = new Date(
+                      today.getFullYear() - 100,
+                      today.getMonth(),
+                      today.getDate()
+                    );
+                    const maxDate = new Date(
+                      today.getFullYear() - 18,
+                      today.getMonth(),
+                      today.getDate()
+                    );
+
+                    return date < minDate || date > maxDate;
+                  }}
+                  initialFocus
                 />
               </PopoverContent>
             </Popover>
+
+            <p className="text-xs text-muted-foreground mt-1">
+              You must be at least 18 years old
+            </p>
           </div>
+
 
           {/* COUNTRY */}
           <div>
@@ -426,9 +469,14 @@ export default function CompleteProfile() {
 
         </div>
 
-        <Button className="w-full" onClick={submit} disabled={loading}>
+        <Button
+          className="w-full"
+          onClick={submit}
+          disabled={loading || (isGoogleLogin && !phoneVerified)}
+        >
           {loading ? "Saving..." : "Save & Continue"}
         </Button>
+
 
       </div>
     </div>
