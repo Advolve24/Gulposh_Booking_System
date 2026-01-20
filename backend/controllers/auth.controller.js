@@ -28,15 +28,12 @@ const createRefreshToken = (user) =>
   );
 
 const issueSession = (res, user) => {
-  const accessToken = createAccessToken(user);
-  const refreshToken = createRefreshToken(user);
-
-  setSessionCookie(res, "token", accessToken, {
+  setSessionCookie(res, "token", createAccessToken(user), {
     path: "/",
     persistent: false,
   });
 
-  setSessionCookie(res, "refresh_token", refreshToken, {
+  setSessionCookie(res, "refresh_token", createRefreshToken(user), {
     path: "/",
     persistent: true,
     days: 10,
@@ -44,24 +41,23 @@ const issueSession = (res, user) => {
 };
 
 /* ===============================
-   FIREBASE PHONE LOGIN
+   FIREBASE PHONE LOGIN (OTP)
 ================================ */
 
 export const firebaseLogin = async (req, res) => {
   try {
-    const hdr = req.headers.authorization || "";
-    const idToken = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+    const idToken =
+      req.headers.authorization?.replace("Bearer ", "");
 
     if (!idToken)
       return res.status(401).json({ message: "Firebase token missing" });
 
     const decoded = await admin.auth().verifyIdToken(idToken);
-
     const firebaseUid = decoded.uid;
-    const phone = normalizePhone(decoded.phone_number || "");
+    const phone = normalizePhone(decoded.phone_number);
 
     if (!phone)
-      return res.status(400).json({ message: "Phone number not available" });
+      return res.status(400).json({ message: "Phone not available" });
 
     let user = await User.findOne({
       $or: [{ firebaseUid }, { phone }],
@@ -69,21 +65,17 @@ export const firebaseLogin = async (req, res) => {
 
     let isNewUser = false;
 
-    // 🔹 NEW USER
     if (!user) {
       user = await User.create({
         firebaseUid,
         phone,
-        authProvider: "firebase",
-        profileComplete: false, // 🔐 ONLY HERE
+        authProviders: ["firebase"],
       });
       isNewUser = true;
-    }
-
-    // 🔹 LINK OLD USER
-    else if (!user.firebaseUid) {
-      user.firebaseUid = firebaseUid;
-      user.authProvider = "firebase";
+    } else {
+      if (!user.firebaseUid) user.firebaseUid = firebaseUid;
+      if (!user.authProviders.includes("firebase"))
+        user.authProviders.push("firebase");
       await user.save();
     }
 
@@ -92,9 +84,11 @@ export const firebaseLogin = async (req, res) => {
     res.json({
       id: user._id,
       phone: user.phone,
-      authProvider: user.authProvider,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      authProviders: user.authProviders,
       profileComplete: user.profileComplete,
-      isNewUser, // 🔑 FRONTEND USES THIS
+      isNewUser,
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
@@ -103,9 +97,8 @@ export const firebaseLogin = async (req, res) => {
   }
 };
 
-
 /* ===============================
-   GOOGLE OAUTH LOGIN
+   GOOGLE LOGIN (EMAIL VERIFIER)
 ================================ */
 
 export const googleLogin = async (req, res) => {
@@ -120,57 +113,47 @@ export const googleLogin = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-
     const googleId = payload.sub;
-    const email = payload.email?.toLowerCase() || null;
-    const name = payload.name || null;
+    const email = payload.email?.toLowerCase();
+    const name = payload.name;
 
-    let user = null;
+    let user =
+      (await User.findOne({ googleId })) ||
+      (email ? await User.findOne({ email }) : null);
 
-    // 1️⃣ First priority: existing Google user
-    user = await User.findOne({ googleId });
+    let isNewUser = false;
 
-    // 2️⃣ Second priority: OTP user with same email
-    if (!user && email) {
-      user = await User.findOne({ email });
-    }
-
-    // 3️⃣ If user exists → LINK Google
-    if (user) {
-      if (!user.googleId) {
-        user.googleId = googleId;
-      }
-      if (!user.email && email) {
-        user.email = email;
-      }
-      if (!user.name && name) {
-        user.name = name;
-      }
-
-      user.authProvider = "google";
-      await user.save();
-    }
-
-    // 4️⃣ If truly new user → CREATE
     if (!user) {
       user = await User.create({
         googleId,
         email,
         name,
-        authProvider: "google",
+        emailVerified: true,
+        authProviders: ["google"],
       });
+      isNewUser = true;
+    } else {
+      if (!user.googleId) user.googleId = googleId;
+      if (!user.email) user.email = email;
+      user.emailVerified = true;
+
+      if (!user.authProviders.includes("google"))
+        user.authProviders.push("google");
+
+      if (!user.name && name) user.name = name;
+
+      await user.save();
     }
 
     issueSession(res, user);
-
-    const isNewUser = !user.profileComplete;
 
     res.json({
       id: user._id,
       name: user.name,
       phone: user.phone,
       email: user.email,
-      authProvider: user.authProvider,
+      emailVerified: user.emailVerified,
+      authProviders: user.authProviders,
       profileComplete: user.profileComplete,
       isNewUser,
       isAdmin: !!user.isAdmin,
@@ -198,25 +181,20 @@ export const logout = (_req, res) => {
 export const refreshSession = async (req, res) => {
   try {
     const token = req.cookies?.refresh_token;
-    if (!token)
-      return res.status(401).json({ message: "No refresh token" });
+    if (!token) return res.status(401).json({ message: "No refresh token" });
 
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user)
-      return res.status(404).json({ message: "User not found" });
-
-    const newAccessToken = createAccessToken(user);
-    setSessionCookie(res, "token", newAccessToken, {
+    setSessionCookie(res, "token", createAccessToken(user), {
       path: "/",
       persistent: false,
     });
 
     res.json({ ok: true });
-  } catch (err) {
-    console.error("Refresh error:", err.message);
-    res.status(401).json({ message: "Invalid or expired refresh token" });
+  } catch {
+    res.status(401).json({ message: "Invalid refresh token" });
   }
 };
 
@@ -226,21 +204,21 @@ export const refreshSession = async (req, res) => {
 
 export const me = async (req, res) => {
   const user = await User.findById(req.user.id);
-  if (!user)
-    return res.status(401).json({ message: "Unauthorized" });
+  if (!user) return res.status(401).json({ message: "Unauthorized" });
 
   res.json({
     id: user._id,
     name: user.name,
     phone: user.phone,
     email: user.email,
+    emailVerified: user.emailVerified,
     dob: user.dob,
     address: user.address,
     country: user.country,
     state: user.state,
     city: user.city,
     pincode: user.pincode,
-    authProvider: user.authProvider,
+    authProviders: user.authProviders,
     profileComplete: user.profileComplete,
     isAdmin: !!user.isAdmin,
   });
@@ -254,31 +232,23 @@ export const updateMe = async (req, res) => {
   try {
     const {
       name,
-      email,
-      phone, // ✅ accept phone from frontend
       dob,
       address,
       country,
       state,
       city,
       pincode,
-    } = req.body || {};
+    } = req.body;
 
     const user = await User.findById(req.user.id);
-    if (!user)
-      return res.status(401).json({ message: "Unauthorized" });
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-    if (!name || !dob) {
+    if (!name || !dob)
       return res.status(400).json({
         message: "Name and Date of Birth are required",
       });
-    }
 
-    /* ===============================
-       BASIC FIELDS
-    ================================ */
     user.name = name.trim();
-    user.email = email?.trim() || user.email;
     user.dob = new Date(dob);
     user.address = address || null;
     user.country = country || null;
@@ -286,46 +256,10 @@ export const updateMe = async (req, res) => {
     user.city = city || null;
     user.pincode = pincode || null;
 
-    /* ===============================
-       🔐 PHONE LOGIC (IMPORTANT)
-    ================================ */
-    if (user.authProvider === "google") {
-      if (!phone) {
-        return res.status(400).json({
-          message: "Mobile number is required",
-        });
-      }
-
-      // normalize phone
-      const normalizedPhone = phone.replace(/\D/g, "").slice(-10);
-
-      if (normalizedPhone.length !== 10) {
-        return res.status(400).json({
-          message: "Invalid mobile number",
-        });
-      }
-
-      user.phone = normalizedPhone;
-    }
-
-    /* ===============================
-       PROFILE COMPLETE FLAG
-    ================================ */
-    user.profileComplete = true;
-
     await user.save();
 
     res.json({
       id: user._id,
-      name: user.name,
-      phone: user.phone,
-      email: user.email,
-      dob: user.dob,
-      address: user.address,
-      country: user.country,
-      state: user.state,
-      city: user.city,
-      pincode: user.pincode,
       profileComplete: user.profileComplete,
     });
   } catch (err) {

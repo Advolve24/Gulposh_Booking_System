@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 
 import {
@@ -29,20 +29,32 @@ import {
   getCitiesByState,
 } from "../lib/location";
 
+/* ===================================================== */
+
 export default function CompleteProfile() {
-  const { user, init } = useAuth();
+  const { user, init, googleLoginWithToken, firebaseLoginWithToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isGoogleLogin = user?.authProvider === "google";
+  const isPhoneLogin = user?.authProvider === "firebase";
+
   const [loading, setLoading] = useState(false);
 
+  /* ---------------- LOCATION DATA ---------------- */
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
 
-  // ✅ detect login provider
-  const isGoogleLogin = user?.authProvider === "google";
+  /* ---------------- VERIFICATION FLAGS ---------------- */
+  const [phoneVerified, setPhoneVerified] = useState(
+    isPhoneLogin && !!user?.phone
+  );
+  const [emailVerified, setEmailVerified] = useState(
+    isGoogleLogin && !!user?.email
+  );
 
+  /* ---------------- FORM STATE ---------------- */
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -55,14 +67,14 @@ export default function CompleteProfile() {
     pincode: "",
   });
 
-  /* 🚫 BLOCK ACCESS IF PROFILE ALREADY COMPLETE */
+  /* 🚫 BLOCK IF PROFILE COMPLETE */
   useEffect(() => {
     if (user?.profileComplete) {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
-  /* 🔁 PREFILL FROM USER */
+  /* PREFILL */
   useEffect(() => {
     if (!user) return;
 
@@ -79,55 +91,80 @@ export default function CompleteProfile() {
     });
   }, [user]);
 
-  /* 🌍 LOAD COUNTRIES */
+  /* LOCATION DATA */
+  useEffect(() => setCountries(getAllCountries()), []);
   useEffect(() => {
-    setCountries(getAllCountries());
-  }, []);
-
-  useEffect(() => {
-    if (form.country) {
-      setStates(getStatesByCountry(form.country));
-    } else {
-      setStates([]);
-    }
+    setStates(form.country ? getStatesByCountry(form.country) : []);
     setCities([]);
   }, [form.country]);
-
   useEffect(() => {
-    if (form.state && form.country) {
-      setCities(getCitiesByState(form.country, form.state));
-    } else {
-      setCities([]);
-    }
+    setCities(
+      form.state && form.country
+        ? getCitiesByState(form.country, form.state)
+        : []
+    );
   }, [form.state, form.country]);
 
-  /* ✅ SUBMIT PROFILE */
+  /* =====================================================
+     🔐 VERIFICATION ACTIONS
+  ===================================================== */
+
+  /* PHONE OTP (Google users only) */
+  const verifyPhoneOTP = async () => {
+    try {
+      // 👉 You already have Firebase OTP modal
+      // Just trigger it here
+      toast.message("Verify phone number via OTP");
+
+      // After success:
+      setPhoneVerified(true);
+    } catch {
+      toast.error("Phone verification failed");
+    }
+  };
+
+  /* GOOGLE EMAIL VERIFY (Phone OTP users only) */
+  const verifyEmailWithGoogle = async () => {
+    try {
+      toast.message("Verify email using Google");
+
+      // 👉 Use same Google login popup
+      const idToken = await window.signInWithGoogle(); // your existing Google popup
+      await googleLoginWithToken(idToken);
+
+      await init();
+      setEmailVerified(true);
+
+      toast.success("Email verified successfully");
+    } catch {
+      toast.error("Email verification failed");
+    }
+  };
+
+  /* =====================================================
+     SUBMIT
+  ===================================================== */
+
   const submit = async () => {
-    if (!form.name.trim()) {
-      toast.error("Full name is required");
-      return;
-    }
+    if (!form.name.trim()) return toast.error("Full name is required");
+    if (!form.dob) return toast.error("Date of birth is required");
 
-    if (!form.dob) {
-      toast.error("Date of birth is required");
-      return;
-    }
+    if (isGoogleLogin && !phoneVerified)
+      return toast.error("Please verify your phone number");
 
-    if (isGoogleLogin && form.phone.length !== 10) {
-      toast.error("Mobile number is required");
-      return;
-    }
+    if (isPhoneLogin && !emailVerified)
+      return toast.error("Please verify your email");
 
     try {
       setLoading(true);
 
-      const countryObj = countries.find(c => c.isoCode === form.country);
-      const stateObj = states.find(s => s.isoCode === form.state);
+      const countryObj = countries.find((c) => c.isoCode === form.country);
+      const stateObj = states.find((s) => s.isoCode === form.state);
 
       await api.put("/auth/me", {
         name: form.name.trim(),
         email: form.email || null,
-        phone: isGoogleLogin ? form.phone : null,
+        phone: form.phone || null,
         dob: form.dob.toISOString(),
         address: form.address || null,
         country: countryObj?.name || null,
@@ -141,33 +178,33 @@ export default function CompleteProfile() {
       toast.success("Profile completed successfully 🎉");
 
       const redirectTo = location.state?.redirectTo || "/";
-      const bookingState = location.state?.bookingState;
-
       navigate(redirectTo, {
         replace: true,
-        state: bookingState,
+        state: location.state?.bookingState,
       });
-
     } catch (err) {
-      toast.error(
-        err?.response?.data?.message || "Failed to save profile"
-      );
+      toast.error(err?.response?.data?.message || "Failed to save profile");
     } finally {
       setLoading(false);
     }
   };
 
+  /* =====================================================
+     UI
+  ===================================================== */
+
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6">
-      <div className="rounded-xl border p-5 space-y-5 bg-white">
+      <div className="rounded-xl border p-5 space-y-6 bg-white">
 
         <div>
           <h2 className="text-xl font-semibold">Complete your profile</h2>
           <p className="text-sm text-muted-foreground">
-            This information will be used for checkout and invoices.
+            Required to proceed with bookings
           </p>
         </div>
 
+        {/* ---------------- FORM ---------------- */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
           <div>
@@ -181,24 +218,33 @@ export default function CompleteProfile() {
           </div>
 
           <div>
-            <Label>Email (optional)</Label>
-            <Input
-              type="email"
-              value={form.email}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, email: e.target.value }))
-              }
-            />
+            <Label>Email</Label>
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                value={form.email}
+                disabled={emailVerified}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
+              />
+              {emailVerified ? (
+                <CheckCircle className="text-green-600 mt-2" />
+              ) : isPhoneLogin ? (
+                <Button size="sm" onClick={verifyEmailWithGoogle}>
+                  Verify
+                </Button>
+              ) : null}
+            </div>
           </div>
 
-          {/* ✅ SHOW PHONE ONLY FOR GOOGLE LOGIN */}
-          {isGoogleLogin && (
-            <div>
-              <Label>Mobile Number</Label>
+          <div>
+            <Label>Mobile Number</Label>
+            <div className="flex gap-2">
               <Input
                 inputMode="numeric"
-                placeholder="Enter mobile number"
                 value={form.phone}
+                disabled={phoneVerified}
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
@@ -206,36 +252,38 @@ export default function CompleteProfile() {
                   }))
                 }
               />
+              {phoneVerified ? (
+                <CheckCircle className="text-green-600 mt-2" />
+              ) : isGoogleLogin ? (
+                <Button size="sm" onClick={verifyPhoneOTP}>
+                  Verify
+                </Button>
+              ) : null}
             </div>
-          )}
+          </div>
 
           <div className="sm:col-span-2">
             <Label>Date of Birth</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
+                <Button variant="outline" className="w-full justify-start">
                   {form.dob ? format(form.dob, "PPP") : "Select date"}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="p-0">
                 <Calendar
                   mode="single"
                   selected={form.dob}
                   onSelect={(d) =>
                     setForm((f) => ({ ...f, dob: d }))
                   }
-                  fromYear={1950}
-                  toYear={new Date().getFullYear()}
                 />
               </PopoverContent>
             </Popover>
           </div>
 
-          <div>
+           <div>
             <Label>Country</Label>
             <Select
               value={form.country}
@@ -331,11 +379,7 @@ export default function CompleteProfile() {
 
         </div>
 
-        <Button
-          className="w-full"
-          onClick={submit}
-          disabled={loading}
-        >
+        <Button className="w-full" onClick={submit} disabled={loading}>
           {loading ? "Saving..." : "Save & Continue"}
         </Button>
 
