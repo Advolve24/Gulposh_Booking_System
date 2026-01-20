@@ -28,6 +28,8 @@ export const createVillaOrder = async (req, res) => {
       startDate,
       endDate,
       guests,
+      vegGuests,
+      nonVegGuests,
       customAmount,
       contactName,
       contactEmail,
@@ -54,6 +56,28 @@ export const createVillaOrder = async (req, res) => {
       });
     }
 
+    const totalGuests = Number(guests);
+    const veg = Number(vegGuests || 0);
+    const nonVeg = Number(nonVegGuests || 0);
+
+    if (veg + nonVeg !== totalGuests) {
+      return res.status(400).json({
+        message: "Veg + Non-Veg guests must equal total guests",
+      });
+    }
+
+    if (
+      totalGuests <= 0 ||
+      veg < 0 ||
+      nonVeg < 0 ||
+      veg > totalGuests ||
+      nonVeg > totalGuests
+    ) {
+      return res.status(400).json({
+        message: "Invalid guest count values",
+      });
+    }
+
     const nights = nightsBetween(startDate, endDate);
     if (!nights) {
       return res.status(400).json({
@@ -75,6 +99,8 @@ export const createVillaOrder = async (req, res) => {
         startDate,
         endDate,
         guests: String(guests),
+        vegGuests,
+        nonVegGuests,
         customAmount: String(customAmount),
         contactName,
         contactEmail,
@@ -118,6 +144,8 @@ export const verifyVillaPayment = async (req, res) => {
       startDate,
       endDate,
       guests,
+      vegGuests,
+      nonVegGuests,
       customAmount,
       contactName,
       contactEmail,
@@ -139,6 +167,28 @@ export const verifyVillaPayment = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         message: "Invalid user. OTP verification required.",
+      });
+    }
+
+    const totalGuests = Number(guests);
+    const veg = Number(vegGuests || 0);
+    const nonVeg = Number(nonVegGuests || 0);
+
+    if (veg + nonVeg !== totalGuests) {
+      return res.status(400).json({
+        message: "Veg + Non-Veg guests must equal total guests",
+      });
+    }
+
+    if (
+      totalGuests <= 0 ||
+      veg < 0 ||
+      nonVeg < 0 ||
+      veg > totalGuests ||
+      nonVeg > totalGuests
+    ) {
+      return res.status(400).json({
+        message: "Invalid guest count values",
       });
     }
 
@@ -178,6 +228,8 @@ export const verifyVillaPayment = async (req, res) => {
         nights,
 
         guests,
+        vegGuests,
+        nonVegGuests,
         pricePerNight: Number(customAmount),
         roomTotal,
         amount: roomTotal,
@@ -226,9 +278,11 @@ export const verifyVillaPayment = async (req, res) => {
       nights,
 
       guests,
+      vegGuests,
+      nonVegGuests,
       pricePerNight: Number(customAmount),
-      roomTotal,              // ✅ REQUIRED
-      amount: roomTotal,      // ✅ REQUIRED
+      roomTotal,
+      amount: roomTotal,
       currency: "INR",
 
       status: "confirmed",
