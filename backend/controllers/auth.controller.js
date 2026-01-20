@@ -50,42 +50,41 @@ const issueSession = (res, user) => {
 export const firebaseLogin = async (req, res) => {
   try {
     const hdr = req.headers.authorization || "";
-    const idToken = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+    const idToken = hdr.startsWith("Bearer ")
+      ? hdr.slice(7)
+      : null;
 
-    if (!idToken)
+    if (!idToken) {
       return res.status(401).json({ message: "Firebase token missing" });
+    }
 
     const decoded = await admin.auth().verifyIdToken(idToken);
 
     const firebaseUid = decoded.uid;
     const phone = normalizePhone(decoded.phone_number || "");
 
-    if (!phone)
+    if (!phone) {
       return res.status(400).json({ message: "Phone number not available" });
-
-    let user = await User.findOne({
-      $or: [{ firebaseUid }, { phone }],
-    });
-
-    let isNewUser = false;
-
-    // 🔹 NEW USER
-    if (!user) {
-      user = await User.create({
-        firebaseUid,
-        phone,
-        authProvider: "firebase",
-        profileComplete: false, // 🔐 ONLY HERE
-      });
-      isNewUser = true;
     }
 
-    // 🔹 LINK OLD USER
-    else if (!user.firebaseUid) {
-      user.firebaseUid = firebaseUid;
-      user.authProvider = "firebase";
-      await user.save();
-    }
+    const user = await User.findOneAndUpdate(
+      { $or: [{ firebaseUid }, { phone }] },
+      {
+        $setOnInsert: {
+          firebaseUid,
+          phone,
+          authProvider: "firebase",
+        },
+        $set: {
+          firebaseUid,
+          phone,
+        },
+      },
+      {
+        new: true,
+        upsert: true,
+      }
+    );
 
     issueSession(res, user);
 
@@ -93,8 +92,7 @@ export const firebaseLogin = async (req, res) => {
       id: user._id,
       phone: user.phone,
       authProvider: user.authProvider,
-      profileComplete: user.profileComplete,
-      isNewUser, // 🔑 FRONTEND USES THIS
+      profileComplete: user.profileComplete, // 🔑 ONLY FLAG YOU NEED
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
@@ -102,7 +100,6 @@ export const firebaseLogin = async (req, res) => {
     res.status(401).json({ message: "Invalid Firebase token" });
   }
 };
-
 
 /* ===============================
    GOOGLE OAUTH LOGIN
