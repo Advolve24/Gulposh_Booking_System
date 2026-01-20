@@ -32,8 +32,8 @@ function ScrollToTop() {
 }
 
 export default function App() {
-  const { user, init, loading } = useAuth();
-  const navigate = useNavigate();
+  const { init } = useAuth();
+  
 
   useEffect(() => {
     init();
