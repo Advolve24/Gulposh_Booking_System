@@ -45,6 +45,7 @@ function ScrollToTop() {
 export default function AppRoutes() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ REQUIRED
 
   /* =====================================================
      🔑 GLOBAL POST-LOGIN / PROFILE-GUARD LOGIC
@@ -55,8 +56,11 @@ export default function AppRoutes() {
     const postAuth = sessionStorage.getItem("postAuthRedirect");
     const redirect = postAuth ? JSON.parse(postAuth) : null;
 
+    const isOnCompleteProfile =
+      location.pathname === "/complete-profile";
+
     // 🔴 PROFILE INCOMPLETE → FORCE COMPLETE PROFILE
-    if (!user.profileComplete) {
+    if (!user.profileComplete && !isOnCompleteProfile) {
       navigate("/complete-profile", {
         state: redirect || null,
         replace: true,
@@ -65,14 +69,14 @@ export default function AppRoutes() {
     }
 
     // 🟢 PROFILE COMPLETE → CONTINUE ORIGINAL FLOW
-    if (redirect?.redirectTo) {
+    if (user.profileComplete && redirect?.redirectTo) {
       sessionStorage.removeItem("postAuthRedirect");
       navigate(redirect.redirectTo, {
         state: redirect.bookingState,
         replace: true,
       });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, location.pathname, navigate]);
 
   return (
     <>
@@ -93,7 +97,7 @@ export default function AppRoutes() {
         <Route path="/entire-villa-form" element={<EntireVillaform />} />
         <Route path="/thank-you" element={<ThankYou />} />
 
-        {/* ✅ LEGAL */}
+        {/* LEGAL */}
         <Route path="/terms" element={<TermsConditions />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/refund" element={<RefundCancellation />} />
