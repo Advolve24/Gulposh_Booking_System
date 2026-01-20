@@ -52,7 +52,9 @@ export default function Checkout() {
 
   /* ================= ROOM ================= */
   const roomId = state?.roomId;
-  const initialGuests = Number(state?.guests || 1);
+
+  const initialAdults = Number(state?.adults ?? 1);
+  const initialChildren = Number(state?.children ?? 0);
 
   const [room, setRoom] = useState(null);
 
@@ -77,7 +79,10 @@ export default function Checkout() {
   const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
 
   /* ================= GUESTS & MEALS ================= */
-  const [guests, setGuests] = useState(String(initialGuests));
+  /* ================= GUESTS & MEALS ================= */
+  const [adults, setAdults] = useState(initialAdults);
+  const [children, setChildren] = useState(initialChildren);
+  const totalGuests = adults + children;
   const [withMeal, setWithMeal] = useState(false);
   const [vegGuests, setVegGuests] = useState(0);
   const [nonVegGuests, setNonVegGuests] = useState(0);
@@ -213,7 +218,7 @@ export default function Checkout() {
   const total = roomTotal + mealTotal;
 
   const proceedPayment = async () => {
-    const g = Number(guests);
+    const g = totalGuests;
 
     if (withMeal && vegGuests + nonVegGuests !== g) {
       toast.error("Veg + Non-Veg guests must equal total guests");
@@ -236,6 +241,8 @@ export default function Checkout() {
       startDate: toYMD(range.from),
       endDate: toYMD(range.to),
       guests: g,
+      adults,
+      children,
       withMeal,
       vegGuests,
       nonVegGuests,
@@ -284,6 +291,8 @@ export default function Checkout() {
             startDate: toYMD(range.from),
             endDate: toYMD(range.to),
             guests: g,
+            adults,
+            children,
             withMeal,
             vegGuests,
             nonVegGuests,
@@ -455,7 +464,7 @@ export default function Checkout() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    <span>{guests} Guests</span>
+                    <span>{totalGuests} Guests</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -741,29 +750,54 @@ export default function Checkout() {
 
 
             {/* ================= GUEST COUNT ================= */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* ================= GUEST COUNT ================= */}
+            <div className="grid grid-cols-2 gap-4">
+
+              {/* ADULTS */}
               <div>
-                <Label>Total Guests</Label>
-                <Select
-                  value={guests}
-                  onValueChange={(v) => {
-                    setGuests(v);
+                <Label>Adults</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={room?.maxGuests - children}
+                  value={adults}
+                  onChange={(e) => {
+                    const v = Math.max(
+                      1,
+                      Math.min(Number(e.target.value) || 1, room?.maxGuests - children)
+                    );
+                    setAdults(v);
                     setVegGuests(0);
                     setNonVegGuests(0);
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                      <SelectItem key={n} value={String(n)}>
-                        {n}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
+
+              {/* CHILDREN */}
+              <div>
+                <Label>Children</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={room?.maxGuests - adults}
+                  value={children}
+                  onChange={(e) => {
+                    const v = Math.max(
+                      0,
+                      Math.min(Number(e.target.value) || 0, room?.maxGuests - adults)
+                    );
+                    setChildren(v);
+                    setVegGuests(0);
+                    setNonVegGuests(0);
+                  }}
+                />
+              </div>
+
+              {/* TOTAL */}
+              <div className="col-span-2 text-xs text-muted-foreground">
+                Total Guests: <strong>{totalGuests}</strong>
+              </div>
+
             </div>
 
             {/* ================= MEALS ================= */}
@@ -803,12 +837,12 @@ export default function Checkout() {
                     <Input
                       type="number"
                       min={0}
-                      max={Number(guests) - nonVegGuests}
+                      max={totalGuests - nonVegGuests}
                       value={vegGuests}
                       onChange={(e) => {
                         const v = Math.min(
                           Number(e.target.value) || 0,
-                          Number(guests) - nonVegGuests
+                          totalGuests - nonVegGuests
                         );
                         setVegGuests(v);
                       }}
@@ -821,12 +855,12 @@ export default function Checkout() {
                     <Input
                       type="number"
                       min={0}
-                      max={Number(guests) - vegGuests}
+                      max={totalGuests - vegGuests}
                       value={nonVegGuests}
                       onChange={(e) => {
                         const v = Math.min(
                           Number(e.target.value) || 0,
-                          Number(guests) - vegGuests
+                          totalGuests - vegGuests
                         );
                         setNonVegGuests(v);
                       }}
@@ -835,7 +869,7 @@ export default function Checkout() {
 
                   {/* VALIDATION MESSAGE */}
                   <div className="col-span-2 text-xs text-muted-foreground">
-                    Selected: {vegGuests + nonVegGuests} / {guests} guests
+                    Selected: {vegGuests + nonVegGuests} / {totalGuests} guests
                     {vegGuests + nonVegGuests !== Number(guests) && (
                       <span className="text-red-600 ml-2">
                         (Veg + Non-Veg must equal total guests)

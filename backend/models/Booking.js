@@ -12,6 +12,9 @@ const bookingSchema = new mongoose.Schema(
 
     guests: { type: Number, required: true, min: 1 },
 
+    adults: { type: Number, required: true, min: 1 },
+    children: { type: Number, default: 0 },
+
     pricePerNight: { type: Number, required: true },
     roomTotal: { type: Number, required: true },
 
@@ -115,28 +118,28 @@ const bookingSchema = new mongoose.Schema(
     },
     /* ================= ADMIN ACTIONS ================= */
     adminAction: {
-  actionType: {
-    type: String,
-    enum: ["cancel", "reschedule"],
-  },
+      actionType: {
+        type: String,
+        enum: ["cancel", "reschedule"],
+      },
 
-  reasonType: {
-    type: String,
-    enum: ["user_request", "maintenance"],
-  },
+      reasonType: {
+        type: String,
+        enum: ["user_request", "maintenance"],
+      },
 
-  note: String,
+      note: String,
 
-  actedAt: Date,
+      actedAt: Date,
 
-  reschedule: {
-    oldStartDate: Date,
-    oldEndDate: Date,
-    newStartDate: Date,
-    newEndDate: Date,
-    nights: Number,
-  },
-},
+      reschedule: {
+        oldStartDate: Date,
+        oldEndDate: Date,
+        newStartDate: Date,
+        newEndDate: Date,
+        nights: Number,
+      },
+    },
 
   },
   { timestamps: true }

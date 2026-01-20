@@ -211,24 +211,24 @@ export default function RoomPage() {
   const navigate = useNavigate();
 
   const navState = location.state;
-const savedSearch = sessionStorage.getItem("searchParams");
-const fallbackState = savedSearch ? JSON.parse(savedSearch) : null;
+  const savedSearch = sessionStorage.getItem("searchParams");
+  const fallbackState = savedSearch ? JSON.parse(savedSearch) : null;
 
-// ✅ priority: navigation state → session storage
-const initialSearch = navState || fallbackState;
+  // ✅ priority: navigation state → session storage
+  const initialSearch = navState || fallbackState;
 
   const [room, setRoom] = useState(null);
   const [range, setRange] = useState(() => {
-  if (!initialSearch?.range?.from || !initialSearch?.range?.to) return undefined;
+    if (!initialSearch?.range?.from || !initialSearch?.range?.to) return undefined;
 
-  return {
-    from: new Date(initialSearch.range.from),
-    to: new Date(initialSearch.range.to),
-  };
-});
+    return {
+      from: new Date(initialSearch.range.from),
+      to: new Date(initialSearch.range.to),
+    };
+  });
 
-const [adults, setAdults] = useState(initialSearch?.adults ?? 1);
-const [children, setChildren] = useState(initialSearch?.children ?? 0);
+  const [adults, setAdults] = useState(initialSearch?.adults ?? 1);
+  const [children, setChildren] = useState(initialSearch?.children ?? 0);
 
 
 
@@ -338,6 +338,8 @@ const [children, setChildren] = useState(initialSearch?.children ?? 0);
       startDate: range.from,
       endDate: range.to,
       guests: Number(totalGuests),
+      adults,
+      children,
     };
 
     // 🔐 NOT LOGGED IN → OPEN OTP MODAL

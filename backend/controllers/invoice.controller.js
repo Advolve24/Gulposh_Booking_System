@@ -24,18 +24,16 @@ export const getInvoice = async (req, res) => {
         isVilla: booking.isVilla,
         nights: booking.nights,
         guests: booking.guests,
-
+        adults: booking.adults,
+        children: booking.children,
         startDate: booking.startDate,
         endDate: booking.endDate,
-
         pricePerNight: booking.pricePerNight,
         roomTotal: booking.roomTotal || booking.pricePerNight * booking.nights,
-
         withMeal: booking.withMeal,
         vegGuests: booking.vegGuests || 0,
         nonVegGuests: booking.nonVegGuests || 0,
         mealTotal: booking.mealTotal || 0,
-
         amount: booking.amount,
         paymentProvider: booking.paymentProvider,
         orderId: booking.orderId,
