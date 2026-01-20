@@ -47,66 +47,146 @@ function ScrollToTop() {
 }
 
 /* =====================================================
-   🔐 AUTH + PROFILE REDIRECT HANDLER
+   🔐 ROUTE GUARD
+===================================================== */
+function RequireAuth({ children }) {
+  const { user, openAuth } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    sessionStorage.setItem(
+      "postAuthRedirect",
+      JSON.stringify({
+        redirectTo: location.pathname,
+        bookingState: location.state || null,
+      })
+    );
+
+    openAuth();
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+/* =====================================================
+   🔐 PROFILE GUARD
+===================================================== */
+function RequireProfile({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (user && !user.profileComplete && location.pathname !== "/complete-profile") {
+    return (
+      <Navigate
+        to="/complete-profile"
+        replace
+        state={{
+          redirectTo: location.pathname,
+          bookingState: location.state || null,
+        }}
+      />
+    );
+  }
+
+  return children;
+}
+
+/* =====================================================
+   🚦 APP ROUTES
 ===================================================== */
 function AppRoutes() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!user) return;
-
-    const postAuth = sessionStorage.getItem("postAuthRedirect");
-    const redirect = postAuth ? JSON.parse(postAuth) : null;
-
-    // 🔴 FORCE PROFILE COMPLETION
-    if (!user.profileComplete) {
-      navigate("/complete-profile", {
-        state: redirect || null,
-        replace: true,
-      });
-      return;
-    }
-
-    // 🟢 CONTINUE ORIGINAL FLOW
-    if (redirect?.redirectTo) {
-      sessionStorage.removeItem("postAuthRedirect");
-      navigate(redirect.redirectTo, {
-        state: redirect.bookingState,
-        replace: true,
-      });
-    }
-  }, [user, navigate]);
-
   return (
     <>
-      {/* 🔑 REQUIRED FOR FIREBASE PHONE AUTH */}
-      <div id="recaptcha-container"></div>
+      {/* 🔑 REQUIRED FOR FIREBASE OTP */}
+      <div id="recaptcha-container" />
 
       <ScrollToTop />
       <Header />
       <AuthModal />
 
       <Routes>
+        {/* PUBLIC */}
         <Route path="/" element={<Home />} />
-        <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/room/:id" element={<RoomPage />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/bookings" element={<MyBookings />} />
-        <Route path="/my-account" element={<MyAccount />} />
-        <Route path="/invoices" element={<Invoices />} />
-        <Route path="/invoice-view/:id" element={<VillaInvoice />} />
-        <Route path="/booking-success/:id" element={<BookingSuccess />} />
         <Route path="/entire-villa-form" element={<EntireVillaform />} />
         <Route path="/thank-you" element={<ThankYou />} />
 
-        {/* 📜 LEGAL */}
+        {/* PROFILE */}
+        <Route
+          path="/complete-profile"
+          element={
+            <RequireAuth>
+              <CompleteProfile />
+            </RequireAuth>
+          }
+        />
+
+        {/* PROTECTED */}
+        <Route
+          path="/checkout"
+          element={
+            <RequireAuth>
+              <RequireProfile>
+                <Checkout />
+              </RequireProfile>
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/bookings"
+          element={
+            <RequireAuth>
+              <MyBookings />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/my-account"
+          element={
+            <RequireAuth>
+              <MyAccount />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/invoices"
+          element={
+            <RequireAuth>
+              <Invoices />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/invoice-view/:id"
+          element={
+            <RequireAuth>
+              <VillaInvoice />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/booking-success/:id"
+          element={
+            <RequireAuth>
+              <BookingSuccess />
+            </RequireAuth>
+          }
+        />
+
+        {/* LEGAL */}
         <Route path="/terms" element={<TermsConditions />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/refund" element={<RefundCancellation />} />
         <Route path="/pool-safety" element={<PoolSafety />} />
         <Route path="/house-rules" element={<HouseRules />} />
 
+        {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 

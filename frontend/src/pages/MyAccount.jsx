@@ -35,8 +35,9 @@ import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
 export default function MyAccount() {
-  /* ================= STATE ================= */
   const navigate = useNavigate();
+
+  /* ================= STATE ================= */
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -62,14 +63,16 @@ export default function MyAccount() {
 
   const [otpStep, setOtpStep] = useState("idle"); // idle | sent | verified
   const [otp, setOtp] = useState("");
+  const [confirmRef, setConfirmRef] = useState(null);
 
   /* ================= LOAD PROFILE ================= */
+
   useEffect(() => {
     (async () => {
       try {
         const { data } = await api.get("/auth/me");
 
-        const loadedForm = {
+        const loaded = {
           name: data.name || "",
           email: data.email || "",
           dob: data.dob ? new Date(data.dob) : null,
@@ -80,10 +83,10 @@ export default function MyAccount() {
           pincode: data.pincode || "",
         };
 
-        setForm(loadedForm);
+        setForm(loaded);
         setInitialForm({
-          ...loadedForm,
-          dob: loadedForm.dob ? loadedForm.dob.toISOString() : null,
+          ...loaded,
+          dob: loaded.dob ? loaded.dob.toISOString() : null,
         });
 
         setPhone(data.phone || "");
@@ -96,7 +99,8 @@ export default function MyAccount() {
     })();
   }, []);
 
-  /* ================= DETECT UNSAVED CHANGES ================= */
+  /* ================= UNSAVED CHANGES ================= */
+
   useEffect(() => {
     if (!initialForm) return;
 
@@ -111,6 +115,7 @@ export default function MyAccount() {
   const phoneChanged = phone !== originalPhone;
 
   /* ================= LOCATION ================= */
+
   const countries = getAllCountries();
   const states = form.country ? getStatesByCountry(form.country) : [];
   const cities =
@@ -118,20 +123,23 @@ export default function MyAccount() {
       ? getCitiesByState(form.country, form.state)
       : [];
 
-  /* ================= OTP ================= */
+  /* ================= PHONE OTP ================= */
+
   const sendOtp = async () => {
     if (!/^[0-9]{10}$/.test(phone)) {
-      return toast.error("Enter valid 10 digit phone number");
+      toast.error("Enter valid 10-digit phone number");
+      return;
     }
 
     try {
       const verifier = getRecaptchaVerifier();
-      const result = await signInWithPhoneNumber(
+      const confirmation = await signInWithPhoneNumber(
         auth,
         `+91${phone}`,
         verifier
       );
-      window.confirmationResult = result;
+
+      setConfirmRef(confirmation);
       setOtpStep("sent");
       toast.success("OTP sent");
     } catch {
@@ -140,8 +148,22 @@ export default function MyAccount() {
   };
 
   const verifyOtp = async () => {
+    if (!confirmRef) return;
+
     try {
-      await window.confirmationResult.confirm(otp);
+      const result = await confirmRef.confirm(otp);
+      const idToken = await result.user.getIdToken(true);
+
+      // 🔐 Inform backend (trust boundary)
+      await api.post(
+        "/auth/phone-login",
+        {},
+        {
+          headers: { Authorization: `Bearer ${idToken}` },
+          withCredentials: true,
+        }
+      );
+
       setOtpStep("verified");
       setOriginalPhone(phone);
       toast.success("Phone number verified");
@@ -151,6 +173,7 @@ export default function MyAccount() {
   };
 
   /* ================= SAVE PROFILE ================= */
+
   const onSave = async () => {
     if (!form.name.trim()) return toast.error("Name is required");
     if (!form.dob) return toast.error("Date of birth is required");
@@ -163,6 +186,7 @@ export default function MyAccount() {
       await api.put("/auth/me", {
         name: form.name,
         email: form.email || null,
+        phone,
         dob: form.dob.toISOString(),
         address: form.address || null,
         country: form.country || null,
@@ -188,19 +212,22 @@ export default function MyAccount() {
   };
 
   /* ================= DELETE ACCOUNT ================= */
+
   const onDeleteAccount = async () => {
-    const ok = confirm(
-      "Are you sure you want to permanently delete your account? This action cannot be undone."
-    );
-    if (!ok) return;
+    if (
+      !confirm(
+        "Are you sure you want to permanently delete your account? This action cannot be undone."
+      )
+    )
+      return;
 
     try {
       setDeleting(true);
       await api.delete("/auth/me");
-      toast.success("Account deleted successfully");
+      toast.success("Account deleted");
       window.location.href = "/";
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to delete account");
+    } catch {
+      toast.error("Failed to delete account");
     } finally {
       setDeleting(false);
     }
@@ -221,7 +248,6 @@ export default function MyAccount() {
       </div>
     );
   }
-
   return (
     <div className="max-w-4xl mx-auto px-4 py-2 sm:py-8 space-y-6">
       <div id="recaptcha-container" />

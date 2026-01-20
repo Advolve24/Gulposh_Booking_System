@@ -36,11 +36,8 @@ export default function CompleteProfile() {
 
   const [loading, setLoading] = useState(false);
 
-  const [countries, setCountries] = useState([]);
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
+  const countries = getAllCountries();
 
-  // ✅ detect login provider
   const isGoogleLogin = user?.authProvider === "google";
 
   const [form, setForm] = useState({
@@ -55,14 +52,14 @@ export default function CompleteProfile() {
     pincode: "",
   });
 
-  /* 🚫 BLOCK ACCESS IF PROFILE ALREADY COMPLETE */
+  /* 🚫 BLOCK IF ALREADY COMPLETE */
   useEffect(() => {
     if (user?.profileComplete) {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
-  /* 🔁 PREFILL FROM USER */
+  /* 🔁 PREFILL USER DATA */
   useEffect(() => {
     if (!user) return;
 
@@ -79,27 +76,15 @@ export default function CompleteProfile() {
     });
   }, [user]);
 
-  /* 🌍 LOAD COUNTRIES */
-  useEffect(() => {
-    setCountries(getAllCountries());
-  }, []);
+  /* 🌍 DERIVED LOCATION DATA */
+  const states = form.country
+    ? getStatesByCountry(form.country)
+    : [];
 
-  useEffect(() => {
-    if (form.country) {
-      setStates(getStatesByCountry(form.country));
-    } else {
-      setStates([]);
-    }
-    setCities([]);
-  }, [form.country]);
-
-  useEffect(() => {
-    if (form.state && form.country) {
-      setCities(getCitiesByState(form.country, form.state));
-    } else {
-      setCities([]);
-    }
-  }, [form.state, form.country]);
+  const cities =
+    form.country && form.state
+      ? getCitiesByState(form.country, form.state)
+      : [];
 
   /* ✅ SUBMIT PROFILE */
   const submit = async () => {
@@ -118,20 +103,27 @@ export default function CompleteProfile() {
       return;
     }
 
+    if (form.pincode && form.pincode.length !== 6) {
+      toast.error("Pincode must be 6 digits");
+      return;
+    }
+
+    if (form.state && !form.city) {
+      toast.error("City is required");
+      return;
+    }
+
     try {
       setLoading(true);
-
-      const countryObj = countries.find(c => c.isoCode === form.country);
-      const stateObj = states.find(s => s.isoCode === form.state);
 
       await api.put("/auth/me", {
         name: form.name.trim(),
         email: form.email || null,
-        phone: isGoogleLogin ? form.phone : null,
+        phone: isGoogleLogin ? form.phone : user.phone,
         dob: form.dob.toISOString(),
         address: form.address || null,
-        country: countryObj?.name || null,
-        state: stateObj?.name || null,
+        country: form.country || null,
+        state: form.state || null,
         city: form.city || null,
         pincode: form.pincode || null,
       });
@@ -145,9 +137,8 @@ export default function CompleteProfile() {
 
       navigate(redirectTo, {
         replace: true,
-        state: bookingState,
+        state: bookingState || null,
       });
-
     } catch (err) {
       toast.error(
         err?.response?.data?.message || "Failed to save profile"
@@ -157,10 +148,11 @@ export default function CompleteProfile() {
     }
   };
 
+  /* ================= UI ================= */
+
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6">
       <div className="rounded-xl border p-5 space-y-5 bg-white">
-
         <div>
           <h2 className="text-xl font-semibold">Complete your profile</h2>
           <p className="text-sm text-muted-foreground">
@@ -169,7 +161,6 @@ export default function CompleteProfile() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
           <div>
             <Label>Full Name</Label>
             <Input
@@ -185,7 +176,7 @@ export default function CompleteProfile() {
             <Input
               type="email"
               value={form.email}
-              disabled={isGoogleLogin}   // ✅ LOCK for Google users
+              disabled={isGoogleLogin}
               onChange={(e) =>
                 setForm((f) => ({ ...f, email: e.target.value }))
               }
@@ -196,13 +187,14 @@ export default function CompleteProfile() {
               </p>
             )}
           </div>
+
           <div>
             <Label>Mobile Number</Label>
             <Input
               inputMode="numeric"
-              placeholder="Enter mobile number"
               value={form.phone}
-              disabled={!isGoogleLogin}   // ✅ LOCK for OTP users
+              disabled={!isGoogleLogin}
+              placeholder="Enter mobile number"
               onChange={(e) =>
                 setForm((f) => ({
                   ...f,
@@ -212,12 +204,10 @@ export default function CompleteProfile() {
             />
             {!isGoogleLogin && (
               <p className="text-xs text-muted-foreground mt-1">
-                Mobile number is verified via OTP
+                Mobile number verified via OTP
               </p>
             )}
           </div>
-
-
 
           <div className="sm:col-span-2">
             <Label>Date of Birth</Label>
@@ -228,7 +218,9 @@ export default function CompleteProfile() {
                   variant="outline"
                   className="w-full justify-start text-left font-normal"
                 >
-                  {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date of birth"}
+                  {form.dob
+                    ? format(form.dob, "dd MMM yyyy")
+                    : "Select date of birth"}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -237,19 +229,16 @@ export default function CompleteProfile() {
                 <Calendar
                   mode="single"
                   selected={form.dob}
-                  onSelect={(d) => {
-                    if (!d) return;
-                    setForm((f) => ({ ...f, dob: d }));
-                  }}
-                  captionLayout="dropdown"   // ✅ month + year dropdown
+                  onSelect={(d) => d && setForm((f) => ({ ...f, dob: d }))}
+                  captionLayout="dropdown"
                   fromYear={1950}
                   toYear={new Date().getFullYear()}
+                  disabled={(d) => d > new Date()}
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
           </div>
-
 
           <div>
             <Label>Country</Label>
@@ -269,7 +258,7 @@ export default function CompleteProfile() {
               </SelectTrigger>
               <SelectContent>
                 {countries.map((c) => (
-                  <SelectItem key={c.isoCode} value={c.isoCode}>
+                  <SelectItem key={c.isoCode} value={c.name}>
                     {c.name}
                   </SelectItem>
                 ))}
@@ -281,17 +270,17 @@ export default function CompleteProfile() {
             <Label>State</Label>
             <Select
               value={form.state}
+              disabled={!form.country}
               onValueChange={(v) =>
                 setForm((f) => ({ ...f, state: v, city: "" }))
               }
-              disabled={!form.country}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select state" />
               </SelectTrigger>
               <SelectContent>
                 {states.map((s) => (
-                  <SelectItem key={s.isoCode} value={s.isoCode}>
+                  <SelectItem key={s.isoCode} value={s.name}>
                     {s.name}
                   </SelectItem>
                 ))}
@@ -303,10 +292,10 @@ export default function CompleteProfile() {
             <Label>City</Label>
             <Select
               value={form.city}
+              disabled={!form.state}
               onValueChange={(v) =>
                 setForm((f) => ({ ...f, city: v }))
               }
-              disabled={!form.state}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select city" />
@@ -344,7 +333,6 @@ export default function CompleteProfile() {
               }
             />
           </div>
-
         </div>
 
         <Button
@@ -354,9 +342,7 @@ export default function CompleteProfile() {
         >
           {loading ? "Saving..." : "Save & Continue"}
         </Button>
-
       </div>
     </div>
   );
 }
-

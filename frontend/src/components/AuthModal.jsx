@@ -22,7 +22,7 @@ import { getRecaptchaVerifier } from "@/lib/recaptcha";
 ===================================================== */
 
 const OTP_TIMER = 60;
-const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
+const isValidPhone = (v) => /^[0-9]{10}$/.test(v);
 
 /* =====================================================
    COMPONENT
@@ -32,7 +32,7 @@ export default function AuthModal() {
   const {
     showAuthModal,
     closeAuth,
-    firebaseLoginWithToken,
+    phoneLoginWithToken,   // ✅ renamed
     googleLoginWithToken,
   } = useAuth();
 
@@ -49,20 +49,18 @@ export default function AuthModal() {
   const verifyingRef = useRef(false);
 
   /* =====================================================
-     GOOGLE OAUTH CALLBACK
+     GOOGLE CALLBACK
   ===================================================== */
 
   const handleGoogleResponse = async (response) => {
     try {
       setLoading(true);
-
       const user = await googleLoginWithToken(response.credential);
 
       closeAuth();
       toast.success("Welcome to Gulposh ✨");
       handlePostAuthRedirect(user);
-    } catch (err) {
-      console.error(err);
+    } catch {
       toast.error("Google login failed");
     } finally {
       setLoading(false);
@@ -70,44 +68,36 @@ export default function AuthModal() {
   };
 
   /* =====================================================
-     GOOGLE SCRIPT INIT
+     GOOGLE SCRIPT
   ===================================================== */
 
   useEffect(() => {
     if (!showAuthModal || googleRenderedRef.current) return;
 
-    const loadGoogleScript = () =>
-      new Promise((resolve, reject) => {
-        if (window.google?.accounts?.id) return resolve();
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
 
-        const script = document.createElement("script");
-        script.src = "https://accounts.google.com/gsi/client";
-        script.async = true;
-        script.defer = true;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.body.appendChild(script);
+    script.onload = () => {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
       });
 
-    loadGoogleScript()
-      .then(() => {
-        window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-          callback: handleGoogleResponse,
+      const el = document.getElementById("google-btn");
+      if (el) {
+        window.google.accounts.id.renderButton(el, {
+          theme: "outline",
+          size: "large",
+          shape: "pill",
+          width: 320,
         });
+        googleRenderedRef.current = true;
+      }
+    };
 
-        const container = document.getElementById("google-btn");
-        if (container) {
-          window.google.accounts.id.renderButton(container, {
-            theme: "outline",
-            size: "large",
-            shape: "pill",
-            width: 320,
-          });
-          googleRenderedRef.current = true;
-        }
-      })
-      .catch(() => toast.error("Google login failed"));
+    document.body.appendChild(script);
   }, [showAuthModal]);
 
   /* =====================================================
@@ -117,11 +107,11 @@ export default function AuthModal() {
   useEffect(() => {
     if (step !== "otp" || secondsLeft <= 0) return;
 
-    const timer = setInterval(() => {
+    const t = setInterval(() => {
       setSecondsLeft((s) => s - 1);
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => clearInterval(t);
   }, [step, secondsLeft]);
 
   /* =====================================================
@@ -151,12 +141,11 @@ export default function AuthModal() {
   };
 
   /* =====================================================
-     RESET FLOW
+     RESET
   ===================================================== */
 
   const resetFlow = () => {
     confirmationRef.current = null;
-    googleRenderedRef.current = false;
     sendingRef.current = false;
     verifyingRef.current = false;
 
@@ -188,8 +177,7 @@ export default function AuthModal() {
 
     try {
       const verifier =
-        window.recaptchaVerifier ||
-        getRecaptchaVerifier(auth, "recaptcha-container");
+        window.recaptchaVerifier || getRecaptchaVerifier();
 
       window.recaptchaVerifier = verifier;
 
@@ -202,7 +190,7 @@ export default function AuthModal() {
       setStep("otp");
       setSecondsLeft(OTP_TIMER);
       toast.success("OTP sent");
-    } catch (err) {
+    } catch {
       toast.error("Failed to send OTP");
     } finally {
       sendingRef.current = false;
@@ -227,7 +215,7 @@ export default function AuthModal() {
       const result = await confirmationRef.current.confirm(otp);
       const idToken = await result.user.getIdToken(true);
 
-      const user = await firebaseLoginWithToken(idToken);
+      const user = await phoneLoginWithToken(idToken);
 
       closeAuth();
       toast.success("Welcome to Gulposh ✨");
@@ -242,7 +230,7 @@ export default function AuthModal() {
   };
 
   /* =====================================================
-     AUTO VERIFY OTP
+     AUTO VERIFY
   ===================================================== */
 
   useEffect(() => {
@@ -278,11 +266,13 @@ export default function AuthModal() {
           <h2>Authentication</h2>
         </VisuallyHidden>
 
+        {/* 🔑 SINGLE RECAPTCHA */}
         <div
           id="recaptcha-container"
           className="absolute inset-0 opacity-0 pointer-events-none"
         />
 
+        {/* HEADER IMAGE */}
         <div className="relative h-48">
           <button
             onClick={() => {
@@ -301,12 +291,12 @@ export default function AuthModal() {
           />
         </div>
 
+        {/* BODY */}
         <div className="px-5 py-5 space-y-4">
           <h2 className="text-lg font-semibold">Sign in</h2>
 
           {step === "choice" && (
             <>
-             
               <Button
                 variant="outline"
                 className="w-full h-10 rounded-3xl"
@@ -318,10 +308,10 @@ export default function AuthModal() {
               <div className="text-center text-xs text-muted-foreground">
                 or
               </div>
-               <div className="flex justify-center">
+
+              <div className="flex justify-center">
                 <div id="google-btn" />
               </div>
-              
             </>
           )}
 
@@ -332,7 +322,7 @@ export default function AuthModal() {
                 placeholder="Enter 10-digit mobile number"
                 value={form.phone}
                 onChange={(e) =>
-                  setForm({ ...form, phone: e.target.value })
+                  setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })
                 }
               />
 
@@ -366,9 +356,18 @@ export default function AuthModal() {
               </Button>
 
               <div className="text-center text-xs text-muted-foreground">
-                {secondsLeft > 0
-                  ? `Resend OTP in ${secondsLeft}s`
-                  : "You can resend OTP"}
+                {secondsLeft > 0 ? (
+                  `Resend OTP in ${secondsLeft}s`
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={sendOtp}
+                    disabled={loading}
+                  >
+                    Resend OTP
+                  </Button>
+                )}
               </div>
             </>
           )}
@@ -381,4 +380,3 @@ export default function AuthModal() {
     </Dialog>
   );
 }
-
