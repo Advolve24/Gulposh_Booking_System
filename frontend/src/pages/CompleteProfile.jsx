@@ -221,29 +221,35 @@ export default function CompleteProfile() {
 
           <div className="sm:col-span-2">
             <Label>Date of Birth</Label>
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className="w-full justify-start text-left font-normal"
                 >
-                  {form.dob ? format(form.dob, "PPP") : "Select date"}
+                  {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date of birth"}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
+
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
                   selected={form.dob}
-                  onSelect={(d) =>
-                    setForm((f) => ({ ...f, dob: d }))
-                  }
+                  onSelect={(d) => {
+                    if (!d) return;
+                    setForm((f) => ({ ...f, dob: d }));
+                  }}
+                  captionLayout="dropdown"   // ✅ month + year dropdown
                   fromYear={1950}
                   toYear={new Date().getFullYear()}
+                  initialFocus
                 />
               </PopoverContent>
             </Popover>
           </div>
+
 
           <div>
             <Label>Country</Label>
