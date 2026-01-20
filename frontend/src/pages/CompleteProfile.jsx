@@ -31,6 +31,8 @@ export default function CompleteProfile() {
   const location = useLocation();
 
   const isGoogleLogin = user?.authProvider === "google";
+const isPhoneLogin = user?.authProvider === "phone";
+
 
   const [loading, setLoading] = useState(false);
 
