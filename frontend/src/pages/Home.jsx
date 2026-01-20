@@ -197,6 +197,23 @@ export default function Home() {
     });
   };
 
+  useEffect(() => {
+  const saved = sessionStorage.getItem("searchParams");
+  if (!saved) return;
+
+  const parsed = JSON.parse(saved);
+
+  if (parsed?.range?.from && parsed?.range?.to) {
+    setRange({
+      from: new Date(parsed.range.from),
+      to: new Date(parsed.range.to),
+    });
+  }
+
+  if (typeof parsed?.adults === "number") setAdults(parsed.adults);
+  if (typeof parsed?.children === "number") setChildren(parsed.children);
+}, []);
+
 
 
   /* ================= UI ================= */

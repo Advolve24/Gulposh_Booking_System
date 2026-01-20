@@ -1,5 +1,5 @@
 import axios from "axios";
-
+import { useAuth } from "@/store/authStore";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -13,15 +13,23 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+/* =====================================================
+   SESSION HANDLING (REFRESH + AUTO LOGOUT)
+===================================================== */
+
+let isLoggingOut = false;
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const status = error.response?.status;
+    const message = error.response?.data?.message;
 
+    /* ================= TRY TOKEN REFRESH ================= */
     if (
-      error.response?.status === 401 &&
-      error.response?.data?.message === "TokenExpired" &&
+      status === 401 &&
+      message === "TokenExpired" &&
       !originalRequest._retry
     ) {
       originalRequest._retry = true;
@@ -29,8 +37,27 @@ api.interceptors.response.use(
       try {
         await api.post("/auth/refresh");
         return api(originalRequest);
-      } catch (refreshError) {
-        return Promise.reject(refreshError);
+      } catch {
+        // refresh failed → fall through to logout
+      }
+    }
+
+    /* ================= FORCE LOGOUT ================= */
+    if (status === 401 && !isLoggingOut) {
+      isLoggingOut = true;
+
+      try {
+        // 🧹 clear booking search state
+        sessionStorage.removeItem("searchParams");
+
+        // 🔐 clear auth store
+        const { logout } = useAuth.getState();
+        await logout();
+      } catch (e) {
+        console.error("Auto logout failed", e);
+      } finally {
+        // 🔁 hard redirect (clean reset)
+        window.location.replace("/");
       }
     }
 
