@@ -26,7 +26,7 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message;
 
-    /* ================= TRY TOKEN REFRESH ================= */
+    /* ================= TOKEN EXPIRED → REFRESH ================= */
     if (
       status === 401 &&
       message === "TokenExpired" &&
@@ -38,25 +38,29 @@ api.interceptors.response.use(
         await api.post("/auth/refresh");
         return api(originalRequest);
       } catch {
-        // refresh failed → fall through to logout
+        // refresh failed → logout below
       }
     }
 
-    /* ================= FORCE LOGOUT ================= */
+    /* ================= PROFILE INCOMPLETE (NOT LOGOUT) ================= */
+    if (status === 401 && message === "PROFILE_INCOMPLETE") {
+      window.location.replace("/complete-profile");
+      return Promise.reject(error);
+    }
+
+    /* ================= REAL AUTH FAILURE ================= */
     if (status === 401 && !isLoggingOut) {
       isLoggingOut = true;
 
       try {
-        // 🧹 clear booking search state
         sessionStorage.removeItem("searchParams");
+        sessionStorage.removeItem("postAuthRedirect");
 
-        // 🔐 clear auth store
         const { logout } = useAuth.getState();
         await logout();
       } catch (e) {
         console.error("Auto logout failed", e);
       } finally {
-        // 🔁 hard redirect (clean reset)
         window.location.replace("/");
       }
     }

@@ -118,28 +118,29 @@ export default function AuthModal() {
   /* =====================================================
      POST AUTH REDIRECT
   ===================================================== */
+const handlePostAuthRedirect = (user) => {
+  // 🚨 ABSOLUTE RULE: NEW / INCOMPLETE PROFILE
+  if (!user.profileComplete) {
+    navigate("/complete-profile", { replace: true });
+    return;
+  }
 
-  const handlePostAuthRedirect = (user) => {
-    const raw = sessionStorage.getItem("postAuthRedirect");
-    sessionStorage.removeItem("postAuthRedirect");
+  // ✅ EXISTING USER FLOW
+  const raw = sessionStorage.getItem("postAuthRedirect");
+  sessionStorage.removeItem("postAuthRedirect");
 
-    if (raw) {
-      const { redirectTo, bookingState } = JSON.parse(raw);
+  if (raw) {
+    const { redirectTo, bookingState } = JSON.parse(raw);
+    navigate(redirectTo || "/", {
+      replace: true,
+      state: bookingState || null,
+    });
+    return;
+  }
 
-      if (!user.profileComplete) {
-        navigate("/complete-profile", {
-          replace: true,
-          state: { redirectTo, bookingState },
-        });
-        return;
-      }
+  navigate("/", { replace: true });
+};
 
-      navigate(redirectTo, { replace: true, state: bookingState });
-      return;
-    }
-
-    navigate("/", { replace: true });
-  };
 
   /* =====================================================
      RESET FLOW (CRITICAL)
