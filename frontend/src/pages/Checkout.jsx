@@ -73,8 +73,8 @@ export default function Checkout() {
   });
 
   const [bookedAll, setBookedAll] = useState([]);
-const [blackoutRanges, setBlackoutRanges] = useState([]);
-const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
+  const [blackoutRanges, setBlackoutRanges] = useState([]);
+  const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
 
   /* ================= GUESTS & MEALS ================= */
   const [guests, setGuests] = useState(String(initialGuests));
@@ -89,29 +89,29 @@ const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
   });
 
   const disabledAll = useMemo(
-  () => mergeRanges([...blackoutRanges, ...bookedAll]),
-  [blackoutRanges, bookedAll]
-);
+    () => mergeRanges([...blackoutRanges, ...bookedAll]),
+    [blackoutRanges, bookedAll]
+  );
 
-function mergeRanges(ranges) {
-  if (!ranges?.length) return [];
-  const sorted = ranges
-    .map((r) => ({ from: new Date(r.from), to: new Date(r.to) }))
-    .sort((a, b) => a.from - b.from);
+  function mergeRanges(ranges) {
+    if (!ranges?.length) return [];
+    const sorted = ranges
+      .map((r) => ({ from: new Date(r.from), to: new Date(r.to) }))
+      .sort((a, b) => a.from - b.from);
 
-  const out = [sorted[0]];
-  for (let i = 1; i < sorted.length; i++) {
-    const last = out[out.length - 1];
-    const cur = sorted[i];
-    const nextDay = new Date(last.to);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const out = [sorted[0]];
+    for (let i = 1; i < sorted.length; i++) {
+      const last = out[out.length - 1];
+      const cur = sorted[i];
+      const nextDay = new Date(last.to);
+      nextDay.setDate(nextDay.getDate() + 1);
 
-    if (cur.from <= nextDay) {
-      if (cur.to > last.to) last.to = cur.to;
-    } else out.push(cur);
+      if (cur.from <= nextDay) {
+        if (cur.to > last.to) last.to = cur.to;
+      } else out.push(cur);
+    }
+    return out;
   }
-  return out;
-}
 
 
   /* ================= OTP ================= */
@@ -129,27 +129,27 @@ function mergeRanges(ranges) {
       ? getCitiesByState(address.country, address.state)
       : [];
 
-      useEffect(() => {
-  // global bookings + blocked
-  api.get("/rooms/disabled/all").then(({ data }) =>
-    setBookedAll(
-      (data || []).map((b) => ({
-        from: toDateOnlyFromAPIUTC(b.from || b.startDate),
-        to: toDateOnlyFromAPIUTC(b.to || b.endDate),
-      }))
-    )
-  );
+  useEffect(() => {
+    // global bookings + blocked
+    api.get("/rooms/disabled/all").then(({ data }) =>
+      setBookedAll(
+        (data || []).map((b) => ({
+          from: toDateOnlyFromAPIUTC(b.from || b.startDate),
+          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
+        }))
+      )
+    );
 
-  // global blackouts
-  api.get("/blackouts").then(({ data }) =>
-    setBlackoutRanges(
-      (data || []).map((b) => ({
-        from: toDateOnlyFromAPI(b.from),
-        to: toDateOnlyFromAPI(b.to),
-      }))
-    )
-  );
-}, []);
+    // global blackouts
+    api.get("/blackouts").then(({ data }) =>
+      setBlackoutRanges(
+        (data || []).map((b) => ({
+          from: toDateOnlyFromAPI(b.from),
+          to: toDateOnlyFromAPI(b.to),
+        }))
+      )
+    );
+  }, []);
 
 
   /* ================= LOAD ROOM ================= */
@@ -169,24 +169,36 @@ function mergeRanges(ranges) {
       dob: user.dob ? new Date(user.dob) : null,
     });
 
+    const countryObj = getAllCountries().find(
+      (c) => c.name === user.country
+    );
+
+    const stateObj =
+      countryObj &&
+      getStatesByCountry(countryObj.isoCode).find(
+        (s) => s.name === user.state
+      );
+
     setAddress({
       address: user.address || "",
-      country: user.country || "",
-      state: user.state || "",
+      country: countryObj?.isoCode || "",
+      state: stateObj?.isoCode || "",
       city: user.city || "",
       pincode: user.pincode || "",
     });
 
     setOtpStep("verified");
   }, [user]);
+
+
   /* ================= CALCULATIONS ================= */
- const nights = useMemo(() => {
-  if (!range.from || !range.to) return 0;
-  return (
-    (toDateOnly(range.to) - toDateOnly(range.from)) /
-    (1000 * 60 * 60 * 24)
-  );
-}, [range]);
+  const nights = useMemo(() => {
+    if (!range.from || !range.to) return 0;
+    return (
+      (toDateOnly(range.to) - toDateOnly(range.from)) /
+      (1000 * 60 * 60 * 24)
+    );
+  }, [range]);
 
 
   const roomTotal = nights * (room?.pricePerNight || 0);
@@ -258,6 +270,14 @@ function mergeRanges(ranges) {
           // 🔄 show loading toast and keep its id
           toastId = toast.loading("Confirming your booking...");
 
+          const countryObj = countries.find(
+            (c) => c.isoCode === address.country
+          );
+
+          const stateObj = statesList.find(
+            (s) => s.isoCode === address.state
+          );
+
           const { data } = await api.post("/payments/verify", {
             ...resp,
             roomId,
@@ -270,10 +290,14 @@ function mergeRanges(ranges) {
             contactName: form.name,
             contactEmail: form.email,
             contactPhone: form.phone,
-            ...address,
+
+            address: address.address || null,
+            country: countryObj?.name || null,
+            state: stateObj?.name || null,
+            city: address.city || null,
+            pincode: address.pincode || null,
           });
 
-          // ✅ replace loading toast
           toast.success("Booking confirmed 🎉", { id: toastId });
 
           sessionStorage.removeItem("searchParams");
