@@ -1,12 +1,6 @@
-import { useEffect } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
 
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import CompleteProfile from "./pages/CompleteProfile";
 import Home from "./pages/Home";
 import RoomPage from "./pages/RoomPage";
@@ -14,7 +8,7 @@ import Checkout from "./pages/Checkout";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { useAuth } from "./store/authStore";
-import AuthModal from "./components/AuthModal";
+import AuthModal from "./components/AuthModal"; 
 import MyBookings from "./pages/MyBookings";
 import MyAccount from "./pages/MyAccount";
 import VillaInvoice from "./components/VillaInvoice";
@@ -28,116 +22,86 @@ import PoolSafety from "./pages/PoolSafety";
 import HouseRules from "./pages/HouseRules";
 import ThankYou from "./pages/ThankYou";
 
-import RequireProfileComplete from "./components/RequireProfileComplete";
 
-/* =====================================================
-   🔄 SCROLL TO TOP
-===================================================== */
 function ScrollToTop() {
   const { pathname } = useLocation();
-
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
-
   return null;
 }
 
-/* =====================================================
-   🏁 APP ROOT
-===================================================== */
 export default function App() {
+  const { user, init, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    init();
+  }, [init]);
+
+  // /* =====================================================
+  //    🔑 GLOBAL POST-LOGIN REDIRECT LOGIC
+  // ===================================================== */
+  // useEffect(() => {
+  //   if (loading || !user) return;
+
+  //   const postAuth = sessionStorage.getItem("postAuthRedirect");
+  //   const redirect = postAuth ? JSON.parse(postAuth) : null;
+
+  //   // 🔴 PROFILE INCOMPLETE → FORCE COMPLETE PROFILE
+  //   if (!user.profileComplete) {
+  //     navigate("/complete-profile", {
+  //       state: redirect || null,
+  //       replace: true,
+  //     });
+  //     return;
+  //   }
+
+  //   // 🟢 PROFILE COMPLETE → CONTINUE ORIGINAL FLOW
+  //   if (redirect?.redirectTo) {
+  //     sessionStorage.removeItem("postAuthRedirect");
+  //     navigate(redirect.redirectTo, {
+  //       state: redirect.bookingState,
+  //       replace: true,
+  //     });
+  //   }
+  // }, [user, loading, navigate]);
+
   return (
     <BrowserRouter>
       {/* 🔑 REQUIRED FOR FIREBASE PHONE AUTH */}
       <div id="recaptcha-container"></div>
 
       <ScrollToTop />
-
       <Header />
       <AuthModal />
 
       <Routes>
-        {/* 🌍 PUBLIC */}
+        
         <Route path="/" element={<Home />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/room/:id" element={<RoomPage />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/bookings" element={<MyBookings />} />
+        <Route path="/my-account" element={<MyAccount />} />
+        <Route path="/invoices" element={<Invoices />} />
+        <Route path="/invoice-view/:id" element={<VillaInvoice />} />
+        <Route path="/booking-success/:id" element={<BookingSuccess />} />
+        <Route path="/entire-villa-form" element={<EntireVillaform />} />
+        <Route path="/thank-you" element={<ThankYou />} />
+
+         {/* ✅ TERMS */}
         <Route path="/terms" element={<TermsConditions />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/refund" element={<RefundCancellation />} />
         <Route path="/pool-safety" element={<PoolSafety />} />
         <Route path="/house-rules" element={<HouseRules />} />
-        <Route path="/thank-you" element={<ThankYou />} />
+        
 
-        {/* 🔴 PROFILE COMPLETION */}
-        <Route path="/complete-profile" element={<CompleteProfile />} />
 
-        {/* 🔐 PROTECTED ROUTES */}
-        <Route
-          path="/checkout"
-          element={
-            <RequireProfileComplete>
-              <Checkout />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="/bookings"
-          element={
-            <RequireProfileComplete>
-              <MyBookings />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="/my-account"
-          element={
-            <RequireProfileComplete>
-              <MyAccount />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="/invoices"
-          element={
-            <RequireProfileComplete>
-              <Invoices />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="/invoice-view/:id"
-          element={
-            <RequireProfileComplete>
-              <VillaInvoice />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="/booking-success/:id"
-          element={
-            <RequireProfileComplete>
-              <BookingSuccess />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="/entire-villa-form"
-          element={
-            <RequireProfileComplete>
-              <EntireVillaform />
-            </RequireProfileComplete>
-          }
-        />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-
       <Footer />
     </BrowserRouter>
   );
