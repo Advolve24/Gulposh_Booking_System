@@ -32,40 +32,40 @@ function ScrollToTop() {
 }
 
 export default function App() {
-  const { init } = useAuth();
-  
+  const { user, init, loading } = useAuth();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    init();
-  }, [init]);
-
-  // /* =====================================================
-  //    🔑 GLOBAL POST-LOGIN REDIRECT LOGIC
-  // ===================================================== */
   // useEffect(() => {
-  //   if (loading || !user) return;
+  //   init();
+  // }, [init]);
 
-  //   const postAuth = sessionStorage.getItem("postAuthRedirect");
-  //   const redirect = postAuth ? JSON.parse(postAuth) : null;
+  /* =====================================================
+     🔑 GLOBAL POST-LOGIN REDIRECT LOGIC
+  ===================================================== */
+  useEffect(() => {
+    if (loading || !user) return;
 
-  //   // 🔴 PROFILE INCOMPLETE → FORCE COMPLETE PROFILE
-  //   if (!user.profileComplete) {
-  //     navigate("/complete-profile", {
-  //       state: redirect || null,
-  //       replace: true,
-  //     });
-  //     return;
-  //   }
+    const postAuth = sessionStorage.getItem("postAuthRedirect");
+    const redirect = postAuth ? JSON.parse(postAuth) : null;
 
-  //   // 🟢 PROFILE COMPLETE → CONTINUE ORIGINAL FLOW
-  //   if (redirect?.redirectTo) {
-  //     sessionStorage.removeItem("postAuthRedirect");
-  //     navigate(redirect.redirectTo, {
-  //       state: redirect.bookingState,
-  //       replace: true,
-  //     });
-  //   }
-  // }, [user, loading, navigate]);
+    // 🔴 PROFILE INCOMPLETE → FORCE COMPLETE PROFILE
+    if (!user.profileComplete) {
+      navigate("/complete-profile", {
+        state: redirect || null,
+        replace: true,
+      });
+      return;
+    }
+
+    // 🟢 PROFILE COMPLETE → CONTINUE ORIGINAL FLOW
+    if (redirect?.redirectTo) {
+      sessionStorage.removeItem("postAuthRedirect");
+      navigate(redirect.redirectTo, {
+        state: redirect.bookingState,
+        replace: true,
+      });
+    }
+  }, [user, loading, navigate]);
 
   return (
     <BrowserRouter>
