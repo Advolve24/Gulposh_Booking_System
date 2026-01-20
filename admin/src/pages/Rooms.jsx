@@ -193,29 +193,32 @@ export default function Rooms() {
   );
 }
 
-/* ======================================================
-   ROOM CARD
-====================================================== */
-function RoomCard({ room, view, onDelete })
-  {
-    const name = room.name || "Room";
 
-    const image =
-      room.coverImage ||
-      room.galleryImages?.[0] ||
-      "https://via.placeholder.com/600x400?text=No+Image";
+function RoomCard({ room, view, onDelete }) {
+  const name = room.name || "Room";
 
-    return (
-      <div
-        className={`group bg-card border rounded-xl shadow-sm hover:shadow-md transition
+  const image =
+    room.coverImage ||
+    room.galleryImages?.[0] ||
+    "https://via.placeholder.com/600x400?text=No+Image";
+
+  return (
+    <div
+      className={`group bg-card border rounded-xl shadow-sm hover:shadow-md transition
         ${view === "list" ? "flex gap-4 p-4" : "overflow-hidden"}
       `}
-      >
-        {/* IMAGE */}
-        <div
-          className={`relative bg-muted overflow-hidden
+    >
+      {/* IMAGE */}
+      <div
+        className={`relative bg-muted overflow-hidden
           ${view === "list" ? "h-32 w-48 rounded-lg shrink-0" : "h-52"}
         `}
+      >
+        <Link
+          to={`/rooms/view/${room._id}`}
+          className={`relative bg-muted overflow-hidden block
+    ${view === "list" ? "h-32 w-48 rounded-lg shrink-0" : "h-52"}
+  `}
         >
           <img
             src={image}
@@ -266,96 +269,97 @@ function RoomCard({ room, view, onDelete })
               </Link>
             </div>
           )}
+        </Link>
+      </div>
+
+      {/* CONTENT */}
+      <div className={`${view === "list" ? "flex-1" : "p-4"} space-y-2`}>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-[17px] font-medium tracking-tight leading-snug">
+            {name}
+          </h3>
+
+          {/* THREE DOTS MENU */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-1 rounded-md hover:bg-muted">
+                <MoreVertical size={18} className="text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              align="end"
+              className="w-44 bg-card border border-border rounded-lg shadow-lg"
+            >
+              <DropdownMenuItem asChild>
+                <Link
+                  to={`/rooms/view/${room._id}`}
+                  className="flex items-center gap-2"
+                >
+                  <Eye size={14} /> View Details
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem asChild>
+                <Link
+                  to={`/rooms/new?id=${room._id}`}
+                  className="flex items-center gap-2"
+                >
+                  <Pencil size={14} /> Edit Room
+                </Link>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                onClick={() => onDelete(room._id)}
+              >
+                <Trash2 size={14} />
+                Delete Room
+              </DropdownMenuItem>
+
+
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* CONTENT */}
-        <div className={`${view === "list" ? "flex-1" : "p-4"} space-y-2`}>
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-[17px] font-medium tracking-tight leading-snug">
-              {name}
-            </h3>
+        {/* PRICE */}
+        <p className="text-sm">
+          <span className="font-semibold text-primary tabular-nums">
+            ₹ {room.pricePerNight ?? "—"}
+          </span>
+          <span className="text-muted-foreground"> / night</span>
+        </p>
 
-            {/* THREE DOTS MENU */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-1 rounded-md hover:bg-muted">
-                  <MoreVertical size={18} className="text-muted-foreground" />
-                </button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent
-                align="end"
-                className="w-44 bg-card border border-border rounded-lg shadow-lg"
-              >
-                <DropdownMenuItem asChild>
-                  <Link
-                    to={`/rooms/view/${room._id}`}
-                    className="flex items-center gap-2"
-                  >
-                    <Eye size={14} /> View Details
-                  </Link>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem asChild>
-                  <Link
-                    to={`/rooms/new?id=${room._id}`}
-                    className="flex items-center gap-2"
-                  >
-                    <Pencil size={14} /> Edit Room
-                  </Link>
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  className="flex items-center gap-2 text-red-600 focus:text-red-600"
-                  onClick={() => onDelete(room._id)}
-                >
-                  <Trash2 size={14} />
-                  Delete Room
-                </DropdownMenuItem>
-
-
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* PRICE */}
-          <p className="text-sm">
-            <span className="font-semibold text-primary tabular-nums">
-              ₹ {room.pricePerNight ?? "—"}
+        {/* MEALS */}
+        <div className="flex flex-wrap gap-2 pt-1">
+          {room.mealPriceVeg > 0 && (
+            <span className="px-2 py-1 rounded-full bg-muted text-xs">
+              Veg: ₹{room.mealPriceVeg}
             </span>
-            <span className="text-muted-foreground"> / night</span>
-          </p>
+          )}
+          {room.mealPriceNonVeg > 0 && (
+            <span className="px-2 py-1 rounded-full bg-muted text-xs">
+              Non-Veg: ₹{room.mealPriceNonVeg}
+            </span>
+          )}
+        </div>
 
-          {/* MEALS */}
-          <div className="flex flex-wrap gap-2 pt-1">
-            {room.mealPriceVeg > 0 && (
-              <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                Veg: ₹{room.mealPriceVeg}
-              </span>
-            )}
-            {room.mealPriceNonVeg > 0 && (
-              <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                Non-Veg: ₹{room.mealPriceNonVeg}
-              </span>
-            )}
-          </div>
-
-          {/* MOBILE / LIST QUICK ACTIONS */}
-          <div className="flex gap-2 pt-3 lg:hidden">
-            <Link
-              to={`/rooms/view/${room._id}`}
-              className="flex-1 border rounded-md py-2 text-sm text-center"
-            >
-              View
-            </Link>
-            <Link
-              to={`/room/${room._id}`}
-              className="flex-1 border rounded-md py-2 text-sm text-center"
-            >
-              Edit
-            </Link>
-          </div>
+        {/* MOBILE / LIST QUICK ACTIONS */}
+        <div className="flex gap-2 pt-3 lg:hidden">
+          <Link
+            to={`/rooms/view/${room._id}`}
+            className="w-full flex border rounded-md py-2 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-white/70 hover:bg-white/90"
+          >
+            <Eye size={14} /> View
+          </Link>
+          <Link
+            to={`/rooms/new?id=${room._id}`}
+            className="w-full flex items-center border rounded-md py-2  justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium bg-white/70 hover:bg-white/90"
+          >
+            <Pencil size={14} /> Edit
+          </Link>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
