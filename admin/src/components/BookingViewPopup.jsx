@@ -129,11 +129,11 @@ export default function BookingViewPopup({
               <Users size={18} className="mt-1 text-muted-foreground" />
               <div>
                 <p className="font-medium">
-                  {booking.guests || 1} Guests
+                  {booking.guests || booking.adults + booking.children} Guests
                 </p>
 
                 <p className="text-muted-foreground text-xs">
-                  Adults: {booking.guests || 1} · Children: 0
+                  Adults: {booking.adults ?? booking.guests ?? 1} · Children: {booking.children ?? 0}
                 </p>
 
                 {/* Meal info */}

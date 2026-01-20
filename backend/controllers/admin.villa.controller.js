@@ -28,6 +28,8 @@ export const createVillaOrder = async (req, res) => {
       startDate,
       endDate,
       guests,
+      adults,
+      children,
       vegGuests,
       nonVegGuests,
       customAmount,
@@ -35,7 +37,7 @@ export const createVillaOrder = async (req, res) => {
       contactEmail,
       contactPhone,
       userId,
-    } = req.body || {};
+    } = req.body;
 
     if (!userId) {
       return res.status(400).json({
@@ -57,6 +59,28 @@ export const createVillaOrder = async (req, res) => {
     }
 
     const totalGuests = Number(guests);
+
+    const a = Number(adults || 0);
+    const c = Number(children || 0);
+
+    if (a + c !== totalGuests) {
+      return res.status(400).json({
+        message: "Adults + Children must equal total guests",
+      });
+    }
+
+    if (a <= 0) {
+      return res.status(400).json({
+        message: "At least one adult is required",
+      });
+    }
+
+    if (a < 0 || c < 0) {
+      return res.status(400).json({
+        message: "Invalid adults/children values",
+      });
+    }
+
     const veg = Number(vegGuests || 0);
     const nonVeg = Number(nonVegGuests || 0);
 
@@ -99,6 +123,8 @@ export const createVillaOrder = async (req, res) => {
         startDate,
         endDate,
         guests: String(guests),
+        adults: String(adults),
+        children: String(children),
         vegGuests,
         nonVegGuests,
         customAmount: String(customAmount),
@@ -144,6 +170,8 @@ export const verifyVillaPayment = async (req, res) => {
       startDate,
       endDate,
       guests,
+      adults,
+      children,
       vegGuests,
       nonVegGuests,
       customAmount,
@@ -171,6 +199,22 @@ export const verifyVillaPayment = async (req, res) => {
     }
 
     const totalGuests = Number(guests);
+
+    const a = Number(adults || 0);
+    const c = Number(children || 0);
+
+    if (a + c !== totalGuests) {
+      return res.status(400).json({
+        message: "Adults + Children must equal total guests",
+      });
+    }
+
+    if (a <= 0) {
+      return res.status(400).json({
+        message: "At least one adult is required",
+      });
+    }
+
     const veg = Number(vegGuests || 0);
     const nonVeg = Number(nonVegGuests || 0);
 
@@ -228,6 +272,8 @@ export const verifyVillaPayment = async (req, res) => {
         nights,
 
         guests,
+        adults,
+        children,
         vegGuests,
         nonVegGuests,
         pricePerNight: Number(customAmount),
@@ -278,6 +324,8 @@ export const verifyVillaPayment = async (req, res) => {
       nights,
 
       guests,
+      adults,
+      children,
       vegGuests,
       nonVegGuests,
       pricePerNight: Number(customAmount),
