@@ -121,24 +121,25 @@ export default function CompleteProfile() {
     try {
       setLoading(true);
 
+      const countryObj = countries.find(c => c.isoCode === form.country);
+      const stateObj = states.find(s => s.isoCode === form.state);
+
       await api.put("/auth/me", {
         name: form.name.trim(),
         email: form.email || null,
         phone: isGoogleLogin ? form.phone : null,
         dob: form.dob.toISOString(),
         address: form.address || null,
-        country: form.country || null,
-        state: form.state || null,
+        country: countryObj?.name || null,
+        state: stateObj?.name || null,
         city: form.city || null,
         pincode: form.pincode || null,
       });
 
-      // 🔥 refresh auth store
       await init();
 
       toast.success("Profile completed successfully 🎉");
 
-      /* 🔁 REDIRECT BACK TO INTENT */
       const redirectTo = location.state?.redirectTo || "/";
       const bookingState = location.state?.bookingState;
 
