@@ -260,7 +260,7 @@ export const deleteUserAdmin = async (req, res) => {
 
 export const createUserAdmin = async (req, res) => {
   try {
-    let { name, email, phone, password, isAdmin } = req.body || {};
+    let { name, email, phone, password, dob, isAdmin } = req.body || {};
 
     let normalizedEmail = null;
 
@@ -281,6 +281,7 @@ export const createUserAdmin = async (req, res) => {
       name,
       email,
       phone,
+      dob: dob ? new Date(dob) : null,
       address: null,
       country: null,
       state: null,
