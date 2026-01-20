@@ -870,7 +870,7 @@ export default function Checkout() {
                   {/* VALIDATION MESSAGE */}
                   <div className="col-span-2 text-xs text-muted-foreground">
                     Selected: {vegGuests + nonVegGuests} / {totalGuests} guests
-                    {vegGuests + nonVegGuests !== Number(guests) && (
+                    {vegGuests + nonVegGuests !== totalGuests && (
                       <span className="text-red-600 ml-2">
                         (Veg + Non-Veg must equal total guests)
                       </span>
