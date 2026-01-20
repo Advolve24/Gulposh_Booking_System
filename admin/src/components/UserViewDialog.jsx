@@ -66,7 +66,7 @@ export default function UserViewDialog({ open, onOpenChange, user }) {
                   PERSONAL INFO
                 </span>
 
-                <div className="space-y-2">
+                <div className="space-y-2 grid grid-cols-2">
                   <Row
                     icon={Calendar}
                     label="Date of Birth"
