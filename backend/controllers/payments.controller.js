@@ -32,10 +32,22 @@ export const createOrder = async (req, res) => {
       startDate,
       endDate,
       guests,
+      adults,
+      children = 0,
       withMeal,
       vegGuests = 0,
       nonVegGuests = 0,
     } = req.body;
+
+    if (!guests || !adults || adults < 1) {
+      return res.status(400).json({ message: "Invalid guest data" });
+    }
+
+    if (adults + children !== guests) {
+      return res.status(400).json({
+        message: "Guests count mismatch (adults + children)",
+      });
+    }
 
     if (!roomId || !startDate || !endDate || !guests) {
       return res.status(400).json({ message: "Missing booking fields" });
@@ -102,6 +114,8 @@ export const verifyPayment = async (req, res) => {
       startDate,
       endDate,
       guests,
+      adults,
+      children = 0,
       withMeal,
       vegGuests = 0,
       nonVegGuests = 0,
@@ -114,6 +128,17 @@ export const verifyPayment = async (req, res) => {
       city,
       pincode,
     } = req.body || {};
+
+
+    if (!guests || !adults || adults < 1) {
+      return res.status(400).json({ message: "Invalid guest data" });
+    }
+
+    if (adults + children !== guests) {
+      return res.status(400).json({
+        message: "Guests count mismatch (adults + children)",
+      });
+    }
 
     if (
       !razorpay_order_id ||
@@ -172,6 +197,8 @@ export const verifyPayment = async (req, res) => {
       endDate: eDate,
       nights,
       guests,
+      adults,
+      children,
       pricePerNight: room.pricePerNight,
       roomTotal,
       withMeal: !!withMeal,
