@@ -13,8 +13,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@sparticuz/chromium": "^143.0.4",
     "bcryptjs": "^3.0.2",
-    "chromium": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
