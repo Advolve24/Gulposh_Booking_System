@@ -47,18 +47,27 @@ export default function InvoicePage() {
 
 
   const downloadPDF = async () => {
-    const canvas = await html2canvas(ref.current, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-    });
+  toast.loading("Preparing invoice…");
 
-    const pdf = new jsPDF("p", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    const h = (canvas.height * w) / canvas.width;
+  await new Promise((r) => setTimeout(r, 100)); // UI paint
 
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, w, h);
-    pdf.save(`Invoice-${booking._id}.pdf`);
-  };
+  const canvas = await html2canvas(ref.current, {
+    scale: 2,
+    backgroundColor: "#ffffff",
+  });
+
+  const pdf = new jsPDF("p", "mm", "a4");
+  const w = pdf.internal.pageSize.getWidth();
+  const h = (canvas.height * w) / canvas.width;
+
+  pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, w, h);
+
+  toast.dismiss();
+  toast.success("Invoice download started");
+
+  pdf.save(`Invoice-${booking._id}.pdf`);
+};
+
 
   if (!booking) return null;
   
