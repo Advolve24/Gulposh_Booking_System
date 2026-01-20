@@ -14,6 +14,7 @@
   "description": "",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "chromium": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
@@ -25,6 +26,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.10",
     "pdfkit": "^0.17.2",
+    "puppeteer-core": "^24.35.0",
     "razorpay": "^2.9.6"
   },
   "devDependencies": {
