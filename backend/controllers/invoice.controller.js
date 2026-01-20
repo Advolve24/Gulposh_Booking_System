@@ -1,6 +1,6 @@
 import Booking from "../models/Booking.js";
 import puppeteer from "puppeteer-core";
-import chromium from "chromium";
+import chromium from "@sparticuz/chromium";
 import os from "os";
 import { format } from "date-fns";
 
@@ -394,21 +394,12 @@ export const downloadInvoicePDF = async (req, res) => {
 `;
 
 
-    const isWindows = os.platform() === "win32";
-
     const browser = await puppeteer.launch({
-      headless: true,
-      executablePath: isWindows
-        ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-        : undefined,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
     });
-
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
