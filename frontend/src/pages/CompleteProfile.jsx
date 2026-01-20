@@ -332,7 +332,9 @@ export default function CompleteProfile() {
                   variant="outline"
                   className="w-full justify-start text-left font-normal"
                 >
-                  {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date of birth"}
+                  {form.dob
+                    ? format(form.dob, "dd MMM yyyy")
+                    : "Select date of birth"}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -340,39 +342,17 @@ export default function CompleteProfile() {
               <PopoverContent className="p-0 w-auto">
                 <Calendar
                   mode="single"
-                  captionLayout="dropdown-buttons"
                   selected={form.dob}
                   onSelect={(date) => {
                     if (!date) return;
                     setForm((f) => ({ ...f, dob: date }));
                   }}
-                  fromYear={new Date().getFullYear() - 100}
-                  toYear={new Date().getFullYear() - 18}
-                  disabled={(date) => {
-                    const today = new Date();
-                    const minDate = new Date(
-                      today.getFullYear() - 100,
-                      today.getMonth(),
-                      today.getDate()
-                    );
-                    const maxDate = new Date(
-                      today.getFullYear() - 18,
-                      today.getMonth(),
-                      today.getDate()
-                    );
-
-                    return date < minDate || date > maxDate;
-                  }}
+                  captionLayout="dropdown"   // ✅ month + year selectable
                   initialFocus
                 />
               </PopoverContent>
             </Popover>
-
-            <p className="text-xs text-muted-foreground mt-1">
-              You must be at least 18 years old
-            </p>
           </div>
-
 
           {/* COUNTRY */}
           <div>
