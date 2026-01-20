@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
+    /* ================= BASIC INFO ================= */
+
     name: {
       type: String,
       trim: true,
@@ -10,24 +12,30 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    /* ================= PHONE (OTP LOGIN) ================= */
+
     phone: {
       type: String,
-      required: true,
-      unique: true,
       trim: true,
       match: [/^\d{10}$/, "Phone number must be exactly 10 digits"],
+      default: undefined, // ✅ IMPORTANT: never null
     },
+
+    /* ================= EMAIL (GOOGLE LOGIN) ================= */
 
     email: {
       type: String,
-      lowercase: true,
       trim: true,
-      unique: true,
-      sparse: true,
-      default: null,
+      lowercase: true,
+      default: undefined, // ✅ IMPORTANT: never null
     },
 
-    dob: { type: Date, default: null },
+    /* ================= PROFILE ================= */
+
+    dob: {
+      type: Date,
+      default: null,
+    },
 
     address: { type: String, default: null },
     country: { type: String, default: null },
@@ -40,21 +48,12 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    googleId: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
+    /* ================= AUTH META ================= */
 
     authProvider: {
       type: String,
       enum: ["phone", "google", "password"],
       required: true,
-    },
-
-    passwordHash: {
-      type: String,
-      select: false,
     },
 
     isAdmin: {
@@ -64,6 +63,34 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+/* =====================================================
+   UNIQUE INDEXES (SAFE FOR BOTH LOGINS)
+===================================================== */
+
+// ✅ Phone must be unique ONLY when present
+userSchema.index(
+  { phone: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      phone: { $type: "string" },
+    },
+  }
+);
+
+// ✅ Email must be unique ONLY when present
+userSchema.index(
+  { email: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      email: { $type: "string" },
+    },
+  }
+);
+
+/* ================= PROFILE STATUS ================= */
 
 userSchema.virtual("profileComplete").get(function () {
   return Boolean(this.name && this.dob);

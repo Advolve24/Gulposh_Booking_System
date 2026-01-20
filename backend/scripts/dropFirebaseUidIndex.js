@@ -11,28 +11,38 @@ if (!process.env.MONGO_URL) {
 console.log("✅ MONGO_URL loaded");
 
 await mongoose.connect(process.env.MONGO_URL);
-
 console.log("✅ Connected to MongoDB");
 
 const User = (await import("../models/User.js")).default;
 
 try {
   const indexes = await User.collection.indexes();
+  const indexNames = indexes.map((i) => i.name);
 
-  const hasFirebaseIndex = indexes.some(
-    (idx) => idx.name === "firebaseUid_1"
-  );
+  /* ================= EMAIL INDEX ================= */
 
-  if (!hasFirebaseIndex) {
-    console.log("ℹ️ Index firebaseUid_1 does not exist. Nothing to drop.");
+  if (indexNames.includes("email_1")) {
+    await User.collection.dropIndex("email_1");
+    console.log("✅ Index email_1 dropped successfully");
   } else {
-    await User.collection.dropIndex("firebaseUid_1");
-    console.log("✅ Index firebaseUid_1 dropped successfully");
+    console.log("ℹ️ Index email_1 does not exist. Skipping.");
   }
+
+  /* ================= MOBILE INDEX ================= */
+
+  if (indexNames.includes("mobile_1")) {
+    await User.collection.dropIndex("mobile_1");
+    console.log("✅ Index mobile_1 dropped successfully");
+  } else {
+    console.log("ℹ️ Index mobile_1 does not exist. Skipping.");
+  }
+
 } catch (err) {
-  console.error("❌ Failed to drop index:", err.message);
+  console.error("❌ Failed to drop indexes:", err.message);
 } finally {
   await mongoose.disconnect();
   console.log("🔌 MongoDB disconnected");
   process.exit(0);
 }
+
+

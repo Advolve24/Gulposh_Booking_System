@@ -4,7 +4,6 @@ import {
   googleLogin,
   logout,
   me,
-  refreshSession,
   updateMe,
 } from "../controllers/auth.controller.js";
 import { authRequired } from "../middleware/auth.js";
@@ -24,7 +23,6 @@ router.post("/google-login", googleLogin);
 
 // Logout + refresh
 router.post("/logout", logout);
-router.post("/refresh", refreshSession);
 
 /* ===============================
    PROFILE
