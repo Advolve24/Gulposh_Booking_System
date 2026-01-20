@@ -1,12 +1,14 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutGrid,
+  ClipboardList,
   BedDouble,
   CalendarDays,
   Users,
   LogOut,
   Settings,
   X,
+  Home,
 } from "lucide-react";
 
 export default function Sidebar({
@@ -18,9 +20,11 @@ export default function Sidebar({
   const nav = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutGrid },
     { to: "/rooms", label: "Rooms", icon: BedDouble },
-    { to: "/bookings", label: "Bookings", icon: CalendarDays },
+    { to: "/bookings", label: "Bookings", icon: ClipboardList },
     { to: "/block-dates", label: "Calendar", icon: CalendarDays },
     { to: "/users", label: "Users", icon: Users },
+    { to: "/villa-booking" , label: "Book Entire Villa", icon: Home}
+    
   ];
 
   const handleNavClick = () => {
