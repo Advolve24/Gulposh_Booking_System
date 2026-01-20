@@ -20,33 +20,38 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
-import {
-  getAllCountries,
-  getStatesByCountry,
-  getCitiesByState,
-} from "../lib/location";
+import { Country, State, City } from "country-state-city";
 
 export default function CompleteProfile() {
   const { user, init } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isGoogleLogin = user?.authProvider === "google";
+
   const [loading, setLoading] = useState(false);
+
+  /* ================= LOCATION STATE ================= */
 
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
 
-  const isGoogleLogin = user?.authProvider === "google";
+  const [countryCode, setCountryCode] = useState("IN");
+  const [stateCode, setStateCode] = useState("");
+  const [cityName, setCityName] = useState("");
+
+  /* ================= FORM ================= */
 
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     dob: null,
+
     address: "",
     country: "",
     state: "",
@@ -54,49 +59,102 @@ export default function CompleteProfile() {
     pincode: "",
   });
 
-  /* 🔒 BLOCK IF ALREADY COMPLETE */
+  /* 🚫 BLOCK IF ALREADY COMPLETE */
   useEffect(() => {
     if (user?.profileComplete) {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
-  /* 🔁 PREFILL */
+  /* ================= LOAD COUNTRIES ================= */
+
   useEffect(() => {
-    if (!user) return;
+    const all = Country.getAllCountries();
+    setCountries(all);
+  }, []);
+
+  /* ================= PREFILL USER ================= */
+
+  useEffect(() => {
+    if (!user || !countries.length) return;
+
+    const countryObj =
+      countries.find((c) => c.name === user.country) ||
+      countries.find((c) => c.isoCode === "IN");
+
+    const countryISO = countryObj?.isoCode || "IN";
+
+    const stateList = State.getStatesOfCountry(countryISO);
+    const stateObj = stateList.find((s) => s.name === user.state);
+
+    const stateISO = stateObj?.isoCode || "";
+
+    const cityList = stateISO
+      ? City.getCitiesOfState(countryISO, stateISO)
+      : [];
+
+    setCountryCode(countryISO);
+    setStates(stateList);
+    setStateCode(stateISO);
+    setCities(cityList);
+    setCityName(user.city || "");
 
     setForm({
       name: user.name || "",
       email: user.email || "",
       phone: user.phone || "",
       dob: user.dob ? new Date(user.dob) : null,
+
       address: user.address || "",
-      country: user.country || "",
+      country: countryObj?.name || "",
       state: user.state || "",
       city: user.city || "",
       pincode: user.pincode || "",
     });
-  }, [user]);
+  }, [user, countries]);
 
-  /* 🌍 LOCATION */
-  useEffect(() => {
-    setCountries(getAllCountries());
-  }, []);
+  /* ================= HANDLERS ================= */
 
-  useEffect(() => {
-    setStates(form.country ? getStatesByCountry(form.country) : []);
+  const onCountryChange = (code) => {
+    const country = countries.find((c) => c.isoCode === code);
+
+    setCountryCode(code);
+    setStateCode("");
+    setCityName("");
+
+    setStates(State.getStatesOfCountry(code));
     setCities([]);
-  }, [form.country]);
 
-  useEffect(() => {
-    setCities(
-      form.country && form.state
-        ? getCitiesByState(form.country, form.state)
-        : []
-    );
-  }, [form.country, form.state]);
+    setForm((f) => ({
+      ...f,
+      country: country?.name || "",
+      state: "",
+      city: "",
+    }));
+  };
 
-  /* ✅ SUBMIT */
+  const onStateChange = (code) => {
+    const state = states.find((s) => s.isoCode === code);
+
+    setStateCode(code);
+    setCityName("");
+
+    setCities(City.getCitiesOfState(countryCode, code));
+
+    setForm((f) => ({
+      ...f,
+      state: state?.name || "",
+      city: "",
+    }));
+  };
+
+  const onCityChange = (name) => {
+    setCityName(name);
+    setForm((f) => ({ ...f, city: name }));
+  };
+
+  /* ================= SUBMIT ================= */
+
   const submit = async () => {
     if (!form.name.trim()) {
       toast.error("Full name is required");
@@ -116,17 +174,15 @@ export default function CompleteProfile() {
     try {
       setLoading(true);
 
-      const countryObj = countries.find(c => c.isoCode === form.country);
-      const stateObj = states.find(s => s.isoCode === form.state);
-
       await api.put("/auth/me", {
         name: form.name.trim(),
         email: form.email || null,
         phone: isGoogleLogin ? form.phone : null,
         dob: form.dob.toISOString(),
+
         address: form.address || null,
-        country: countryObj?.name || null,
-        state: stateObj?.name || null,
+        country: form.country || null,
+        state: form.state || null,
         city: form.city || null,
         pincode: form.pincode || null,
       });
@@ -149,18 +205,16 @@ export default function CompleteProfile() {
   /* ================= UI ================= */
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 sm:py-10">
-      <div className="rounded-2xl border bg-white p-6 sm:p-8 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="bg-white border rounded-2xl p-6 space-y-6">
 
-        {/* HEADER */}
         <div>
           <h2 className="text-2xl font-semibold">Complete your profile</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            This information is required for bookings and invoices.
+          <p className="text-sm text-muted-foreground">
+            Required for bookings & invoices
           </p>
         </div>
 
-        {/* FORM */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
           <div>
@@ -189,12 +243,12 @@ export default function CompleteProfile() {
               <Label>Mobile Number</Label>
               <Input
                 inputMode="numeric"
-                placeholder="10-digit mobile number"
+                maxLength={10}
                 value={form.phone}
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                    phone: e.target.value.replace(/\D/g, ""),
                   }))
                 }
               />
@@ -206,42 +260,44 @@ export default function CompleteProfile() {
             <Label>Date of Birth</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                >
+                <Button variant="outline" className="w-full justify-between">
                   {form.dob
                     ? format(form.dob, "dd MMM yyyy")
                     : "Select date of birth"}
                   <CalendarIcon className="h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="p-0">
                 <Calendar
                   mode="single"
-                  selected={form.dob}
-                  onSelect={(d) => d && setForm((f) => ({ ...f, dob: d }))}
-                  captionLayout="dropdown"   // ✅ month + year dropdown
+                  captionLayout="dropdown"
                   fromYear={1950}
                   toYear={new Date().getFullYear()}
-                  disabled={(date) => date > new Date()}
+                  selected={form.dob}
+                  onSelect={(d) =>
+                    setForm((f) => ({ ...f, dob: d }))
+                  }
                 />
               </PopoverContent>
             </Popover>
           </div>
 
-          {/* LOCATION */}
+          {/* ADDRESS */}
+          <div className="sm:col-span-2">
+            <Label>Address</Label>
+            <Input
+              value={form.address}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, address: e.target.value }))
+              }
+            />
+          </div>
+
           <div>
             <Label>Country</Label>
-            <Select
-              value={form.country}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, country: v, state: "", city: "" }))
-              }
-            >
+            <Select value={countryCode} onValueChange={onCountryChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Select country" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {countries.map((c) => (
@@ -256,11 +312,9 @@ export default function CompleteProfile() {
           <div>
             <Label>State</Label>
             <Select
-              value={form.state}
-              disabled={!form.country}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, state: v, city: "" }))
-              }
+              value={stateCode}
+              disabled={!states.length}
+              onValueChange={onStateChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select state" />
@@ -278,18 +332,16 @@ export default function CompleteProfile() {
           <div>
             <Label>City</Label>
             <Select
-              value={form.city}
-              disabled={!form.state}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, city: v }))
-              }
+              value={cityName}
+              disabled={!cities.length}
+              onValueChange={onCityChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select city" />
               </SelectTrigger>
               <SelectContent>
-                {cities.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
+                {cities.map((c, i) => (
+                  <SelectItem key={i} value={c.name}>
                     {c.name}
                   </SelectItem>
                 ))}
@@ -301,31 +353,19 @@ export default function CompleteProfile() {
             <Label>Pincode</Label>
             <Input
               inputMode="numeric"
+              maxLength={6}
               value={form.pincode}
               onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-                }))
-              }
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <Label>Address</Label>
-            <Input
-              value={form.address}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, address: e.target.value }))
+                setForm((f) => ({ ...f, pincode: e.target.value }))
               }
             />
           </div>
         </div>
 
         <Button
-          className="w-full rounded-xl"
-          onClick={submit}
+          className="w-full text-lg rounded-xl"
           disabled={loading}
+          onClick={submit}
         >
           {loading ? "Saving..." : "Save & Continue"}
         </Button>
