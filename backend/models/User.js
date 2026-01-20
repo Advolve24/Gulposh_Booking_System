@@ -2,12 +2,6 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    firebaseUid: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
-
     name: {
       type: String,
       trim: true,
@@ -18,9 +12,9 @@ const userSchema = new mongoose.Schema(
 
     phone: {
       type: String,
-      trim: true,
+      required: true,
       unique: true,
-      sparse: true,
+      trim: true,
       match: [/^\d{10}$/, "Phone number must be exactly 10 digits"],
     },
 
@@ -33,15 +27,13 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    dob: {
-      type: Date,
-      default: null,
-    },
+    dob: { type: Date, default: null },
 
     address: { type: String, default: null },
     country: { type: String, default: null },
     state: { type: String, default: null },
     city: { type: String, default: null },
+
     pincode: {
       type: String,
       match: [/^\d{6}$/, "Pincode must be 6 digits"],
@@ -56,10 +48,9 @@ const userSchema = new mongoose.Schema(
 
     authProvider: {
       type: String,
-      enum: ["firebase", "google", "password"],
+      enum: ["phone", "google", "password"],
       required: true,
     },
-
 
     passwordHash: {
       type: String,

@@ -47,46 +47,38 @@ const issueSession = (res, user) => {
    FIREBASE PHONE LOGIN
 ================================ */
 
-export const firebaseLogin = async (req, res) => {
+export const phoneLogin = async (req, res) => {
   try {
     const hdr = req.headers.authorization || "";
     const idToken = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
 
-    if (!idToken)
+    if (!idToken) {
       return res.status(401).json({ message: "Firebase token missing" });
+    }
 
+    // ✅ Verify OTP proof
     const decoded = await admin.auth().verifyIdToken(idToken);
 
-    const firebaseUid = decoded.uid;
     const phone = normalizePhone(decoded.phone_number || "");
 
-    if (!phone)
-      return res.status(400).json({ message: "Phone number not available" });
+    if (!phone) {
+      return res.status(400).json({ message: "Phone not found in token" });
+    }
 
-    let user = await User.findOne({
-      $or: [{ firebaseUid }, { phone }],
-    });
+    // ✅ FIND OR CREATE USER BY PHONE ONLY
+    let user = await User.findOne({ phone });
 
     let isNewUser = false;
 
-    // 🔹 NEW USER
     if (!user) {
       user = await User.create({
-        firebaseUid,
         phone,
-        authProvider: "firebase",
-        profileComplete: false, // 🔐 ONLY HERE
+        authProvider: "phone",
       });
       isNewUser = true;
     }
 
-    // 🔹 LINK OLD USER
-    else if (!user.firebaseUid) {
-      user.firebaseUid = firebaseUid;
-      user.authProvider = "firebase";
-      await user.save();
-    }
-
+    // ✅ Issue backend session
     issueSession(res, user);
 
     res.json({
@@ -94,12 +86,12 @@ export const firebaseLogin = async (req, res) => {
       phone: user.phone,
       authProvider: user.authProvider,
       profileComplete: user.profileComplete,
-      isNewUser, // 🔑 FRONTEND USES THIS
+      isNewUser,
       isAdmin: !!user.isAdmin,
     });
   } catch (err) {
-    console.error("firebaseLogin error:", err);
-    res.status(401).json({ message: "Invalid Firebase token" });
+    console.error("phoneLogin error:", err);
+    res.status(401).json({ message: "Invalid or expired OTP" });
   }
 };
 
