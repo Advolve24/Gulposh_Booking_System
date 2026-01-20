@@ -31,7 +31,7 @@ export default function CompleteProfile() {
   const location = useLocation();
 
   const isGoogleLogin = user?.authProvider === "google";
-const isPhoneLogin = user?.authProvider === "phone";
+  const isPhoneLogin = user?.authProvider === "phone";
 
 
   const [loading, setLoading] = useState(false);
@@ -218,8 +218,9 @@ const isPhoneLogin = user?.authProvider === "phone";
         </div>
 
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-4">
 
+          {/* FULL NAME */}
           <div>
             <Label>Full Name</Label>
             <Input
@@ -230,6 +231,7 @@ const isPhoneLogin = user?.authProvider === "phone";
             />
           </div>
 
+          {/* EMAIL */}
           <div className="space-y-1">
             <Label>Email</Label>
             <Input
@@ -241,13 +243,11 @@ const isPhoneLogin = user?.authProvider === "phone";
                 setForm((f) => ({ ...f, email: e.target.value }))
               }
             />
-
             {isGoogleLogin && (
               <p className="text-xs text-muted-foreground">
                 This verified email is linked to your Google account and will be used for booking communication.
               </p>
             )}
-
             {isPhoneLogin && (
               <p className="text-xs text-muted-foreground">
                 Add an email to receive booking confirmations and invoices.
@@ -255,7 +255,7 @@ const isPhoneLogin = user?.authProvider === "phone";
             )}
           </div>
 
-
+          {/* PHONE + DOB (SAME ROW) */}
           <div className="space-y-1">
             <Label>Mobile Number</Label>
             <Input
@@ -271,13 +271,11 @@ const isPhoneLogin = user?.authProvider === "phone";
                 }))
               }
             />
-
             {isPhoneLogin && (
               <p className="text-xs text-muted-foreground">
                 This mobile number is verified via OTP and cannot be changed.
               </p>
             )}
-
             {isGoogleLogin && (
               <p className="text-xs text-muted-foreground">
                 Please add a mobile number for contact during your stay.
@@ -285,12 +283,14 @@ const isPhoneLogin = user?.authProvider === "phone";
             )}
           </div>
 
-          {/* DOB */}
-          <div className="sm:col-span-2">
+          <div className="space-y-1">
             <Label>Date of Birth</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
+                <Button
+                  variant="outline"
+                  className="w-full justify-between"
+                >
                   {form.dob
                     ? format(form.dob, "dd MMM yyyy")
                     : "Select date of birth"}
@@ -312,7 +312,7 @@ const isPhoneLogin = user?.authProvider === "phone";
             </Popover>
           </div>
 
-          {/* ADDRESS */}
+          {/* ADDRESS (FULL WIDTH) */}
           <div className="sm:col-span-2">
             <Label>Address</Label>
             <Input
@@ -323,6 +323,7 @@ const isPhoneLogin = user?.authProvider === "phone";
             />
           </div>
 
+          {/* COUNTRY + STATE */}
           <div>
             <Label>Country</Label>
             <Select value={countryCode} onValueChange={onCountryChange}>
@@ -359,6 +360,7 @@ const isPhoneLogin = user?.authProvider === "phone";
             </Select>
           </div>
 
+          {/* CITY + PINCODE */}
           <div>
             <Label>City</Label>
             <Select
