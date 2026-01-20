@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../store/authStore";
 import { api } from "../api/http";
@@ -29,6 +29,17 @@ import {
   getCitiesByState,
 } from "../lib/location";
 
+import {
+  signInWithPhoneNumber,
+  PhoneAuthProvider,
+  signInWithCredential,
+} from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import {
+  getRecaptchaVerifier,
+  clearRecaptchaVerifier,
+} from "@/lib/recaptcha";
+
 /* ===================================================== */
 
 export default function CompleteProfile() {
@@ -40,6 +51,11 @@ export default function CompleteProfile() {
   const isPhoneLogin = user?.authProvider === "firebase";
 
   const [loading, setLoading] = useState(false);
+
+  /* ---------------- OTP STATE ---------------- */
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const confirmationRef = useRef(null);
 
   /* ---------------- LOCATION DATA ---------------- */
   const [countries, setCountries] = useState([]);
@@ -77,7 +93,6 @@ export default function CompleteProfile() {
   /* PREFILL */
   useEffect(() => {
     if (!user) return;
-
     setForm({
       name: user.name || "",
       email: user.email || "",
@@ -106,36 +121,63 @@ export default function CompleteProfile() {
   }, [form.state, form.country]);
 
   /* =====================================================
-     🔐 VERIFICATION ACTIONS
+     📱 PHONE OTP (GOOGLE USERS)
   ===================================================== */
 
-  /* PHONE OTP (Google users only) */
-  const verifyPhoneOTP = async () => {
-    try {
-      // 👉 You already have Firebase OTP modal
-      // Just trigger it here
-      toast.message("Verify phone number via OTP");
+  const sendPhoneOTP = async () => {
+    if (form.phone.length !== 10)
+      return toast.error("Enter valid 10-digit mobile number");
 
-      // After success:
-      setPhoneVerified(true);
+    try {
+      const appVerifier = getRecaptchaVerifier();
+      confirmationRef.current = await signInWithPhoneNumber(
+        auth,
+        `+91${form.phone}`,
+        appVerifier
+      );
+      setOtpSent(true);
+      toast.success("OTP sent");
     } catch {
-      toast.error("Phone verification failed");
+      clearRecaptchaVerifier();
+      toast.error("Failed to send OTP");
     }
   };
 
-  /* GOOGLE EMAIL VERIFY (Phone OTP users only) */
+  const verifyPhoneOTP = async () => {
+    if (otp.length !== 6) return toast.error("Enter valid OTP");
+
+    try {
+      const credential = PhoneAuthProvider.credential(
+        confirmationRef.current.verificationId,
+        otp
+      );
+
+      const result = await signInWithCredential(auth, credential);
+      const idToken = await result.user.getIdToken();
+
+      await firebaseLoginWithToken(idToken);
+      await init();
+
+      setPhoneVerified(true);
+      setOtpSent(false);
+      clearRecaptchaVerifier();
+      toast.success("Mobile verified");
+    } catch {
+      toast.error("Invalid OTP");
+    }
+  };
+
+  /* =====================================================
+     GOOGLE EMAIL VERIFY (PHONE USERS)
+  ===================================================== */
+
   const verifyEmailWithGoogle = async () => {
     try {
-      toast.message("Verify email using Google");
-
-      // 👉 Use same Google login popup
-      const idToken = await window.signInWithGoogle(); // your existing Google popup
+      const idToken = await window.signInWithGoogle();
       await googleLoginWithToken(idToken);
-
       await init();
       setEmailVerified(true);
-
-      toast.success("Email verified successfully");
+      toast.success("Email verified");
     } catch {
       toast.error("Email verification failed");
     }
@@ -147,13 +189,13 @@ export default function CompleteProfile() {
 
   const submit = async () => {
     if (!form.name.trim()) return toast.error("Full name is required");
-    if (!form.dob) return toast.error("Date of birth is required");
+    if (!form.dob) return toast.error("DOB is required");
 
     if (isGoogleLogin && !phoneVerified)
-      return toast.error("Please verify your phone number");
+      return toast.error("Verify mobile number");
 
     if (isPhoneLogin && !emailVerified)
-      return toast.error("Please verify your email");
+      return toast.error("Verify email");
 
     try {
       setLoading(true);
@@ -162,28 +204,21 @@ export default function CompleteProfile() {
       const stateObj = states.find((s) => s.isoCode === form.state);
 
       await api.put("/auth/me", {
-        name: form.name.trim(),
-        email: form.email || null,
-        phone: form.phone || null,
+        ...form,
         dob: form.dob.toISOString(),
-        address: form.address || null,
         country: countryObj?.name || null,
         state: stateObj?.name || null,
-        city: form.city || null,
-        pincode: form.pincode || null,
       });
 
       await init();
+      toast.success("Profile completed 🎉");
 
-      toast.success("Profile completed successfully 🎉");
-
-      const redirectTo = location.state?.redirectTo || "/";
-      navigate(redirectTo, {
+      navigate(location.state?.redirectTo || "/", {
         replace: true,
         state: location.state?.bookingState,
       });
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to save profile");
+      toast.error("Failed to save profile");
     } finally {
       setLoading(false);
     }
@@ -197,16 +232,11 @@ export default function CompleteProfile() {
     <div className="max-w-2xl mx-auto p-4 sm:p-6">
       <div className="rounded-xl border p-5 space-y-6 bg-white">
 
-        <div>
-          <h2 className="text-xl font-semibold">Complete your profile</h2>
-          <p className="text-sm text-muted-foreground">
-            Required to proceed with bookings
-          </p>
-        </div>
+        <h2 className="text-xl font-semibold">Complete your profile</h2>
 
-        {/* ---------------- FORM ---------------- */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
+          {/* NAME */}
           <div>
             <Label>Full Name</Label>
             <Input
@@ -217,11 +247,11 @@ export default function CompleteProfile() {
             />
           </div>
 
+          {/* EMAIL */}
           <div>
             <Label>Email</Label>
             <div className="flex gap-2">
               <Input
-                type="email"
                 value={form.email}
                 disabled={emailVerified}
                 onChange={(e) =>
@@ -238,11 +268,11 @@ export default function CompleteProfile() {
             </div>
           </div>
 
+          {/* MOBILE */}
           <div>
-            <Label>Mobile Number</Label>
+            <Label>Mobile</Label>
             <div className="flex gap-2">
               <Input
-                inputMode="numeric"
                 value={form.phone}
                 disabled={phoneVerified}
                 onChange={(e) =>
@@ -255,13 +285,31 @@ export default function CompleteProfile() {
               {phoneVerified ? (
                 <CheckCircle className="text-green-600 mt-2" />
               ) : isGoogleLogin ? (
-                <Button size="sm" onClick={verifyPhoneOTP}>
-                  Verify
-                </Button>
+                otpSent ? (
+                  <Button size="sm" onClick={verifyPhoneOTP}>
+                    Verify OTP
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={sendPhoneOTP}>
+                    Send OTP
+                  </Button>
+                )
               ) : null}
             </div>
+
+            {otpSent && !phoneVerified && (
+              <Input
+                className="mt-2"
+                placeholder="Enter OTP"
+                value={otp}
+                onChange={(e) =>
+                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+              />
+            )}
           </div>
 
+          {/* DOB */}
           <div className="sm:col-span-2">
             <Label>Date of Birth</Label>
             <Popover>
@@ -283,17 +331,13 @@ export default function CompleteProfile() {
             </Popover>
           </div>
 
-           <div>
+          {/* COUNTRY */}
+          <div>
             <Label>Country</Label>
             <Select
               value={form.country}
               onValueChange={(v) =>
-                setForm((f) => ({
-                  ...f,
-                  country: v,
-                  state: "",
-                  city: "",
-                }))
+                setForm((f) => ({ ...f, country: v, state: "", city: "" }))
               }
             >
               <SelectTrigger>
@@ -309,14 +353,15 @@ export default function CompleteProfile() {
             </Select>
           </div>
 
+          {/* STATE */}
           <div>
             <Label>State</Label>
             <Select
               value={form.state}
+              disabled={!form.country}
               onValueChange={(v) =>
                 setForm((f) => ({ ...f, state: v, city: "" }))
               }
-              disabled={!form.country}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select state" />
@@ -331,14 +376,15 @@ export default function CompleteProfile() {
             </Select>
           </div>
 
+          {/* CITY */}
           <div>
             <Label>City</Label>
             <Select
               value={form.city}
+              disabled={!form.state}
               onValueChange={(v) =>
                 setForm((f) => ({ ...f, city: v }))
               }
-              disabled={!form.state}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select city" />
@@ -353,10 +399,10 @@ export default function CompleteProfile() {
             </Select>
           </div>
 
+          {/* PINCODE */}
           <div>
             <Label>Pincode</Label>
             <Input
-              inputMode="numeric"
               value={form.pincode}
               onChange={(e) =>
                 setForm((f) => ({
@@ -367,6 +413,7 @@ export default function CompleteProfile() {
             />
           </div>
 
+          {/* ADDRESS */}
           <div className="sm:col-span-2">
             <Label>Address</Label>
             <Input

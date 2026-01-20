@@ -5,7 +5,6 @@ import {
   Route,
   Navigate,
   useLocation,
-  useNavigate,
 } from "react-router-dom";
 
 import CompleteProfile from "./pages/CompleteProfile";
@@ -29,6 +28,8 @@ import PoolSafety from "./pages/PoolSafety";
 import HouseRules from "./pages/HouseRules";
 import ThankYou from "./pages/ThankYou";
 
+import RequireProfileComplete from "./components/RequireProfileComplete";
+
 /* =====================================================
    🔄 SCROLL TO TOP
 ===================================================== */
@@ -43,56 +44,6 @@ function ScrollToTop() {
 }
 
 /* =====================================================
-   🔑 GLOBAL AUTH REDIRECT HANDLER (FIXED)
-===================================================== */
-function AuthRedirectHandler() {
-  const { user, loading, init } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // useEffect(() => {
-  //   init();
-  // }, [init]);
-
-  useEffect(() => {
-    if (loading || !user) return;
-
-    // ⛔ prevent re-run on every render
-    if (sessionStorage.getItem("authRedirectHandled")) return;
-
-    const raw = sessionStorage.getItem("postAuthRedirect");
-    const redirect = raw ? JSON.parse(raw) : null;
-
-    // 🔴 Force profile completion ONLY if not already there
-    if (!user.profileComplete && location.pathname !== "/complete-profile") {
-      sessionStorage.setItem("authRedirectHandled", "1");
-
-      navigate("/complete-profile", {
-        state: redirect || null,
-        replace: true,
-      });
-      return;
-    }
-
-    // 🟢 Resume intended route
-    if (
-      redirect?.redirectTo &&
-      location.pathname !== redirect.redirectTo
-    ) {
-      sessionStorage.removeItem("postAuthRedirect");
-      sessionStorage.setItem("authRedirectHandled", "1");
-
-      navigate(redirect.redirectTo, {
-        state: redirect.bookingState,
-        replace: true,
-      });
-    }
-  }, [user, loading, navigate, location.pathname]);
-
-  return null;
-}
-
-/* =====================================================
    🏁 APP ROOT
 ===================================================== */
 export default function App() {
@@ -102,30 +53,87 @@ export default function App() {
       <div id="recaptcha-container"></div>
 
       <ScrollToTop />
-      <AuthRedirectHandler />
 
       <Header />
       <AuthModal />
 
       <Routes>
+        {/* 🌍 PUBLIC */}
         <Route path="/" element={<Home />} />
-        <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/room/:id" element={<RoomPage />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/bookings" element={<MyBookings />} />
-        <Route path="/my-account" element={<MyAccount />} />
-        <Route path="/invoices" element={<Invoices />} />
-        <Route path="/invoice-view/:id" element={<VillaInvoice />} />
-        <Route path="/booking-success/:id" element={<BookingSuccess />} />
-        <Route path="/entire-villa-form" element={<EntireVillaform />} />
-        <Route path="/thank-you" element={<ThankYou />} />
-
-        {/* 📜 LEGAL */}
         <Route path="/terms" element={<TermsConditions />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/refund" element={<RefundCancellation />} />
         <Route path="/pool-safety" element={<PoolSafety />} />
         <Route path="/house-rules" element={<HouseRules />} />
+        <Route path="/thank-you" element={<ThankYou />} />
+
+        {/* 🔴 PROFILE COMPLETION */}
+        <Route path="/complete-profile" element={<CompleteProfile />} />
+
+        {/* 🔐 PROTECTED ROUTES */}
+        <Route
+          path="/checkout"
+          element={
+            <RequireProfileComplete>
+              <Checkout />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="/bookings"
+          element={
+            <RequireProfileComplete>
+              <MyBookings />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="/my-account"
+          element={
+            <RequireProfileComplete>
+              <MyAccount />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="/invoices"
+          element={
+            <RequireProfileComplete>
+              <Invoices />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="/invoice-view/:id"
+          element={
+            <RequireProfileComplete>
+              <VillaInvoice />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="/booking-success/:id"
+          element={
+            <RequireProfileComplete>
+              <BookingSuccess />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="/entire-villa-form"
+          element={
+            <RequireProfileComplete>
+              <EntireVillaform />
+            </RequireProfileComplete>
+          }
+        />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

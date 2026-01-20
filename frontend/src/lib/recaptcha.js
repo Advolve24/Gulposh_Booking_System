@@ -18,9 +18,9 @@ export const getRecaptchaVerifier = () => {
   return recaptchaVerifier;
 };
 
-// export const clearRecaptchaVerifier = () => {
-//   if (recaptchaVerifier) {
-//     recaptchaVerifier.clear();
-//     recaptchaVerifier = null;
-//   }
-// };
+export const clearRecaptchaVerifier = () => {
+  if (recaptchaVerifier) {
+    recaptchaVerifier.clear();
+    recaptchaVerifier = null;
+  }
+};
