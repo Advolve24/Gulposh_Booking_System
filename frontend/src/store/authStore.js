@@ -26,6 +26,7 @@ export const useAuth = create((set, get) => ({
       set({ user, loading: false });
       return user;
     } catch {
+      sessionStorage.removeItem("searchParams");
       set({ user: null, loading: false });
       return null;
     }
@@ -57,24 +58,24 @@ export const useAuth = create((set, get) => ({
   },
 
   /* ================= GOOGLE OAUTH LOGIN ================= */
-googleLoginWithToken: async (idToken) => {
-  // 1️⃣ Create backend session (sets cookies)
-  await api.post(
-    "/auth/google-login",
-    { idToken },
-    { withCredentials: true }
-  );
+  googleLoginWithToken: async (idToken) => {
+    // 1️⃣ Create backend session (sets cookies)
+    await api.post(
+      "/auth/google-login",
+      { idToken },
+      { withCredentials: true }
+    );
 
-  // 2️⃣ Fetch authenticated user (READS COOKIES)
-  const { data } = await api.get("/auth/me");
+    // 2️⃣ Fetch authenticated user (READS COOKIES)
+    const { data } = await api.get("/auth/me");
 
-  const user = normalizeUser(data);
+    const user = normalizeUser(data);
 
-  // 3️⃣ Save user
-  set({ user, showAuthModal: false });
+    // 3️⃣ Save user
+    set({ user, showAuthModal: false });
 
-  return user;
-},
+    return user;
+  },
 
 
 
@@ -90,9 +91,16 @@ googleLoginWithToken: async (idToken) => {
 
   /* ================= LOGOUT ================= */
   logout: async () => {
-    await api.post("/auth/logout");
-    set({ user: null });
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      // 🔥 Clear search intent
+      sessionStorage.removeItem("searchParams");
+
+      set({ user: null });
+    }
   },
+
 }));
 
 /* =====================================================
@@ -111,12 +119,12 @@ function normalizeUser(user) {
 function isProfileComplete(user) {
   return Boolean(
     user?.name &&
-      user?.phone &&
-      user?.dob &&
-      user?.address &&
-      user?.country &&
-      user?.state &&
-      user?.city &&
-      user?.pincode
+    user?.phone &&
+    user?.dob &&
+    user?.address &&
+    user?.country &&
+    user?.state &&
+    user?.city &&
+    user?.pincode
   );
 }

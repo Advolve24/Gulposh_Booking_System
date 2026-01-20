@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { Phone, Mail, MapPin } from "lucide-react";
 
 export default function Footer() {
@@ -11,11 +11,13 @@ export default function Footer() {
                 <div>
                     <div className="flex items-center gap-3 mb-5">
                         <div className="bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                            <img
-                                src="/Gulposh Logo.png"
-                                alt="Villa Gulposh"
-                                className=" h-11 sm:h-14 object-contain"
-                            />
+                            <Link to="/" className="inline-flex items-center">
+                                <img
+                                    src="/Gulposh Logo.png"
+                                    alt="Villa Gulposh"
+                                    className="h-11 sm:h-14 object-contain"
+                                />
+                            </Link>
                         </div>
                     </div>
 

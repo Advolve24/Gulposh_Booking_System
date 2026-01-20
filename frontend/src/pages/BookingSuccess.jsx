@@ -137,6 +137,12 @@ export default function BookingSuccess() {
 
     /* ---------------- UI ---------------- */
 
+    useEffect(() => {
+  // ✅ Clear Home search card data after successful booking
+  sessionStorage.removeItem("searchParams");
+}, []);
+
+
     return (
         <div className="min-h-screen bg-[#fff7f7]">
 
