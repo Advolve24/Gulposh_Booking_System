@@ -181,33 +181,43 @@ export default function CompleteProfile() {
           </div>
 
           <div>
-            <Label>Email (optional)</Label>
+            <Label>Email</Label>
             <Input
               type="email"
               value={form.email}
+              disabled={isGoogleLogin}   // ✅ LOCK for Google users
               onChange={(e) =>
                 setForm((f) => ({ ...f, email: e.target.value }))
               }
             />
+            {isGoogleLogin && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Email is linked to your Google account
+              </p>
+            )}
+          </div>
+          <div>
+            <Label>Mobile Number</Label>
+            <Input
+              inputMode="numeric"
+              placeholder="Enter mobile number"
+              value={form.phone}
+              disabled={!isGoogleLogin}   // ✅ LOCK for OTP users
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                }))
+              }
+            />
+            {!isGoogleLogin && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Mobile number is verified via OTP
+              </p>
+            )}
           </div>
 
-          {/* ✅ SHOW PHONE ONLY FOR GOOGLE LOGIN */}
-          {isGoogleLogin && (
-            <div>
-              <Label>Mobile Number</Label>
-              <Input
-                inputMode="numeric"
-                placeholder="Enter mobile number"
-                value={form.phone}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                  }))
-                }
-              />
-            </div>
-          )}
+
 
           <div className="sm:col-span-2">
             <Label>Date of Birth</Label>
