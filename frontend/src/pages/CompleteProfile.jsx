@@ -283,7 +283,99 @@ export default function CompleteProfile() {
             </Popover>
           </div>
 
-          {/* address, country, state, city, pincode remain SAME as before */}
+           <div>
+            <Label>Country</Label>
+            <Select
+              value={form.country}
+              onValueChange={(v) =>
+                setForm((f) => ({
+                  ...f,
+                  country: v,
+                  state: "",
+                  city: "",
+                }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((c) => (
+                  <SelectItem key={c.isoCode} value={c.isoCode}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>State</Label>
+            <Select
+              value={form.state}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, state: v, city: "" }))
+              }
+              disabled={!form.country}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent>
+                {states.map((s) => (
+                  <SelectItem key={s.isoCode} value={s.isoCode}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>City</Label>
+            <Select
+              value={form.city}
+              onValueChange={(v) =>
+                setForm((f) => ({ ...f, city: v }))
+              }
+              disabled={!form.state}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select city" />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((c) => (
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Pincode</Label>
+            <Input
+              inputMode="numeric"
+              value={form.pincode}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
+                }))
+              }
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <Label>Address</Label>
+            <Input
+              value={form.address}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, address: e.target.value }))
+              }
+            />
+          </div>
 
         </div>
 
