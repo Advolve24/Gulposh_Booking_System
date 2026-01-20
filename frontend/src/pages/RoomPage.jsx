@@ -212,15 +212,15 @@ export default function RoomPage() {
 
   const navState = location.state;
 
-const savedSearch = sessionStorage.getItem("searchParams");
-const fallbackState = savedSearch ? JSON.parse(savedSearch) : null;
+  const savedSearch = sessionStorage.getItem("searchParams");
+  const fallbackState = savedSearch ? JSON.parse(savedSearch) : null;
 
-const initialSearch = navState ?? null;
+  const initialSearch = navState ?? null;
 
   const [room, setRoom] = useState(null);
   const [range, setRange] = useState(() => initialSearch?.range || undefined);
-const [adults, setAdults] = useState(() => initialSearch?.adults ?? 1);
-const [children, setChildren] = useState(() => initialSearch?.children ?? 0);
+  const [adults, setAdults] = useState(() => initialSearch?.adults ?? 1);
+  const [children, setChildren] = useState(() => initialSearch?.children ?? 0);
 
 
   const totalGuests = adults + children;
@@ -232,46 +232,48 @@ const [children, setChildren] = useState(() => initialSearch?.children ?? 0);
   const [activeImage, setActiveImage] = useState(0);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
-
-  useEffect(() => {
-  // If user navigated without search state (e.g. back + new room)
-  if (!location.state) {
-    setRange(undefined);
-    setAdults(1);
-    setChildren(0);
-  }
-}, [id]);
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
 
   useEffect(() => {
-  if (!location.state) return;
+    // If user navigated without search state (e.g. back + new room)
+    if (!location.state) {
+      setRange(undefined);
+      setAdults(1);
+      setChildren(0);
+    }
+  }, [id]);
 
-  const saved = sessionStorage.getItem("searchParams");
-  if (!saved) return;
 
-  const parsed = JSON.parse(saved);
+  useEffect(() => {
+    if (!location.state) return;
 
-  if (parsed?.range?.from && parsed?.range?.to) {
-    setRange({
-      from: new Date(parsed.range.from),
-      to: new Date(parsed.range.to),
-    });
-  }
+    const saved = sessionStorage.getItem("searchParams");
+    if (!saved) return;
 
-  if (typeof parsed?.adults === "number") setAdults(parsed.adults);
-  if (typeof parsed?.children === "number") setChildren(parsed.children);
-}, [location.state]);
+    const parsed = JSON.parse(saved);
+
+    if (parsed?.range?.from && parsed?.range?.to) {
+      setRange({
+        from: new Date(parsed.range.from),
+        to: new Date(parsed.range.to),
+      });
+    }
+
+    if (typeof parsed?.adults === "number") setAdults(parsed.adults);
+    if (typeof parsed?.children === "number") setChildren(parsed.children);
+  }, [location.state]);
 
 
 
   useEffect(() => {
-  if (range?.from && typeof range.from === "string") {
-    setRange({
-      from: new Date(range.from),
-      to: new Date(range.to),
-    });
-  }
-}, []);
+    if (range?.from && typeof range.from === "string") {
+      setRange({
+        from: new Date(range.from),
+        to: new Date(range.to),
+      });
+    }
+  }, []);
 
 
   /* LOAD DATA */
@@ -360,9 +362,7 @@ const [children, setChildren] = useState(() => initialSearch?.children ?? 0);
 
   if (!room) return null;
 
-  function AccordionItem({ item }) {
-    const [open, setOpen] = useState(false);
-
+  function AccordionItem({ item, open, onToggle }) {
     return (
       <div
         className={`border rounded-xl px-4 transition ${open ? "bg-muted/40" : ""
@@ -370,7 +370,7 @@ const [children, setChildren] = useState(() => initialSearch?.children ?? 0);
       >
         <button
           type="button"
-          onClick={() => setOpen(!open)}
+          onClick={onToggle}
           className="w-full flex justify-between items-center py-4 text-sm font-medium"
         >
           {item.q}
@@ -384,11 +384,14 @@ const [children, setChildren] = useState(() => initialSearch?.children ?? 0);
           className={`overflow-hidden transition-all duration-300 ${open ? "max-h-40 pb-4" : "max-h-0"
             }`}
         >
-          <p className="text-sm text-gray-600 leading-relaxed">{item.a}</p>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {item.a}
+          </p>
         </div>
       </div>
     );
   }
+
 
   return (
     <>
@@ -613,28 +616,36 @@ const [children, setChildren] = useState(() => initialSearch?.children ?? 0);
               <div className="space-y-3">
                 {[
                   {
-                    q: "What is included in the room price?",
-                    a: "The room price includes accommodation, access to common areas, complimentary Wi-Fi, parking, and basic amenities. Meals can be added at an additional cost.",
+                    q: "How do I book Villa Gulposh?",
+                    a: "You can book directly through our booking portal: booking.villagulposh.com. Select dates, enter guest details, and complete payment to confirm the booking.",
                   },
                   {
-                    q: "Is early check-in or late check-out available?",
-                    a: "Early check-in or late check-out may be available on request, subject to availability.",
+                    q: "Is my booking confirmed immediately after payment?",
+                    a: "Yes—once payment is successful and the booking confirmation is generated on the portal, your booking is considered confirmed.",
                   },
                   {
-                    q: "Are pets allowed?",
-                    a: "Pets are not allowed unless explicitly mentioned for the property.",
+                    q: "What payment methods do you accept?",
+                    a: "We accept online payments via Razorpay (UPI, cards, netbanking, etc. as supported by Razorpay).",
                   },
                   {
-                    q: "What is the cancellation policy?",
-                    a: "Free cancellation is available up to 7 days before check-in.",
+                    q: "What are the check-in and check-out timings?",
+                    a: "Check-in: 12:00 PM\n\nCheck-out: 10:00 AM",
                   },
                   {
-                    q: "Is the property suitable for events?",
-                    a: "Small gatherings are allowed with prior approval. Large events are not permitted.",
+                    q: "Can I cancel my booking from the portal?",
+                    a: "Yes. Cancellation is available directly on booking.villagulposh.com (Cancel Booking option).",
                   },
                 ].map((item, i) => (
-                  <AccordionItem key={i} item={item} />
+                  <AccordionItem
+                    key={i}
+                    item={item}
+                    open={openFaqIndex === i}
+                    onToggle={() =>
+                      setOpenFaqIndex(openFaqIndex === i ? null : i)
+                    }
+                  />
                 ))}
+
               </div>
             </section>
           </div>
