@@ -80,7 +80,7 @@ export const listUserBookingsAdmin = async (req, res) => {
   withMeal vegGuests nonVegGuests
   roomTotal mealTotal paymentId
 `)
-      .populate("room", "name")
+      .populate("room", "name mealPriceVeg mealPriceNonVeg isVilla")
       .sort({ startDate: -1 });
 
     res.json(items.map(b => ({
@@ -437,7 +437,7 @@ export const getBookingAdmin = async (req, res) => {
 
     const booking = await Booking.findById(id)
       .populate("user", "name email phone createdAt")
-      .populate("room", "name pricePerNight mealPrices")
+      .populate("room", "name pricePerNight mealPriceVeg mealPriceNonVeg isVilla")
       .lean();
 
     if (!booking) {
