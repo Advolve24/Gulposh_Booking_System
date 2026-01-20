@@ -1,5 +1,6 @@
 import Booking from "../models/Booking.js";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "chromium";
 import os from "os";
 import { format } from "date-fns";
 
