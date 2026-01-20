@@ -209,11 +209,12 @@ export default function CompleteProfile() {
       <div className="bg-white border rounded-2xl p-6 space-y-6">
 
         <div>
-          <h2 className="text-2xl font-semibold">Complete your profile</h2>
+          <h2 className="text-2xl font-semibold">Complete Your Profile</h2>
           <p className="text-sm text-muted-foreground">
-            Required for bookings & invoices
+            Kindly complete your profile to ensure a seamless booking and billing experience.
           </p>
         </div>
+
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -227,33 +228,60 @@ export default function CompleteProfile() {
             />
           </div>
 
-          <div>
-            <Label>Email (optional)</Label>
+          <div className="space-y-1">
+            <Label>Email</Label>
             <Input
               type="email"
               value={form.email}
+              disabled={isGoogleLogin}
+              className={isGoogleLogin ? "bg-muted cursor-not-allowed" : ""}
               onChange={(e) =>
                 setForm((f) => ({ ...f, email: e.target.value }))
               }
             />
+
+            {isGoogleLogin && (
+              <p className="text-xs text-muted-foreground">
+                This verified email is linked to your Google account and will be used for booking communication.
+              </p>
+            )}
+
+            {isPhoneLogin && (
+              <p className="text-xs text-muted-foreground">
+                Add an email to receive booking confirmations and invoices.
+              </p>
+            )}
           </div>
 
-          {isGoogleLogin && (
-            <div>
-              <Label>Mobile Number</Label>
-              <Input
-                inputMode="numeric"
-                maxLength={10}
-                value={form.phone}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    phone: e.target.value.replace(/\D/g, ""),
-                  }))
-                }
-              />
-            </div>
-          )}
+
+          <div className="space-y-1">
+            <Label>Mobile Number</Label>
+            <Input
+              inputMode="numeric"
+              maxLength={10}
+              value={form.phone}
+              disabled={isPhoneLogin}
+              className={isPhoneLogin ? "bg-muted cursor-not-allowed" : ""}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  phone: e.target.value.replace(/\D/g, ""),
+                }))
+              }
+            />
+
+            {isPhoneLogin && (
+              <p className="text-xs text-muted-foreground">
+                This mobile number is verified via OTP and cannot be changed.
+              </p>
+            )}
+
+            {isGoogleLogin && (
+              <p className="text-xs text-muted-foreground">
+                Please add a mobile number for contact during your stay.
+              </p>
+            )}
+          </div>
 
           {/* DOB */}
           <div className="sm:col-span-2">
