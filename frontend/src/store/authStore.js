@@ -26,16 +26,17 @@ export const useAuth = create((set, get) => ({
       set({ user, loading: false });
       return user;
     } catch {
+      // 🔥 session expired / invalid
       sessionStorage.removeItem("searchParams");
       set({ user: null, loading: false });
       return null;
     }
   },
 
-  /* ================= FIREBASE OTP LOGIN ================= */
+  /* ================= FIREBASE PHONE OTP LOGIN ================= */
   firebaseLoginWithToken: async (idToken) => {
-    // 1️⃣ Create backend session
-    await api.post(
+    // 1️⃣ Create backend session (cookies)
+    const { data } = await api.post(
       "/auth/firebase-login",
       {},
       {
@@ -46,46 +47,52 @@ export const useAuth = create((set, get) => ({
       }
     );
 
-    // 2️⃣ Fetch profile
-    const { data } = await api.get("/auth/me");
+    // 2️⃣ Fetch full profile
+    const me = await api.get("/auth/me");
+    const user = normalizeUser(me.data);
 
-    const user = normalizeUser(data);
-
-    // 3️⃣ Save user ONLY (NO REDIRECT HERE)
+    // 3️⃣ Save user
     set({ user, showAuthModal: false });
 
-    return user;
+    /*
+      🔑 IMPORTANT:
+      frontend decides redirect using:
+      - user.profileComplete
+      - data.isNewUser (optional)
+    */
+    return {
+      user,
+      isNewUser: data?.isNewUser ?? false,
+    };
   },
 
   /* ================= GOOGLE OAUTH LOGIN ================= */
   googleLoginWithToken: async (idToken) => {
-    // 1️⃣ Create backend session (sets cookies)
-    await api.post(
+    // 1️⃣ Create backend session
+    const { data } = await api.post(
       "/auth/google-login",
       { idToken },
       { withCredentials: true }
     );
 
-    // 2️⃣ Fetch authenticated user (READS COOKIES)
-    const { data } = await api.get("/auth/me");
-
-    const user = normalizeUser(data);
+    // 2️⃣ Fetch authenticated user
+    const me = await api.get("/auth/me");
+    const user = normalizeUser(me.data);
 
     // 3️⃣ Save user
     set({ user, showAuthModal: false });
 
-    return user;
+    return {
+      user,
+      isNewUser: data?.isNewUser ?? false,
+    };
   },
-
-
 
   /* ================= AFTER PROFILE UPDATE ================= */
   refreshUser: async () => {
     const { data } = await api.get("/auth/me");
-
     const user = normalizeUser(data);
     set({ user });
-
     return user;
   },
 
@@ -94,13 +101,12 @@ export const useAuth = create((set, get) => ({
     try {
       await api.post("/auth/logout");
     } finally {
-      // 🔥 Clear search intent
+      // 🔥 clear all intent
       sessionStorage.removeItem("searchParams");
-
+      sessionStorage.removeItem("postAuthRedirect");
       set({ user: null });
     }
   },
-
 }));
 
 /* =====================================================
@@ -116,6 +122,10 @@ function normalizeUser(user) {
   };
 }
 
+/*
+  🔐 Profile completion gate
+  (matches your CompleteProfile form exactly)
+*/
 function isProfileComplete(user) {
   return Boolean(
     user?.name &&

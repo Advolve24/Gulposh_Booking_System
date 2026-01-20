@@ -211,16 +211,25 @@ export default function RoomPage() {
   const navigate = useNavigate();
 
   const navState = location.state;
+const savedSearch = sessionStorage.getItem("searchParams");
+const fallbackState = savedSearch ? JSON.parse(savedSearch) : null;
 
-  const savedSearch = sessionStorage.getItem("searchParams");
-  const fallbackState = savedSearch ? JSON.parse(savedSearch) : null;
-
-  const initialSearch = navState ?? null;
+// ✅ priority: navigation state → session storage
+const initialSearch = navState || fallbackState;
 
   const [room, setRoom] = useState(null);
-  const [range, setRange] = useState(() => initialSearch?.range || undefined);
-  const [adults, setAdults] = useState(() => initialSearch?.adults ?? 1);
-  const [children, setChildren] = useState(() => initialSearch?.children ?? 0);
+  const [range, setRange] = useState(() => {
+  if (!initialSearch?.range?.from || !initialSearch?.range?.to) return undefined;
+
+  return {
+    from: new Date(initialSearch.range.from),
+    to: new Date(initialSearch.range.to),
+  };
+});
+
+const [adults, setAdults] = useState(initialSearch?.adults ?? 1);
+const [children, setChildren] = useState(initialSearch?.children ?? 0);
+
 
 
   const totalGuests = adults + children;
@@ -235,14 +244,14 @@ export default function RoomPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
 
-  useEffect(() => {
-    // If user navigated without search state (e.g. back + new room)
-    if (!location.state) {
-      setRange(undefined);
-      setAdults(1);
-      setChildren(0);
-    }
-  }, [id]);
+  // useEffect(() => {
+  //   // If user navigated without search state (e.g. back + new room)
+  //   if (!location.state) {
+  //     setRange(undefined);
+  //     setAdults(1);
+  //     setChildren(0);
+  //   }
+  // }, [id]);
 
 
   useEffect(() => {
