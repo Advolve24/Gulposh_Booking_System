@@ -32,7 +32,7 @@ export default function AuthModal() {
   const {
     showAuthModal,
     closeAuth,
-    phoneLoginWithToken,   // ✅ renamed
+    phoneLoginWithToken,
     googleLoginWithToken,
   } = useAuth();
 
@@ -44,9 +44,9 @@ export default function AuthModal() {
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
 
   const confirmationRef = useRef(null);
-  const googleRenderedRef = useRef(false);
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
+  const googleRenderedRef = useRef(false);
 
   /* =====================================================
      GOOGLE CALLBACK
@@ -56,7 +56,6 @@ export default function AuthModal() {
     try {
       setLoading(true);
       const user = await googleLoginWithToken(response.credential);
-
       closeAuth();
       toast.success("Welcome to Gulposh ✨");
       handlePostAuthRedirect(user);
@@ -68,18 +67,26 @@ export default function AuthModal() {
   };
 
   /* =====================================================
-     GOOGLE SCRIPT
+     GOOGLE SCRIPT INIT (SAFE)
   ===================================================== */
 
   useEffect(() => {
     if (!showAuthModal || googleRenderedRef.current) return;
 
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
+    if (!window.google?.accounts?.id) {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = initGoogle;
+      document.body.appendChild(script);
+    } else {
+      initGoogle();
+    }
 
-    script.onload = () => {
+    function initGoogle() {
+      if (googleRenderedRef.current) return;
+
       window.google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
@@ -95,9 +102,7 @@ export default function AuthModal() {
         });
         googleRenderedRef.current = true;
       }
-    };
-
-    document.body.appendChild(script);
+    }
   }, [showAuthModal]);
 
   /* =====================================================
@@ -106,11 +111,7 @@ export default function AuthModal() {
 
   useEffect(() => {
     if (step !== "otp" || secondsLeft <= 0) return;
-
-    const t = setInterval(() => {
-      setSecondsLeft((s) => s - 1);
-    }, 1000);
-
+    const t = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(t);
   }, [step, secondsLeft]);
 
@@ -141,7 +142,7 @@ export default function AuthModal() {
   };
 
   /* =====================================================
-     RESET
+     RESET FLOW (CRITICAL)
   ===================================================== */
 
   const resetFlow = () => {
@@ -216,7 +217,6 @@ export default function AuthModal() {
       const idToken = await result.user.getIdToken(true);
 
       const user = await phoneLoginWithToken(idToken);
-
       closeAuth();
       toast.success("Welcome to Gulposh ✨");
       handlePostAuthRedirect(user);
@@ -230,7 +230,7 @@ export default function AuthModal() {
   };
 
   /* =====================================================
-     AUTO VERIFY
+     AUTO VERIFY OTP
   ===================================================== */
 
   useEffect(() => {
@@ -266,13 +266,11 @@ export default function AuthModal() {
           <h2>Authentication</h2>
         </VisuallyHidden>
 
-        {/* 🔑 SINGLE RECAPTCHA */}
         <div
           id="recaptcha-container"
           className="absolute inset-0 opacity-0 pointer-events-none"
         />
 
-        {/* HEADER IMAGE */}
         <div className="relative h-48">
           <button
             onClick={() => {
@@ -291,7 +289,6 @@ export default function AuthModal() {
           />
         </div>
 
-        {/* BODY */}
         <div className="px-5 py-5 space-y-4">
           <h2 className="text-lg font-semibold">Sign in</h2>
 
@@ -322,7 +319,10 @@ export default function AuthModal() {
                 placeholder="Enter 10-digit mobile number"
                 value={form.phone}
                 onChange={(e) =>
-                  setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })
+                  setForm({
+                    ...form,
+                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                  })
                 }
               />
 
