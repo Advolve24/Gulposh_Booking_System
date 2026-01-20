@@ -31,9 +31,13 @@ export default function VillaBookingForm() {
   const [countryCode, setCountryCode] = useState("IN");
   const [stateCode, setStateCode] = useState("");
   const [cityName, setCityName] = useState("");
-
   const [userId, setUserId] = useState(null);
   const [userChecked, setUserChecked] = useState(false);
+  const [adults, setAdults] = useState(1);
+  const [children, setChildren] = useState(0);
+  const totalGuests = adults + children;
+  const [vegGuests, setVegGuests] = useState(0);
+  const [nonVegGuests, setNonVegGuests] = useState(0);
 
   const isBooked = (date) => bookedDates.has(toDateKey(date));
 
@@ -266,6 +270,9 @@ export default function VillaBookingForm() {
       throw new Error("Enter valid amount");
     if (!range?.from || !range?.to)
       throw new Error("Select booking dates");
+    if (vegGuests + nonVegGuests !== totalGuests) {
+      throw new Error("Veg + Non-Veg guests must equal total guests");
+    }
   };
 
   /* ================= SUBMIT ================= */
@@ -285,7 +292,9 @@ export default function VillaBookingForm() {
           userId: uid,
           startDate: start,
           endDate: end,
-          guests: form.guests,
+          guests: totalGuests,
+          vegGuests,
+          nonVegGuests,
           customAmount: form.customAmount,
 
           contactName: form.name,
@@ -317,7 +326,9 @@ export default function VillaBookingForm() {
         userId: uid,
         startDate: start,
         endDate: end,
-        guests: Number(form.guests),
+        guests: totalGuests,
+        vegGuests,
+        nonVegGuests,
         customAmount: Number(form.customAmount),
         contactName: form.name,
         contactEmail: form.email,
@@ -336,7 +347,9 @@ export default function VillaBookingForm() {
             userId: uid,
             startDate: start,
             endDate: end,
-            guests: Number(form.guests),
+            guests: totalGuests,
+            vegGuests,
+            nonVegGuests,
             customAmount: Number(form.customAmount),
             contactName: form.name,
             contactEmail: form.email,
@@ -618,17 +631,164 @@ export default function VillaBookingForm() {
               <h3 className="font-semibold text-gray-800">4. Booking Details</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="font-[400]">Guests</Label>
-                  <Input
-                    className="h-10 mt-1 rounded-[8px]"
-                    type="number"
-                    min="1"
-                    value={form.guests}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, guests: e.target.value }))
-                    }
-                  />
+                {/* ===== GUEST COUNT ===== */}
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+
+                  {/* ADULTS */}
+                  <div className="flex items-center justify-between border rounded-lg p-3">
+                    <div>
+                      <p className="font-medium">Adults</p>
+                      <p className="text-xs text-muted-foreground">Ages 13+</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        disabled={adults <= 1}
+                        onClick={() => setAdults((a) => Math.max(1, a - 1))}
+                      >−</Button>
+                      <span className="w-6 text-center">{adults}</span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => setAdults((a) => a + 1)}
+                      >+</Button>
+                    </div>
+                  </div>
+
+                  {/* CHILDREN */}
+                  <div className="flex items-center justify-between border rounded-lg p-3">
+                    <div>
+                      <p className="font-medium">Children</p>
+                      <p className="text-xs text-muted-foreground">Ages 2–12</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        disabled={children <= 0}
+                        onClick={() => setChildren((c) => Math.max(0, c - 1))}
+                      >−</Button>
+                      <span className="w-6 text-center">{children}</span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => setChildren((c) => c + 1)}
+                      >+</Button>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground">
+                    Total Guests: <b>{totalGuests}</b>
+                  </p>
+
+                </div>
+
+
+                {/* ===== MEAL PREFERENCE ===== */}
+                <div className="md:col-span-2">
+
+                  <Label className="font-[400]">Meal Preference</Label>
+
+                  <div className="grid md:grid-cols-2 gap-4 mt-2">
+
+                    {/* ===== VEG ===== */}
+                    <div className="flex items-center justify-between border rounded-lg p-3">
+                      <div>
+                        <p className="font-medium">Veg</p>
+                        <p className="text-xs text-muted-foreground">
+                          Vegetarian meals
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={vegGuests === 0}
+                          onClick={() =>
+                            setVegGuests((v) => Math.max(0, v - 1))
+                          }
+                        >
+                          −
+                        </Button>
+
+                        <span className="w-6 text-center font-medium">
+                          {vegGuests}
+                        </span>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={vegGuests + nonVegGuests >= totalGuests}
+                          onClick={() =>
+                            setVegGuests((v) =>
+                              Math.min(totalGuests - nonVegGuests, v + 1)
+                            )
+                          }
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* ===== NON-VEG ===== */}
+                    <div className="flex items-center justify-between border rounded-lg p-3">
+                      <div>
+                        <p className="font-medium">Non-Veg</p>
+                        <p className="text-xs text-muted-foreground">
+                          Non-vegetarian meals
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={nonVegGuests === 0}
+                          onClick={() =>
+                            setNonVegGuests((v) => Math.max(0, v - 1))
+                          }
+                        >
+                          −
+                        </Button>
+
+                        <span className="w-6 text-center font-medium">
+                          {nonVegGuests}
+                        </span>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={vegGuests + nonVegGuests >= totalGuests}
+                          onClick={() =>
+                            setNonVegGuests((v) =>
+                              Math.min(totalGuests - vegGuests, v + 1)
+                            )
+                          }
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <p
+                    className={`text-xs font-medium mt-2 ${vegGuests + nonVegGuests === totalGuests
+                      ? "text-green-600"
+                      : "text-red-600"
+                      }`}
+                  >
+                    Selected: {vegGuests + nonVegGuests} / {totalGuests}
+                    {vegGuests + nonVegGuests !== totalGuests &&
+                      " (Veg + Non-Veg must equal total guests)"}
+                  </p>
+
                 </div>
 
                 <div>
@@ -675,7 +835,7 @@ export default function VillaBookingForm() {
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div>
                   <Label className="font-[400]">Payment Mode</Label>
                   <Select
                     value={form.paymentMode}
