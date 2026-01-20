@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../store/authStore";
 import { api } from "../api/http";
@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { CalendarIcon, CheckCircle } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
 import {
@@ -29,48 +29,20 @@ import {
   getCitiesByState,
 } from "../lib/location";
 
-import {
-  signInWithPhoneNumber,
-  PhoneAuthProvider,
-  signInWithCredential,
-} from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import {
-  getRecaptchaVerifier,
-  clearRecaptchaVerifier,
-} from "@/lib/recaptcha";
-
-/* ===================================================== */
-
 export default function CompleteProfile() {
-  const { user, init, googleLoginWithToken, firebaseLoginWithToken } = useAuth();
+  const { user, init } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isGoogleLogin = user?.authProvider === "google";
-  const isPhoneLogin = user?.authProvider === "firebase";
-
   const [loading, setLoading] = useState(false);
 
-  /* ---------------- OTP STATE ---------------- */
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const confirmationRef = useRef(null);
-
-  /* ---------------- LOCATION DATA ---------------- */
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
 
-  /* ---------------- VERIFICATION FLAGS ---------------- */
-  const [phoneVerified, setPhoneVerified] = useState(
-    isPhoneLogin && !!user?.phone
-  );
-  const [emailVerified, setEmailVerified] = useState(
-    isGoogleLogin && !!user?.email
-  );
+  // ✅ detect login provider
+  const isGoogleLogin = user?.authProvider === "google";
 
-  /* ---------------- FORM STATE ---------------- */
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -83,16 +55,17 @@ export default function CompleteProfile() {
     pincode: "",
   });
 
-  /* 🚫 BLOCK IF PROFILE COMPLETE */
+  /* 🚫 BLOCK ACCESS IF PROFILE ALREADY COMPLETE */
   useEffect(() => {
     if (user?.profileComplete) {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
-  /* PREFILL */
+  /* 🔁 PREFILL FROM USER */
   useEffect(() => {
     if (!user) return;
+
     setForm({
       name: user.name || "",
       email: user.email || "",
@@ -106,137 +79,97 @@ export default function CompleteProfile() {
     });
   }, [user]);
 
-  /* LOCATION DATA */
-  useEffect(() => setCountries(getAllCountries()), []);
+  /* 🌍 LOAD COUNTRIES */
   useEffect(() => {
-    setStates(form.country ? getStatesByCountry(form.country) : []);
+    setCountries(getAllCountries());
+  }, []);
+
+  useEffect(() => {
+    if (form.country) {
+      setStates(getStatesByCountry(form.country));
+    } else {
+      setStates([]);
+    }
     setCities([]);
   }, [form.country]);
+
   useEffect(() => {
-    setCities(
-      form.state && form.country
-        ? getCitiesByState(form.country, form.state)
-        : []
-    );
+    if (form.state && form.country) {
+      setCities(getCitiesByState(form.country, form.state));
+    } else {
+      setCities([]);
+    }
   }, [form.state, form.country]);
 
-  /* =====================================================
-     📱 PHONE OTP (GOOGLE USERS)
-  ===================================================== */
-
-  const sendPhoneOTP = async () => {
-    if (form.phone.length !== 10)
-      return toast.error("Enter valid 10-digit mobile number");
-
-    try {
-      const appVerifier = getRecaptchaVerifier();
-      confirmationRef.current = await signInWithPhoneNumber(
-        auth,
-        `+91${form.phone}`,
-        appVerifier
-      );
-      setOtpSent(true);
-      toast.success("OTP sent");
-    } catch {
-      clearRecaptchaVerifier();
-      toast.error("Failed to send OTP");
-    }
-  };
-
-  const verifyPhoneOTP = async () => {
-    if (otp.length !== 6) return toast.error("Enter valid OTP");
-
-    try {
-      const credential = PhoneAuthProvider.credential(
-        confirmationRef.current.verificationId,
-        otp
-      );
-
-      const result = await signInWithCredential(auth, credential);
-      const idToken = await result.user.getIdToken();
-
-      await firebaseLoginWithToken(idToken);
-      await init();
-
-      setPhoneVerified(true);
-      setOtpSent(false);
-      clearRecaptchaVerifier();
-      toast.success("Mobile verified");
-    } catch {
-      toast.error("Invalid OTP");
-    }
-  };
-
-  /* =====================================================
-     GOOGLE EMAIL VERIFY (PHONE USERS)
-  ===================================================== */
-
-  const verifyEmailWithGoogle = async () => {
-    try {
-      const idToken = await window.signInWithGoogle();
-      await googleLoginWithToken(idToken);
-      await init();
-      setEmailVerified(true);
-      toast.success("Email verified");
-    } catch {
-      toast.error("Email verification failed");
-    }
-  };
-
-  /* =====================================================
-     SUBMIT
-  ===================================================== */
-
+  /* ✅ SUBMIT PROFILE */
   const submit = async () => {
-    if (!form.name.trim()) return toast.error("Full name is required");
-    if (!form.dob) return toast.error("DOB is required");
+    if (!form.name.trim()) {
+      toast.error("Full name is required");
+      return;
+    }
 
-    if (isGoogleLogin && !phoneVerified)
-      return toast.error("Verify mobile number");
+    if (!form.dob) {
+      toast.error("Date of birth is required");
+      return;
+    }
 
-    if (isPhoneLogin && !emailVerified)
-      return toast.error("Verify email");
+    if (isGoogleLogin && form.phone.length !== 10) {
+      toast.error("Mobile number is required");
+      return;
+    }
 
     try {
       setLoading(true);
 
-      const countryObj = countries.find((c) => c.isoCode === form.country);
-      const stateObj = states.find((s) => s.isoCode === form.state);
+      const countryObj = countries.find(c => c.isoCode === form.country);
+      const stateObj = states.find(s => s.isoCode === form.state);
 
       await api.put("/auth/me", {
-        ...form,
+        name: form.name.trim(),
+        email: form.email || null,
+        phone: isGoogleLogin ? form.phone : null,
         dob: form.dob.toISOString(),
+        address: form.address || null,
         country: countryObj?.name || null,
         state: stateObj?.name || null,
+        city: form.city || null,
+        pincode: form.pincode || null,
       });
 
       await init();
-      toast.success("Profile completed 🎉");
 
-      navigate(location.state?.redirectTo || "/", {
+      toast.success("Profile completed successfully 🎉");
+
+      const redirectTo = location.state?.redirectTo || "/";
+      const bookingState = location.state?.bookingState;
+
+      navigate(redirectTo, {
         replace: true,
-        state: location.state?.bookingState,
+        state: bookingState,
       });
+
     } catch (err) {
-      toast.error("Failed to save profile");
+      toast.error(
+        err?.response?.data?.message || "Failed to save profile"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  /* =====================================================
-     UI
-  ===================================================== */
-
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6">
-      <div className="rounded-xl border p-5 space-y-6 bg-white">
+      <div className="rounded-xl border p-5 space-y-5 bg-white">
 
-        <h2 className="text-xl font-semibold">Complete your profile</h2>
+        <div>
+          <h2 className="text-xl font-semibold">Complete your profile</h2>
+          <p className="text-sm text-muted-foreground">
+            This information will be used for checkout and invoices.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-          {/* NAME */}
           <div>
             <Label>Full Name</Label>
             <Input
@@ -247,97 +180,82 @@ export default function CompleteProfile() {
             />
           </div>
 
-          {/* EMAIL */}
           <div>
             <Label>Email</Label>
-            <div className="flex gap-2">
-              <Input
-                value={form.email}
-                disabled={emailVerified}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, email: e.target.value }))
-                }
-              />
-              {emailVerified ? (
-                <CheckCircle className="text-green-600 mt-2" />
-              ) : isPhoneLogin ? (
-                <Button size="sm" onClick={verifyEmailWithGoogle}>
-                  Verify
-                </Button>
-              ) : null}
-            </div>
+            <Input
+              type="email"
+              value={form.email}
+              disabled={isGoogleLogin}   // ✅ LOCK for Google users
+              onChange={(e) =>
+                setForm((f) => ({ ...f, email: e.target.value }))
+              }
+            />
+            {isGoogleLogin && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Email is linked to your Google account
+              </p>
+            )}
           </div>
-
-          {/* MOBILE */}
           <div>
-            <Label>Mobile</Label>
-            <div className="flex gap-2">
-              <Input
-                value={form.phone}
-                disabled={phoneVerified}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                  }))
-                }
-              />
-              {phoneVerified ? (
-                <CheckCircle className="text-green-600 mt-2" />
-              ) : isGoogleLogin ? (
-                otpSent ? (
-                  <Button size="sm" onClick={verifyPhoneOTP}>
-                    Verify OTP
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={sendPhoneOTP}>
-                    Send OTP
-                  </Button>
-                )
-              ) : null}
-            </div>
-
-            {otpSent && !phoneVerified && (
-              <Input
-                className="mt-2"
-                placeholder="Enter OTP"
-                value={otp}
-                onChange={(e) =>
-                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                }
-              />
+            <Label>Mobile Number</Label>
+            <Input
+              inputMode="numeric"
+              placeholder="Enter mobile number"
+              value={form.phone}
+              disabled={!isGoogleLogin}   // ✅ LOCK for OTP users
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                }))
+              }
+            />
+            {!isGoogleLogin && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Mobile number is verified via OTP
+              </p>
             )}
           </div>
 
-          {/* DOB */}
+
+
           <div className="sm:col-span-2">
             <Label>Date of Birth</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
                   {form.dob ? format(form.dob, "PPP") : "Select date"}
                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0">
+              <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
                   selected={form.dob}
                   onSelect={(d) =>
                     setForm((f) => ({ ...f, dob: d }))
                   }
+                  fromYear={1950}
+                  toYear={new Date().getFullYear()}
                 />
               </PopoverContent>
             </Popover>
           </div>
 
-          {/* COUNTRY */}
           <div>
             <Label>Country</Label>
             <Select
               value={form.country}
               onValueChange={(v) =>
-                setForm((f) => ({ ...f, country: v, state: "", city: "" }))
+                setForm((f) => ({
+                  ...f,
+                  country: v,
+                  state: "",
+                  city: "",
+                }))
               }
             >
               <SelectTrigger>
@@ -353,15 +271,14 @@ export default function CompleteProfile() {
             </Select>
           </div>
 
-          {/* STATE */}
           <div>
             <Label>State</Label>
             <Select
               value={form.state}
-              disabled={!form.country}
               onValueChange={(v) =>
                 setForm((f) => ({ ...f, state: v, city: "" }))
               }
+              disabled={!form.country}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select state" />
@@ -376,15 +293,14 @@ export default function CompleteProfile() {
             </Select>
           </div>
 
-          {/* CITY */}
           <div>
             <Label>City</Label>
             <Select
               value={form.city}
-              disabled={!form.state}
               onValueChange={(v) =>
                 setForm((f) => ({ ...f, city: v }))
               }
+              disabled={!form.state}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select city" />
@@ -399,10 +315,10 @@ export default function CompleteProfile() {
             </Select>
           </div>
 
-          {/* PINCODE */}
           <div>
             <Label>Pincode</Label>
             <Input
+              inputMode="numeric"
               value={form.pincode}
               onChange={(e) =>
                 setForm((f) => ({
@@ -413,7 +329,6 @@ export default function CompleteProfile() {
             />
           </div>
 
-          {/* ADDRESS */}
           <div className="sm:col-span-2">
             <Label>Address</Label>
             <Input
@@ -426,7 +341,11 @@ export default function CompleteProfile() {
 
         </div>
 
-        <Button className="w-full" onClick={submit} disabled={loading}>
+        <Button
+          className="w-full"
+          onClick={submit}
+          disabled={loading}
+        >
           {loading ? "Saving..." : "Save & Continue"}
         </Button>
 
@@ -434,3 +353,4 @@ export default function CompleteProfile() {
     </div>
   );
 }
+
