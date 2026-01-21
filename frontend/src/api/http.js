@@ -10,65 +10,45 @@ export const api = axios.create({
 });
 
 /* =====================================================
-   SESSION HANDLING (REFRESH + AUTO LOGOUT)
+   SESSION HANDLING (REFRESH + NO LOGOUT ON REFRESH)
 ===================================================== */
 
-let isLoggingOut = false;
-
 api.interceptors.response.use(
-  (response) => response,
+  (res) => res,
   async (error) => {
-    const originalRequest = error.config;
+    const original = error.config;
     const status = error.response?.status;
     const message = error.response?.data?.message;
-    const url = originalRequest?.url || "";
 
-    /* ================= TOKEN EXPIRED → REFRESH ================= */
+    /* 🔁 Access token expired → refresh */
     if (
       status === 401 &&
       message === "TokenExpired" &&
-      !originalRequest._retry
+      !original._retry
     ) {
-      originalRequest._retry = true;
-
+      original._retry = true;
       try {
-        await api.post("/auth/refresh");
-        return api(originalRequest);
+        await api.post("/auth/refresh", {}, { withCredentials: true });
+        return api(original);
       } catch {
-        // fall through to logout
+        // refresh failed → real logout below
       }
     }
 
-    /* ================= IGNORE INIT CHECK FAILURES ================= */
-    // 🚫 DO NOT LOGOUT on page refresh auth checks
+    /* 🚫 DO NOT logout during init or refresh */
     if (
       status === 401 &&
-      (url.includes("/auth/me") || url.includes("/auth/refresh"))
+      (original.url?.includes("/auth/me") ||
+        original.url?.includes("/auth/refresh"))
     ) {
       return Promise.reject(error);
     }
 
-    /* ================= PROFILE INCOMPLETE ================= */
-    if (status === 401 && message === "PROFILE_INCOMPLETE") {
-      window.location.replace("/complete-profile");
-      return Promise.reject(error);
-    }
-
-    /* ================= REAL AUTH FAILURE ================= */
-    if (status === 401 && !isLoggingOut) {
-      isLoggingOut = true;
-
-      try {
-        sessionStorage.removeItem("searchParams");
-        sessionStorage.removeItem("postAuthRedirect");
-
-        const { logout } = useAuth.getState();
-        await logout();
-      } catch (e) {
-        console.error("Auto logout failed", e);
-      } finally {
-        window.location.replace("/");
-      }
+    /* 🔥 REAL logout (only if refresh failed) */
+    if (status === 401) {
+      const { logout } = useAuth.getState();
+      await logout();
+      window.location.replace("/");
     }
 
     return Promise.reject(error);
