@@ -680,7 +680,7 @@ useEffect(() => {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="md:col-span-3">
+              <div className="md:col-span-2">
                 <ReadOnlyField
                   label="Street Address"
                   value={address.address}
