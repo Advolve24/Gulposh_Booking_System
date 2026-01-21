@@ -5,8 +5,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/store/authStore";
 
 
-import {
-    Check,
+import { Check,
     MapPin,
     Calendar,
     Users,
