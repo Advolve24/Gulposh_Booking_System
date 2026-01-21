@@ -26,7 +26,7 @@ import RefundCancellation from "./pages/RefundCancellation";
 import PoolSafety from "./pages/PoolSafety";
 import HouseRules from "./pages/HouseRules";
 import ThankYou from "./pages/ThankYou";
-import AuthSuccess from "./components/AuthSuccess";
+
 
 /* ================= COMPONENTS ================= */
 import Header from "./components/Header";
@@ -108,7 +108,6 @@ function AppRoutes() {
 
       <Routes>
         {/* PUBLIC */}
-        <Route path="/auth/success" element={<AuthSuccess />} />
         <Route path="/" element={<Home />} />
         <Route path="/room/:id" element={<RoomPage />} />
         <Route path="/entire-villa-form" element={<EntireVillaform />} />
@@ -201,6 +200,16 @@ function AppRoutes() {
    🚀 ROOT APP
 ===================================================== */
 export default function App() {
+  const { init, initialized } = useAuth();
+
+useEffect(() => {
+  init();
+}, []);
+
+if (!initialized) {
+  return null; // or splash loader
+}
+
   return (
     <BrowserRouter>
       <AppRoutes />

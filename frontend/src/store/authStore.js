@@ -11,6 +11,7 @@ export const useAuth = create((set, get) => ({
 
   user: null,
   loading: false,
+  initialized: false, // 🔥 REQUIRED
 
   /* ================= UI ================= */
 
@@ -19,9 +20,10 @@ export const useAuth = create((set, get) => ({
   closeAuth: () => set({ showAuthModal: false }),
 
   /* ================= INIT SESSION =================
-     ⚠️ CRITICAL RULE:
+     ⚠️ CRITICAL RULES:
      - NEVER logout here
-     - Init failure ≠ logout
+     - NEVER clear user here
+     - Just mark initialized when done
   =============================================== */
 
   init: async () => {
@@ -29,13 +31,19 @@ export const useAuth = create((set, get) => ({
       set({ loading: true });
 
       const { data } = await api.get("/auth/me");
-      set({ user: data, loading: false });
+
+      set({
+        user: data,
+        loading: false,
+        initialized: true,
+      });
 
       return data;
-    } catch (err) {
-      // 🚫 DO NOT clear user here
-      // 🚫 DO NOT logout here
-      set({ loading: false });
+    } catch {
+      set({
+        loading: false,
+        initialized: true, // ✅ auth check completed
+      });
       return null;
     }
   },
@@ -46,7 +54,7 @@ export const useAuth = create((set, get) => ({
     try {
       set({ loading: true });
 
-      // 1️⃣ Backend creates session (cookies)
+      // Backend creates session (cookies)
       await api.post(
         "/auth/phone-login",
         {},
@@ -57,14 +65,13 @@ export const useAuth = create((set, get) => ({
         }
       );
 
-      // 2️⃣ Fetch authenticated user
       const { data } = await api.get("/auth/me");
 
-      // 3️⃣ Save user in store
       set({
         user: data,
         showAuthModal: false,
         loading: false,
+        initialized: true,
       });
 
       return data;
@@ -80,17 +87,15 @@ export const useAuth = create((set, get) => ({
     try {
       set({ loading: true });
 
-      // 1️⃣ Backend creates session (cookies)
       await api.post("/auth/google-login", { idToken });
 
-      // 2️⃣ Fetch authenticated user
       const { data } = await api.get("/auth/me");
 
-      // 3️⃣ Save user in store
       set({
         user: data,
         showAuthModal: false,
         loading: false,
+        initialized: true,
       });
 
       return data;
@@ -100,7 +105,7 @@ export const useAuth = create((set, get) => ({
     }
   },
 
-  /* ================= REFRESH USER (MANUAL) ================= */
+  /* ================= REFRESH USER (OPTIONAL) ================= */
 
   refreshUser: async () => {
     const { data } = await api.get("/auth/me");
@@ -122,6 +127,7 @@ export const useAuth = create((set, get) => ({
       set({
         user: null,
         loading: false,
+        initialized: true,
         showAuthModal: false,
       });
     }
