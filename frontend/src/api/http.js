@@ -10,41 +10,43 @@ export const api = axios.create({
 });
 
 /* =====================================================
-   SESSION HANDLING (REFRESH + NO LOGOUT ON REFRESH)
+   SESSION HANDLING (AIRBNB-STYLE)
 ===================================================== */
 
 api.interceptors.response.use(
-  (res) => res,
+  (response) => response,
   async (error) => {
     const original = error.config;
     const status = error.response?.status;
     const message = error.response?.data?.message;
+    const url = original?.url || "";
 
-    /* 🔁 Access token expired → refresh */
+    // 🔁 ACCESS TOKEN EXPIRED → REFRESH
     if (
+      original &&
       status === 401 &&
       message === "TokenExpired" &&
       !original._retry
     ) {
       original._retry = true;
+
       try {
-        await api.post("/auth/refresh", {}, { withCredentials: true });
+        await api.post("/auth/refresh");
         return api(original);
       } catch {
-        // refresh failed → real logout below
+        // refresh failed → logout below
       }
     }
 
-    /* 🚫 DO NOT logout during init or refresh */
+    // 🚫 NEVER logout during init or refresh
     if (
       status === 401 &&
-      (original.url?.includes("/auth/me") ||
-        original.url?.includes("/auth/refresh"))
+      (url.includes("/auth/me") || url.includes("/auth/refresh"))
     ) {
       return Promise.reject(error);
     }
 
-    /* 🔥 REAL logout (only if refresh failed) */
+    // 🔥 REAL LOGOUT (ONLY HERE)
     if (status === 401) {
       const { logout } = useAuth.getState();
       await logout();
