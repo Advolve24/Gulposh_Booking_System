@@ -88,8 +88,8 @@ export default function MyBookings() {
     tab === "upcoming"
       ? upcoming
       : tab === "past"
-      ? past
-      : cancelled;
+        ? past
+        : cancelled;
 
   /* ---------------- ACTIONS ---------------- */
 
@@ -130,10 +130,9 @@ export default function MyBookings() {
               key={key}
               onClick={() => setTab(key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition
-                ${
-                  tab === key
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                ${tab === key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
                 }
               `}
             >
@@ -144,9 +143,43 @@ export default function MyBookings() {
 
         {/* CONTENT */}
         {loading ? (
-          <p>Loading…</p>
+          <div className="flex justify-center items-center py-20">
+            <p className="text-muted-foreground">Loading…</p>
+          </div>
         ) : list.length === 0 ? (
-          <p className="text-muted-foreground">No bookings found.</p>
+          <div className="flex flex-col items-center justify-center text-center px-4 py-16 sm:py-24">
+            {/* ICON */}
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+              <Calendar className="h-6 w-6 text-muted-foreground" />
+            </div>
+
+            {/* TITLE */}
+            <h2 className="font-serif text-xl sm:text-2xl font-semibold">
+              {tab === "upcoming" && "No Upcoming Trips"}
+              {tab === "past" && "No Past Trips"}
+              {tab === "cancelled" && "No Cancelled Bookings"}
+            </h2>
+
+            {/* DESCRIPTION */}
+            <p className="mt-2 max-w-md text-sm sm:text-base text-muted-foreground">
+              {tab === "upcoming" &&
+                "You don’t have any upcoming reservations. Ready to plan your next getaway?"}
+              {tab === "past" &&
+                "You haven’t completed any stays yet. Your past trips will appear here."}
+              {tab === "cancelled" &&
+                "You don’t have any cancelled bookings at the moment."}
+            </p>
+
+            {/* CTA (ONLY FOR UPCOMING) */}
+            {tab === "upcoming" && (
+              <Button
+                className="mt-6 rounded-xl px-6 py-5"
+                onClick={() => navigate("/")}
+              >
+                Explore Rooms
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {list.map((b) => {
@@ -157,16 +190,16 @@ export default function MyBookings() {
                   key={b._id}
                   onClick={() => openView(b._id)}
                   className="
-                    group
-                    bg-white
-                    rounded-2xl
-                    border
-                    shadow-sm
-                    overflow-hidden
-                    cursor-pointer
-                    hover:shadow-lg
-                    transition
-                  "
+            group
+            bg-white
+            rounded-2xl
+            border
+            shadow-sm
+            overflow-hidden
+            cursor-pointer
+            hover:shadow-lg
+            transition
+          "
                 >
                   {/* IMAGE */}
                   <div className="h-40 overflow-hidden">
@@ -202,12 +235,11 @@ export default function MyBookings() {
 
                       <span
                         className={`text-xs px-3 py-1 rounded-full font-medium
-                          ${
-                            b.status === "cancelled"
-                              ? "bg-red-100 text-red-600"
-                              : "bg-green-100 text-green-600"
+                  ${b.status === "cancelled"
+                            ? "bg-red-100 text-red-600"
+                            : "bg-green-100 text-green-600"
                           }
-                        `}
+                `}
                       >
                         {b.status}
                       </span>
@@ -220,7 +252,7 @@ export default function MyBookings() {
                           e.stopPropagation();
                           openCancel(b._id);
                         }}
-                        className="w-full mt-3 rounded-xl bg-primary text-primary-foreground"
+                        className="w-full mt-3 rounded-xl"
                       >
                         Cancel Booking
                       </Button>
@@ -231,6 +263,7 @@ export default function MyBookings() {
             })}
           </div>
         )}
+
       </div>
 
       {/* VIEW BOOKING (RESPONSIVE) */}
