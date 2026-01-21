@@ -20,7 +20,7 @@ import {
   Mail,
   Phone,
   Home,
-  Calendar as CalendarIcon,
+  CalendarIcon,
 } from "lucide-react";
 
 import {
@@ -664,7 +664,7 @@ export default function Checkout() {
               <ReadOnlyField
                 label="Date of Birth"
                 value={form.dob ? format(form.dob, "dd MMM yyyy") : ""}
-                icon={Calendar}
+                icon={CalendarIcon}
               />
 
               <ReadOnlyField
@@ -675,7 +675,6 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* ================= ADDRESS DETAILS ================= */}
           {/* ================= ADDRESS DETAILS ================= */}
           <div className="rounded-2xl border bg-white p-5 sm:p-6">
             <div className="flex items-start gap-3 mb-5">
@@ -699,11 +698,27 @@ export default function Checkout() {
                 />
               </div>
 
-              <ReadOnlyField label="Country" value={address.country} />
-              <ReadOnlyField label="State" value={address.state} />
-              <ReadOnlyField label="City" value={address.city} />
-              <ReadOnlyField label="Pincode" value={address.pincode} />
+              <ReadOnlyField
+                label="Country"
+                value={address.country}
+              />
+
+              <ReadOnlyField
+                label="State"
+                value={address.state}
+              />
+
+              <ReadOnlyField
+                label="City"
+                value={address.city}
+              />
+
+              <ReadOnlyField
+                label="Pincode"
+                value={address.pincode}
+              />
             </div>
+
           </div>
 
           {/* ================= BOOKING PREFERENCES ================= */}
@@ -740,7 +755,6 @@ export default function Checkout() {
             </div>
 
             {/* ================= GUEST COUNT ================= */}
-            {/* ================= GUEST COUNT ================= */}
             <div className="grid grid-cols-2 gap-4">
 
               <Counter
@@ -772,7 +786,6 @@ export default function Checkout() {
               </div>
             </div>
 
-            {/* ================= MEALS ================= */}
             {/* ================= MEALS ================= */}
             <div className="space-y-4 pt-2">
 
