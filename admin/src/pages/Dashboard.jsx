@@ -4,39 +4,11 @@ import AppLayout from "@/components/layout/AppLayout";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
-  format,
-  addDays,
-  startOfToday,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  isWithinInterval,
-  isSameMonth,
-  addMonths,
-  subMonths,
-  isAfter,
+  format, addDays, startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
+  isWithinInterval, isSameMonth, addMonths, subMonths, isAfter
 } from "date-fns";
-
-import {
-  CalendarDays,
-  CalendarCheck2,
-  XCircle,
-  Wallet,
-  Plus,
-  Home,
-  Ban,
-  Calendar, Moon, Users
-} from "lucide-react";
-
-import {
-  getStats,
-  listBookingsAdmin,
-  listBlackouts,
-  createBlackout,
-  deleteBlackout,
-} from "../api/admin";
+import { CalendarDays, CalendarCheck2, XCircle, Wallet, Plus, Home, Ban, Calendar, Moon, Users } from "lucide-react";
+import { getStats, listBookingsAdmin, listBlackouts, createBlackout, deleteBlackout } from "../api/admin";
 import MobileBookingCard from "@/components/MobileBookingCard";
 import BookingTable from "@/components/BookingTable";
 import BookingViewPopup from "@/components/BookingViewPopup";
@@ -152,21 +124,36 @@ function UpcomingBookingCard({ booking }) {
   const date = new Date(booking.startDate);
 
   return (
-    <div className="bg-[#DCEEE2] rounded-xl p-4 flex flex-col items-center justify-center text-center">
-      <p className="text-sm font-medium text-green-900 mb-2">
-        Upcoming Booking
-      </p>
+    <Link to={"/bookings?status=confirmed"} className="col-span-2 md:col-span-1 w-full md:w-full">
+      <div className="bg-[#055c00] rounded-xl w-full p-3 flex flex-col gap-3 md:gap-5  justify-start items-start text-center">
+        <p className="text-sm font-medium text-white ">
+          Upcoming Booking
+        </p>
 
-      <h2 className="text-4xl font-extrabold text-green-700 leading-none">
-        {format(date, "dd")}
-      </h2>
+        <h2 className="text-3xl font-extrabold text-[#ffe400] leading-none">
+          {format(date, "dd")}
+        </h2>
 
-      <p className="text-sm font-semibold text-green-800 uppercase">
-        {format(date, "MMM")}
-      </p>
+        <p className="text-sm font-semibold text-white uppercase">
+          {format(date, "MMM")}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+
+function CalendarLegendItem({ color, label }) {
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span
+        className={`h-2.5 w-2.5 rounded-full ${color}`}
+      />
+      <span>{label}</span>
     </div>
   );
 }
+
 
 
 const downloadInvoiceDirect = (bookingId) => {
@@ -501,16 +488,16 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       .slice(0, 5);
   }, [bookings]);
-
   const upcomingBooking = useMemo(() => {
     const today = toDateOnly(new Date());
-
     return bookings
       .filter((b) => {
         if (!b.startDate) return false;
         if (b.status === "cancelled") return false;
         const checkIn = toDateOnly(b.startDate);
-        return checkIn >= today;
+        const checkOut = toDateOnly(b.endDate);
+        if (checkIn <= today) return false;
+        return true;
       })
       .sort(
         (a, b) =>
@@ -533,21 +520,9 @@ export default function Dashboard() {
     py-0
   "
       >
-
-
-        <StatCard
-          icon={CalendarDays}
-          label="Total Bookings"
-          value={stats?.totalBookings ?? 0}
-          valueColor="#ffe400"          // yellow count
-          hint={`${bookingChange > 0 ? "+" : ""}${bookingChange}% from last month`}
-          hintColor="text-white"        // ✅ force white
-          onClick={() => navigate("/bookings")}
-          bg="rgb(5 92 0)"
-          textColor="text-white"
-          iconColor="text-white"
-          mobileFull
-        />
+        {upcomingBooking && (
+          <UpcomingBookingCard booking={upcomingBooking} />
+        )}
 
 
         <StatCard
@@ -572,13 +547,14 @@ export default function Dashboard() {
 
 
         <StatCard
-          icon={Wallet}
-          label="Total Revenue"
-          value={`₹${(stats?.totalRevenue ?? 0).toLocaleString("en-IN")}`}
-          hint={`${revenueChange > 0 ? "+" : ""}${revenueChange}% from last month`}
-          hintColor="text-[rgb(239_214_134)]"
-          onClick={() => navigate("/bookings?paid=true")}
-          bg="#671e2f"
+          icon={CalendarDays}
+          label="Total Bookings"
+          value={stats?.totalBookings ?? 0}
+          valueColor="#ffe400"
+          hint={`${bookingChange > 0 ? "+" : ""}${bookingChange}% from last month`}
+          hintColor="text-white"
+          onClick={() => navigate("/bookings")}
+          bg="rgb(5 92 0)"
           textColor="text-white"
           iconColor="text-white"
           mobileFull
@@ -601,16 +577,27 @@ export default function Dashboard() {
           ">
 
           {/* ================= HEADER ================= */}
-          <div className="flex justify-between items-center mb-4 sm:mb-6">
-            <div className="space-y-0.5">
-              <h3 className="font-semibold text-base">Booking Calendar</h3>
-              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                {format(currentMonth, "MMMM yyyy")}
-              </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+            {/* LEFT */}
+            <h3 className="text-sm opacity-90">Booking Calendar</h3>
 
+            {/* RIGHT — LEGEND */}
+            <div className="flex items-center gap-3">
+              <CalendarLegendItem
+                color="bg-green-500"
+                label="Confirmed"
+              />
+              <CalendarLegendItem
+                color="bg-red-500"
+                label="Blocked"
+              />
+              <CalendarLegendItem
+                color="bg-gray-400"
+                label="Past"
+              />
             </div>
-
           </div>
+
 
           {(
             <>
@@ -657,7 +644,7 @@ export default function Dashboard() {
                     <div
                       key={date.toISOString()}
                       className={`
-    h-10 w-full rounded-lg
+    md:h-14 h-10 w-full rounded-lg
     flex items-center justify-center
     text-sm font-medium
     border
@@ -688,10 +675,18 @@ export default function Dashboard() {
           <Action icon={Home} title="Book Villa" desc="Book the entire property" link="/villa-booking" />
           <Action icon={Ban} title="Block Dates" desc="Select dates directly in calendar" link="/block-dates" />
 
-          {/* UPCOMING BOOKING */}
-          {upcomingBooking && (
-            <UpcomingBookingCard booking={upcomingBooking} />
-          )}
+          <StatCard
+            icon={Wallet}
+            label="Total Revenue"
+            value={`₹${(stats?.totalRevenue ?? 0).toLocaleString("en-IN")}`}
+            hint={`${revenueChange > 0 ? "+" : ""}${revenueChange}% from last month`}
+            hintColor="text-[rgb(239_214_134)]"
+            onClick={() => navigate("/bookings?paid=true")}
+            bg="#671e2f"
+            textColor="text-white"
+            iconColor="text-white"
+            mobileFull
+          />
         </div>
 
       </div>
