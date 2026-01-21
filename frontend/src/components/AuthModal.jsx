@@ -48,7 +48,7 @@ export default function AuthModal() {
   const handleGoogleLogin = () => {
     closeAuth();
     window.location.href =
-      import.meta.env.VITE_API_URL + "/auth/google";
+      import.meta.env.VITE_API_URL + "/auth/google-login";
   };
 
   /* =====================================================
