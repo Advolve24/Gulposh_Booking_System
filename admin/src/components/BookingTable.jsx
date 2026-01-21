@@ -75,6 +75,7 @@ export default function BookingTable({
   onViewInvoice,
   onDownloadInvoice,
   onEditBooking,
+  onCancelBooking,
 }) {
 
 
@@ -224,6 +225,18 @@ export default function BookingTable({
                         }}
                       >
                         Download Invoice
+                      </DropdownMenuItem>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCancelBooking?.(b);
+                        }}
+                      >
+                        Cancel Booking
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
