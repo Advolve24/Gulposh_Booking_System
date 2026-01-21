@@ -500,3 +500,94 @@ export const checkUserByPhoneAdmin = async (req, res) => {
     });
   }
 };
+
+
+
+
+
+/* ================= CANCELLATION HELPERS ================= */
+
+const daysBetweenDates = (from, to) => {
+  const d1 = new Date(from);
+  const d2 = new Date(to);
+
+  d1.setHours(0, 0, 0, 0);
+  d2.setHours(0, 0, 0, 0);
+
+  return Math.ceil((d2 - d1) / 86400000);
+};
+
+const getRefundPolicy = (daysBeforeCheckIn) => {
+  if (daysBeforeCheckIn >= 10) return 100;
+  if (daysBeforeCheckIn >= 5) return 50;
+  return 0;
+};
+
+
+
+const cancelBookingCore = async ({
+  booking,
+  cancelledBy,
+  reason,
+}) => {
+  if (booking.status === "cancelled") {
+    return booking;
+  }
+
+  const today = new Date();
+  const checkIn = new Date(booking.startDate);
+
+  if (today >= checkIn) {
+    throw new Error("Stay already started; cannot cancel");
+  }
+
+  const daysBeforeCheckIn = daysBetweenDates(today, checkIn);
+  const refundPercentage = getRefundPolicy(daysBeforeCheckIn);
+  const refundAmount = Math.round(
+    (booking.amount * refundPercentage) / 100
+  );
+
+  booking.status = "cancelled";
+  booking.cancellation = {
+    cancelledAt: today,
+    cancelledBy,
+    reason,
+    daysBeforeCheckIn,
+    refundPercentage,
+    refundAmount,
+    refundStatus: refundPercentage > 0 ? "pending" : "rejected",
+  };
+
+  await booking.save();
+  return booking;
+};
+
+export const cancelBookingAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body || {};
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid booking id" });
+    }
+
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const updated = await cancelBookingCore({
+      booking,
+      cancelledBy: "admin",
+      reason: reason || "Cancelled by admin",
+    });
+
+    res.json({
+      ok: true,
+      message: "Booking cancelled by admin",
+      booking: updated,
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};

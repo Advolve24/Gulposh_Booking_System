@@ -3,7 +3,7 @@ import { requireAdminSession } from "../middleware/adminSession.js";
 import { createRoom, listRoomsAdmin, deleteRoom, getRoomAdmin, updateRoom } from "../controllers/admin.room.controller.js";
 import { getAdminStats } from "../controllers/admin.stats.controller.js";
 import { listUsersAdmin, getUserAdmin, listUserBookingsAdmin, listBookingsAdmin, updateUserAdmin, deleteUserAdmin,  createUserAdmin, 
-  updateBookingAdmin,  getBookingAdmin, checkUserByPhoneAdmin } from "../controllers/admin.user.controller.js";
+  updateBookingAdmin,  getBookingAdmin, checkUserByPhoneAdmin, cancelBookingAdmin } from "../controllers/admin.user.controller.js";
 import { createVillaOrder, verifyVillaPayment } from "../controllers/admin.villa.controller.js";
 import { adminGlobalSearch } from "../controllers/admin.search.controller.js";
 import {
@@ -38,6 +38,7 @@ router.delete("/users/:id", deleteUserAdmin);
 router.post("/villa-order", createVillaOrder);
 router.post("/villa-verify", verifyVillaPayment);
 router.get("/search", adminGlobalSearch);
+router.post("/bookings/:id/cancel", cancelBookingAdmin);
 
 
 export default router;
