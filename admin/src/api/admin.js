@@ -63,7 +63,7 @@ export const getStats = () => api.get("/admin/stats").then(r => r.data);
 export const updateBookingAdmin = (id, payload) =>
   api.put(`/admin/bookings/${id}`, payload).then(r => r.data);
 
-// --- Single Booking ---
+
 export const getBookingAdmin = (id) =>
   api.get(`/admin/bookings/${id}`).then(r => r.data);
 

@@ -228,7 +228,7 @@ export default function BookingViewPopup({
             {/* ACTION */}
             {booking.status !== "cancelled" && (
               <button
-                onClick={() => onCancel(booking._id)}
+                onClick={() => onCancel?.(booking)}
                 className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-medium"
               >
                 Cancel Booking

@@ -14,6 +14,7 @@ import BookingViewPopup from "@/components/BookingViewPopup";
 import BookingTable from "@/components/BookingTable";
 import MobileBookingCard from "@/components/MobileBookingCard";
 import EditBookingDialog from "@/components/EditBookingDialog";
+import AdminCancelBookingDialog from "@/components/AdminCancelBookingDialog";
 
 
 const downloadInvoiceDirect = (bookingId) => {
@@ -48,29 +49,30 @@ export default function Booking() {
   const [search, setSearch] = useState("");
   const [editBooking, setEditBooking] = useState(null);
   const userFilter = params.get("user");
+  const [cancelBooking, setCancelBooking] = useState(null);
 
 
   const filteredBookings = useMemo(() => {
-  let data = bookings;
-  if (status !== "all") {
-    data = data.filter((b) => b.status === status);
-  }
-  if (userFilter) {
-    data = data.filter(
-      (b) => b.user?._id === userFilter
-    );
-  }
-  if (search.trim()) {
-    const q = search.toLowerCase();
-    data = data.filter((b) =>
-      b._id.toLowerCase().includes(q) ||
-      b.user?.name?.toLowerCase().includes(q) ||
-      b.user?.email?.toLowerCase().includes(q) ||
-      b.user?.phone?.includes(q)
-    );
-  }
-  return data;
-}, [bookings, status, search, userFilter]);
+    let data = bookings;
+    if (status !== "all") {
+      data = data.filter((b) => b.status === status);
+    }
+    if (userFilter) {
+      data = data.filter(
+        (b) => b.user?._id === userFilter
+      );
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      data = data.filter((b) =>
+        b._id.toLowerCase().includes(q) ||
+        b.user?.name?.toLowerCase().includes(q) ||
+        b.user?.email?.toLowerCase().includes(q) ||
+        b.user?.phone?.includes(q)
+      );
+    }
+    return data;
+  }, [bookings, status, search, userFilter]);
 
 
 
@@ -166,6 +168,7 @@ export default function Booking() {
                 downloadInvoiceDirect(b._id);
               }}
               onEditBooking={(b) => setEditBooking(b)}
+              onCancelBooking={(b) => setCancelBooking(b)}
             />
 
           </div>
@@ -225,6 +228,10 @@ export default function Booking() {
           open={!!selectedBooking}
           booking={selectedBooking}
           onClose={() => setSelectedBooking(null)}
+          onCancel={(b) => {
+            setSelectedBooking(null);
+            setCancelBooking(b);
+          }}
         />
 
         <EditBookingDialog
@@ -232,6 +239,13 @@ export default function Booking() {
           booking={editBooking}
           onOpenChange={() => setEditBooking(null)}
           reload={loadBookings}
+        />
+
+        <AdminCancelBookingDialog
+          open={!!cancelBooking}
+          booking={cancelBooking}
+          onClose={() => setCancelBooking(null)}
+          onSuccess={loadBookings}
         />
 
       </div>
