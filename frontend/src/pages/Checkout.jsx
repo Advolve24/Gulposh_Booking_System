@@ -173,7 +173,7 @@ export default function Checkout() {
     if (!roomId) return navigate("/", { replace: true });
     api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
   }, [roomId, navigate]);
-  
+
   /* ================= AUTOFILL PROFILE (READ-ONLY) ================= */
 useEffect(() => {
   if (!user) return;
@@ -679,7 +679,7 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="md:col-span-3">
                 <ReadOnlyField
                   label="Street Address"
