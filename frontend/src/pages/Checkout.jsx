@@ -173,38 +173,28 @@ export default function Checkout() {
     if (!roomId) return navigate("/", { replace: true });
     api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
   }, [roomId, navigate]);
+  
+  /* ================= AUTOFILL PROFILE (READ-ONLY) ================= */
+useEffect(() => {
+  if (!user) return;
 
-  /* ================= AUTOFILL PROFILE ================= */
-  useEffect(() => {
-    if (!user) return;
+  setForm({
+    name: user.name || "",
+    email: user.email || "",
+    phone: user.phone || "",
+    dob: user.dob ? new Date(user.dob) : null,
+  });
 
-    setForm({
-      name: user.name || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      dob: user.dob ? new Date(user.dob) : null,
-    });
+  setAddress({
+    address: user.address || "",
+    country: user.country || "",   // ✅ name
+    state: user.state || "",       // ✅ name
+    city: user.city || "",
+    pincode: user.pincode || "",
+  });
 
-    const countryObj = getAllCountries().find(
-      (c) => c.name === user.country
-    );
-
-    const stateObj =
-      countryObj &&
-      getStatesByCountry(countryObj.isoCode).find(
-        (s) => s.name === user.state
-      );
-
-    setAddress({
-      address: user.address || "",
-      country: countryObj?.isoCode || "",
-      state: stateObj?.isoCode || "",
-      city: user.city || "",
-      pincode: user.pincode || "",
-    });
-
-    setOtpStep("verified");
-  }, [user]);
+  setOtpStep("verified");
+}, [user]);
 
 
   /* ================= CALCULATIONS ================= */
