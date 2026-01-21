@@ -18,17 +18,25 @@ export const useAuth = create((set) => ({
 
 
   login: async (email, password) => {
-  await adminLogin(email, password);
-  const me = await adminMe();   
-  set({ user: me });
-  return me;
-},
+    await adminLogin(email, password);
+    const me = await adminMe();
+    set({ user: me });
+    return me;
+  },
 
 
   logout: async () => {
     try {
       await adminLogout();
     } catch { }
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("rzp_checkout_anon_id");
+    localStorage.removeItem("rzp_device_id");
+    localStorage.removeItem("rzp_stored_checkout_id");
+
     set({ user: null });
   },
 
