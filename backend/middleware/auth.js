@@ -2,13 +2,14 @@ import jwt from "jsonwebtoken";
 
 export function authRequired(req, res, next) {
   try {
-    const hdr = req.headers.authorization || "";
-    const bearer = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
-    const token = req.cookies?.token || bearer;
+    const token =
+      req.cookies?.token ||
+      (req.headers.authorization?.startsWith("Bearer ")
+        ? req.headers.authorization.slice(7)
+        : null);
 
-    if (!token) {
-      return sendAuthError(req, res, "Authentication required");
-    }
+    if (!token)
+      return res.status(401).json({ message: "Unauthorized" });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -20,10 +21,10 @@ export function authRequired(req, res, next) {
     next();
   } catch (err) {
     if (err.name === "TokenExpiredError") {
-      return sendAuthError(req, res, "Session expired");
+      return res.status(401).json({ message: "TokenExpired" });
     }
 
-    return sendAuthError(req, res, "Invalid token");
+    return res.status(401).json({ message: "Unauthorized" });
   }
 }
 
