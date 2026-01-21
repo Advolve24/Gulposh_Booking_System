@@ -28,17 +28,18 @@ const createRefreshToken = (user) =>
   );
 
 const issueSession = (res, user) => {
+  // access token → SESSION cookie
   setSessionCookie(res, "token", createAccessToken(user), {
-    path: "/",
     persistent: false,
   });
 
+  // refresh token → PERSISTENT cookie
   setSessionCookie(res, "refresh_token", createRefreshToken(user), {
-    path: "/",
     persistent: true,
     days: 10,
   });
 };
+
 
 /* ===============================
    📱 PHONE OTP LOGIN
@@ -260,14 +261,12 @@ export const refresh = async (req, res) => {
     if (!user)
       return res.status(401).json({ message: "UserNotFound" });
 
-    // issue new access token
     setSessionCookie(res, "token", createAccessToken(user), {
-      path: "/",
       persistent: false,
     });
 
     res.json({ ok: true });
-  } catch (err) {
-    return res.status(401).json({ message: "RefreshExpired" });
+  } catch {
+    res.status(401).json({ message: "RefreshExpired" });
   }
 };
