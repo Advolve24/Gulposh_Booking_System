@@ -175,26 +175,26 @@ export default function Checkout() {
   }, [roomId, navigate]);
 
   /* ================= AUTOFILL PROFILE (READ-ONLY) ================= */
-useEffect(() => {
-  if (!user) return;
+  useEffect(() => {
+    if (!user) return;
 
-  setForm({
-    name: user.name || "",
-    email: user.email || "",
-    phone: user.phone || "",
-    dob: user.dob ? new Date(user.dob) : null,
-  });
+    setForm({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      dob: user.dob ? new Date(user.dob) : null,
+    });
 
-  setAddress({
-    address: user.address || "",
-    country: user.country || "",   // ✅ name
-    state: user.state || "",       // ✅ name
-    city: user.city || "",
-    pincode: user.pincode || "",
-  });
+    setAddress({
+      address: user.address || "",
+      country: user.country || "",   // ✅ name
+      state: user.state || "",       // ✅ name
+      city: user.city || "",
+      pincode: user.pincode || "",
+    });
 
-  setOtpStep("verified");
-}, [user]);
+    setOtpStep("verified");
+  }, [user]);
 
 
   /* ================= CALCULATIONS ================= */
@@ -679,8 +679,10 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+              {/* STREET ADDRESS — FULL ROW */}
+              <div className="md:col-span-4">
                 <ReadOnlyField
                   label="Street Address"
                   value={address.address}
@@ -688,25 +690,30 @@ useEffect(() => {
                 />
               </div>
 
+              {/* COUNTRY */}
               <ReadOnlyField
                 label="Country"
                 value={address.country}
               />
 
+              {/* STATE */}
               <ReadOnlyField
                 label="State"
                 value={address.state}
               />
 
+              {/* CITY */}
               <ReadOnlyField
                 label="City"
                 value={address.city}
               />
 
+              {/* PINCODE */}
               <ReadOnlyField
                 label="Pincode"
                 value={address.pincode}
               />
+
             </div>
 
           </div>
