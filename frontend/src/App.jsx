@@ -5,19 +5,18 @@ import {
   Route,
   Navigate,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 
-import CompleteProfile from "./pages/CompleteProfile";
+import { useAuth } from "./store/authStore";
+
+/* ================= PAGES ================= */
 import Home from "./pages/Home";
+import CompleteProfile from "./pages/CompleteProfile";
 import RoomPage from "./pages/RoomPage";
 import Checkout from "./pages/Checkout";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import { useAuth } from "./store/authStore";
-import AuthModal from "./components/AuthModal";
 import MyBookings from "./pages/MyBookings";
 import MyAccount from "./pages/MyAccount";
-import VillaInvoice from "./components/VillaInvoice";
 import Invoices from "./pages/Invoices";
 import BookingSuccess from "./pages/BookingSuccess";
 import EntireVillaform from "./pages/EntireVillaform";
@@ -28,10 +27,14 @@ import PoolSafety from "./pages/PoolSafety";
 import HouseRules from "./pages/HouseRules";
 import ThankYou from "./pages/ThankYou";
 
-import RequireProfileComplete from "./components/RequireProfileComplete";
+/* ================= COMPONENTS ================= */
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import AuthModal from "./components/AuthModal";
+import VillaInvoice from "./components/VillaInvoice";
 
 /* =====================================================
-   🔄 SCROLL TO TOP
+   🔁 SCROLL TO TOP
 ===================================================== */
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -44,101 +47,161 @@ function ScrollToTop() {
 }
 
 /* =====================================================
-   🏁 APP ROOT
+   🔐 ROUTE GUARD
 ===================================================== */
-export default function App() {
+function RequireAuth({ children }) {
+  const { user, openAuth } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    sessionStorage.setItem(
+      "postAuthRedirect",
+      JSON.stringify({
+        redirectTo: location.pathname,
+        bookingState: location.state || null,
+      })
+    );
+
+    openAuth();
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+/* =====================================================
+   🔐 PROFILE GUARD
+===================================================== */
+function RequireProfile({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (user && !user.profileComplete && location.pathname !== "/complete-profile") {
+    return (
+      <Navigate
+        to="/complete-profile"
+        replace
+        state={{
+          redirectTo: location.pathname,
+          bookingState: location.state || null,
+        }}
+      />
+    );
+  }
+
+  return children;
+}
+
+/* =====================================================
+   🚦 APP ROUTES
+===================================================== */
+function AppRoutes() {
   return (
-    <BrowserRouter>
-      {/* 🔑 REQUIRED FOR FIREBASE PHONE AUTH */}
-      <div id="recaptcha-container"></div>
+    <>
+      {/* 🔑 REQUIRED FOR FIREBASE OTP */}
+      <div id="recaptcha-container" />
 
       <ScrollToTop />
-
       <Header />
       <AuthModal />
 
       <Routes>
-        {/* 🌍 PUBLIC */}
+        {/* PUBLIC */}
         <Route path="/" element={<Home />} />
         <Route path="/room/:id" element={<RoomPage />} />
-        <Route path="/terms" element={<TermsConditions />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/refund" element={<RefundCancellation />} />
-        <Route path="/pool-safety" element={<PoolSafety />} />
-        <Route path="/house-rules" element={<HouseRules />} />
+        <Route path="/entire-villa-form" element={<EntireVillaform />} />
         <Route path="/thank-you" element={<ThankYou />} />
 
-        {/* 🔴 PROFILE COMPLETION */}
-        <Route path="/complete-profile" element={<CompleteProfile />} />
+        {/* PROFILE */}
+        <Route
+          path="/complete-profile"
+          element={
+            <RequireAuth>
+              <CompleteProfile />
+            </RequireAuth>
+          }
+        />
 
-        {/* 🔐 PROTECTED ROUTES */}
+        {/* PROTECTED */}
         <Route
           path="/checkout"
           element={
-            <RequireProfileComplete>
-              <Checkout />
-            </RequireProfileComplete>
+            <RequireAuth>
+              <RequireProfile>
+                <Checkout />
+              </RequireProfile>
+            </RequireAuth>
           }
         />
 
         <Route
           path="/bookings"
           element={
-            <RequireProfileComplete>
+            <RequireAuth>
               <MyBookings />
-            </RequireProfileComplete>
+            </RequireAuth>
           }
         />
 
         <Route
           path="/my-account"
           element={
-            <RequireProfileComplete>
+            <RequireAuth>
               <MyAccount />
-            </RequireProfileComplete>
+            </RequireAuth>
           }
         />
 
         <Route
           path="/invoices"
           element={
-            <RequireProfileComplete>
+            <RequireAuth>
               <Invoices />
-            </RequireProfileComplete>
+            </RequireAuth>
           }
         />
 
         <Route
           path="/invoice-view/:id"
           element={
-            <RequireProfileComplete>
+            <RequireAuth>
               <VillaInvoice />
-            </RequireProfileComplete>
+            </RequireAuth>
           }
         />
 
         <Route
           path="/booking-success/:id"
           element={
-            <RequireProfileComplete>
+            <RequireAuth>
               <BookingSuccess />
-            </RequireProfileComplete>
+            </RequireAuth>
           }
         />
 
-        <Route
-          path="/entire-villa-form"
-          element={
-            <RequireProfileComplete>
-              <EntireVillaform />
-            </RequireProfileComplete>
-          }
-        />
+        {/* LEGAL */}
+        <Route path="/terms" element={<TermsConditions />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/refund" element={<RefundCancellation />} />
+        <Route path="/pool-safety" element={<PoolSafety />} />
+        <Route path="/house-rules" element={<HouseRules />} />
 
+        {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       <Footer />
+    </>
+  );
+}
+
+/* =====================================================
+   🚀 ROOT APP
+===================================================== */
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

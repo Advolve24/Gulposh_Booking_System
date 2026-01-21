@@ -24,19 +24,16 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
-import {
-  getAllCountries,
-  getStatesByCountry,
-  getCitiesByState,
-} from "../lib/location";
-
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
+import { Country, State, City } from "country-state-city";
+
 export default function MyAccount() {
-  /* ================= STATE ================= */
   const navigate = useNavigate();
+
+  /* ================= STATE ================= */
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -62,28 +59,63 @@ export default function MyAccount() {
 
   const [otpStep, setOtpStep] = useState("idle"); // idle | sent | verified
   const [otp, setOtp] = useState("");
+  const [confirmRef, setConfirmRef] = useState(null);
+
+  /* ================= LOCATION ================= */
+
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+
+  const [countryCode, setCountryCode] = useState("IN");
+  const [stateCode, setStateCode] = useState("");
+  const [cityName, setCityName] = useState("");
 
   /* ================= LOAD PROFILE ================= */
+
   useEffect(() => {
     (async () => {
       try {
         const { data } = await api.get("/auth/me");
 
-        const loadedForm = {
+        const allCountries = Country.getAllCountries();
+        setCountries(allCountries);
+
+        const countryObj =
+          allCountries.find((c) => c.name === data.country) ||
+          allCountries.find((c) => c.isoCode === "IN");
+
+        const countryISO = countryObj?.isoCode || "IN";
+        const stateList = State.getStatesOfCountry(countryISO);
+
+        const stateObj = stateList.find((s) => s.name === data.state);
+        const stateISO = stateObj?.isoCode || "";
+
+        const cityList = stateISO
+          ? City.getCitiesOfState(countryISO, stateISO)
+          : [];
+
+        setCountryCode(countryISO);
+        setStates(stateList);
+        setStateCode(stateISO);
+        setCities(cityList);
+        setCityName(data.city || "");
+
+        const loaded = {
           name: data.name || "",
           email: data.email || "",
           dob: data.dob ? new Date(data.dob) : null,
           address: data.address || "",
-          country: data.country || "",
+          country: countryObj?.name || "",
           state: data.state || "",
           city: data.city || "",
           pincode: data.pincode || "",
         };
 
-        setForm(loadedForm);
+        setForm(loaded);
         setInitialForm({
-          ...loadedForm,
-          dob: loadedForm.dob ? loadedForm.dob.toISOString() : null,
+          ...loaded,
+          dob: loaded.dob ? loaded.dob.toISOString() : null,
         });
 
         setPhone(data.phone || "");
@@ -96,7 +128,8 @@ export default function MyAccount() {
     })();
   }, []);
 
-  /* ================= DETECT UNSAVED CHANGES ================= */
+  /* ================= UNSAVED CHANGES ================= */
+
   useEffect(() => {
     if (!initialForm) return;
 
@@ -110,28 +143,63 @@ export default function MyAccount() {
 
   const phoneChanged = phone !== originalPhone;
 
-  /* ================= LOCATION ================= */
-  const countries = getAllCountries();
-  const states = form.country ? getStatesByCountry(form.country) : [];
-  const cities =
-    form.country && form.state
-      ? getCitiesByState(form.country, form.state)
-      : [];
+  /* ================= LOCATION HANDLERS ================= */
 
-  /* ================= OTP ================= */
+  const onCountryChange = (code) => {
+    const country = countries.find((c) => c.isoCode === code);
+
+    setCountryCode(code);
+    setStateCode("");
+    setCityName("");
+
+    setStates(State.getStatesOfCountry(code));
+    setCities([]);
+
+    setForm((f) => ({
+      ...f,
+      country: country?.name || "",
+      state: "",
+      city: "",
+    }));
+  };
+
+  const onStateChange = (code) => {
+    const state = states.find((s) => s.isoCode === code);
+
+    setStateCode(code);
+    setCityName("");
+
+    setCities(City.getCitiesOfState(countryCode, code));
+
+    setForm((f) => ({
+      ...f,
+      state: state?.name || "",
+      city: "",
+    }));
+  };
+
+  const onCityChange = (name) => {
+    setCityName(name);
+    setForm((f) => ({ ...f, city: name }));
+  };
+
+  /* ================= PHONE OTP ================= */
+
   const sendOtp = async () => {
     if (!/^[0-9]{10}$/.test(phone)) {
-      return toast.error("Enter valid 10 digit phone number");
+      toast.error("Enter valid 10-digit phone number");
+      return;
     }
 
     try {
       const verifier = getRecaptchaVerifier();
-      const result = await signInWithPhoneNumber(
+      const confirmation = await signInWithPhoneNumber(
         auth,
         `+91${phone}`,
         verifier
       );
-      window.confirmationResult = result;
+
+      setConfirmRef(confirmation);
       setOtpStep("sent");
       toast.success("OTP sent");
     } catch {
@@ -140,8 +208,21 @@ export default function MyAccount() {
   };
 
   const verifyOtp = async () => {
+    if (!confirmRef) return;
+
     try {
-      await window.confirmationResult.confirm(otp);
+      const result = await confirmRef.confirm(otp);
+      const idToken = await result.user.getIdToken(true);
+
+      await api.post(
+        "/auth/phone-login",
+        {},
+        {
+          headers: { Authorization: `Bearer ${idToken}` },
+          withCredentials: true,
+        }
+      );
+
       setOtpStep("verified");
       setOriginalPhone(phone);
       toast.success("Phone number verified");
@@ -150,12 +231,13 @@ export default function MyAccount() {
     }
   };
 
-  /* ================= SAVE PROFILE ================= */
+  /* ================= SAVE ================= */
+
   const onSave = async () => {
     if (!form.name.trim()) return toast.error("Name is required");
     if (!form.dob) return toast.error("Date of birth is required");
     if (phoneChanged && otpStep !== "verified")
-      return toast.error("Verify phone number before saving");
+      return toast.error("Verify phone before saving");
 
     try {
       setSaving(true);
@@ -163,6 +245,7 @@ export default function MyAccount() {
       await api.put("/auth/me", {
         name: form.name,
         email: form.email || null,
+        phone,
         dob: form.dob.toISOString(),
         address: form.address || null,
         country: form.country || null,
@@ -176,10 +259,10 @@ export default function MyAccount() {
         dob: form.dob.toISOString(),
       });
 
-      setHasChanges(false);
       setEditMode(false);
+      setHasChanges(false);
       setOtpStep("idle");
-      toast.success("Profile updated successfully");
+      toast.success("Profile updated");
     } catch (err) {
       toast.error(err?.response?.data?.message || "Update failed");
     } finally {
@@ -187,32 +270,25 @@ export default function MyAccount() {
     }
   };
 
-  /* ================= DELETE ACCOUNT ================= */
+  /* ================= DELETE ================= */
+
   const onDeleteAccount = async () => {
-    const ok = confirm(
-      "Are you sure you want to permanently delete your account? This action cannot be undone."
-    );
-    if (!ok) return;
+    if (!confirm("This will permanently delete your account. Continue?"))
+      return;
 
     try {
       setDeleting(true);
       await api.delete("/auth/me");
-      toast.success("Account deleted successfully");
+      toast.success("Account deleted");
       window.location.href = "/";
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to delete account");
+    } catch {
+      toast.error("Failed to delete account");
     } finally {
       setDeleting(false);
     }
   };
 
-  const initials =
-    form.name
-      ?.split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "U";
+  /* ================= UI ================= */
 
   if (loading) {
     return (
@@ -222,55 +298,43 @@ export default function MyAccount() {
     );
   }
 
+  const initials =
+    form.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "U";
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-2 sm:py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       <div id="recaptcha-container" />
 
-      {/* HEADER */}
       <div className="text-center">
         <h1 className="text-3xl font-semibold">My Account</h1>
         <p className="text-muted-foreground mt-1">
-          Manage your personal information and preferences
+          Manage your personal information
         </p>
       </div>
 
-      {/* PROFILE CARD */}
-      <Card className="rounded-2xl border bg-white p-6 sm:p-8 space-y-6">
-        {/* ACTION BAR */}
+      <Card className="rounded-2xl p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Profile Information</h2>
+          <h2 className="text-xl font-semibold">Profile</h2>
 
           {!editMode ? (
-            <Button onClick={() => setEditMode(true)}>Edit Profile</Button>
+            <Button onClick={() => setEditMode(true)}>Edit</Button>
           ) : (
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (hasChanges) {
-                    toast.error("Save changes first");
-                    return;
-                  }
-                  navigate(-1); // 👈 GO BACK
-                }}
-              >
+              <Button variant="outline" onClick={() => setEditMode(false)}>
                 Cancel
               </Button>
-
               <Button onClick={onSave} disabled={saving}>
-                {saving ? "Saving..." : "Save Changes"}
+                {saving ? "Saving…" : "Save"}
               </Button>
             </div>
           )}
         </div>
 
-        {editMode && hasChanges && (
-          <div className="rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-            You have unsaved changes.
-          </div>
-        )}
-
-        {/* AVATAR */}
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-primary text-white flex items-center justify-center text-xl font-semibold">
             {initials}
@@ -285,75 +349,43 @@ export default function MyAccount() {
 
         {/* FORM */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
           <div>
             <Label>Name</Label>
-            <Input
-              disabled={!editMode}
-              value={form.name}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, name: e.target.value }))
-              }
-            />
+            <Input disabled={!editMode} value={form.name}
+              onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
 
           <div>
             <Label>Email</Label>
-            <Input
-              disabled={!editMode}
-              value={form.email}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, email: e.target.value }))
-              }
-            />
+            <Input disabled={!editMode} value={form.email}
+              onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} />
           </div>
 
           <div>
             <Label>Date of Birth</Label>
-
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  disabled={!editMode}
-                  className="
-          w-full
-          justify-between
-          overflow-hidden
-          whitespace-nowrap
-        "
-                >
-                  {/* DATE TEXT (SAFE WIDTH) */}
-                  <span className="truncate text-left">
-                    {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date"}
-                  </span>
-
-                  {/* ICON (FIXED SIZE) */}
-                  <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                <Button variant="outline" disabled={!editMode} className="w-full justify-between">
+                  {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date"}
+                  <CalendarIcon className="h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-
-              <PopoverContent
-                className="w-auto p-0"
-                align="start"
-                side="bottom"
-              >
+              <PopoverContent className="p-0">
                 <Calendar
                   mode="single"
-                  selected={form.dob}
-                  onSelect={(d) =>
-                    setForm((f) => ({ ...f, dob: d }))
-                  }
                   captionLayout="dropdown"
                   fromYear={1950}
                   toYear={new Date().getFullYear()}
-                  disabled={(date) => date > new Date()}
+                  selected={form.dob}
+                  onSelect={(d) => setForm(f => ({ ...f, dob: d }))}
                 />
               </PopoverContent>
             </Popover>
           </div>
 
           <div>
-            <Label>Phone Number</Label>
+            <Label>Phone</Label>
             <Input
               disabled={!editMode}
               value={phone}
@@ -369,51 +401,30 @@ export default function MyAccount() {
             )}
             {otpStep === "sent" && (
               <div className="flex gap-2 mt-2">
-                <Input
-                  placeholder="Enter OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                />
-                <Button size="sm" onClick={verifyOtp}>
-                  Verify
-                </Button>
+                <Input value={otp} onChange={(e) => setOtp(e.target.value)} />
+                <Button size="sm" onClick={verifyOtp}>Verify</Button>
               </div>
             )}
             {otpStep === "verified" && (
-              <p className="flex items-center gap-1 text-sm text-green-600 mt-1">
-                <ShieldCheck className="w-4 h-4" /> Phone verified
+              <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
+                <ShieldCheck className="w-4 h-4" /> Verified
               </p>
             )}
           </div>
 
           <div className="sm:col-span-2">
             <Label>Address</Label>
-            <Input
-              disabled={!editMode}
-              value={form.address}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, address: e.target.value }))
-              }
-            />
+            <Input disabled={!editMode} value={form.address}
+              onChange={(e) => setForm(f => ({ ...f, address: e.target.value }))} />
           </div>
 
           <div>
             <Label>Country</Label>
-            <Select
-              disabled={!editMode}
-              value={form.country}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, country: v, state: "", city: "" }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Country" />
-              </SelectTrigger>
+            <Select disabled={!editMode} value={countryCode} onValueChange={onCountryChange}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {countries.map((c) => (
-                  <SelectItem key={c.isoCode} value={c.isoCode}>
-                    {c.name}
-                  </SelectItem>
+                {countries.map(c => (
+                  <SelectItem key={c.isoCode} value={c.isoCode}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -421,21 +432,11 @@ export default function MyAccount() {
 
           <div>
             <Label>State</Label>
-            <Select
-              disabled={!editMode || !form.country}
-              value={form.state}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, state: v, city: "" }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="State" />
-              </SelectTrigger>
+            <Select disabled={!editMode || !states.length} value={stateCode} onValueChange={onStateChange}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {states.map((s) => (
-                  <SelectItem key={s.isoCode} value={s.isoCode}>
-                    {s.name}
-                  </SelectItem>
+                {states.map(s => (
+                  <SelectItem key={s.isoCode} value={s.isoCode}>{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -443,19 +444,11 @@ export default function MyAccount() {
 
           <div>
             <Label>City</Label>
-            <Select
-              disabled={!editMode || !form.state}
-              value={form.city}
-              onValueChange={(v) => setForm((f) => ({ ...f, city: v }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="City" />
-              </SelectTrigger>
+            <Select disabled={!editMode || !cities.length} value={cityName} onValueChange={onCityChange}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {cities.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
-                    {c.name}
-                  </SelectItem>
+                {cities.map((c, i) => (
+                  <SelectItem key={i} value={c.name}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -463,36 +456,24 @@ export default function MyAccount() {
 
           <div>
             <Label>Pincode</Label>
-            <Input
-              disabled={!editMode}
-              value={form.pincode}
+            <Input disabled={!editMode} value={form.pincode}
               onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-                }))
-              }
-            />
+                setForm(f => ({ ...f, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) }))
+              } />
           </div>
         </div>
       </Card>
 
-      {/* DANGER ZONE */}
-      <Card className="rounded-2xl border border-red-200 bg-white p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+      <Card className="border-red-200 p-6">
+        <div className="flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold text-red-600">Danger Zone</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-md">
-              Permanently delete your account and all associated data.
+            <p className="text-sm text-muted-foreground">
+              Permanently delete your account
             </p>
           </div>
-
-          <Button
-            variant="destructive"
-            disabled={deleting}
-            onClick={onDeleteAccount}
-          >
-            {deleting ? "Deleting..." : "Delete Account"}
+          <Button variant="destructive" onClick={onDeleteAccount} disabled={deleting}>
+            {deleting ? "Deleting…" : "Delete Account"}
           </Button>
         </div>
       </Card>

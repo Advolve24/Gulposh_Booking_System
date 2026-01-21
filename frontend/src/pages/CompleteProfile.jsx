@@ -20,34 +20,40 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
-import {
-  getAllCountries,
-  getStatesByCountry,
-  getCitiesByState,
-} from "../lib/location";
+import { Country, State, City } from "country-state-city";
 
 export default function CompleteProfile() {
   const { user, init } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isGoogleLogin = user?.authProvider === "google";
+  const isPhoneLogin = user?.authProvider === "phone";
+
+
   const [loading, setLoading] = useState(false);
+
+  /* ================= LOCATION STATE ================= */
 
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
 
-  // ✅ detect login provider
-  const isGoogleLogin = user?.authProvider === "google";
+  const [countryCode, setCountryCode] = useState("IN");
+  const [stateCode, setStateCode] = useState("");
+  const [cityName, setCityName] = useState("");
+
+  /* ================= FORM ================= */
 
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     dob: null,
+
     address: "",
     country: "",
     state: "",
@@ -55,53 +61,102 @@ export default function CompleteProfile() {
     pincode: "",
   });
 
-  /* 🚫 BLOCK ACCESS IF PROFILE ALREADY COMPLETE */
+  /* 🚫 BLOCK IF ALREADY COMPLETE */
   useEffect(() => {
     if (user?.profileComplete) {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
-  /* 🔁 PREFILL FROM USER */
+  /* ================= LOAD COUNTRIES ================= */
+
   useEffect(() => {
-    if (!user) return;
+    const all = Country.getAllCountries();
+    setCountries(all);
+  }, []);
+
+  /* ================= PREFILL USER ================= */
+
+  useEffect(() => {
+    if (!user || !countries.length) return;
+
+    const countryObj =
+      countries.find((c) => c.name === user.country) ||
+      countries.find((c) => c.isoCode === "IN");
+
+    const countryISO = countryObj?.isoCode || "IN";
+
+    const stateList = State.getStatesOfCountry(countryISO);
+    const stateObj = stateList.find((s) => s.name === user.state);
+
+    const stateISO = stateObj?.isoCode || "";
+
+    const cityList = stateISO
+      ? City.getCitiesOfState(countryISO, stateISO)
+      : [];
+
+    setCountryCode(countryISO);
+    setStates(stateList);
+    setStateCode(stateISO);
+    setCities(cityList);
+    setCityName(user.city || "");
 
     setForm({
       name: user.name || "",
       email: user.email || "",
       phone: user.phone || "",
       dob: user.dob ? new Date(user.dob) : null,
+
       address: user.address || "",
-      country: user.country || "",
+      country: countryObj?.name || "",
       state: user.state || "",
       city: user.city || "",
       pincode: user.pincode || "",
     });
-  }, [user]);
+  }, [user, countries]);
 
-  /* 🌍 LOAD COUNTRIES */
-  useEffect(() => {
-    setCountries(getAllCountries());
-  }, []);
+  /* ================= HANDLERS ================= */
 
-  useEffect(() => {
-    if (form.country) {
-      setStates(getStatesByCountry(form.country));
-    } else {
-      setStates([]);
-    }
+  const onCountryChange = (code) => {
+    const country = countries.find((c) => c.isoCode === code);
+
+    setCountryCode(code);
+    setStateCode("");
+    setCityName("");
+
+    setStates(State.getStatesOfCountry(code));
     setCities([]);
-  }, [form.country]);
 
-  useEffect(() => {
-    if (form.state && form.country) {
-      setCities(getCitiesByState(form.country, form.state));
-    } else {
-      setCities([]);
-    }
-  }, [form.state, form.country]);
+    setForm((f) => ({
+      ...f,
+      country: country?.name || "",
+      state: "",
+      city: "",
+    }));
+  };
 
-  /* ✅ SUBMIT PROFILE */
+  const onStateChange = (code) => {
+    const state = states.find((s) => s.isoCode === code);
+
+    setStateCode(code);
+    setCityName("");
+
+    setCities(City.getCitiesOfState(countryCode, code));
+
+    setForm((f) => ({
+      ...f,
+      state: state?.name || "",
+      city: "",
+    }));
+  };
+
+  const onCityChange = (name) => {
+    setCityName(name);
+    setForm((f) => ({ ...f, city: name }));
+  };
+
+  /* ================= SUBMIT ================= */
+
   const submit = async () => {
     if (!form.name.trim()) {
       toast.error("Full name is required");
@@ -114,24 +169,22 @@ export default function CompleteProfile() {
     }
 
     if (isGoogleLogin && form.phone.length !== 10) {
-      toast.error("Mobile number is required");
+      toast.error("Valid mobile number is required");
       return;
     }
 
     try {
       setLoading(true);
 
-      const countryObj = countries.find(c => c.isoCode === form.country);
-      const stateObj = states.find(s => s.isoCode === form.state);
-
       await api.put("/auth/me", {
         name: form.name.trim(),
         email: form.email || null,
         phone: isGoogleLogin ? form.phone : null,
         dob: form.dob.toISOString(),
+
         address: form.address || null,
-        country: countryObj?.name || null,
-        state: stateObj?.name || null,
+        country: form.country || null,
+        state: form.state || null,
         city: form.city || null,
         pincode: form.pincode || null,
       });
@@ -140,36 +193,34 @@ export default function CompleteProfile() {
 
       toast.success("Profile completed successfully 🎉");
 
-      const redirectTo = location.state?.redirectTo || "/";
-      const bookingState = location.state?.bookingState;
-
-      navigate(redirectTo, {
+      navigate(location.state?.redirectTo || "/", {
         replace: true,
-        state: bookingState,
+        state: location.state?.bookingState,
       });
-
     } catch (err) {
-      toast.error(
-        err?.response?.data?.message || "Failed to save profile"
-      );
+      toast.error(err?.response?.data?.message || "Failed to save profile");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ================= UI ================= */
+
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-6">
-      <div className="rounded-xl border p-5 space-y-5 bg-white">
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="bg-white border rounded-2xl p-6 space-y-6">
 
         <div>
-          <h2 className="text-xl font-semibold">Complete your profile</h2>
+          <h2 className="text-2xl font-semibold">Complete Your Profile</h2>
           <p className="text-sm text-muted-foreground">
-            This information will be used for checkout and invoices.
+            Kindly complete your profile to ensure a seamless booking and billing experience.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
+        <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:gap-4">
+
+          {/* FULL NAME */}
           <div>
             <Label>Full Name</Label>
             <Input
@@ -180,92 +231,104 @@ export default function CompleteProfile() {
             />
           </div>
 
-          <div>
+          {/* EMAIL */}
+          <div className="space-y-1">
             <Label>Email</Label>
             <Input
               type="email"
               value={form.email}
-              disabled={isGoogleLogin}   // ✅ LOCK for Google users
+              disabled={isGoogleLogin}
+              className={isGoogleLogin ? "bg-muted cursor-not-allowed" : ""}
               onChange={(e) =>
                 setForm((f) => ({ ...f, email: e.target.value }))
               }
             />
             {isGoogleLogin && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Email is linked to your Google account
+              <p className="text-xs text-muted-foreground">
+                This verified email is linked to your Google account and will be used for booking communication.
+              </p>
+            )}
+            {isPhoneLogin && (
+              <p className="text-xs text-muted-foreground">
+                Add an email to receive booking confirmations and invoices.
               </p>
             )}
           </div>
-          <div>
+
+          {/* PHONE + DOB (SAME ROW) */}
+          <div className="space-y-1">
             <Label>Mobile Number</Label>
             <Input
               inputMode="numeric"
-              placeholder="Enter mobile number"
+              maxLength={10}
               value={form.phone}
-              disabled={!isGoogleLogin}   // ✅ LOCK for OTP users
+              disabled={isPhoneLogin}
+              className={isPhoneLogin ? "bg-muted cursor-not-allowed" : ""}
               onChange={(e) =>
                 setForm((f) => ({
                   ...f,
-                  phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                  phone: e.target.value.replace(/\D/g, ""),
                 }))
               }
             />
-            {!isGoogleLogin && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Mobile number is verified via OTP
+            {isPhoneLogin && (
+              <p className="text-xs text-muted-foreground">
+                This mobile number is verified via OTP and cannot be changed.
+              </p>
+            )}
+            {isGoogleLogin && (
+              <p className="text-xs text-muted-foreground">
+                Please add a mobile number for contact during your stay.
               </p>
             )}
           </div>
 
-
-
-          <div className="sm:col-span-2">
+          <div className="space-y-1">
             <Label>Date of Birth</Label>
-
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-start text-left font-normal"
+                  className="w-full justify-between"
                 >
-                  {form.dob ? format(form.dob, "dd MMM yyyy") : "Select date of birth"}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                  {form.dob
+                    ? format(form.dob, "dd MMM yyyy")
+                    : "Select date of birth"}
+                  <CalendarIcon className="h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="p-0">
                 <Calendar
                   mode="single"
-                  selected={form.dob}
-                  onSelect={(d) => {
-                    if (!d) return;
-                    setForm((f) => ({ ...f, dob: d }));
-                  }}
-                  captionLayout="dropdown"   // ✅ month + year dropdown
+                  captionLayout="dropdown"
                   fromYear={1950}
                   toYear={new Date().getFullYear()}
-                  initialFocus
+                  selected={form.dob}
+                  onSelect={(d) =>
+                    setForm((f) => ({ ...f, dob: d }))
+                  }
                 />
               </PopoverContent>
             </Popover>
           </div>
 
+          {/* ADDRESS (FULL WIDTH) */}
+          <div className="sm:col-span-2">
+            <Label>Address</Label>
+            <Input
+              value={form.address}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, address: e.target.value }))
+              }
+            />
+          </div>
 
+          {/* COUNTRY + STATE */}
           <div>
             <Label>Country</Label>
-            <Select
-              value={form.country}
-              onValueChange={(v) =>
-                setForm((f) => ({
-                  ...f,
-                  country: v,
-                  state: "",
-                  city: "",
-                }))
-              }
-            >
+            <Select value={countryCode} onValueChange={onCountryChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Select country" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {countries.map((c) => (
@@ -280,11 +343,9 @@ export default function CompleteProfile() {
           <div>
             <Label>State</Label>
             <Select
-              value={form.state}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, state: v, city: "" }))
-              }
-              disabled={!form.country}
+              value={stateCode}
+              disabled={!states.length}
+              onValueChange={onStateChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select state" />
@@ -299,21 +360,20 @@ export default function CompleteProfile() {
             </Select>
           </div>
 
+          {/* CITY + PINCODE */}
           <div>
             <Label>City</Label>
             <Select
-              value={form.city}
-              onValueChange={(v) =>
-                setForm((f) => ({ ...f, city: v }))
-              }
-              disabled={!form.state}
+              value={cityName}
+              disabled={!cities.length}
+              onValueChange={onCityChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select city" />
               </SelectTrigger>
               <SelectContent>
-                {cities.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
+                {cities.map((c, i) => (
+                  <SelectItem key={i} value={c.name}>
                     {c.name}
                   </SelectItem>
                 ))}
@@ -325,38 +385,23 @@ export default function CompleteProfile() {
             <Label>Pincode</Label>
             <Input
               inputMode="numeric"
+              maxLength={6}
               value={form.pincode}
               onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-                }))
+                setForm((f) => ({ ...f, pincode: e.target.value }))
               }
             />
           </div>
-
-          <div className="sm:col-span-2">
-            <Label>Address</Label>
-            <Input
-              value={form.address}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, address: e.target.value }))
-              }
-            />
-          </div>
-
         </div>
 
         <Button
-          className="w-full"
-          onClick={submit}
+          className="w-full text-lg rounded-xl"
           disabled={loading}
+          onClick={submit}
         >
           {loading ? "Saving..." : "Save & Continue"}
         </Button>
-
       </div>
     </div>
   );
 }
-

@@ -136,10 +136,10 @@ export default function BookingSuccess() {
 
     /* ---------------- UI ---------------- */
 
-    useEffect(() => {
-  // ✅ Clear Home search card data after successful booking
-  sessionStorage.removeItem("searchParams");
-}, []);
+//     useEffect(() => {
+//   // ✅ Clear Home search card data after successful booking
+//   sessionStorage.removeItem("searchParams");
+// }, []);
 
 
     return (
