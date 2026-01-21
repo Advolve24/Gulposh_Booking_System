@@ -243,3 +243,31 @@ export const updateMe = async (req, res) => {
     res.status(500).json({ message: "Failed to update profile" });
   }
 };
+
+/* ===========Refresh Token======*/
+export const refresh = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refresh_token;
+    if (!refreshToken)
+      return res.status(401).json({ message: "NoRefreshToken" });
+
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET
+    );
+
+    const user = await User.findById(decoded.id);
+    if (!user)
+      return res.status(401).json({ message: "UserNotFound" });
+
+    // issue new access token
+    setSessionCookie(res, "token", createAccessToken(user), {
+      path: "/",
+      persistent: false,
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    return res.status(401).json({ message: "RefreshExpired" });
+  }
+};
