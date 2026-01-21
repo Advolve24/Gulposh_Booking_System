@@ -356,6 +356,19 @@ export default function Checkout() {
       ? room.images[0]
       : room?.image || room?.coverImage || null;
 
+
+  function ReadOnlyField({ label, value }) {
+    return (
+      <div className="space-y-1">
+        <Label>{label}</Label>
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-foreground">
+          {value || "—"}
+        </div>
+      </div>
+    );
+  }
+
+
   /* ================= UI ================= */
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -457,7 +470,7 @@ export default function Checkout() {
                 {/* LOCATION */}
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  <span>Pune, Maharashtra</span>
+                  <span>Karjat, Maharashtra</span>
                 </div>
 
                 {/* GUESTS + MEALS */}
@@ -553,6 +566,7 @@ export default function Checkout() {
         <section className="lg:col-span-6 space-y-6">
 
           {/* ================= PERSONAL INFORMATION ================= */}
+          {/* ================= PERSONAL INFORMATION ================= */}
           <div className="rounded-2xl border bg-white p-5 sm:p-6">
             <div className="flex items-start gap-3 mb-5">
               <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -567,57 +581,18 @@ export default function Checkout() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Full Name</Label>
-                <Input value={form.name} disabled />
-              </div>
-
-              <div>
-                <Label>Email Address</Label>
-                <Input
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, email: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div>
-                <Label>Date of Birth</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
-                      <span>
-                        {form.dob
-                          ? format(form.dob, "dd MMM yyyy")
-                          : "Select date"}
-                      </span>
-                      <CalendarIcon className="h-4 w-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="p-0">
-                    <Calendar
-                      mode="single"
-                      selected={form.dob}
-                      onSelect={(d) =>
-                        setForm((f) => ({ ...f, dob: d }))
-                      }
-                      captionLayout="dropdown"
-                      fromYear={1950}
-                      toYear={new Date().getFullYear()}
-                      disabled={(d) => d > new Date()}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div>
-                <Label>Phone Number</Label>
-                <Input value={form.phone} disabled />
-              </div>
+              <ReadOnlyField label="Full Name" value={form.name} />
+              <ReadOnlyField label="Email Address" value={form.email} />
+              <ReadOnlyField
+                label="Date of Birth"
+                value={form.dob ? format(form.dob, "dd MMM yyyy") : ""}
+              />
+              <ReadOnlyField label="Phone Number" value={form.phone} />
             </div>
           </div>
 
+
+          {/* ================= ADDRESS DETAILS ================= */}
           {/* ================= ADDRESS DETAILS ================= */}
           <div className="rounded-2xl border bg-white p-5 sm:p-6">
             <div className="flex items-start gap-3 mb-5">
@@ -634,84 +609,16 @@ export default function Checkout() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="md:col-span-3">
-                <Label>Street Address</Label>
-                <Input
+                <ReadOnlyField
+                  label="Street Address"
                   value={address.address}
-                  onChange={(e) =>
-                    setAddress((a) => ({ ...a, address: e.target.value }))
-                  }
                 />
               </div>
 
-              <div>
-                <Label>Country</Label>
-                <Select
-                  value={address.country}
-                  onValueChange={(v) =>
-                    setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
-                  }
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {countries.map((c) => (
-                      <SelectItem key={c.isoCode} value={c.isoCode}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>State</Label>
-                <Select
-                  value={address.state}
-                  onValueChange={(v) =>
-                    setAddress((a) => ({ ...a, state: v, city: "" }))
-                  }
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {statesList.map((s) => (
-                      <SelectItem key={s.isoCode} value={s.isoCode}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>City</Label>
-                <Select
-                  value={address.city}
-                  onValueChange={(v) =>
-                    setAddress((a) => ({ ...a, city: v }))
-                  }
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {citiesList.map((c) => (
-                      <SelectItem key={c.name} value={c.name}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Pincode</Label>
-                <Input
-                  value={address.pincode}
-                  onChange={(e) =>
-                    setAddress((a) => ({
-                      ...a,
-                      pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-                    }))
-                  }
-                />
-              </div>
+              <ReadOnlyField label="Country" value={address.country} />
+              <ReadOnlyField label="State" value={address.state} />
+              <ReadOnlyField label="City" value={address.city} />
+              <ReadOnlyField label="Pincode" value={address.pincode} />
             </div>
           </div>
 
