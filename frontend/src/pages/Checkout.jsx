@@ -10,8 +10,19 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft } from "lucide-react";
-import { MapPin, Users, Utensils, Check, User, ConciergeBell, } from "lucide-react";
-import { User, Mail, Phone, Calendar,CalendarIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Users,
+  Utensils,
+  Check,
+  User,
+  ConciergeBell,
+  Mail,
+  Phone,
+  Calendar as CalendarIcon,
+} from "lucide-react";
+
 import {
   toDateOnly,
   toDateOnlyFromAPI,
