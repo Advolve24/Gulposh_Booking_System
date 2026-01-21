@@ -9,41 +9,23 @@ export function setSessionCookie(
   value,
   {
     path = "/",
-    persistent = false,
+    persistent = true,   // 🔥 DEFAULT TRUE
     days = 7,
     domain,
   } = {}
 ) {
-  const isProduction = process.env.NODE_ENV === "production";
-
   res.cookie(name, value, {
     httpOnly: true,
-
-    /**
-     * REQUIRED for iOS + Google OAuth
-     * Safari drops SameSite=None cookies unless secure=true
-     */
     secure: true,
-
-    /**
-     * OAuth-safe configuration
-     */
     sameSite: "none",
-
-    /**
-     * Path & domain
-     */
     path,
     ...(domain ? { domain } : {}),
 
-    /**
-     * Expiry
-     */
-    ...(persistent
-      ? { maxAge: days * 24 * 60 * 60 * 1000 }
-      : {}),
+    // ✅ ALWAYS persist unless explicitly disabled
+    maxAge: days * 24 * 60 * 60 * 1000,
   });
 }
+
 
 export function clearSessionCookie(
   res,
