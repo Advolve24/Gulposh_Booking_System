@@ -29,7 +29,13 @@ const isValidPhone = (v) => /^[0-9]{10}$/.test(v);
 ===================================================== */
 
 export default function AuthModal() {
-  const { showAuthModal, closeAuth, phoneLoginWithToken } = useAuth();
+  const {
+    showAuthModal,
+    closeAuth,
+    phoneLoginWithToken,
+    googleLoginWithToken,
+  } = useAuth();
+
   const navigate = useNavigate();
 
   const [step, setStep] = useState("choice"); // choice | phone | otp
@@ -40,15 +46,57 @@ export default function AuthModal() {
   const confirmationRef = useRef(null);
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
+  const googleReadyRef = useRef(false);
 
   /* =====================================================
-     GOOGLE LOGIN (REDIRECT BASED – STABLE)
+     LOAD GOOGLE SCRIPT ONCE
+  ===================================================== */
+
+  useEffect(() => {
+    if (googleReadyRef.current) return;
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = () => {
+      googleReadyRef.current = true;
+    };
+
+    document.body.appendChild(script);
+  }, []);
+
+  /* =====================================================
+     GOOGLE LOGIN (TOKEN BASED – STABLE)
   ===================================================== */
 
   const handleGoogleLogin = () => {
-    closeAuth();
-    window.location.href =
-      import.meta.env.VITE_API_URL + "/auth/google-login";
+    if (!window.google) {
+      toast.error("Google not ready. Try again.");
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: async (res) => {
+        try {
+          setLoading(true);
+          toast.loading("Signing in with Google...", { id: "google" });
+
+          const user = await googleLoginWithToken(res.credential);
+
+          toast.success("Login successful 🎉", { id: "google" });
+          closeAuth();
+
+          resumeFlow(user);
+        } catch {
+          toast.error("Google login failed", { id: "google" });
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+
+    window.google.accounts.id.prompt();
   };
 
   /* =====================================================
@@ -87,9 +135,8 @@ export default function AuthModal() {
 
   const sendOtp = async () => {
     if (sendingRef.current) return;
-
     if (!isValidPhone(form.phone)) {
-      toast.error("Enter a valid 10-digit mobile number");
+      toast.error("Enter valid 10-digit mobile number");
       return;
     }
 
@@ -108,7 +155,7 @@ export default function AuthModal() {
         verifier
       );
 
-      toast.success("OTP sent successfully", { id: "otp" });
+      toast.success("OTP sent", { id: "otp" });
       setStep("otp");
       setSecondsLeft(OTP_TIMER);
     } catch {
@@ -122,31 +169,59 @@ export default function AuthModal() {
   /* =====================================================
      VERIFY OTP
   ===================================================== */
-const verifyOtp = async () => {
-  if (verifyingRef.current) return;
-  if (form.otp.length !== 6) return;
 
-  verifyingRef.current = true;
-  setLoading(true);
-  toast.loading("Verifying OTP...", { id: "verify" });
+  const verifyOtp = async () => {
+    if (verifyingRef.current) return;
+    if (form.otp.length !== 6) return;
 
-  try {
-    const result = await confirmationRef.current.confirm(form.otp);
-    const idToken = await result.user.getIdToken(true);
+    verifyingRef.current = true;
+    setLoading(true);
+    toast.loading("Verifying OTP...", { id: "verify" });
 
-    const user = await phoneLoginWithToken(idToken);
+    try {
+      const result = await confirmationRef.current.confirm(form.otp);
+      const idToken = await result.user.getIdToken(true);
 
-    toast.success("Login successful 🎉", { id: "verify" });
-    closeAuth();
+      const user = await phoneLoginWithToken(idToken);
 
-    /* ===============================
-       🔁 RESUME ORIGINAL FLOW
-    ================================ */
+      toast.success("Login successful 🎉", { id: "verify" });
+      closeAuth();
 
+      resumeFlow(user);
+    } catch {
+      toast.error("Invalid OTP", { id: "verify" });
+      setForm((f) => ({ ...f, otp: "" }));
+      verifyingRef.current = false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =====================================================
+   AUTO VERIFY OTP WHEN 6 DIGITS ENTERED
+===================================================== */
+
+  useEffect(() => {
+    if (
+      step === "otp" &&
+      form.otp.length === 6 &&
+      confirmationRef.current &&
+      !verifyingRef.current &&
+      !loading
+    ) {
+      verifyOtp();
+    }
+  }, [form.otp, step]);
+
+
+  /* =====================================================
+     RESUME ORIGINAL FLOW
+  ===================================================== */
+
+  const resumeFlow = (user) => {
     const raw = sessionStorage.getItem("postAuthRedirect");
     sessionStorage.removeItem("postAuthRedirect");
 
-    // 🆕 New user → complete profile
     if (!user.profileComplete) {
       navigate("/complete-profile", {
         replace: true,
@@ -155,10 +230,8 @@ const verifyOtp = async () => {
       return;
     }
 
-    // 🔙 Resume previous page (reserve / checkout)
     if (raw) {
       const { redirectTo, state } = JSON.parse(raw);
-
       navigate(redirectTo || "/", {
         replace: true,
         state: state || null,
@@ -166,18 +239,8 @@ const verifyOtp = async () => {
       return;
     }
 
-    // 🏠 Fallback
     navigate("/", { replace: true });
-
-  } catch {
-    toast.error("Invalid OTP. Please try again.", { id: "verify" });
-    setForm((f) => ({ ...f, otp: "" }));
-    verifyingRef.current = false;
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   /* =====================================================
      UI
@@ -193,23 +256,13 @@ const verifyOtp = async () => {
         }
       }}
     >
-      <DialogOverlay className="bg-black/10 " />
+      <DialogOverlay className="bg-black/10" />
 
-      <DialogContent className="
-        p-0
-        w-[92vw]
-        max-w-[420px]
-        rounded-3xl
-        overflow-hidden
-        bg-white
-        border-0
-        shadow-2xl
-      ">
+      <DialogContent className="p-0 w-[92vw] max-w-[420px] rounded-3xl overflow-hidden bg-white border-0 shadow-2xl">
         <VisuallyHidden>
           <h2>Authentication</h2>
         </VisuallyHidden>
 
-        {/* CLOSE */}
         <button
           onClick={() => {
             resetFlow();
@@ -220,23 +273,19 @@ const verifyOtp = async () => {
           <X className="h-4 w-4" />
         </button>
 
-        {/* ================= IMAGE / BRAND ================= */}
-        <div className="relative h-50 w-full">
+        <div className="relative h-48">
           <img
             src="/login-popup.webp"
-            alt="Gulposh Villa"
+            alt="Gulposh"
             className="h-full w-full object-cover"
           />
         </div>
 
-        {/* ================= FORM ================= */}
-        <div className="px-5 py-2 space-y-2">
+        <div className="px-5 py-4 space-y-4">
           <div className="text-center">
-            <h3 className="text-lg font-semibold">
-              Login / Sign up
-            </h3>
+            <h3 className="text-lg font-semibold">Login / Sign up</h3>
             <p className="text-xs text-muted-foreground">
-            Secure bookings • Trusted stays
+              Secure bookings • Trusted stays
             </p>
           </div>
 
@@ -304,11 +353,12 @@ const verifyOtp = async () => {
 
               <Button
                 className="w-full h-11 rounded-xl"
-                disabled={loading || form.otp.length !== 6}
+                disabled={loading || verifyingRef.current}
                 onClick={verifyOtp}
               >
                 Verify & Continue
               </Button>
+
 
               <div className="text-center text-xs text-muted-foreground">
                 {secondsLeft > 0
@@ -326,7 +376,7 @@ const verifyOtp = async () => {
             </>
           )}
 
-          <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-3">
+          <div className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground pt-2">
             <ShieldCheck className="h-3 w-3" />
             Secure & OTP protected login
           </div>
