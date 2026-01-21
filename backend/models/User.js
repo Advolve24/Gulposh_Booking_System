@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    /* ================= BASIC INFO ================= */
 
     name: {
       type: String,
@@ -12,25 +11,19 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    /* ================= PHONE (OTP LOGIN) ================= */
-
     phone: {
       type: String,
       trim: true,
       match: [/^\d{10}$/, "Phone number must be exactly 10 digits"],
-      default: undefined, // ✅ IMPORTANT: never null
+      default: undefined, 
     },
-
-    /* ================= EMAIL (GOOGLE LOGIN) ================= */
 
     email: {
       type: String,
       trim: true,
       lowercase: true,
-      default: undefined, // ✅ IMPORTANT: never null
+      default: undefined, 
     },
-
-    /* ================= PROFILE ================= */
 
     dob: {
       type: Date,
@@ -48,7 +41,10 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    /* ================= AUTH META ================= */
+     passwordHash: {
+      type: String,
+      select: false,
+    },
 
     authProvider: {
       type: String,
@@ -64,11 +60,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-/* =====================================================
-   UNIQUE INDEXES (SAFE FOR BOTH LOGINS)
-===================================================== */
-
-// ✅ Phone must be unique ONLY when present
 userSchema.index(
   { phone: 1 },
   {
@@ -79,7 +70,6 @@ userSchema.index(
   }
 );
 
-// ✅ Email must be unique ONLY when present
 userSchema.index(
   { email: 1 },
   {
@@ -90,7 +80,6 @@ userSchema.index(
   }
 );
 
-/* ================= PROFILE STATUS ================= */
 
 userSchema.virtual("profileComplete").get(function () {
   return Boolean(this.name && this.dob);

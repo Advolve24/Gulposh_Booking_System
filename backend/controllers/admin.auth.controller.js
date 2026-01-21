@@ -61,8 +61,15 @@ res.json({
 
 
 export const adminLogout = (_req, res) => {
+  res.clearCookie("admin_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    path: "/",
+  });
   res.json({ message: "Logged out" });
 };
+
 
 export const adminMe = async (req, res) => {
   const u = await User.findById(req.user.id).select("name email isAdmin");
