@@ -19,6 +19,7 @@ import {
   ConciergeBell,
   Mail,
   Phone,
+  Home,
   Calendar as CalendarIcon,
 } from "lucide-react";
 
