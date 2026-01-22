@@ -195,7 +195,7 @@ export default function EntireVilla() {
     }
 
     try {
-      await api.post("/enquiries/entire-villa", {
+      const { data } = await Axios.post("/api/villa/enquiry", {
         type: "entire_villa_enquiry",
 
         name: form.name,
