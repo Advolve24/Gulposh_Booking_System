@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
@@ -15,12 +15,13 @@ import {
 
 import { api } from "@/api/http";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
-/* ---------------- HELPERS ---------------- */
+/* ================= HELPERS ================= */
 
 const fmt = (d) => format(new Date(d), "dd MMM yyyy");
 
-/* ---------------- CONFETTI ---------------- */
+/* ================= CONFETTI ================= */
 
 const fireConfetti = () => {
   const colors = ["#ff3b3b", "#ffb703", "#3a86ff", "#8338ec", "#06d6a0"];
@@ -62,7 +63,7 @@ const fireConfetti = () => {
   frame();
 };
 
-/* ---------------- COMPONENT ---------------- */
+/* ================= COMPONENT ================= */
 
 export default function EnquirySuccess() {
   const { id } = useParams();
@@ -72,54 +73,53 @@ export default function EnquirySuccess() {
   const [loading, setLoading] = useState(true);
   const confettiRan = useRef(false);
 
-  /* 🎉 CONFETTI (RUN ONCE) */
+  /* 🎉 CONFETTI – RUN ONCE */
   useLayoutEffect(() => {
     if (confettiRan.current) return;
     confettiRan.current = true;
     fireConfetti();
   }, []);
 
-  /* 🔒 LOAD ENQUIRY (HARD GUARD FOR ID) */
+  /* 🔒 HARD GUARD – DO NOT CALL API UNTIL ID EXISTS */
   useEffect(() => {
-    if (!id) return; // ⛔ Prevent /undefined API calls
+    if (!id) return;
 
-    let isMounted = true;
+    let active = true;
 
     (async () => {
       try {
         const { data } = await api.get(`/enquiries/${id}`);
-        if (!isMounted) return;
+        if (!active) return;
         setEnquiry(data);
-      } catch (err) {
-        console.error("Failed to load enquiry:", err);
+      } catch {
         navigate("/", { replace: true });
       } finally {
-        if (isMounted) setLoading(false);
+        if (active) setLoading(false);
       }
     })();
 
     return () => {
-      isMounted = false;
+      active = false;
     };
   }, [id, navigate]);
 
   if (!id || loading || !enquiry) return null;
 
-  /* ---------------- UI ---------------- */
+  /* ================= UI ================= */
 
   return (
     <div className="min-h-screen bg-[#fff7f7]">
 
       {/* ================= HERO ================= */}
-      <section className="bg-red-700 text-white py-12 px-4 text-center">
-        <div className="max-w-xl mx-auto space-y-4">
+      <section className="bg-red-700 text-white py-10 px-4 text-center">
+        <div className="max-w-2xl mx-auto space-y-4">
 
           <div className="mx-auto h-14 w-14 rounded-full bg-white flex items-center justify-center">
             <Check className="h-7 w-7 text-red-700" />
           </div>
 
           <p className="text-xs uppercase tracking-widest opacity-80">
-            Enquiry Submitted
+            Enquiry Received
           </p>
 
           <h1 className="text-3xl md:text-4xl font-serif font-semibold">
@@ -137,11 +137,14 @@ export default function EnquirySuccess() {
         </div>
       </section>
 
-      {/* ================= DETAILS ================= */}
-      <div className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+      {/* ================= CONTENT ================= */}
+      <div className="max-w-5xl mx-auto px-4 py-10 space-y-6">
 
+        {/* SUMMARY CARD */}
         <div className="bg-white rounded-2xl shadow-md p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Enquiry Details</h2>
+          <h2 className="text-xl font-serif font-semibold">
+            Enquiry Details
+          </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
 
@@ -177,26 +180,29 @@ export default function EnquirySuccess() {
             </div>
 
           </div>
+
+          <Separator />
+
+          <p className="text-xs text-muted-foreground">
+            This is an enquiry request. Availability and pricing will be confirmed
+            by our team.
+          </p>
         </div>
 
-        {/* ================= ACTIONS ================= */}
+        {/* ACTIONS */}
         <div className="flex justify-center">
-          <Button
-            variant="outline"
-            onClick={() => navigate("/")}
-          >
+          <Button variant="outline" onClick={() => navigate("/")}>
             <Home className="w-4 h-4 mr-2" />
             Back to Home
           </Button>
         </div>
 
-        {/* ================= NOTE ================= */}
+        {/* NOTE */}
         <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-center">
           A confirmation has been sent to <b>{enquiry.email}</b>.
           <br />
           Our team will contact you shortly.
         </div>
-
       </div>
     </div>
   );
