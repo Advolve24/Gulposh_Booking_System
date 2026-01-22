@@ -195,7 +195,7 @@ export default function EntireVilla() {
     }
 
     try {
-       const { data } = await api.post("/villa/enquiry", {
+       const { data } = await api.post("/entire-villa", {
         type: "entire_villa_enquiry",
 
         name: form.name,
