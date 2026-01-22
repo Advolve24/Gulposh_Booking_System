@@ -17,8 +17,10 @@ import adminUploadRoutes from "./routes/admin.upload.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js";
 import { verifySMTP } from "./utils/mailer.js";
 import enquiryRoutes from "./routes/enquiry.routes.js";
-import http from "http"; // ✅ NEW (Node HTTP server)
+import http from "http";
+
 import { initSocket } from "./lib/socket.js"; // ✅ NEW (Socket.IO init)
+
 
 const app = express();
 
@@ -73,22 +75,18 @@ app.use("/api/blackouts", blackoutRoutes);
 app.use("/api/admin/blackouts", adminBlackoutRoutes);
 app.use("/api/enquiries", enquiryRoutes);
 
-
-/* =====================================================
-   HTTP SERVER + SOCKET.IO (IMPORTANT PART)
-===================================================== */
-const server = http.createServer(app); // ✅ Express wrapped in HTTP server
-initSocket(server);                    // ✅ Socket.IO attached
-
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => {
     const port = process.env.PORT || 5000;
 
-    app.listen(port, async () => {
-      console.log(`✅ Connected! Running on ${port}`);
+    //  SOCKET.IO HERE
+    const server = http.createServer(app);
+    initSocket(server);
 
-      await verifySMTP();
+   server.listen(port, async () => {
+   console.log(`✅ Connected! Running on ${port}`);
+    await verifySMTP();
     });
   })
   .catch((err) => {
