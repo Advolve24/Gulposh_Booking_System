@@ -219,8 +219,10 @@ export default function EntireVilla() {
       });
 
       toast.success("Enquiry submitted successfully ✨");
-      navigate("/thank-you", { replace: true });
-
+       navigate(`/booking-success/${data._id}`, {
+    replace: true,
+    state: { type: "enquiry" }, // 🔑 important
+  });
     } catch (err) {
       console.error(err);
       toast.error("Failed to submit enquiry. Please try again.");
