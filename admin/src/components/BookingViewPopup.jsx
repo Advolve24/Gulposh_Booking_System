@@ -92,7 +92,7 @@ export default function BookingViewPopup({
               {booking.room?.name || "Villa"}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Booking ID: {booking._id.slice(-6)}
+              Booking ID: {booking._id.slice(-6)} · Created: {fmt(booking.createdAt)}
             </p>
 
             <button
