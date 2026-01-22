@@ -130,7 +130,9 @@ export default function BookingTable({
                 </td>
 
                 {/* Room */}
-                <td className="px-4 py-4">{b.room?.name}</td>
+                <td className="px-4 py-4">
+                  {b.isVilla ? "Entire Villa" : b.room?.name || "—"}
+                </td>
 
                 {/* Dates */}
                 <td className="px-4 py-4">{dateFmt(b.startDate)}</td>

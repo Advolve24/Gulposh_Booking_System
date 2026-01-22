@@ -127,7 +127,7 @@ export const listBookingsAdmin = async (req, res) => {
     }
 
     let items = await Booking.find(filter)
-      .select("user room startDate endDate guests adults children status createdAt amount note withMeal adminMeta vegGuests nonVegGuests total")
+      .select("user room startDate endDate guests adults children status createdAt amount note withMeal adminMeta vegGuests nonVegGuests isVilla total")
       .populate("user", "name email phone createdAt address country state city pincode")
       .populate("room", "name")
       .sort({ createdAt: -1 })
@@ -157,6 +157,7 @@ export const listBookingsAdmin = async (req, res) => {
       vegGuests: b.vegGuests ?? 0,
       nonVegGuests: b.nonVegGuests ?? 0,
       status: b.status,
+      isVilla: b.isVilla ?? null,
       amount: b.amount ?? null,
       adminMeta: b.adminMeta ?? {},
       total: b.total ?? null,

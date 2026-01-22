@@ -15,6 +15,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toDateOnlyFromAPIUTC, todayDateOnlyUTC } from "../lib/date";
+import { addDays } from "date-fns";
+import { listBookingsAdmin } from "../api/admin";
+
+
+const toDateKey = (date) => format(date, "yyyy-MM-dd");
 
 const GOV_ID_TYPES = ["Aadhaar", "Passport", "Voter ID", "Driving License"];
 const API_ROOT = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -26,7 +31,6 @@ const Field = ({ label, children }) => (
   </div>
 );
 
-
 const toYMD = (d) => {
   if (!d) return null;
   const year = d.getFullYear();
@@ -34,6 +38,33 @@ const toYMD = (d) => {
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+
+const rangeHasDisabled = (from, to, disabledRanges) => {
+  return disabledRanges.some(r => {
+    if (!r.from || !r.to) return false;
+
+    return (
+      from < r.to &&
+      to > r.from
+    );
+  });
+};
+
+const rangeContainsDisabledDates = (from, to, bookedDates, blackoutDates) => {
+  let d = toDateKey(from);
+  const endKey = toDateKey(to);
+
+  while (d <= endKey) {
+    if (bookedDates.has(d) || blackoutDates.has(d)) {
+      return true;
+    }
+    d = toDateKey(addDays(new Date(d), 1));
+  }
+
+  return false;
+};
+
+
 
 
 const ReadOnlyField = ({ label, value }) => (
@@ -62,9 +93,10 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
     endDate: null,
   });
 
-  const [disabledDates, setDisabledDates] = useState(() => [
-    { before: todayDateOnlyUTC() },
-  ]);
+  const [overlapRanges, setOverlapRanges] = useState([]);
+  const [bookedDates, setBookedDates] = useState(new Set());
+  const [blackoutDates, setBlackoutDates] = useState(new Set());
+
 
   useEffect(() => {
     if (!booking) return;
@@ -99,38 +131,49 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
 
     (async () => {
       try {
-        const blk = await listBlackouts();
-
-        let res = await fetch(`${API_ROOT}/rooms/disabled/all`, {
-          credentials: "include",
-        });
-        if (!res.ok) {
-          res = await fetch(`${API_ROOT}/rooms/blocked/all`, {
-            credentials: "include",
-          });
-        }
-        const bookedJson = res.ok ? await res.json() : [];
-
-        const bookedRanges = (bookedJson || []).map((r) => ({
-          from: toDateOnlyFromAPIUTC(r.from || r.startDate),
-          to: toDateOnlyFromAPIUTC(r.to || r.endDate),
-        }));
-
-        const blackoutRanges = (blk || []).map((b) => ({
-          from: toDateOnlyFromAPIUTC(b.from),
-          to: toDateOnlyFromAPIUTC(b.to),
-        }));
-
-        setDisabledDates([
-          { before: todayDateOnlyUTC() },
-          ...bookedRanges,
-          ...blackoutRanges,
+        const [blk, bookings] = await Promise.all([
+          listBlackouts(),
+          listBookingsAdmin({ limit: 500 }),
         ]);
+
+        const currentFrom = toDateKey(new Date(booking.startDate));
+        const currentTo = toDateKey(new Date(booking.endDate));
+
+        const bookedSet = new Set();
+        const blackoutSet = new Set();
+
+        // REAL BOOKINGS
+        bookings.forEach(b => {
+          const fromKey = toDateKey(new Date(b.startDate));
+          const toKey = toDateKey(new Date(b.endDate));
+          let d = fromKey;
+          while (d <= toKey) {
+            bookedSet.add(d);
+            d = toDateKey(addDays(new Date(d), 1));
+          }
+        });
+
+        // BLACKOUTS
+        (blk || []).forEach(b => {
+          let d = toDateKey(new Date(b.from));
+          const end = toDateKey(new Date(b.to));
+
+          while (d <= end) {
+            blackoutSet.add(d);
+            d = toDateKey(addDays(new Date(d), 1));
+          }
+        });
+
+        setBookedDates(bookedSet);
+        setBlackoutDates(blackoutSet);
+
       } catch (err) {
-        console.error("Failed to build disabled ranges for edit dialog:", err);
+        console.error(err);
       }
     })();
   }, [open]);
+
+
 
   if (!booking) return null;
 
@@ -232,36 +275,60 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
               CHECK-IN – CHECK-OUT
             </span>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               {/* Check-in */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-start">
-                    {form.startDate
-                      ? format(form.startDate, "dd MMM yyyy")
-                      : "Check-in"}
+                  <Button variant="outline" className="justify-start h-12 text-[16px] w-full">
+                    {form.startDate && form.endDate
+                      ? `${format(form.startDate, "dd MMM yyyy")} – ${format(form.endDate, "dd MMM yyyy")}`
+                      : "Select date range"}
                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
+
                 <PopoverContent className="p-0">
                   <Calendar
                     mode="single"
+                    className="w-[380px]"
                     selected={form.startDate}
+                    disabled={(date) => {
+                      const key = toDateKey(date);
+                      const todayKey = toDateKey(new Date());
+
+                      return (
+                        key < todayKey ||
+                        bookedDates.has(key) ||
+                        blackoutDates.has(key)
+                      );
+                    }}
+
                     onSelect={(d) => {
-                      const newEnd = new Date(d);
-                      newEnd.setDate(newEnd.getDate() + lockedNights);
+                      if (!d) return;
+
+                      const autoEnd = new Date(d);
+                      autoEnd.setDate(autoEnd.getDate() + lockedNights);
+
+                      if (rangeContainsDisabledDates(d, autoEnd, bookedDates, blackoutDates)) {
+                        toast.error(
+                          "You are selecting a date range which contains booked/blocked dates. Please select different dates."
+                        );
+                        return;
+                      }
+
                       setForm(f => ({
                         ...f,
                         startDate: d,
-                        endDate: newEnd,
+                        endDate: autoEnd,
                       }));
                     }}
-                    disabled={disabledDates}
                   />
+
                 </PopoverContent>
               </Popover>
 
-              {/* Check-out */}
+
+              {/* Check-out
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="justify-start">
@@ -276,10 +343,10 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
                     mode="single"
                     selected={form.endDate}
                     onSelect={(d) => setForm(f => ({ ...f, endDate: d }))}
-                    disabled={disabledDates}
+                    disabled={calendarDisabled}
                   />
                 </PopoverContent>
-              </Popover>
+              </Popover> */}
             </div>
           </div>
 
@@ -313,7 +380,7 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             <ReadOnlyField
               label="Room"
               value={
-                booking.room?.isVilla
+                booking.isVilla
                   ? "Entire Villa"
                   : booking.room?.name
               }
