@@ -180,13 +180,10 @@ function AppRoutes() {
         />
 
         <Route
-          path="/enquiry-success/:id"
-          element={
-            <RequireAuth>
-              <EnquirySuccess />
-            </RequireAuth>
-          }
-        />
+  path="/enquiry-success/:id"
+  element={<EnquirySuccess />}
+/>
+
 
         {/* LEGAL */}
         <Route path="/terms" element={<TermsConditions />} />
