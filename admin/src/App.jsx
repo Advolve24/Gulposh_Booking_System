@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { socket } from "./lib/socket";
 import {
   BrowserRouter,
   Routes,
@@ -42,6 +43,26 @@ function InitAuthWatcher({ children }) {
 export default function App() {
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
+
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("🟢 Admin connected to socket:", socket.id);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("🔴 Admin disconnected from socket");
+    });
+
+    // 🔔 Listen to admin notifications
+    socket.on("ADMIN_NOTIFICATION", (payload) => {
+      console.log("🔔 ADMIN NOTIFICATION:", payload);
+    });
+
+    return () => {
+      socket.off("ADMIN_NOTIFICATION");
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <BrowserRouter>
