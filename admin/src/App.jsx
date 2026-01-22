@@ -6,8 +6,10 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { toast } from "sonner";
 
 import { useAuth } from "./store/auth";
+import { useNotificationStore } from "./store/useNotificationStore";
 
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
@@ -44,25 +46,64 @@ export default function App() {
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
 
+  const addNotification = useNotificationStore(
+    (s) => s.addNotification
+  );
+
+  const socketInitRef = useRef(false);
+
+  /* ================= SOCKET + NOTIFICATIONS ================= */
   useEffect(() => {
+    if (!isAdmin) return;
+    if (socketInitRef.current) return;
+
+    socketInitRef.current = true;
+
+    // 🔌 CONNECT
+    socket.connect();
+
     socket.on("connect", () => {
       console.log("🟢 Admin connected to socket:", socket.id);
+      socket.emit("admin:online");
     });
 
-    socket.on("disconnect", () => {
-      console.log("🔴 Admin disconnected from socket");
+    socket.on("disconnect", (reason) => {
+      console.log("🔴 Admin disconnected:", reason);
     });
 
-    // 🔔 Listen to admin notifications
+    // 🔔 ADMIN NOTIFICATION
     socket.on("ADMIN_NOTIFICATION", (payload) => {
       console.log("🔔 ADMIN NOTIFICATION:", payload);
+
+      const {
+        type = "info",   // success | error | warning | info
+        title = "Notification",
+        message = "",
+      } = payload || {};
+
+      // 1️⃣ Save to store (bell + page)
+      addNotification({
+        ...payload,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      });
+
+      // 2️⃣ Show toast
+      toast[type](
+        <div>
+          <div className="font-semibold">{title}</div>
+          <div className="text-sm opacity-90">{message}</div>
+        </div>
+      );
     });
 
     return () => {
+      socket.off("connect");
+      socket.off("disconnect");
       socket.off("ADMIN_NOTIFICATION");
-      socket.disconnect();
     };
-  }, []);
+  }, [isAdmin, addNotification]);
+
 
   return (
     <BrowserRouter>
