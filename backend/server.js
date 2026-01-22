@@ -16,6 +16,7 @@ import adminBlackoutRoutes from "./routes/admin.blackout.routes.js";
 import adminUploadRoutes from "./routes/admin.upload.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js";
 import { verifySMTP } from "./utils/mailer.js";
+import enquiryRoutes from "./routes/enquiry.routes.js";
 
 const app = express();
 
@@ -68,6 +69,7 @@ app.use("/api/admin", adminUploadRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/blackouts", blackoutRoutes);
 app.use("/api/admin/blackouts", adminBlackoutRoutes);
+app.use("/api/enquiries", enquiryRoutes);
 
 
 mongoose
