@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
@@ -25,6 +25,7 @@ const fmt = (d) => format(new Date(d), "dd MMM yyyy");
 const fireConfetti = () => {
   const colors = ["#ff3b3b", "#ffb703", "#3a86ff", "#8338ec", "#06d6a0"];
 
+  // Strong initial blast
   confetti({
     particleCount: 180,
     spread: 90,
@@ -35,6 +36,7 @@ const fireConfetti = () => {
     origin: { x: 0.5, y: -0.15 },
   });
 
+  // Soft continuous fall
   const duration = 1200;
   const end = Date.now() + duration;
 
@@ -68,30 +70,42 @@ export default function EnquirySuccess() {
 
   const [enquiry, setEnquiry] = useState(null);
   const [loading, setLoading] = useState(true);
-  const confettiRan = { current: false };
+  const confettiRan = useRef(false);
 
-  /* 🎉 CONFETTI ON LOAD */
+  /* 🎉 CONFETTI (RUN ONCE) */
   useLayoutEffect(() => {
     if (confettiRan.current) return;
     confettiRan.current = true;
     fireConfetti();
   }, []);
 
-  /* 🔄 LOAD ENQUIRY */
+  /* 🔒 LOAD ENQUIRY (HARD GUARD FOR ID) */
   useEffect(() => {
+    if (!id) return; // ⛔ Prevent /undefined API calls
+
+    let isMounted = true;
+
     (async () => {
       try {
         const { data } = await api.get(`/enquiries/${id}`);
+        if (!isMounted) return;
         setEnquiry(data);
-      } catch {
+      } catch (err) {
+        console.error("Failed to load enquiry:", err);
         navigate("/", { replace: true });
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     })();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id, navigate]);
 
-  if (loading || !enquiry) return null;
+  if (!id || loading || !enquiry) return null;
+
+  /* ---------------- UI ---------------- */
 
   return (
     <div className="min-h-screen bg-[#fff7f7]">
@@ -114,7 +128,7 @@ export default function EnquirySuccess() {
 
           <p className="text-sm opacity-90">
             Your enquiry has been successfully submitted.
-            Our team will get back to you shortly.
+            Our team will contact you shortly.
           </p>
 
           <span className="inline-block mt-3 px-4 py-1 rounded-full bg-white/20 text-xs">
