@@ -25,6 +25,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RefundCancellation from "./pages/RefundCancellation";
 import PoolSafety from "./pages/PoolSafety";
 import HouseRules from "./pages/HouseRules";
+import EnquirySuccess from "./pages/EnquirySuccess";
 
 
 /* ================= COMPONENTS ================= */
