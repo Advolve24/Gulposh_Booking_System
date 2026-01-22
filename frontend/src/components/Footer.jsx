@@ -1,9 +1,26 @@
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import { Phone, Mail, MapPin } from "lucide-react";
 
 export default function Footer() {
+      const { pathname } = useLocation();
+
+  // 🚫 hide footer on mobile for these routes
+  const hideOnMobileRoutes = [
+    "/checkout",
+    "/room", // covers /room/:id
+  ];
+
+  const hideOnMobile = hideOnMobileRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
     return (
-        <footer className="bg-[#660810] text-white">
+       <footer
+      className={`
+        bg-[#660810] text-white
+        ${hideOnMobile ? "hidden md:block" : ""}
+      `}
+    >
             {/* ================= MAIN FOOTER ================= */}
             <div className="max-w-7xl mx-auto  px-4 py-6 sm:px-6 sm:py-12 grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-12">
 

@@ -27,6 +27,7 @@ import PoolSafety from "./pages/PoolSafety";
 import HouseRules from "./pages/HouseRules";
 import ThankYou from "./pages/ThankYou";
 
+
 /* ================= COMPONENTS ================= */
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -199,6 +200,16 @@ function AppRoutes() {
    🚀 ROOT APP
 ===================================================== */
 export default function App() {
+  const { init, initialized } = useAuth();
+
+useEffect(() => {
+  init();
+}, []);
+
+if (!initialized) {
+  return null; // or splash loader
+}
+
   return (
     <BrowserRouter>
       <AppRoutes />

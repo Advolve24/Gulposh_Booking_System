@@ -28,17 +28,18 @@ const createRefreshToken = (user) =>
   );
 
 const issueSession = (res, user) => {
+  // access token → SESSION cookie
   setSessionCookie(res, "token", createAccessToken(user), {
-    path: "/",
     persistent: false,
   });
 
+  // refresh token → PERSISTENT cookie
   setSessionCookie(res, "refresh_token", createRefreshToken(user), {
-    path: "/",
     persistent: true,
     days: 10,
   });
 };
+
 
 /* ===============================
    📱 PHONE OTP LOGIN
@@ -241,5 +242,31 @@ export const updateMe = async (req, res) => {
   } catch (err) {
     console.error("updateMe error:", err);
     res.status(500).json({ message: "Failed to update profile" });
+  }
+};
+
+/* ===========Refresh Token======*/
+export const refresh = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refresh_token;
+    if (!refreshToken)
+      return res.status(401).json({ message: "NoRefreshToken" });
+
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET
+    );
+
+    const user = await User.findById(decoded.id);
+    if (!user)
+      return res.status(401).json({ message: "UserNotFound" });
+
+    setSessionCookie(res, "token", createAccessToken(user), {
+      persistent: false,
+    });
+
+    res.json({ ok: true });
+  } catch {
+    res.status(401).json({ message: "RefreshExpired" });
   }
 };

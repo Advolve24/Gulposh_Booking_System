@@ -9,8 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft } from "lucide-react";
-import { MapPin, Users, Utensils, Check, User, ConciergeBell, } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Users,
+  Utensils,
+  Check,
+  User,
+  ConciergeBell,
+  Mail,
+  Phone,
+  Home,
+  CalendarIcon,
+} from "lucide-react";
+
 import {
   toDateOnly,
   toDateOnlyFromAPI,
@@ -27,7 +39,6 @@ import {
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
-import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -163,7 +174,7 @@ export default function Checkout() {
     api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
   }, [roomId, navigate]);
 
-  /* ================= AUTOFILL PROFILE ================= */
+  /* ================= AUTOFILL PROFILE (READ-ONLY) ================= */
   useEffect(() => {
     if (!user) return;
 
@@ -174,20 +185,10 @@ export default function Checkout() {
       dob: user.dob ? new Date(user.dob) : null,
     });
 
-    const countryObj = getAllCountries().find(
-      (c) => c.name === user.country
-    );
-
-    const stateObj =
-      countryObj &&
-      getStatesByCountry(countryObj.isoCode).find(
-        (s) => s.name === user.state
-      );
-
     setAddress({
       address: user.address || "",
-      country: countryObj?.isoCode || "",
-      state: stateObj?.isoCode || "",
+      country: user.country || "",   // ✅ name
+      state: user.state || "",       // ✅ name
       city: user.city || "",
       pincode: user.pincode || "",
     });
@@ -356,6 +357,76 @@ export default function Checkout() {
       ? room.images[0]
       : room?.image || room?.coverImage || null;
 
+
+  function ReadOnlyField({ label, value, icon: Icon }) {
+    if (!value) return null;
+
+    return (
+      <div className="space-y-1">
+        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+
+        <div className="flex items-start gap-2">
+          {Icon && (
+            <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+          )}
+          <p className="text-sm font-medium text-foreground break-words">
+            {value}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+
+  function Counter({
+    label,
+    value,
+    min = 0,
+    max = Infinity,
+    onChange,
+    helper,
+  }) {
+    const decrement = () => onChange(Math.max(min, value - 1));
+    const increment = () => onChange(Math.min(max, value + 1));
+
+    return (
+      <div className="space-y-1">
+        <Label>{label}</Label>
+
+        <div className="flex items-center justify-between rounded-xl border px-3 py-2">
+          <button
+            type="button"
+            onClick={decrement}
+            disabled={value <= min}
+            className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
+          >
+            −
+          </button>
+
+          <span className="text-sm font-semibold w-6 text-center">
+            {value}
+          </span>
+
+          <button
+            type="button"
+            onClick={increment}
+            disabled={value >= max}
+            className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
+          >
+            +
+          </button>
+        </div>
+
+        {helper && (
+          <p className="text-xs text-muted-foreground">{helper}</p>
+        )}
+      </div>
+    );
+  }
+
+
   /* ================= UI ================= */
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -457,7 +528,7 @@ export default function Checkout() {
                 {/* LOCATION */}
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  <span>Pune, Maharashtra</span>
+                  <span>Karjat, Maharashtra</span>
                 </div>
 
                 {/* GUESTS + MEALS */}
@@ -552,6 +623,7 @@ export default function Checkout() {
 
         <section className="lg:col-span-6 space-y-6">
 
+
           {/* ================= PERSONAL INFORMATION ================= */}
           <div className="rounded-2xl border bg-white p-5 sm:p-6">
             <div className="flex items-start gap-3 mb-5">
@@ -559,62 +631,37 @@ export default function Checkout() {
                 <User className="h-5 w-5 text-red-700" />
               </div>
               <div>
-                <h3 className="font-semibold text-base">Personal Information</h3>
+                <h3 className="font-semibold text-base">Guest Details</h3>
                 <p className="text-xs text-muted-foreground">
-                  Enter your details as they appear on your ID
+                  Information provided for this reservation
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Full Name</Label>
-                <Input value={form.name} disabled />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ReadOnlyField
+                label="Full Name"
+                value={form.name}
+                icon={User}
+              />
 
-              <div>
-                <Label>Email Address</Label>
-                <Input
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, email: e.target.value }))
-                  }
-                />
-              </div>
+              <ReadOnlyField
+                label="Email Address"
+                value={form.email}
+                icon={Mail}
+              />
 
-              <div>
-                <Label>Date of Birth</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between">
-                      <span>
-                        {form.dob
-                          ? format(form.dob, "dd MMM yyyy")
-                          : "Select date"}
-                      </span>
-                      <CalendarIcon className="h-4 w-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="p-0">
-                    <Calendar
-                      mode="single"
-                      selected={form.dob}
-                      onSelect={(d) =>
-                        setForm((f) => ({ ...f, dob: d }))
-                      }
-                      captionLayout="dropdown"
-                      fromYear={1950}
-                      toYear={new Date().getFullYear()}
-                      disabled={(d) => d > new Date()}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <ReadOnlyField
+                label="Date of Birth"
+                value={form.dob ? format(form.dob, "dd MMM yyyy") : ""}
+                icon={CalendarIcon}
+              />
 
-              <div>
-                <Label>Phone Number</Label>
-                <Input value={form.phone} disabled />
-              </div>
+              <ReadOnlyField
+                label="Phone Number"
+                value={form.phone}
+                icon={Phone}
+              />
             </div>
           </div>
 
@@ -627,92 +674,48 @@ export default function Checkout() {
               <div>
                 <h3 className="font-semibold text-base">Address Details</h3>
                 <p className="text-xs text-muted-foreground">
-                  Your billing address for this reservation
+                  Billing address for this reservation
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="md:col-span-3">
-                <Label>Street Address</Label>
-                <Input
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+              {/* STREET ADDRESS — FULL ROW */}
+              <div className="md:col-span-4">
+                <ReadOnlyField
+                  label="Street Address"
                   value={address.address}
-                  onChange={(e) =>
-                    setAddress((a) => ({ ...a, address: e.target.value }))
-                  }
+                  icon={Home}
                 />
               </div>
 
-              <div>
-                <Label>Country</Label>
-                <Select
-                  value={address.country}
-                  onValueChange={(v) =>
-                    setAddress((a) => ({ ...a, country: v, state: "", city: "" }))
-                  }
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {countries.map((c) => (
-                      <SelectItem key={c.isoCode} value={c.isoCode}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* COUNTRY */}
+              <ReadOnlyField
+                label="Country"
+                value={address.country}
+              />
 
-              <div>
-                <Label>State</Label>
-                <Select
-                  value={address.state}
-                  onValueChange={(v) =>
-                    setAddress((a) => ({ ...a, state: v, city: "" }))
-                  }
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {statesList.map((s) => (
-                      <SelectItem key={s.isoCode} value={s.isoCode}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* STATE */}
+              <ReadOnlyField
+                label="State"
+                value={address.state}
+              />
 
-              <div>
-                <Label>City</Label>
-                <Select
-                  value={address.city}
-                  onValueChange={(v) =>
-                    setAddress((a) => ({ ...a, city: v }))
-                  }
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {citiesList.map((c) => (
-                      <SelectItem key={c.name} value={c.name}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* CITY */}
+              <ReadOnlyField
+                label="City"
+                value={address.city}
+              />
 
-              <div>
-                <Label>Pincode</Label>
-                <Input
-                  value={address.pincode}
-                  onChange={(e) =>
-                    setAddress((a) => ({
-                      ...a,
-                      pincode: e.target.value.replace(/\D/g, "").slice(0, 6),
-                    }))
-                  }
-                />
-              </div>
+              {/* PINCODE */}
+              <ReadOnlyField
+                label="Pincode"
+                value={address.pincode}
+              />
+
             </div>
+
           </div>
 
           {/* ================= BOOKING PREFERENCES ================= */}
@@ -748,62 +751,41 @@ export default function Checkout() {
               )}
             </div>
 
-
-            {/* ================= GUEST COUNT ================= */}
             {/* ================= GUEST COUNT ================= */}
             <div className="grid grid-cols-2 gap-4">
 
-              {/* ADULTS */}
-              <div>
-                <Label>Adults</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={room?.maxGuests - children}
-                  value={adults}
-                  onChange={(e) => {
-                    const v = Math.max(
-                      1,
-                      Math.min(Number(e.target.value) || 1, room?.maxGuests - children)
-                    );
-                    setAdults(v);
-                    setVegGuests(0);
-                    setNonVegGuests(0);
-                  }}
-                />
-              </div>
+              <Counter
+                label="Adults"
+                value={adults}
+                min={1}
+                max={room?.maxGuests - children}
+                onChange={(v) => {
+                  setAdults(v);
+                  setVegGuests(0);
+                  setNonVegGuests(0);
+                }}
+              />
 
-              {/* CHILDREN */}
-              <div>
-                <Label>Children</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={room?.maxGuests - adults}
-                  value={children}
-                  onChange={(e) => {
-                    const v = Math.max(
-                      0,
-                      Math.min(Number(e.target.value) || 0, room?.maxGuests - adults)
-                    );
-                    setChildren(v);
-                    setVegGuests(0);
-                    setNonVegGuests(0);
-                  }}
-                />
-              </div>
+              <Counter
+                label="Children"
+                value={children}
+                min={0}
+                max={room?.maxGuests - adults}
+                onChange={(v) => {
+                  setChildren(v);
+                  setVegGuests(0);
+                  setNonVegGuests(0);
+                }}
+              />
 
-              {/* TOTAL */}
               <div className="col-span-2 text-xs text-muted-foreground">
-                Total Guests: <strong>{totalGuests}</strong>
+                Total Guests: <strong>{totalGuests}</strong> / {room?.maxGuests}
               </div>
-
             </div>
 
             {/* ================= MEALS ================= */}
             <div className="space-y-4 pt-2">
 
-              {/* TOGGLE */}
               <div className="flex items-start gap-3">
                 <Checkbox
                   checked={withMeal}
@@ -820,9 +802,7 @@ export default function Checkout() {
                   <span className="block text-xs text-muted-foreground">
                     Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg}
                     <br />
-                    <span className="italic">
-                      per guest per night
-                    </span>
+                    <span className="italic">per guest per night</span>
                   </span>
                 </Label>
               </div>
@@ -831,45 +811,24 @@ export default function Checkout() {
               {withMeal && (
                 <div className="grid grid-cols-2 gap-4">
 
-                  {/* VEG */}
-                  <div>
-                    <Label>Veg Guests</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={totalGuests - nonVegGuests}
-                      value={vegGuests}
-                      onChange={(e) => {
-                        const v = Math.min(
-                          Number(e.target.value) || 0,
-                          totalGuests - nonVegGuests
-                        );
-                        setVegGuests(v);
-                      }}
-                    />
-                  </div>
+                  <Counter
+                    label="Veg Guests"
+                    value={vegGuests}
+                    min={0}
+                    max={totalGuests - nonVegGuests}
+                    onChange={setVegGuests}
+                  />
 
-                  {/* NON-VEG */}
-                  <div>
-                    <Label>Non-Veg Guests</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={totalGuests - vegGuests}
-                      value={nonVegGuests}
-                      onChange={(e) => {
-                        const v = Math.min(
-                          Number(e.target.value) || 0,
-                          totalGuests - vegGuests
-                        );
-                        setNonVegGuests(v);
-                      }}
-                    />
-                  </div>
+                  <Counter
+                    label="Non-Veg Guests"
+                    value={nonVegGuests}
+                    min={0}
+                    max={totalGuests - vegGuests}
+                    onChange={setNonVegGuests}
+                  />
 
-                  {/* VALIDATION MESSAGE */}
                   <div className="col-span-2 text-xs text-muted-foreground">
-                    Selected: {vegGuests + nonVegGuests} / {totalGuests} guests
+                    Selected: {vegGuests + nonVegGuests} / {totalGuests}
                     {vegGuests + nonVegGuests !== totalGuests && (
                       <span className="text-red-600 ml-2">
                         (Veg + Non-Veg must equal total guests)
@@ -879,6 +838,7 @@ export default function Checkout() {
 
                 </div>
               )}
+
             </div>
           </div>
 

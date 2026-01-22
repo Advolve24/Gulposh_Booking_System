@@ -2,12 +2,16 @@ import { create } from "zustand";
 import { api } from "../api/http";
 
 /* =====================================================
-   AUTH STORE (BACKEND IS SOURCE OF TRUTH)
+   AUTH STORE (COOKIE-BASED, BACKEND IS SOURCE OF TRUTH)
+   Airbnb / Booking.com Style
 ===================================================== */
 
 export const useAuth = create((set, get) => ({
+  /* ================= STATE ================= */
+
   user: null,
   loading: false,
+  initialized: false, // 🔥 REQUIRED
 
   /* ================= UI ================= */
 
@@ -15,23 +19,31 @@ export const useAuth = create((set, get) => ({
   openAuth: () => set({ showAuthModal: true }),
   closeAuth: () => set({ showAuthModal: false }),
 
-  /* ================= INIT SESSION ================= */
+  /* ================= INIT SESSION =================
+     ⚠️ CRITICAL RULES:
+     - NEVER logout here
+     - NEVER clear user here
+     - Just mark initialized when done
+  =============================================== */
 
   init: async () => {
     try {
       set({ loading: true });
 
-      const { data } = await api.get("/auth/me", {
-        withCredentials: true,
+      const { data } = await api.get("/auth/me");
+
+      set({
+        user: data,
+        loading: false,
+        initialized: true,
       });
 
-      set({ user: data, loading: false });
       return data;
     } catch {
-      sessionStorage.removeItem("searchParams");
-      sessionStorage.removeItem("postAuthRedirect");
-
-      set({ user: null, loading: false });
+      set({
+        loading: false,
+        initialized: true, // ✅ auth check completed
+      });
       return null;
     }
   },
@@ -42,7 +54,7 @@ export const useAuth = create((set, get) => ({
     try {
       set({ loading: true });
 
-      // 1️⃣ Create backend session
+      // Backend creates session (cookies)
       await api.post(
         "/auth/phone-login",
         {},
@@ -50,17 +62,18 @@ export const useAuth = create((set, get) => ({
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
-          withCredentials: true,
         }
       );
 
-      // 2️⃣ Fetch authenticated user
-      const { data } = await api.get("/auth/me", {
-        withCredentials: true,
+      const { data } = await api.get("/auth/me");
+
+      set({
+        user: data,
+        showAuthModal: false,
+        loading: false,
+        initialized: true,
       });
 
-      // 3️⃣ Save user
-      set({ user: data, showAuthModal: false, loading: false });
       return data;
     } catch (err) {
       set({ loading: false });
@@ -74,20 +87,17 @@ export const useAuth = create((set, get) => ({
     try {
       set({ loading: true });
 
-      // 1️⃣ Backend creates session
-      await api.post(
-        "/auth/google-login",
-        { idToken },
-        { withCredentials: true }
-      );
+      await api.post("/auth/google-login", { idToken });
 
-      // 2️⃣ Fetch authenticated user
-      const { data } = await api.get("/auth/me", {
-        withCredentials: true,
+      const { data } = await api.get("/auth/me");
+
+      set({
+        user: data,
+        showAuthModal: false,
+        loading: false,
+        initialized: true,
       });
 
-      // 3️⃣ Save user
-      set({ user: data, showAuthModal: false, loading: false });
       return data;
     } catch (err) {
       set({ loading: false });
@@ -95,27 +105,31 @@ export const useAuth = create((set, get) => ({
     }
   },
 
-  /* ================= REFRESH USER ================= */
+  /* ================= REFRESH USER (OPTIONAL) ================= */
 
   refreshUser: async () => {
-    const { data } = await api.get("/auth/me", {
-      withCredentials: true,
-    });
-
+    const { data } = await api.get("/auth/me");
     set({ user: data });
     return data;
   },
 
-  /* ================= LOGOUT ================= */
+  /* ================= LOGOUT =================
+     ✅ ONLY place where user is cleared
+  =========================================== */
 
   logout: async () => {
     try {
-      await api.post("/auth/logout", {}, { withCredentials: true });
+      await api.post("/auth/logout");
     } finally {
       sessionStorage.removeItem("searchParams");
       sessionStorage.removeItem("postAuthRedirect");
 
-      set({ user: null });
+      set({
+        user: null,
+        loading: false,
+        initialized: true,
+        showAuthModal: false,
+      });
     }
   },
 }));

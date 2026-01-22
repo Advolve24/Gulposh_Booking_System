@@ -386,7 +386,7 @@ const handleCancel = async () => {
           )}
         </div>
         {/* ================= FOOTER ================= */}
-         <div className="p-4 border-t bg-white flex gap-2">
+         <div className="p-4 border-t bg-white flex gap-2 rounded-b-xl">
           <Button
             variant="outline"
             className="flex-1"
