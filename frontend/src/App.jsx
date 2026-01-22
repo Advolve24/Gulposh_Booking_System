@@ -25,7 +25,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RefundCancellation from "./pages/RefundCancellation";
 import PoolSafety from "./pages/PoolSafety";
 import HouseRules from "./pages/HouseRules";
-import ThankYou from "./pages/ThankYou";
+import EnquirySuccess from "./pages/EnquirySuccess";
 
 
 /* ================= COMPONENTS ================= */
@@ -111,7 +111,6 @@ function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/room/:id" element={<RoomPage />} />
         <Route path="/entire-villa-form" element={<EntireVillaform />} />
-        <Route path="/thank-you" element={<ThankYou />} />
 
         {/* PROFILE */}
         <Route
@@ -179,6 +178,10 @@ function AppRoutes() {
             </RequireAuth>
           }
         />
+
+        <Route path="/enquiry-success" element={<EnquirySuccess />} />
+
+
 
         {/* LEGAL */}
         <Route path="/terms" element={<TermsConditions />} />
