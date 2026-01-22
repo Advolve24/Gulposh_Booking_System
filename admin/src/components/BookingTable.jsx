@@ -79,23 +79,6 @@ export default function BookingTable({
 }) {
 
 
-  const sortedBookings = useMemo(() => {
-    return [...bookings].sort((a, b) => {
-      const aStart = new Date(a.startDate).getTime();
-      const bStart = new Date(b.startDate).getTime();
-
-      if (aStart !== bStart) {
-        return bStart - aStart;
-      }
-
-      const aEnd = new Date(a.endDate).getTime();
-      const bEnd = new Date(b.endDate).getTime();
-      return bEnd - aEnd;
-    });
-  }, [bookings]);
-
-
-
   return (
     <div className="bg-card border rounded-xl overflow-x-auto">
       <table className="min-w-[1200px] w-full text-sm">
@@ -115,7 +98,7 @@ export default function BookingTable({
         </thead>
 
         <tbody>
-          {sortedBookings.map((b) => {
+          {bookings.map((b) => {
             const guests = guestLabel(b);
 
             return (
