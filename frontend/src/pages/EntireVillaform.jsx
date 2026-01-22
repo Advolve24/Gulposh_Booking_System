@@ -220,10 +220,10 @@ export default function EntireVilla() {
 
     toast.success("Enquiry submitted successfully ✨");
 
-    navigate(`/booking-success/${data._id}`, {
-      replace: true,
-      state: { type: "enquiry" },
-    });
+navigate(`/enquiry-success/${data._id}`, {
+  replace: true,
+});
+
 
   } catch (err) {
     console.error(err);

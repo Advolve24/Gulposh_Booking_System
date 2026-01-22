@@ -178,6 +178,15 @@ function AppRoutes() {
           }
         />
 
+        <Route
+          path="/enquiry-success/:id"
+          element={
+            <RequireAuth>
+              <EnquirySuccess />
+            </RequireAuth>
+          }
+        />
+
         {/* LEGAL */}
         <Route path="/terms" element={<TermsConditions />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
