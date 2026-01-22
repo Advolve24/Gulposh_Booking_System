@@ -75,7 +75,7 @@ export const listUserBookingsAdmin = async (req, res) => {
 
     const bookings = await Booking.find({ user: id })
       .select(`
-  user room startDate endDate nights guests
+  user room startDate endDate nights guests adults children
   status createdAt amount
   withMeal vegGuests nonVegGuests
   roomTotal mealTotal paymentId
@@ -91,6 +91,8 @@ export const listUserBookingsAdmin = async (req, res) => {
       endDate: b.endDate,
       nights: b.nights,
       guests: b.guests,
+      adults: b.adults,
+      children: b.children,
       withMeal: b.withMeal,
       vegGuests: b.vegGuests,
       nonVegGuests: b.nonVegGuests,
@@ -125,7 +127,7 @@ export const listBookingsAdmin = async (req, res) => {
     }
 
     let items = await Booking.find(filter)
-      .select("user room startDate endDate guests status createdAt amount note withMeal adminMeta total")
+      .select("user room startDate endDate guests adults children status createdAt amount note withMeal adminMeta vegGuests nonVegGuests total")
       .populate("user", "name email phone createdAt address country state city pincode")
       .populate("room", "name")
       .sort({ createdAt: -1 })
@@ -150,6 +152,10 @@ export const listBookingsAdmin = async (req, res) => {
       startDate: b.startDate,
       endDate: b.endDate,
       guests: b.guests ?? null,
+      adults: b.adults ?? 0,
+      children: b.children ?? 0,
+      vegGuests: b.vegGuests ?? 0,
+      nonVegGuests: b.nonVegGuests ?? 0,
       status: b.status,
       amount: b.amount ?? null,
       adminMeta: b.adminMeta ?? {},
@@ -339,11 +345,12 @@ export const updateBookingAdmin = async (req, res) => {
       startDate,
       endDate,
       guests,
+      adults,
+      children,
 
       withMeal,
-      vegGuests = 0,
-      nonVegGuests = 0,
-      comboGuests = 0,
+      vegGuests,
+      nonVegGuests,
 
       status,
 
@@ -367,14 +374,23 @@ export const updateBookingAdmin = async (req, res) => {
     const nights = nightsBetween(booking.startDate, booking.endDate);
     booking.nights = nights;
 
-    if (typeof guests === "number" && guests > 0) {
-      booking.guests = guests;
+    if (typeof adults === "number" && adults >= 1) {
+      booking.adults = adults;
     }
+
+    if (typeof children === "number" && children >= 0) {
+      booking.children = children;
+    }
+
+    const finalGuests =
+      (booking.adults || 0) + (booking.children || 0);
+
+    booking.guests = finalGuests;
 
     booking.withMeal = !!withMeal;
 
     const totalMealGuests =
-      Number(vegGuests) + Number(nonVegGuests) + Number(comboGuests);
+      Number(vegGuests) + Number(nonVegGuests);
 
     if (totalMealGuests > booking.guests) {
       return res.status(400).json({
@@ -384,7 +400,6 @@ export const updateBookingAdmin = async (req, res) => {
 
     booking.vegGuests = Number(vegGuests) || 0;
     booking.nonVegGuests = Number(nonVegGuests) || 0;
-    booking.comboGuests = Number(comboGuests) || 0;
 
     const vegPrice = Number(booking.mealMeta?.vegPrice || 0);
     const nonVegPrice = Number(booking.mealMeta?.nonVegPrice || 0);
@@ -392,7 +407,9 @@ export const updateBookingAdmin = async (req, res) => {
     const vegTotal = booking.vegGuests * vegPrice * nights;
     const nonVegTotal = booking.nonVegGuests * nonVegPrice * nights;
 
-    booking.mealTotal = booking.withMeal ? vegTotal + nonVegTotal : 0;
+    booking.mealTotal = booking.withMeal
+      ? vegTotal + nonVegTotal
+      : 0;
 
     booking.roomTotal = booking.pricePerNight * nights;
     booking.amount = booking.roomTotal + booking.mealTotal;
@@ -411,6 +428,7 @@ export const updateBookingAdmin = async (req, res) => {
           : booking.adminMeta?.amountPaid,
       paymentMode: paymentMode ?? booking.adminMeta?.paymentMode,
     };
+
     await booking.save();
 
     return res.json({
@@ -424,6 +442,7 @@ export const updateBookingAdmin = async (req, res) => {
     });
   }
 };
+
 
 
 
