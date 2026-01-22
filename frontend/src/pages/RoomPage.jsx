@@ -382,7 +382,7 @@ export default function RoomPage() {
         <button
           type="button"
           onClick={onToggle}
-          className="w-full flex justify-between items-center py-4 text-sm font-medium"
+          className="w-full flex justify-between items-center py-4 text-sm font-medium text-left"
         >
           {item.q}
           <ChevronDown
@@ -395,7 +395,7 @@ export default function RoomPage() {
           className={`overflow-hidden transition-all duration-300 ${open ? "max-h-40 pb-4" : "max-h-0"
             }`}
         >
-          <p className="text-sm text-gray-600 leading-relaxed">
+          <p className="text-sm text-gray-600 leading-relaxed text-left">
             {item.a}
           </p>
         </div>
