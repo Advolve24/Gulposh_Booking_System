@@ -96,18 +96,36 @@ export default function BookingSuccess() {
   }, [isEnquiry]);
 
   /* ---------------- LOAD BOOKING ---------------- */
-  useEffect(() => {
-    (async () => {
+  /* ---------------- LOAD BOOKING OR ENQUIRY ---------------- */
+useEffect(() => {
+  let isMounted = true;
+
+  (async () => {
+    try {
+      // 1️⃣ Try PAID booking
+      const res = await api.get(`/bookings/${id}`);
+      if (!isMounted) return;
+      setBooking(res.data);
+    } catch (err) {
       try {
-        const { data } = await api.get(`/bookings/${id}`);
-        setBooking(data);
+        // 2️⃣ Fallback to ENQUIRY
+        const res = await api.get(`/enquiries/${id}`);
+        if (!isMounted) return;
+        setBooking(res.data);
       } catch {
+        // 3️⃣ Nothing found → go home
         navigate("/", { replace: true });
-      } finally {
-        setLoading(false);
       }
-    })();
-  }, [id, navigate]);
+    } finally {
+      if (isMounted) setLoading(false);
+    }
+  })();
+
+  return () => {
+    isMounted = false;
+  };
+}, [id, navigate]);
+
 
   if (loading || !booking) return null;
 
