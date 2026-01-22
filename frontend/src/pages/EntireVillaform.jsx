@@ -195,7 +195,7 @@ export default function EntireVilla() {
   }
 
   try {
-    const { data } = await api.post("/entire-villa", {
+    const { data } = await api.post("/enquiries/entire-villa", {
       type: "entire_villa_enquiry",
 
       name: form.name,
@@ -230,6 +230,7 @@ export default function EntireVilla() {
     toast.error("Failed to submit enquiry. Please try again.");
   }
 };
+
 
   /* ================= UI ================= */
 
