@@ -172,62 +172,64 @@ export default function EntireVilla() {
      SUBMIT ENQUIRY → DATABASE (IMPORTANT CHANGE)
   ===================================================== */
 
-  const submitEnquiry = async () => {
-    if (!user) {
-      openAuth();
-      return;
-    }
+ const submitEnquiry = async () => {
+  if (!user) {
+    openAuth();
+    return;
+  }
 
-    if (!range.from || !range.to) {
-      toast.error("Please select check-in and check-out dates");
-      return;
-    }
+  if (!range.from || !range.to) {
+    toast.error("Please select check-in and check-out dates");
+    return;
+  }
 
-    if (
-      !address.address ||
-      !address.country ||
-      !address.state ||
-      !address.city ||
-      !address.pincode
-    ) {
-      toast.error("Please complete your address details");
-      return;
-    }
+  if (
+    !address.address ||
+    !address.country ||
+    !address.state ||
+    !address.city ||
+    !address.pincode
+  ) {
+    toast.error("Please complete your address details");
+    return;
+  }
 
-    try {
-       const { data } = await api.post("/entire-villa", {
-        type: "entire_villa_enquiry",
+  try {
+    const { data } = await api.post("/entire-villa", {
+      type: "entire_villa_enquiry",
 
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
 
-        startDate: range.from.toISOString().split("T")[0],
-        endDate: range.to.toISOString().split("T")[0],
+      startDate: range.from.toISOString().split("T")[0],
+      endDate: range.to.toISOString().split("T")[0],
 
-        guests: Number(guests),
+      guests: Number(guests),
 
-        addressInfo: {
-          address: address.address,
-          country: address.country,
-          state: address.state,
-          city: address.city,
-          pincode: address.pincode,
-        },
+      addressInfo: {
+        address: address.address,
+        country: address.country,
+        state: address.state,
+        city: address.city,
+        pincode: address.pincode,
+      },
 
-        source: "frontend",
-      });
+      source: "frontend",
+    });
 
-      toast.success("Enquiry submitted successfully ✨");
-       navigate(`/booking-success/${data._id}`, {
-    replace: true,
-    state: { type: "enquiry" }, // 🔑 important
-  });
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to submit enquiry. Please try again.");
-    }
-  };
+    toast.success("Enquiry submitted successfully ✨");
+
+    navigate(`/booking-success/${data._id}`, {
+      replace: true,
+      state: { type: "enquiry" },
+    });
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to submit enquiry. Please try again.");
+  }
+};
 
   /* ================= UI ================= */
 
