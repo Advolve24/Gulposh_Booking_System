@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import admin from "../config/firebaseAdmin.js";
 import { OAuth2Client } from "google-auth-library";
 import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
+import { notifyAdmin } from "../utils/notifyAdmin.js"; // ✅ NEW
 
 /* ===============================
    HELPERS
@@ -68,6 +69,13 @@ export const phoneLogin = async (req, res) => {
         authProvider: "phone",
       });
       isNewUser = true;
+
+    /* 🔔 NOTIFY ADMIN — NEW USER (PHONE) */
+      await notifyAdmin("NEW_USER", {
+        userId: user._id,
+        phone: user.phone,
+        authProvider: "phone",
+      });
     }
 
     issueSession(res, user);
@@ -118,6 +126,14 @@ export const googleLogin = async (req, res) => {
         authProvider: "google",
       });
       isNewUser = true;
+
+      /* 🔔 NOTIFY ADMIN — NEW USER (GOOGLE) */
+      await notifyAdmin("NEW_USER", {
+        userId: user._id,
+        name,
+        email,
+        authProvider: "google",
+      });
     } else {
       // keep data fresh
       if (!user.name && name) {

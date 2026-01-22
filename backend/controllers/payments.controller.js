@@ -4,6 +4,8 @@ import Room from "../models/Room.js";
 import Booking from "../models/Booking.js";
 import { sendBookingConfirmationMail } from "../utils/mailer.js";
 import { parseYMD, toDateOnly } from "../lib/date.js";
+import { notifyAdmin } from "../utils/notifyAdmin.js"; // ✅ NEW
+
 
 /* ----------------------------- Razorpay ----------------------------- */
 const rp = new Razorpay({
@@ -218,6 +220,18 @@ export const verifyPayment = async (req, res) => {
       addressInfo: { address, country, state, city, pincode },
     });
 
+    /* 🔔 NOTIFY ADMIN — BOOKING CONFIRMED */
+    await notifyAdmin("BOOKING_CREATED", {
+      bookingId: booking._id,
+      room: room.name,
+      guest: contactName,
+      guests,
+      amount: amountINR,
+      dates: `${startDate} → ${endDate}`,
+      paymentProvider: "razorpay",
+    });
+    
+   /* ---------------- Send Confirmation Mail ---------------- */
     const emailToSend = contactEmail || req.user?.email;
 
     if (emailToSend) {

@@ -1,4 +1,5 @@
 import Booking from "../models/Booking.js";
+import { notifyAdmin } from "../utils/notifyAdmin.js"; 
 
 
 const nightsBetween = (start, end) => {
@@ -175,6 +176,17 @@ export const cancelMyBooking = async (req, res) => {
     };
 
     await booking.save();
+
+    // Notify admin about cancellation
+    await notifyAdmin("BOOKING_CANCELLED", {
+      bookingId: booking._id,
+      room: booking.room?.name,
+      guest: booking.user?.name,
+      refundAmount,
+      refundPercentage,
+      cancelledBy: "user",
+    });
+
 
     res.json({
       ok: true,
