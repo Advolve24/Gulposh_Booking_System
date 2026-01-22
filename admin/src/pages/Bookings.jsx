@@ -35,6 +35,22 @@ const downloadInvoiceDirect = (bookingId) => {
 };
 
 
+const toDateOnly = (d) => {
+  const date = new Date(d);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+};
+
+const today = toDateOnly(new Date());
+
+const isOngoing = (b) =>
+  toDateOnly(b.startDate) <= today &&
+  toDateOnly(b.endDate) >= today;
+
+const isUpcoming = (b) =>
+  toDateOnly(b.startDate) > today;
+
+const isPast = (b) =>
+  toDateOnly(b.endDate) < today;
 
 
 export default function Booking() {
@@ -53,14 +69,17 @@ export default function Booking() {
 
 
   const filteredBookings = useMemo(() => {
-    let data = bookings;
+    let data = [...bookings];
+
     if (status !== "all") {
-      data = data.filter((b) => b.status === status);
+      if (status === "upcoming") {
+        data = data.filter(isUpcoming);
+      } else {
+        data = data.filter((b) => b.status === status);
+      }
     }
     if (userFilter) {
-      data = data.filter(
-        (b) => b.user?._id === userFilter
-      );
+      data = data.filter((b) => b.user?._id === userFilter);
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -71,6 +90,21 @@ export default function Booking() {
         b.user?.phone?.includes(q)
       );
     }
+    data.sort((a, b) => {
+      const aStart = toDateOnly(a.startDate);
+      const bStart = toDateOnly(b.startDate);
+
+      // 1. Ongoing first
+      if (isOngoing(a) && !isOngoing(b)) return -1;
+      if (!isOngoing(a) && isOngoing(b)) return 1;
+      if (isUpcoming(a) && isUpcoming(b))
+        return aStart - bStart;
+      if (isUpcoming(a) && !isUpcoming(b)) return -1;
+      if (!isUpcoming(a) && isUpcoming(b)) return 1;
+      if (isPast(a) && isPast(b))
+        return bStart - aStart;
+      return 0;
+    });
     return data;
   }, [bookings, status, search, userFilter]);
 
@@ -84,7 +118,9 @@ export default function Booking() {
   const loadBookings = async () => {
     try {
       const params = {};
-      if (status !== "all") params.status = status;
+      if (status !== "all" && status !== "upcoming") {
+        params.status = status;
+      }
       const data = await listBookingsAdmin(params);
       setBookings(Array.isArray(data) ? data : []);
       setPage(1);
@@ -121,6 +157,7 @@ export default function Booking() {
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="confirmed">Paid</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="upcoming">Upcoming</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
@@ -167,7 +204,14 @@ export default function Booking() {
               onDownloadInvoice={(b) => {
                 downloadInvoiceDirect(b._id);
               }}
-              onEditBooking={(b) => setEditBooking(b)}
+              onEditBooking={async (b) => {
+                try {
+                  const full = await getBookingAdmin(b._id);
+                  setEditBooking(full);
+                } catch {
+                  toast.error("Failed to load booking details");
+                }
+              }}
               onCancelBooking={(b) => setCancelBooking(b)}
             />
 

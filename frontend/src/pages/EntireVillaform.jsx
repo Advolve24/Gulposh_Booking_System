@@ -56,7 +56,6 @@ export default function EntireVilla() {
     name: "",
     email: "",
     phone: "",
-    dob: null,
   });
 
   /* ================= ADDRESS ================= */
@@ -90,7 +89,7 @@ export default function EntireVilla() {
       ? getCitiesByState(address.country, address.state)
       : [];
 
-  /* ================= INIT AUTH SESSION ================= */
+  /* ================= INIT AUTH ================= */
   useEffect(() => {
     init();
   }, [init]);
@@ -98,15 +97,10 @@ export default function EntireVilla() {
   /* ================= AUTH GUARD ================= */
   useEffect(() => {
     if (!user) {
-      // open login modal
       openAuth();
-
-      // remember return path
       sessionStorage.setItem(
         "postAuthRedirect",
-        JSON.stringify({
-          redirectTo: location.pathname,
-        })
+        JSON.stringify({ redirectTo: location.pathname })
       );
       return;
     }
@@ -127,7 +121,6 @@ export default function EntireVilla() {
       name: user.name || "",
       email: user.email || "",
       phone: user.phone || "",
-      dob: user.dob ? new Date(user.dob) : null,
     });
 
     setAddress({
@@ -139,33 +132,20 @@ export default function EntireVilla() {
     });
   }, [user]);
 
-  /* ================= PREFILL FROM SEARCH CARD ================= */
-useEffect(() => {
-  const raw = sessionStorage.getItem("searchParams");
-  if (!raw) return;
+  /* ================= PREFILL FROM SEARCH ================= */
+  useEffect(() => {
+    const raw = sessionStorage.getItem("searchParams");
+    if (!raw) return;
 
-  try {
-    const { range: searchRange, adults = 0, children = 0 } =
-      JSON.parse(raw);
-
-    // ✅ Set date range if available
-    if (searchRange?.from && searchRange?.to) {
-      setRange({
-        from: new Date(searchRange.from),
-        to: new Date(searchRange.to),
-      });
-    }
-
-    // ✅ Total guests = adults + children
-    const totalGuests = Number(adults) + Number(children);
-    if (totalGuests > 0) {
-      setGuests(String(totalGuests));
-    }
-  } catch (err) {
-    console.error("Invalid searchParams:", err);
-  }
-}, []);
-
+    try {
+      const { range: r, adults = 0, children = 0 } = JSON.parse(raw);
+      if (r?.from && r?.to) {
+        setRange({ from: new Date(r.from), to: new Date(r.to) });
+      }
+      const total = Number(adults) + Number(children);
+      if (total > 0) setGuests(String(total));
+    } catch {}
+  }, []);
 
   /* ================= LOAD BLOCKED DATES ================= */
   useEffect(() => {
@@ -188,10 +168,13 @@ useEffect(() => {
     );
   }, []);
 
-  /* ================= SUBMIT ENQUIRY ================= */
+  /* =====================================================
+     SUBMIT ENQUIRY → DATABASE (IMPORTANT CHANGE)
+  ===================================================== */
+
   const submitEnquiry = async () => {
-    if (!form.name || !form.email || !form.phone) {
-      toast.error("Please complete personal details");
+    if (!user) {
+      openAuth();
       return;
     }
 
@@ -212,23 +195,40 @@ useEffect(() => {
     }
 
     try {
-      await api.post("/mail/send-entire-villa", {
-        ...form,
-        ...address,
-        guests,
-        startDate: range.from,
-        endDate: range.to,
+      await api.post("/enquiries/entire-villa", {
+        type: "entire_villa_enquiry",
+
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+
+        startDate: range.from.toISOString().split("T")[0],
+        endDate: range.to.toISOString().split("T")[0],
+
+        guests: Number(guests),
+
+        addressInfo: {
+          address: address.address,
+          country: address.country,
+          state: address.state,
+          city: address.city,
+          pincode: address.pincode,
+        },
+
+        source: "frontend",
       });
 
-      toast.success("Enquiry sent successfully ✨");
+      toast.success("Enquiry submitted successfully ✨");
       navigate("/thank-you", { replace: true });
+
     } catch (err) {
       console.error(err);
-      toast.error("Failed to send enquiry. Please try again.");
+      toast.error("Failed to submit enquiry. Please try again.");
     }
   };
 
   /* ================= UI ================= */
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* BACK */}
@@ -271,18 +271,14 @@ useEffect(() => {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-[#faf7f4] rounded-xl p-3">
-                    <div className="text-xs text-muted-foreground">
-                      CHECK-IN
-                    </div>
+                    <div className="text-xs text-muted-foreground">CHECK-IN</div>
                     <div className="font-medium">
                       {range.from && format(range.from, "dd MMM yyyy")}
                     </div>
                   </div>
 
                   <div className="bg-[#faf7f4] rounded-xl p-3">
-                    <div className="text-xs text-muted-foreground">
-                      CHECK-OUT
-                    </div>
+                    <div className="text-xs text-muted-foreground">CHECK-OUT</div>
                     <div className="font-medium">
                       {range.to && format(range.to, "dd MMM yyyy")}
                     </div>
@@ -362,34 +358,22 @@ useEffect(() => {
 
               <div>
                 <Label>Country</Label>
-                <Input
-                  value={
-                    countries.find((c) => c.isoCode === address.country)
-                      ?.name || ""
-                  }
-                  disabled
-                />
+                <Input disabled value={address.country} />
               </div>
 
               <div>
                 <Label>State</Label>
-                <Input
-                  value={
-                    states.find((s) => s.isoCode === address.state)?.name ||
-                    ""
-                  }
-                  disabled
-                />
+                <Input disabled value={address.state} />
               </div>
 
               <div>
                 <Label>City</Label>
-                <Input value={address.city} disabled />
+                <Input disabled value={address.city} />
               </div>
 
               <div>
                 <Label>Pincode</Label>
-                <Input value={address.pincode} disabled />
+                <Input disabled value={address.pincode} />
               </div>
             </div>
           </div>
@@ -426,9 +410,9 @@ useEffect(() => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22].map((n) => (
-                    <SelectItem key={n} value={String(n)}>
-                      {n}
+                  {[...Array(22)].map((_, i) => (
+                    <SelectItem key={i + 1} value={String(i + 1)}>
+                      {i + 1}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -443,16 +427,6 @@ useEffect(() => {
           >
             Submit Enquiry
           </Button>
-
-          {/* MOBILE CTA */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-3">
-            <Button
-              className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
-              onClick={submitEnquiry}
-            >
-              Submit Enquiry
-            </Button>
-          </div>
 
         </section>
       </div>

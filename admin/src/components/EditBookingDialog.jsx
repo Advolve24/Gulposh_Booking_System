@@ -1,20 +1,8 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { updateBookingAdmin, updateUserAdmin, listBlackouts } from "../api/admin";
@@ -22,7 +10,6 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import AdminBookingPrint from "./AdminBookingPrint";
 import { createRoot } from "react-dom/client";
-
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
@@ -47,6 +34,18 @@ const toYMD = (d) => {
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+
+
+const ReadOnlyField = ({ label, value }) => (
+  <div className="space-y-0.5">
+    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+      {label}
+    </p>
+    <p className="text-sm font-medium text-foreground">
+      {value || "—"}
+    </p>
+  </div>
+);
 
 
 export default function EditBookingDialog({ open, onOpenChange, booking, reload }) {
@@ -135,6 +134,13 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
 
   if (!booking) return null;
 
+  const lockedNights = Math.max(
+    1,
+    Math.round(
+      (new Date(booking.endDate) - new Date(booking.startDate)) / 86400000
+    )
+  );
+
   const handleSave = async () => {
     try {
       if (!form.startDate || !form.endDate) {
@@ -207,7 +213,7 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg rounded-2xl p-0 overflow-hidden">
+      <DialogContent className="max-w-xl rounded-2xl p-0 overflow-hidden">
 
         {/* ===== HEADER ===== */}
         <div className="px-6 py-4 border-b">
@@ -241,7 +247,15 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
                   <Calendar
                     mode="single"
                     selected={form.startDate}
-                    onSelect={(d) => setForm(f => ({ ...f, startDate: d }))}
+                    onSelect={(d) => {
+                      const newEnd = new Date(d);
+                      newEnd.setDate(newEnd.getDate() + lockedNights);
+                      setForm(f => ({
+                        ...f,
+                        startDate: d,
+                        endDate: newEnd,
+                      }));
+                    }}
                     disabled={disabledDates}
                   />
                 </PopoverContent>
@@ -269,58 +283,75 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
             </div>
           </div>
 
-          {/* Guest Info */}
-          <div className="space-y-3">
-            <Field label="Full Name">
-              <Input value={form.fullName}
-                onChange={(e) => setForm(f => ({ ...f, fullName: e.target.value }))} />
-            </Field>
-
-            <Field label="Phone">
-              <Input value={form.phone}
-                onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))} />
-            </Field>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Govt ID Type">
-                <Select value={form.govIdType}
-                  onValueChange={(v) => setForm(f => ({ ...f, govIdType: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select ID" /></SelectTrigger>
-                  <SelectContent className="bg-white">
-                    {GOV_ID_TYPES.map(t => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field label="Govt ID Number">
-                <Input value={form.govIdNumber}
-                  onChange={(e) => setForm(f => ({ ...f, govIdNumber: e.target.value }))} />
-              </Field>
-            </div>
-          </div>
-
-          {/* Payment */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Amount Paid (₹)">
-              <Input type="number" value={form.amountPaid}
-                onChange={(e) => setForm(f => ({ ...f, amountPaid: e.target.value }))} />
-            </Field>
-
-            <Field label="Payment Mode">
-              <Select value={form.paymentMode}
-                onValueChange={(v) => setForm(f => ({ ...f, paymentMode: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+            <Field label="Govt ID Type">
+              <Select value={form.govIdType}
+                onValueChange={(v) => setForm(f => ({ ...f, govIdType: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select ID" /></SelectTrigger>
                 <SelectContent className="bg-white">
-                  <SelectItem value="Cash">Cash</SelectItem>
-                  <SelectItem value="UPI">UPI</SelectItem>
-                  <SelectItem value="Card">Card</SelectItem>
-                  <SelectItem value="Online">Online</SelectItem>
+                  {GOV_ID_TYPES.map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
+
+            <Field label="Govt ID Number">
+              <Input value={form.govIdNumber}
+                onChange={(e) => setForm(f => ({ ...f, govIdNumber: e.target.value }))} />
+            </Field>
           </div>
+
+          {/* Guest Info */}
+          <div className="flex justify-between">
+            <ReadOnlyField label="Full Name" value={form.fullName} />
+            <ReadOnlyField label="Phone" value={form.phone} />
+            <ReadOnlyField label="Email" value={booking.user?.email} />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <ReadOnlyField
+              label="Room"
+              value={
+                booking.room?.isVilla
+                  ? "Entire Villa"
+                  : booking.room?.name
+              }
+            />
+
+            <ReadOnlyField
+              label="Nights"
+              value={`${lockedNights} nights`}
+            />
+
+            <ReadOnlyField
+              label="Total Guests"
+              value={`${(booking.adults || 0) + (booking.children || 0)} (Adults ${booking.adults || 0}, Children ${booking.children || 0})`}
+            />
+
+            <ReadOnlyField
+              label="Veg Guests"
+              value={booking.vegGuests || 0}
+            />
+
+            <ReadOnlyField
+              label="Non-Veg Guests"
+              value={booking.nonVegGuests || 0}
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <ReadOnlyField
+              label="Amount Paid"
+              value={`₹${booking.adminMeta?.amountPaid || booking.amount}`}
+            />
+
+            <ReadOnlyField
+              label="Payment Mode"
+              value={booking.adminMeta?.paymentMode || "—"}
+            />
+          </div>
+
         </div>
 
         {/* ===== FOOTER ===== */}
@@ -334,7 +365,7 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
         </div>
 
       </DialogContent>
-    </Dialog>
+    </Dialog >
 
   );
 }

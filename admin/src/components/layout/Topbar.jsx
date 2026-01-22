@@ -119,7 +119,9 @@ export default function Topbar({ onMenuClick }) {
           <Bell className="text-muted-foreground" />
 
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-full bg-primary/20" />
+            <div className="h-9 w-9 flex items-center justify-center rounded-full bg-primary/20 text-gray-500">
+            <span className="text-[16px]">A</span>
+            </div>
             <span className="hidden sm:block text-sm font-medium text-[#2b1e1e]">
               Admin
             </span>
