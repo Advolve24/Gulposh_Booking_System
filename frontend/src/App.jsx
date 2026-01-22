@@ -179,10 +179,8 @@ function AppRoutes() {
           }
         />
 
-        <Route
-  path="/enquiry-success/:id"
-  element={<EnquirySuccess />}
-/>
+        <Route path="/enquiry-success" element={<EnquirySuccess />} />
+
 
 
         {/* LEGAL */}

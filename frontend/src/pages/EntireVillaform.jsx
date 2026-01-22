@@ -144,7 +144,7 @@ export default function EntireVilla() {
       }
       const total = Number(adults) + Number(children);
       if (total > 0) setGuests(String(total));
-    } catch {}
+    } catch { }
   }, []);
 
   /* ================= LOAD BLOCKED DATES ================= */
@@ -172,64 +172,75 @@ export default function EntireVilla() {
      SUBMIT ENQUIRY → DATABASE (IMPORTANT CHANGE)
   ===================================================== */
 
- const submitEnquiry = async () => {
-  if (!user) {
-    openAuth();
-    return;
-  }
+  const submitEnquiry = async () => {
+    if (!user) {
+      openAuth();
+      return;
+    }
 
-  if (!range.from || !range.to) {
-    toast.error("Please select check-in and check-out dates");
-    return;
-  }
+    if (!range.from || !range.to) {
+      toast.error("Please select check-in and check-out dates");
+      return;
+    }
 
-  if (
-    !address.address ||
-    !address.country ||
-    !address.state ||
-    !address.city ||
-    !address.pincode
-  ) {
-    toast.error("Please complete your address details");
-    return;
-  }
+    if (
+      !address.address ||
+      !address.country ||
+      !address.state ||
+      !address.city ||
+      !address.pincode
+    ) {
+      toast.error("Please complete your address details");
+      return;
+    }
 
-  try {
-    const { data } = await api.post("/enquiries/entire-villa", {
-      type: "entire_villa_enquiry",
+    try {
+      const { data } = await api.post("/enquiries/entire-villa", {
+        type: "entire_villa_enquiry",
 
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
 
-      startDate: range.from.toISOString().split("T")[0],
-      endDate: range.to.toISOString().split("T")[0],
+        startDate: range.from.toISOString().split("T")[0],
+        endDate: range.to.toISOString().split("T")[0],
 
-      guests: Number(guests),
+        guests: Number(guests),
 
-      addressInfo: {
-        address: address.address,
-        country: address.country,
-        state: address.state,
-        city: address.city,
-        pincode: address.pincode,
-      },
+        addressInfo: {
+          address: address.address,
+          country: address.country,
+          state: address.state,
+          city: address.city,
+          pincode: address.pincode,
+        },
 
-      source: "frontend",
-    });
+        source: "frontend",
+      });
 
-    toast.success("Enquiry submitted successfully ✨");
+      toast.success("Enquiry submitted successfully ✨");
+      sessionStorage.setItem(
+        "enquirySuccessData",
+        JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          startDate: range.from,
+          endDate: range.to,
+          guests,
+          addressInfo: address,
+        })
+      );
 
-navigate(`/enquiry-success/${data._id}`, {
-  replace: true,
-});
+      navigate("/enquiry-success", { replace: true });
 
 
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to submit enquiry. Please try again.");
-  }
-};
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to submit enquiry. Please try again.");
+    }
+  };
 
 
   /* ================= UI ================= */

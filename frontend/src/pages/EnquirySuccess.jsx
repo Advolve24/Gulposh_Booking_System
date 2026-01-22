@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
 
@@ -13,7 +13,6 @@ import {
   Calendar,
 } from "lucide-react";
 
-import { api } from "@/api/http";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -26,7 +25,6 @@ const fmt = (d) => format(new Date(d), "dd MMM yyyy");
 const fireConfetti = () => {
   const colors = ["#ff3b3b", "#ffb703", "#3a86ff", "#8338ec", "#06d6a0"];
 
-  // Strong initial blast
   confetti({
     particleCount: 180,
     spread: 90,
@@ -37,9 +35,7 @@ const fireConfetti = () => {
     origin: { x: 0.5, y: -0.15 },
   });
 
-  // Soft continuous fall
-  const duration = 1200;
-  const end = Date.now() + duration;
+  const end = Date.now() + 1200;
 
   const frame = () => {
     if (Date.now() > end) return;
@@ -51,10 +47,7 @@ const fireConfetti = () => {
       gravity: 1,
       ticks: 240,
       colors,
-      origin: {
-        x: Math.random(),
-        y: -0.15,
-      },
+      origin: { x: Math.random(), y: -0.15 },
     });
 
     requestAnimationFrame(frame);
@@ -66,46 +59,31 @@ const fireConfetti = () => {
 /* ================= COMPONENT ================= */
 
 export default function EnquirySuccess() {
-  const { id } = useParams();
   const navigate = useNavigate();
-
-  const [enquiry, setEnquiry] = useState(null);
-  const [loading, setLoading] = useState(true);
   const confettiRan = useRef(false);
 
-  /* 🎉 CONFETTI – RUN ONCE */
+  const [data, setData] = useState(null);
+
+  /* 🎉 CONFETTI */
   useLayoutEffect(() => {
     if (confettiRan.current) return;
     confettiRan.current = true;
     fireConfetti();
   }, []);
 
-  /* 🔒 HARD GUARD – DO NOT CALL API UNTIL ID EXISTS */
+  /* 📦 LOAD FROM SESSION */
   useEffect(() => {
-    if (!id) return;
+    const raw = sessionStorage.getItem("enquirySuccessData");
+    if (!raw) {
+      navigate("/", { replace: true });
+      return;
+    }
 
-    let active = true;
+    setData(JSON.parse(raw));
+    sessionStorage.removeItem("enquirySuccessData");
+  }, [navigate]);
 
-    (async () => {
-      try {
-        const { data } = await api.get(`/enquiries/${id}`);
-        if (!active) return;
-        setEnquiry(data);
-      } catch {
-        navigate("/", { replace: true });
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [id, navigate]);
-
-  if (!id || loading || !enquiry) return null;
-
-  /* ================= UI ================= */
+  if (!data) return null;
 
   return (
     <div className="min-h-screen bg-[#fff7f7]">
@@ -130,17 +108,12 @@ export default function EnquirySuccess() {
             Your enquiry has been successfully submitted.
             Our team will contact you shortly.
           </p>
-
-          <span className="inline-block mt-3 px-4 py-1 rounded-full bg-white/20 text-xs">
-            Enquiry ID: #{enquiry._id.slice(-8).toUpperCase()}
-          </span>
         </div>
       </section>
 
       {/* ================= CONTENT ================= */}
       <div className="max-w-5xl mx-auto px-4 py-10 space-y-6">
 
-        {/* SUMMARY CARD */}
         <div className="bg-white rounded-2xl shadow-md p-6 space-y-4">
           <h2 className="text-xl font-serif font-semibold">
             Enquiry Details
@@ -150,46 +123,44 @@ export default function EnquirySuccess() {
 
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-muted-foreground" />
-              {fmt(enquiry.startDate)} → {fmt(enquiry.endDate)}
+              {fmt(data.startDate)} → {fmt(data.endDate)}
             </div>
 
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-muted-foreground" />
-              {enquiry.guests} Guests
+              {data.guests} Guests
             </div>
 
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-muted-foreground" />
-              {enquiry.email}
+              {data.email}
             </div>
 
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-muted-foreground" />
-              {enquiry.phone}
+              {data.phone}
             </div>
 
             <div className="flex items-start gap-2 md:col-span-2">
               <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
               <span>
-                {enquiry.addressInfo?.address},{" "}
-                {enquiry.addressInfo?.city},{" "}
-                {enquiry.addressInfo?.state},{" "}
-                {enquiry.addressInfo?.country} –{" "}
-                {enquiry.addressInfo?.pincode}
+                {data.addressInfo.address},{" "}
+                {data.addressInfo.city},{" "}
+                {data.addressInfo.state},{" "}
+                {data.addressInfo.country} –{" "}
+                {data.addressInfo.pincode}
               </span>
             </div>
-
           </div>
 
           <Separator />
 
           <p className="text-xs text-muted-foreground">
-            This is an enquiry request. Availability and pricing will be confirmed
-            by our team.
+            This is an enquiry request. Availability and pricing will be
+            confirmed by our team.
           </p>
         </div>
 
-        {/* ACTIONS */}
         <div className="flex justify-center">
           <Button variant="outline" onClick={() => navigate("/")}>
             <Home className="w-4 h-4 mr-2" />
@@ -197,9 +168,8 @@ export default function EnquirySuccess() {
           </Button>
         </div>
 
-        {/* NOTE */}
         <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-center">
-          A confirmation has been sent to <b>{enquiry.email}</b>.
+          A confirmation has been sent to <b>{data.email}</b>.
           <br />
           Our team will contact you shortly.
         </div>
