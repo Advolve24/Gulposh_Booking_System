@@ -294,12 +294,12 @@ export default function AuthModal() {
             <>
               <Button
                 variant="outline"
-                className="w-full h-11 rounded-xl"
+                className="w-full h-11 rounded-xl gap-3"
                 onClick={() => setStep("phone")}
               >
-                Continue with Mobile OTP
+                <Phone size={18} />
+                Continue with Phone 
               </Button>
-
               <div className="relative text-center text-xs text-muted-foreground">
                 <span className="bg-white px-2">OR</span>
                 <div className="absolute inset-x-0 top-1/2 h-px bg-border -z-10" />
