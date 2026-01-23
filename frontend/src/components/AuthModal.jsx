@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { X, ShieldCheck } from "lucide-react";
+import { X, ShieldCheck, Phone } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 import { signInWithPhoneNumber } from "firebase/auth";
@@ -304,12 +305,10 @@ export default function AuthModal() {
                 <div className="absolute inset-x-0 top-1/2 h-px bg-border -z-10" />
               </div>
 
-              <Button
-                className="w-full h-11 rounded-xl"
-                onClick={handleGoogleLogin}
-              >
-                Continue with Google
-              </Button>
+              <Button variant="outline" className="w-full h-11 rounded-xl gap-3"  onClick={handleGoogleLogin}>
+                  <FcGoogle size={20} />
+                  Continue with Google
+                </Button>
             </>
           )}
 
