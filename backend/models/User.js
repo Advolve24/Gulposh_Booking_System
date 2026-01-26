@@ -56,7 +56,20 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+     /* ================= NOTIFICATIONS (FCM) ================= */
+
+    /**
+     * FCM tokens for push notifications
+     * - Used ONLY when isAdmin === true
+     * - Clients may have this field but will NEVER be queried
+     */
+    fcmTokens: {
+      type: [String],
+      default: [],
+    },
   },
+
   { timestamps: true }
 );
 

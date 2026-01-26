@@ -17,6 +17,7 @@ import adminUploadRoutes from "./routes/admin.upload.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js";
 import { verifySMTP } from "./utils/mailer.js";
 import enquiryRoutes from "./routes/enquiry.routes.js";
+import adminNotifications from "./routes/adminNotifications.js";
 import http from "http";
 
 import { initSocket } from "./lib/socket.js"; // ✅ NEW (Socket.IO init)
@@ -74,6 +75,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/blackouts", blackoutRoutes);
 app.use("/api/admin/blackouts", adminBlackoutRoutes);
 app.use("/api/enquiries", enquiryRoutes);
+app.use("/api/admin/notifications", adminNotifications);
 
 mongoose
   .connect(process.env.MONGO_URL)
