@@ -11,10 +11,12 @@ import { toast } from "sonner";
 import { useAuth } from "./store/auth";
 import { useNotificationStore } from "./store/useNotificationStore";
 
+import { initFCM } from "@/lib/fcm";
+
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
 import Dashboard from "./pages/Dashboard";
-import Rooms from "./pages/Rooms";           
+import Rooms from "./pages/Rooms";
 import RoomsNew from "./pages/RoomsNew";
 import Users from "./pages/Users";
 import Bookings from "./pages/Bookings";
@@ -25,6 +27,8 @@ import BookingViewPage from "@/components/booking/BookingViewPage";
 import AdminInvoiceTemplate from "./components/AdminBookingPrint";
 import ProtectedRoute from "./components/ProtectedRoute";
 import BlockDates from "./pages/BlockDates";
+import Settings from "./pages/Settings";
+import { getAdminNotifications } from "@/api/admin";
 
 
 function InitAuthWatcher({ children }) {
@@ -37,7 +41,7 @@ function InitAuthWatcher({ children }) {
     init();
   }, [init]);
 
-  if (!ready) return null; 
+  if (!ready) return null;
   return children;
 }
 
@@ -46,20 +50,36 @@ export default function App() {
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
 
+  const setInitial = useNotificationStore(s => s.setInitial);
+
+useEffect(() => {
+if (!isAdmin) return;
+
+
+(async () => {
+const data = await getAdminNotifications();
+setInitial(data);
+})();
+}, [isAdmin]);
+
   const addNotification = useNotificationStore(
     (s) => s.addNotification
   );
 
   const socketInitRef = useRef(false);
+  const fcmInitRef = useRef(false);
 
-  /* ================= SOCKET + NOTIFICATIONS ================= */
+  /* ================= SOCKET.IO ================= */
   useEffect(() => {
-    if (!isAdmin) return;
-    if (socketInitRef.current) return;
+    if (!isAdmin) {
+      if (socket.connected) socket.disconnect();
+      socketInitRef.current = false;
+      return;
+    }
 
+    if (socketInitRef.current) return;
     socketInitRef.current = true;
 
-    // 🔌 CONNECT
     socket.connect();
 
     socket.on("connect", () => {
@@ -71,30 +91,10 @@ export default function App() {
       console.log("🔴 Admin disconnected:", reason);
     });
 
-    // 🔔 ADMIN NOTIFICATION
     socket.on("ADMIN_NOTIFICATION", (payload) => {
-      console.log("🔔 ADMIN NOTIFICATION:", payload);
+      console.log("🔔 SOCKET NOTIFICATION:", payload);
 
-      const {
-        type = "info",   // success | error | warning | info
-        title = "Notification",
-        message = "",
-      } = payload || {};
-
-      // 1️⃣ Save to store (bell + page)
-      addNotification({
-        ...payload,
-        isRead: false,
-        createdAt: new Date().toISOString(),
-      });
-
-      // 2️⃣ Show toast
-      toast[type](
-        <div>
-          <div className="font-semibold">{title}</div>
-          <div className="text-sm opacity-90">{message}</div>
-        </div>
-      );
+      handleIncomingNotification(payload);
     });
 
     return () => {
@@ -102,8 +102,51 @@ export default function App() {
       socket.off("disconnect");
       socket.off("ADMIN_NOTIFICATION");
     };
-  }, [isAdmin, addNotification]);
+  }, [isAdmin]);
 
+  
+  /* ================= FCM ================= */
+useEffect(() => {
+  if (!isAdmin) return;
+  if (fcmInitRef.current) return;
+
+  fcmInitRef.current = true;
+
+  initFCM((notification) => {
+    console.log("🔔 FCM NOTIFICATION:", notification);
+    handleIncomingNotification(notification);
+  }).catch(console.error);
+
+}, [isAdmin]);
+
+
+  /* ================= COMMON HANDLER ================= */
+  const handleIncomingNotification = (payload) => {
+    const {
+      type = "info",
+      title = "Notification",
+      message = "",
+    } = payload || {};
+
+    // Save to store
+    addNotification({
+      ...payload,
+      isRead: false,
+      createdAt: payload.createdAt || new Date().toISOString(),
+    });
+
+    // Toast
+    const toastType = toast[type] ? type : "info";
+
+    toast[toastType](
+      <div className="space-y-1">
+        <div className="font-semibold">{title}</div>
+        <div className="text-sm opacity-90 whitespace-pre-line">
+          {message}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <BrowserRouter>
@@ -177,8 +220,8 @@ export default function App() {
             }
           />
 
-             <Route path="/bookings/:id" element={<BookingViewPage />} />
-                    <Route
+          <Route path="/bookings/:id" element={<BookingViewPage />} />
+          <Route
             path="/bookings/:id/invoice"
             element={
               <ProtectedRoute>
@@ -215,6 +258,16 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+
 
           <Route
             path="*"

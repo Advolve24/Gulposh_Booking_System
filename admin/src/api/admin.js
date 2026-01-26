@@ -70,5 +70,16 @@ export const getBookingAdmin = (id) =>
 export const adminGlobalSearch = (q) =>
   api.get(`/admin/search?q=${encodeURIComponent(q)}`).then(r => r.data);
 
+/**
+* Fetch admin notifications
+*/
+export const getAdminNotifications = () =>
+api.get("/admin/notifications").then(r => r.data);
 
+
+/**
+* Mark all admin notifications as read
+*/
+export const markAllAdminNotificationsRead = () =>
+api.put("/admin/notifications/mark-all-read").then(r => r.data);
 

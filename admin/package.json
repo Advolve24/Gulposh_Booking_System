@@ -25,6 +25,7 @@
     "clsx": "^2.1.1",
     "country-state-city": "^3.2.1",
     "date-fns": "^4.1.0",
+    "firebase": "^12.8.0",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.541.0",
     "react": "^19.1.1",

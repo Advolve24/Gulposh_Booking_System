@@ -2,16 +2,29 @@ import { create } from "zustand";
 
 /**
  * Admin Notification Store
+ *
  * Used for:
  * - Bell badge count
  * - Toast + realtime socket events
- * - Notifications page
+ * - Notifications page (Settings)
+ * - Future FCM push notifications
  */
 export const useNotificationStore = create((set, get) => ({
   /* ================= STATE ================= */
-  items: [],          // all notifications (latest first)
-  unread: 0,          // unread count
-  lastFetchedAt: null,
+  items: [],           // latest first
+  unread: 0,
+  lastFetchedAt: null, // for API sync / pagination later
+
+  /* ================= HELPERS ================= */
+  _normalize: (n) => ({
+    id: n.id || n._id || crypto.randomUUID(),
+    title: n.title || "Notification",
+    message: n.message || "",
+    type: n.type || "info", // success | info | warning | error
+    meta: n.meta || {},
+    isRead: Boolean(n.isRead),
+    createdAt: n.createdAt || new Date().toISOString(),
+  }),
 
   /* ================= ACTIONS ================= */
 
@@ -19,26 +32,32 @@ export const useNotificationStore = create((set, get) => ({
    * Add realtime notification (Socket / FCM)
    */
   addNotification: (notification) =>
-    set((state) => ({
-      items: [
-        {
-          ...notification,
-          isRead: false,
-          createdAt: notification.createdAt || new Date().toISOString(),
-        },
-        ...state.items,
-      ],
-      unread: state.unread + 1,
-    })),
+    set((state) => {
+      const normalized = get()._normalize({
+        ...notification,
+        isRead: false,
+      });
+
+      return {
+        items: [normalized, ...state.items],
+        unread: state.unread + 1,
+      };
+    }),
 
   /**
    * Set notifications from API (initial load)
    */
   setInitial: (items = []) =>
-    set({
-      items,
-      unread: items.filter((n) => !n.isRead).length,
-      lastFetchedAt: Date.now(),
+    set(() => {
+      const normalized = items.map((n) =>
+        get()._normalize(n)
+      );
+
+      return {
+        items: normalized,
+        unread: normalized.filter((n) => !n.isRead).length,
+        lastFetchedAt: Date.now(),
+      };
     }),
 
   /**
@@ -49,14 +68,17 @@ export const useNotificationStore = create((set, get) => ({
       let unread = state.unread;
 
       const items = state.items.map((n) => {
-        if (n._id === id && !n.isRead) {
+        if (n.id === id && !n.isRead) {
           unread -= 1;
           return { ...n, isRead: true };
         }
         return n;
       });
 
-      return { items, unread: Math.max(unread, 0) };
+      return {
+        items,
+        unread: Math.max(unread, 0),
+      };
     }),
 
   /**
@@ -69,12 +91,13 @@ export const useNotificationStore = create((set, get) => ({
     })),
 
   /**
-   * Remove old notifications (retention logic)
-   * @param {number} days – default 30
+   * Retention cleanup
+   * Default: keep last 30 days
    */
   pruneOld: (days = 30) =>
     set((state) => {
-      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      const cutoff =
+        Date.now() - days * 24 * 60 * 60 * 1000;
 
       const items = state.items.filter(
         (n) => new Date(n.createdAt).getTime() >= cutoff

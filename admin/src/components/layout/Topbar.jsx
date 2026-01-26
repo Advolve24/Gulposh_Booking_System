@@ -1,7 +1,10 @@
 import { Menu, Bell, Search } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { adminGlobalSearch } from "@/api/admin";
+import { useNotificationStore } from "@/store/useNotificationStore";
+import { formatDistanceToNow } from "date-fns";
+import { markAllAdminNotificationsRead } from "@/api/admin";
 
 function Section({ title, children }) {
   return (
@@ -31,6 +34,11 @@ export default function Topbar({ onMenuClick }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
+  const [openBell, setOpenBell] = useState(false);
+
+  const bellRef = useRef(null);
+
+  const { items, unread, markAllRead } = useNotificationStore();
 
   useEffect(() => {
     if (!query.trim()) {
@@ -46,6 +54,18 @@ export default function Topbar({ onMenuClick }) {
     return () => clearTimeout(t);
   }, [query]);
 
+  /* =============== CLICK OUTSIDE BELL =============== */
+  useEffect(() => {
+    const handler = (e) => {
+      if (!bellRef.current?.contains(e.target)) {
+        setOpenBell(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+
   const getPageTitle = () => {
     if (pathname === "/dashboard") return "Dashboard";
     if (pathname === "/rooms") return "Rooms";
@@ -54,6 +74,7 @@ export default function Topbar({ onMenuClick }) {
     if (pathname === "/bookings") return "Bookings";
     if (pathname.startsWith("/block-dates")) return "Calendar";
     if (pathname.startsWith("/villa-booking")) return "Book Entire Villa";
+    if (pathname.startsWith("/settings")) return "Settings";
     return "Dashboard";
   };
 
@@ -116,11 +137,70 @@ export default function Topbar({ onMenuClick }) {
             )}
           </div>
 
-          <Bell className="text-muted-foreground" />
+          <div className="relative" ref={bellRef}>
+            <button
+              onClick={() => {
+                setOpenBell(!openBell);
+                if (!openBell) markAllRead();
+              }}
+              className="relative"
+            >
+              <Bell size={20} />
+              {unread > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 min-w-[20px] rounded-full bg-red-600 text-white text-xs flex items-center justify-center">
+                  {unread}
+                </span>
+              )}
+            </button>
+
+            {openBell && (
+              <div className="absolute right-0 mt-3 w-80 bg-white border rounded-xl shadow-xl z-50">
+                <div className="px-4 py-3 font-semibold border-b">
+                  Notifications
+                </div>
+
+                <div className="max-h-80 overflow-y-auto">
+                  {items.length === 0 ? (
+                    <p className="p-4 text-sm text-muted-foreground">
+                      No notifications
+                    </p>
+                  ) : (
+                    items.slice(0, 7).map((n, i) => (
+                      <div
+                        key={i}
+                        className="px-4 py-3 border-b hover:bg-muted cursor-pointer"
+                        onClick={() => navigate("/settings?tab=notifications")}
+                      >
+                        <div className="text-sm font-medium">{n.title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(n.createdAt))} ago
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      await markAllAdminNotificationsRead(); // 🔁 backend sync
+                      markAllRead();                          // 🧠 zustand update
+                      navigate("/settings?tab=notifications");
+                    } catch (err) {
+                      console.error("Failed to mark notifications read", err);
+                    }
+                  }}
+                  className="w-full py-2 text-sm font-medium text-primary hover:bg-muted"
+                >
+                  View all
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 flex items-center justify-center rounded-full bg-primary/20 text-gray-500">
-            <span className="text-[16px]">A</span>
+              <span className="text-[16px]">A</span>
             </div>
             <span className="hidden sm:block text-sm font-medium text-[#2b1e1e]">
               Admin
