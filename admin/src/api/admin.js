@@ -90,3 +90,14 @@ await api.post("/admin/notifications/fcm-token", {
 await api.delete("/admin/notifications/fcm-token", {
   data: { token: fcmToken },
 });
+
+// ================= FCM =================
+
+/**
+ * Save admin FCM token
+ */
+export const saveAdminFcmToken = (token) => {
+  return api
+    .post("/admin/fcm-token", { token })
+    .then((r) => r.data);
+};
