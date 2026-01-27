@@ -2,6 +2,7 @@ import express from "express";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
 import { requireAdminSession } from "../middleware/adminSession.js";
+import { saveAdminFcmToken } from "../controllers/admin.notification.controller.js";
 
 const router = express.Router();
 
@@ -57,53 +58,6 @@ router.put("/mark-all-read", async (_req, res) => {
  * Save / refresh admin FCM token
  * Called from frontend after FCM init
  */
-router.post("/fcm-token", async (req, res) => {
-  try {
-    const { token } = req.body;
-
-    if (!token) {
-      return res.status(400).json({ message: "FCM token required" });
-    }
-
-    const adminId = req.user.id; // from requireAdminSession
-
-    const admin = await User.findById(adminId);
-    if (!admin || !admin.isAdmin) {
-      return res.status(403).json({ message: "Admins only" });
-    }
-
-    await User.updateOne(
-      { _id: adminId },
-      {
-        $addToSet: { fcmTokens: token }, // prevents duplicates
-      }
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("SAVE FCM TOKEN ERROR:", err);
-    res.status(500).json({ message: "Failed to save FCM token" });
-  }
-});
-
-/**
- * Remove admin FCM token (logout / cleanup)
- */
-router.delete("/fcm-token", async (req, res) => {
-  try {
-    const { token } = req.body;
-    if (!token) return res.json({ success: true });
-
-    await User.updateOne(
-      { _id: req.user.id },
-      { $pull: { fcmTokens: token } }
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("REMOVE FCM TOKEN ERROR:", err);
-    res.status(500).json({ message: "Failed to remove FCM token" });
-  }
-});
+router.post("/fcm-token", saveAdminFcmToken);
 
 export default router;

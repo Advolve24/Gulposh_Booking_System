@@ -14,6 +14,45 @@ import {
 const router = express.Router();
 
 router.use(requireAdminSession);
+
+/* ================= FCM ================= */
+
+
+router.post("/fcm-token", async (req, res) => {
+console.log("🔥 FCM ROUTE HIT", req.user.id);
+
+
+const { token } = req.body;
+if (!token) {
+return res.status(400).json({ message: "FCM token required" });
+}
+
+
+await User.updateOne(
+{ _id: req.user.id, isAdmin: true },
+{ $addToSet: { fcmTokens: token } }
+);
+
+
+res.json({ success: true });
+});
+
+
+router.delete("/fcm-token", async (req, res) => {
+const { token } = req.body;
+if (!token) return res.json({ success: true });
+
+
+await User.updateOne(
+{ _id: req.user.id },
+{ $pull: { fcmTokens: token } }
+);
+
+
+res.json({ success: true });
+});
+
+
 router.get("/stats", getAdminStats);
 router.get("/rooms", listRoomsAdmin);
 router.post("/rooms", createRoom);
