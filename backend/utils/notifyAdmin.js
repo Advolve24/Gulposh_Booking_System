@@ -1,6 +1,6 @@
 import Notification from "../models/Notification.js";
 import { emitAdmin, hasOnlineAdmins } from "../lib/socket.js";
-// import { sendAdminPush } from "../lib/fcm.js"; // 🔕 enable later
+import { sendAdminPush } from "../lib/fcm.js";
 
 /**
  * Central admin notification helper
@@ -75,6 +75,7 @@ Dates: ${data.dates}`,
   }
 
   /* ---------------- SAVE TO DATABASE ---------------- */
+  /* ---------------- SAVE TO DATABASE ---------------- */
   const notification = await Notification.create({
     type,
     title: payload.title,
@@ -84,7 +85,7 @@ Dates: ${data.dates}`,
     audience: "admin",
   });
 
-  /* ---------------- REALTIME SOCKET ---------------- */
+  /* ---------------- REALTIME / PUSH ---------------- */
   if (hasOnlineAdmins()) {
     emitAdmin("ADMIN_NOTIFICATION", {
       ...payload,
@@ -93,8 +94,8 @@ Dates: ${data.dates}`,
       isRead: false,
     });
   } else {
-    console.log("ℹ️ No admins online, stored for later");
-    // sendAdminPush(notification); // 🔔 enable later
+    // 🔔 ADMIN OFFLINE → SEND FCM
+    await sendAdminPush(notification);
   }
 
   return notification;
