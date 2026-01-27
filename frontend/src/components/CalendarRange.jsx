@@ -220,7 +220,10 @@ export default function CalendarRange({
         <Calendar
           mode="range"
           month={month}
-          onMonthChange={setMonth}
+          onMonthChange={(newMonth) => {
+            if (!isDesktop && selectingRef.current) return;
+            setMonth(newMonth);
+          }}
           numberOfMonths={isDesktop ? 2 : 1}
           selected={value}
           onSelect={handleSelect}
@@ -263,7 +266,14 @@ export default function CalendarRange({
 
   /* POPOVER MODE */
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        // 🚫 prevent Radix from closing while selecting start date
+        if (!nextOpen && selectingRef.current) return;
+        setOpen(nextOpen);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button variant="outline" className="w-full h-14 grid grid-cols-2 rounded-xl">
           <DateBox label="Check in" value={value?.from} />
