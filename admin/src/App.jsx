@@ -50,6 +50,10 @@ function InitAuthWatcher({ children }) {
 export default function App() {
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
+
+  /* 🔔 notification store */
+  const setInitial = useNotificationStore((s) => s.setInitial);
+  const addNotification = useNotificationStore((s) => s.addNotification);
   const socketInitRef = useRef(false);
   const fcmInitRef = useRef(false);
 
