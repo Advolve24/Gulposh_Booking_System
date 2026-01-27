@@ -4,20 +4,37 @@ import { firebaseApp } from "./firebase";
 
 /**
  * Initialize FCM for admin panel
+ * - Foreground notifications (tab open)
+ * - Background notifications (tab closed) via Service Worker
+ *
  * @param {Function} onNotification - callback when message arrives
  */
 export async function initFCM(onNotification) {
   try {
+    // 🔹 Browser support check
+    if (!("serviceWorker" in navigator)) {
+      console.warn("❌ Service workers not supported");
+      return null;
+    }
+
+    // 🔹 Register Firebase Messaging Service Worker
+    const swRegistration = await navigator.serviceWorker.register(
+      "/firebase-messaging-sw.js"
+    );
+
     const messaging = getMessaging(firebaseApp);
 
+    // 🔹 Ask permission
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       console.warn("🔕 Notification permission denied");
       return null;
     }
 
+    // 🔹 Get FCM token (IMPORTANT: pass service worker)
     const token = await getToken(messaging, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: swRegistration,
     });
 
     if (!token) {
@@ -27,7 +44,7 @@ export async function initFCM(onNotification) {
 
     console.log("✅ FCM TOKEN:", token);
 
-    // 🔔 Foreground message listener
+    // 🔔 FOREGROUND messages (tab open)
     onMessage(messaging, (payload) => {
       console.log("🔔 FCM FOREGROUND MESSAGE:", payload);
 
@@ -39,7 +56,6 @@ export async function initFCM(onNotification) {
         createdAt: new Date().toISOString(),
       };
 
-      // 👉 hand off to React
       onNotification?.(notif);
     });
 
