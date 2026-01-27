@@ -158,6 +158,12 @@ export default function CalendarRange({
     })();
   }, [disabledRanges]);
 
+  useEffect(() => {
+  if (!open) {
+    selectingRef.current = false;
+  }
+}, [open]);
+
   const disabled = useMemo(
     () => [
       { before: todayDateOnly() },
