@@ -83,3 +83,10 @@ api.get("/admin/notifications").then(r => r.data);
 export const markAllAdminNotificationsRead = () =>
 api.put("/admin/notifications/mark-all-read").then(r => r.data);
 
+await api.post("/admin/notifications/fcm-token", {
+  token: fcmToken,
+});
+
+await api.delete("/admin/notifications/fcm-token", {
+  data: { token: fcmToken },
+});
