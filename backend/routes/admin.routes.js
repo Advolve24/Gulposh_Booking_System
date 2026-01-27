@@ -1,4 +1,5 @@
 import express from "express";
+import User from "../models/User.js";
 import { requireAdminSession } from "../middleware/adminSession.js";
 import { createRoom, listRoomsAdmin, deleteRoom, getRoomAdmin, updateRoom } from "../controllers/admin.room.controller.js";
 import { getAdminStats } from "../controllers/admin.stats.controller.js";
