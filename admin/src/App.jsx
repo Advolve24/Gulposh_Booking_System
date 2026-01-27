@@ -12,6 +12,7 @@ import { useAuth } from "./store/auth";
 import { useNotificationStore } from "./store/useNotificationStore";
 
 import { initFCM } from "@/lib/fcm";
+import { saveAdminFcmToken } from "@/api/admin";
 
 import Login from "./pages/Login";
 import Logout from "./pages/Logout";
@@ -49,27 +50,31 @@ function InitAuthWatcher({ children }) {
 export default function App() {
   const { user } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
-
-  const setInitial = useNotificationStore(s => s.setInitial);
-
-useEffect(() => {
-if (!isAdmin) return;
-
-
-(async () => {
-const data = await getAdminNotifications();
-setInitial(data);
-})();
-}, [isAdmin]);
-
-  const addNotification = useNotificationStore(
-    (s) => s.addNotification
-  );
-
   const socketInitRef = useRef(false);
   const fcmInitRef = useRef(false);
 
+
+  /* ================= LOAD EXISTING NOTIFICATIONS ================= */
+
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+
+    (async () => {
+      try {
+        const data = await getAdminNotifications();
+        setInitial(data);
+      } catch (err) {
+        console.error("Failed to load notifications", err);
+      }
+    })();
+  }, [isAdmin, setInitial]);
+
+
   /* ================= SOCKET.IO ================= */
+
+
   useEffect(() => {
     if (!isAdmin) {
       if (socket.connected) socket.disconnect();
@@ -77,25 +82,30 @@ setInitial(data);
       return;
     }
 
+
     if (socketInitRef.current) return;
     socketInitRef.current = true;
 
+
     socket.connect();
 
+
     socket.on("connect", () => {
-      console.log("🟢 Admin connected to socket:", socket.id);
+      console.log("🟢 Admin socket connected:", socket.id);
       socket.emit("admin:online");
     });
 
+
     socket.on("disconnect", (reason) => {
-      console.log("🔴 Admin disconnected:", reason);
+      console.log("🔴 Admin socket disconnected:", reason);
     });
+
 
     socket.on("ADMIN_NOTIFICATION", (payload) => {
       console.log("🔔 SOCKET NOTIFICATION:", payload);
-
       handleIncomingNotification(payload);
     });
+
 
     return () => {
       socket.off("connect");
@@ -104,49 +114,38 @@ setInitial(data);
     };
   }, [isAdmin]);
 
-  
+
   /* ================= FCM ================= */
-useEffect(() => {
-  if (!isAdmin) return;
-  if (fcmInitRef.current) return;
-
-  fcmInitRef.current = true;
-
-  initFCM((notification) => {
-    console.log("🔔 FCM NOTIFICATION:", notification);
-    handleIncomingNotification(notification);
-  }).catch(console.error);
-
-}, [isAdmin]);
 
 
-  /* ================= COMMON HANDLER ================= */
-  const handleIncomingNotification = (payload) => {
-    const {
-      type = "info",
-      title = "Notification",
-      message = "",
-    } = payload || {};
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (fcmInitRef.current) return;
 
-    // Save to store
-    addNotification({
-      ...payload,
-      isRead: false,
-      createdAt: payload.createdAt || new Date().toISOString(),
-    });
 
-    // Toast
-    const toastType = toast[type] ? type : "info";
+    fcmInitRef.current = true;
 
-    toast[toastType](
-      <div className="space-y-1">
-        <div className="font-semibold">{title}</div>
-        <div className="text-sm opacity-90 whitespace-pre-line">
-          {message}
-        </div>
-      </div>
-    );
-  };
+
+    async function setupFCM() {
+      const token = await initFCM((notification) => {
+        console.log("🔔 FCM NOTIFICATION:", notification);
+        handleIncomingNotification(notification);
+      });
+
+
+      if (!token) return;
+
+
+      try {
+        await saveAdminFcmToken(token);
+        console.log("✅ FCM token saved");
+      } catch (err) {
+        console.error("❌ Failed to save FCM token", err);
+      }
+    }
+
+    setupFCM();
+  }, [isAdmin]);
 
   return (
     <BrowserRouter>
