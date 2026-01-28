@@ -48,24 +48,24 @@ export default function AuthModal() {
   const confirmationRef = useRef(null);
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
-  const googleReadyRef = useRef(false);
+  // const googleReadyRef = useRef(false);
 
-  /* =====================================================
-     LOAD GOOGLE SCRIPT ONCE
-  ===================================================== */
+  // /* =====================================================
+  //    LOAD GOOGLE SCRIPT ONCE
+  // ===================================================== */
 
-  useEffect(() => {
-    if (googleReadyRef.current) return;
+  // useEffect(() => {
+  //   if (googleReadyRef.current) return;
 
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.onload = () => {
-      googleReadyRef.current = true;
-    };
+  //   const script = document.createElement("script");
+  //   script.src = "https://accounts.google.com/gsi/client";
+  //   script.async = true;
+  //   script.onload = () => {
+  //     googleReadyRef.current = true;
+  //   };
 
-    document.body.appendChild(script);
-  }, []);
+  //   document.body.appendChild(script);
+  // }, []);
 
   /* =====================================================
      GOOGLE LOGIN (TOKEN BASED – STABLE)
