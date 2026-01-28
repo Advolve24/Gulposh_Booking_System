@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../store/authStore";
 import {
@@ -5,7 +6,6 @@ import {
   DialogContent,
   DialogOverlay,
 } from "@/components/ui/dialog";
-import { useGoogleLogin } from "@react-oauth/google";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,61 +48,59 @@ export default function AuthModal() {
   const confirmationRef = useRef(null);
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
-  // const googleReadyRef = useRef(false);
+  const googleReadyRef = useRef(false);
 
-  // /* =====================================================
-  //    LOAD GOOGLE SCRIPT ONCE
-  // ===================================================== */
+  /* =====================================================
+     LOAD GOOGLE SCRIPT ONCE
+  ===================================================== */
 
-  // useEffect(() => {
-  //   if (googleReadyRef.current) return;
+  useEffect(() => {
+    if (googleReadyRef.current) return;
 
-  //   const script = document.createElement("script");
-  //   script.src = "https://accounts.google.com/gsi/client";
-  //   script.async = true;
-  //   script.onload = () => {
-  //     googleReadyRef.current = true;
-  //   };
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = () => {
+      googleReadyRef.current = true;
+    };
 
-  //   document.body.appendChild(script);
-  // }, []);
+    document.body.appendChild(script);
+  }, []);
 
   /* =====================================================
      GOOGLE LOGIN (TOKEN BASED – STABLE)
   ===================================================== */
 
-  const googleLogin = useGoogleLogin({
-    flow: "implicit",
-    onSuccess: async (tokenResponse) => {
-      try {
-        setLoading(true);
-        toast.loading("Signing in with Google...", { id: "google" });
+  const handleGoogleLogin = () => {
+    if (!window.google) {
+      toast.error("Google not ready. Try again.");
+      return;
+    }
 
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: async (res) => {
+        try {
+          setLoading(true);
+          toast.loading("Signing in with Google...", { id: "google" });
 
-        /**
-        * IMPORTANT:
-        * tokenResponse.access_token is sent to backend
-        * backend must verify it via Google userinfo
-        */
-        const user = await googleLoginWithToken(
-          tokenResponse.access_token
-        );
+          const user = await googleLoginWithToken(res.credential);
 
+          toast.success("Login successful 🎉", { id: "google" });
+          closeAuth();
 
-        toast.success("Login successful 🎉", { id: "google" });
-        closeAuth();
-        resumeFlow(user);
-      } catch (err) {
-        console.error(err);
-        toast.error("Google login failed", { id: "google" });
-      } finally {
-        setLoading(false);
-      }
-    },
-    onError: () => {
-      toast.error("Google login cancelled");
-    },
-  });
+          resumeFlow(user);
+        } catch {
+          toast.error("Google login failed", { id: "google" });
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+
+    window.google.accounts.id.prompt();
+  };
+
   /* =====================================================
      OTP TIMER
   ===================================================== */
@@ -301,22 +299,17 @@ export default function AuthModal() {
                 onClick={() => setStep("phone")}
               >
                 <Phone size={18} />
-                Continue with Phone
+                Continue with Phone 
               </Button>
               <div className="relative text-center text-xs text-muted-foreground">
                 <span className="bg-white px-2">OR</span>
                 <div className="absolute inset-x-0 top-1/2 h-px bg-border -z-10" />
               </div>
 
-              <Button
-                variant="outline"
-                className="w-full h-11 rounded-xl gap-3"
-                onClick={() => googleLogin()}
-                disabled={loading}
-              >
-                <FcGoogle size={20} />
-                Continue with Google
-              </Button>
+              <Button variant="outline" className="w-full h-11 rounded-xl gap-3"  onClick={handleGoogleLogin}>
+                  <FcGoogle size={20} />
+                  Continue with Google
+                </Button>
             </>
           )}
 
@@ -392,3 +385,7 @@ export default function AuthModal() {
     </Dialog>
   );
 }
+
+
+
+
