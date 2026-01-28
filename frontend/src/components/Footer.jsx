@@ -8,6 +8,7 @@ export default function Footer() {
   const hideOnMobileRoutes = [
     "/checkout",
     "/room", // covers /room/:id
+    "/invoice-view",
   ];
 
   const hideOnMobile = hideOnMobileRoutes.some((route) =>
