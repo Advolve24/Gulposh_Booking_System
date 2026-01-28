@@ -66,6 +66,16 @@ export const downloadInvoicePDF = async (req, res) => {
         .send("Booking not found");
     }
 
+    // 🔐 USER OWNERSHIP CHECK (VERY IMPORTANT)
+    if (!req.user?.isAdmin) {
+      if (booking.user.toString() !== req.user.id) {
+        return res
+          .status(403)
+          .set("Content-Type", "text/plain")
+          .send("Unauthorized access to invoice");
+      }
+    }
+
     const html = `
 <!DOCTYPE html>
 <html>

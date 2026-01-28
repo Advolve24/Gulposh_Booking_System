@@ -8,11 +8,11 @@ import {
 
 const router = express.Router();
 
+/* ================= ADMIN ================= */
+router.get("/admin/:id", requireAdminSession, getInvoice);
+router.get("/admin/:id/download", requireAdminSession, downloadInvoicePDF);
 
-router.get("/:id", requireAdminSession, getInvoice);
-router.get("/:id/download", requireAdminSession, downloadInvoicePDF);
-
-
+/* ================= USER ================= */
 router.get(
   "/user/:id/download",
   authRequired,
