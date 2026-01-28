@@ -45,15 +45,34 @@ export default function CalendarRange({
 
   const [month, setMonth] = useState(new Date());
 
-  /* 🔥 slide animation state */
-  const [slideDir, setSlideDir] = useState(null); // "left" | "right" | null
+  /* 🔥 KEEP YOUR DESKTOP SLIDE STATES (no impact on desktop) */
+  const [slideDir, setSlideDir] = useState(null); // kept as-is
 
-  /* 🔥 swipe tracking */
+  /* swipe tracking (desktop unaffected) */
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const SWIPE_THRESHOLD = 50;
 
   const selectingRef = useRef(false);
+
+  /* ✅ MOBILE MONTH STACK (Airbnb scroll) */
+  const INITIAL_MOBILE_MONTHS = 3;
+  const [mobileMonths, setMobileMonths] = useState(() => {
+    const base = new Date();
+    return Array.from({ length: INITIAL_MOBILE_MONTHS }, (_, i) =>
+      addMonths(base, i)
+    );
+  });
+
+  const loadMoreMonths = () => {
+    setMobileMonths((prev) => {
+      const last = prev[prev.length - 1];
+      const next = Array.from({ length: 3 }, (_, i) =>
+        addMonths(last, i + 1)
+      );
+      return [...prev, ...next];
+    });
+  };
 
   /* ===============================
      HANDLE DATE SELECTION
@@ -80,6 +99,7 @@ export default function CalendarRange({
 
   /* ===============================
      TOUCH HANDLERS (MOBILE ONLY)
+     ✅ Disabled month-slide when using scroll calendar
   ============================== */
   const onTouchStart = (e) => {
     if (isDesktop || selectingRef.current) return;
@@ -94,26 +114,10 @@ export default function CalendarRange({
   const onTouchEnd = () => {
     if (isDesktop || selectingRef.current) return;
 
+    // ✅ For Airbnb vertical scroll, we do NOT change month on swipe
+    // (keeping your code structure but stopping slide behavior)
     const deltaX = touchStartX.current - touchEndX.current;
     if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
-
-    // 👉 swipe left
-    if (deltaX > 0) {
-      setSlideDir("left");
-      setTimeout(() => {
-        setMonth((m) => addMonths(m, 1));
-        setSlideDir(null);
-      }, 260);
-    }
-
-    // 👈 swipe right
-    if (deltaX < 0) {
-      setSlideDir("right");
-      setTimeout(() => {
-        setMonth((m) => subMonths(m, 1));
-        setSlideDir(null);
-      }, 260);
-    }
   };
 
   /* ===============================
@@ -159,10 +163,8 @@ export default function CalendarRange({
   }, [disabledRanges]);
 
   useEffect(() => {
-  if (!open) {
-    selectingRef.current = false;
-  }
-}, [open]);
+    if (!open) selectingRef.current = false;
+  }, [open]);
 
   const disabled = useMemo(
     () => [
@@ -179,17 +181,14 @@ export default function CalendarRange({
   ============================== */
   const calendarUI = (
     <div className="calendar-wrapper">
-      {/* NAV */}
+      {/* ✅ KEEP YOUR NAV BUTTONS EXACTLY */}
       <button
         className="calendar-nav left"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
           if (!isDesktop) {
-            setSlideDir("right");
-            setTimeout(() => {
-              setMonth((m) => subMonths(m, 1));
-              setSlideDir(null);
-            }, 260);
+            // ✅ mobile scroll calendar: do nothing / no slide
+            return;
           } else {
             setMonth((m) => subMonths(m, 1));
           }
@@ -203,11 +202,8 @@ export default function CalendarRange({
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
           if (!isDesktop) {
-            setSlideDir("left");
-            setTimeout(() => {
-              setMonth((m) => addMonths(m, 1));
-              setSlideDir(null);
-            }, 260);
+            // ✅ mobile scroll calendar: do nothing / no slide
+            return;
           } else {
             setMonth((m) => addMonths(m, 1));
           }
@@ -216,44 +212,95 @@ export default function CalendarRange({
         <ChevronRight size={20} />
       </button>
 
-      {/* 🔥 SLIDING CALENDAR */}
-      <div
-        className="calendar-viewport"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
-        <Calendar
-          mode="range"
-          month={month}
-          onMonthChange={(newMonth) => {
-            if (!isDesktop && selectingRef.current) return;
-            setMonth(newMonth);
-          }}
-          numberOfMonths={isDesktop ? 2 : 1}
-          selected={value}
-          onSelect={handleSelect}
-          disabled={disabled}
-          showOutsideDays={false}
-          className="airbnb-calendar p-4"
-          classNames={{
-            months: isDesktop ? "flex gap-8" : "flex justify-center",
-            caption: "hidden",
-            table: "w-full border-collapse",
-            head_row: "grid grid-cols-7",
-            row: "grid grid-cols-7",
-            cell: "h-9 w-9 text-center",
-            day: "h-9 w-9 rounded-full outline-none",
-            day_button: "h-9 w-9 rounded-full outline-none",
-            day_range_start: "bg-red-700 text-white",
-            day_range_end: "bg-red-700 text-white",
-            day_selected: "bg-red-700 text-white",
-            day_range_middle: "bg-red-100 text-red-900",
-            day_today: "border border-red-700",
-            day_disabled: "opacity-40",
-          }}
-        />
-      </div>
+      {/* ✅ DESKTOP CALENDAR — EXACT SAME AS YOURS */}
+      {isDesktop ? (
+        <div
+          className="calendar-viewport"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          <Calendar
+            mode="range"
+            month={month}
+            onMonthChange={(newMonth) => {
+              if (!isDesktop && selectingRef.current) return;
+              setMonth(newMonth);
+            }}
+            numberOfMonths={2}
+            selected={value}
+            onSelect={handleSelect}
+            disabled={disabled}
+            showOutsideDays={false}
+            className="airbnb-calendar p-4"
+            classNames={{
+              months: "flex gap-8",
+              caption: "hidden",
+              table: "w-full border-collapse",
+              head_row: "grid grid-cols-7",
+              row: "grid grid-cols-7",
+              cell: "h-9 w-9 text-center",
+              day: "h-9 w-9 rounded-full outline-none",
+              day_button: "h-9 w-9 rounded-full outline-none",
+              day_range_start: "bg-red-700 text-white",
+              day_range_end: "bg-red-700 text-white",
+              day_selected: "bg-red-700 text-white",
+              day_range_middle: "bg-red-100 text-red-900",
+              day_today: "border border-red-700",
+              day_disabled: "opacity-40",
+            }}
+          />
+        </div>
+      ) : (
+        /* ✅ MOBILE AIRBNB SCROLL (only mobile changed) */
+        <div
+          className="mobile-calendar-scroll"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          {mobileMonths.map((m, idx) => (
+            <Calendar
+              key={idx}
+              mode="range"
+              month={m}
+              numberOfMonths={1}
+              selected={value}
+              onSelect={handleSelect}
+              disabled={disabled}
+              showOutsideDays={false}
+              className="airbnb-calendar mobile-airbnb"
+              classNames={{
+                months: "flex justify-center",
+                caption: "flex justify-center font-medium mb-3",
+                table: "w-full border-collapse",
+                head_row: "grid grid-cols-7",
+                row: "grid grid-cols-7",
+                cell: "h-10 w-10 text-center",
+                day: "h-10 w-10 rounded-full outline-none",
+                day_button: "h-10 w-10 rounded-full outline-none",
+                day_range_start: "bg-red-700 text-white",
+                day_range_end: "bg-red-700 text-white",
+                day_selected: "bg-red-700 text-white",
+                day_range_middle: "bg-red-100 text-red-900",
+                day_today: "border border-red-700",
+                day_disabled: "opacity-40",
+              }}
+            />
+          ))}
+
+          {/* ✅ button after months (NOT sticky) */}
+          <div className="pt-2 pb-2">
+            <Button
+              variant="outline"
+              className="w-full rounded-xl"
+              onClick={loadMoreMonths}
+            >
+              Load more dates
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -275,19 +322,22 @@ export default function CalendarRange({
     <Popover
       open={open}
       onOpenChange={(nextOpen) => {
-        // 🚫 prevent Radix from closing while selecting start date
         if (!nextOpen && selectingRef.current) return;
         setOpen(nextOpen);
       }}
     >
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full h-14 grid grid-cols-2 rounded-xl">
+        <Button
+          variant="outline"
+          className="w-full h-14 grid grid-cols-2 rounded-xl"
+        >
           <DateBox label="Check in" value={value?.from} />
           <DateBox label="Check out" value={value?.to} />
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="p-0 w-full md:w-[680px]">
+      {/* ✅ DESKTOP width same, MOBILE becomes square fixed */}
+      <PopoverContent className="calendar-popover p-0 w-full md:w-[680px]">
         {calendarUI}
       </PopoverContent>
     </Popover>
