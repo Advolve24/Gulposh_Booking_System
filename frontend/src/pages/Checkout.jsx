@@ -197,6 +197,24 @@ export default function Checkout() {
   }, [user]);
 
 
+  useEffect(() => {
+    if (!withMeal) return;
+
+    const totalMeal = vegGuests + nonVegGuests;
+
+    // ensure minimum 1 meal guest
+    if (totalMeal === 0 && totalGuests > 0) {
+      setVegGuests(1);
+      setNonVegGuests(0);
+    }
+
+    // clamp if guests reduced
+    if (totalMeal > totalGuests) {
+      setNonVegGuests(Math.max(0, totalGuests - vegGuests));
+    }
+  }, [totalGuests, withMeal]);
+
+
   /* ================= CALCULATIONS ================= */
   const nights = useMemo(() => {
     if (!range.from || !range.to) return 0;
@@ -221,9 +239,18 @@ export default function Checkout() {
   const proceedPayment = async () => {
     const g = totalGuests;
 
-    if (withMeal && vegGuests + nonVegGuests !== g) {
-      toast.error("Veg + Non-Veg guests must equal total guests");
-      return;
+    if (withMeal) {
+      const mealGuests = vegGuests + nonVegGuests;
+
+      if (mealGuests < 1) {
+        toast.error("Please select at least 1 guest for meals");
+        return;
+      }
+
+      if (mealGuests > g) {
+        toast.error("Meal guests cannot exceed total guests");
+        return;
+      }
     }
 
     if (!form.email || !form.email.trim()) {
@@ -427,6 +454,37 @@ export default function Checkout() {
   }
 
 
+  function MobileRoomCard({ room, image }) {
+    if (!room) return null;
+
+    return (
+      <div className="lg:hidden">
+        <div className="flex items-center gap-3 rounded-2xl border bg-white p-3 shadow-sm">
+          {/* IMAGE */}
+          <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+            {image && (
+              <img
+                src={image}
+                alt={room.name}
+                className="h-full w-full object-cover"
+              />
+            )}
+          </div>
+
+          {/* CONTENT */}
+          <div className="flex-1">
+            <p className="text-sm font-semibold leading-tight">
+              {room.name}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Ref: {room._id?.slice(-8).toUpperCase()}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   /* ================= UI ================= */
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -526,9 +584,17 @@ export default function Checkout() {
 
                 {/* TITLE */}
                 {/* LOCATION */}
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>Karjat, Maharashtra</span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-semibold text-foreground">
+                    {room?.name}
+                  </span>
+
+                  
+
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    <span>Karjat, Maharashtra</span>
+                  </div>
                 </div>
 
                 {/* GUESTS + MEALS */}
@@ -622,8 +688,11 @@ export default function Checkout() {
 
 
         <section className="lg:col-span-6 space-y-6">
-
-
+          {/* ================= MOBILE ROOM CARD ================= */}
+          <div className="lg:hidden">
+            <MobileRoomCard room={room} image={roomImage} />
+            <Separator className="mt-4" />
+          </div>
           {/* ================= PERSONAL INFORMATION ================= */}
           <div className="rounded-2xl border bg-white p-5 sm:p-6">
             <div className="flex items-start gap-3 mb-5">
@@ -679,10 +748,10 @@ export default function Checkout() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
-              {/* STREET ADDRESS — FULL ROW */}
-              <div className="md:col-span-4">
+              {/* STREET ADDRESS — FULL ROW (mobile + desktop) */}
+              <div className="col-span-2 md:col-span-4">
                 <ReadOnlyField
                   label="Street Address"
                   value={address.address}
@@ -791,7 +860,12 @@ export default function Checkout() {
                   checked={withMeal}
                   onCheckedChange={(v) => {
                     setWithMeal(v);
-                    if (!v) {
+
+                    if (v) {
+                      // ✅ minimum 1 meal guest
+                      setVegGuests(1);
+                      setNonVegGuests(0);
+                    } else {
                       setVegGuests(0);
                       setNonVegGuests(0);
                     }
@@ -815,25 +889,33 @@ export default function Checkout() {
                     label="Veg Guests"
                     value={vegGuests}
                     min={0}
-                    max={totalGuests - nonVegGuests}
-                    onChange={setVegGuests}
+                    max={totalGuests}
+                    onChange={(v) => {
+                      // clamp so total meal guests ≤ totalGuests
+                      if (v + nonVegGuests > totalGuests) {
+                        setVegGuests(totalGuests - nonVegGuests);
+                      } else {
+                        setVegGuests(v);
+                      }
+                    }}
                   />
 
                   <Counter
                     label="Non-Veg Guests"
                     value={nonVegGuests}
                     min={0}
-                    max={totalGuests - vegGuests}
-                    onChange={setNonVegGuests}
+                    max={totalGuests}
+                    onChange={(v) => {
+                      if (vegGuests + v > totalGuests) {
+                        setNonVegGuests(totalGuests - vegGuests);
+                      } else {
+                        setNonVegGuests(v);
+                      }
+                    }}
                   />
 
                   <div className="col-span-2 text-xs text-muted-foreground">
-                    Selected: {vegGuests + nonVegGuests} / {totalGuests}
-                    {vegGuests + nonVegGuests !== totalGuests && (
-                      <span className="text-red-600 ml-2">
-                        (Veg + Non-Veg must equal total guests)
-                      </span>
-                    )}
+                    Meal Guests Selected: <strong>{vegGuests + nonVegGuests}</strong> / {totalGuests}
                   </div>
 
                 </div>
