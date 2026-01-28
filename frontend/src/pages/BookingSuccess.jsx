@@ -190,7 +190,7 @@ export default function BookingSuccess() {
 
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <MapPin className="w-4 h-4" />
-                            {room.location || "Pune, Maharashtra, India"}
+                            {room.location || "Karjat, Maharashtra, India"}
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 text-sm">

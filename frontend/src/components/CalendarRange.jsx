@@ -38,6 +38,7 @@ export default function CalendarRange({
   disabledRanges,
   inline = false,
 }) {
+  const monthRefs = useRef([]);
   const [roomRanges, setRoomRanges] = useState([]);
   const [globalRanges, setGlobalRanges] = useState([]);
   const [open, setOpen] = useState(false);
@@ -66,11 +67,29 @@ export default function CalendarRange({
 
   const loadMoreMonths = () => {
     setMobileMonths((prev) => {
-      const last = prev[prev.length - 1];
-      const next = Array.from({ length: 3 }, (_, i) =>
-        addMonths(last, i + 1)
-      );
-      return [...prev, ...next];
+      const lastMonth = prev[prev.length - 1];
+
+      const firstNewMonthIndex = prev.length;
+
+      const newMonths = [
+        addMonths(lastMonth, 1),
+        addMonths(lastMonth, 2),
+      ];
+
+      // 🔥 wait for DOM render, then scroll
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const el = monthRefs.current[firstNewMonthIndex];
+          if (el) {
+            el.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        });
+      });
+
+      return [...prev, ...newMonths];
     });
   };
 
@@ -260,52 +279,57 @@ export default function CalendarRange({
           onTouchEnd={onTouchEnd}
         >
           {mobileMonths.map((m, idx) => (
-            <Calendar
+            <div
               key={idx}
-              mode="range"
-              month={m}
-              numberOfMonths={1}
-              selected={value}
-              onSelect={handleSelect}
-              disabled={disabled}
-              showOutsideDays={false}
-              className="airbnb-calendar mobile-airbnb"
-              classNames={{
-                months: "flex justify-center",
-                caption: "flex justify-center font-medium mb-3",
-                table: "w-full border-collapse",
-                head_row: "grid grid-cols-7",
-                row: "grid grid-cols-7",
-                cell: "h-10 w-10 text-center",
-                day: "h-10 w-10 rounded-full outline-none",
-                day_button: "h-10 w-10 rounded-full outline-none",
-                day_range_start: "bg-red-700 text-white",
-                day_range_end: "bg-red-700 text-white",
-                day_selected: "bg-red-700 text-white",
-                day_range_middle: "bg-red-100 text-red-900",
-                day_today: "border border-red-700",
-                day_disabled: "opacity-40",
-              }}
-            />
+              ref={(el) => (monthRefs.current[idx] = el)}
+            >
+              <Calendar
+                key={idx}
+                mode="range"
+                month={m}
+                numberOfMonths={1}
+                selected={value}
+                onSelect={handleSelect}
+                disabled={disabled}
+                showOutsideDays={false}
+                className="airbnb-calendar mobile-airbnb"
+                classNames={{
+                  months: "flex justify-center",
+                  caption: "flex justify-center font-medium mb-3",
+                  table: "w-full border-collapse",
+                  head_row: "grid grid-cols-7",
+                  row: "grid grid-cols-7",
+                  cell: "h-10 w-10 text-center",
+                  day: "h-10 w-10 rounded-full outline-none",
+                  day_button: "h-10 w-10 rounded-full outline-none",
+                  day_range_start: "bg-red-700 text-white",
+                  day_range_end: "bg-red-700 text-white",
+                  day_selected: "bg-red-700 text-white",
+                  day_range_middle: "bg-red-100 text-red-900",
+                  day_today: "border border-red-700",
+                  day_disabled: "opacity-40",
+                }}
+              />
+              </div>
           ))}
 
-          {/* ✅ button after months (NOT sticky) */}
-          <div className="pt-2 pb-2">
-            <Button
-              variant="outline"
-              className="w-full rounded-xl"
-              onClick={loadMoreMonths}
-            >
-              Load more dates
-            </Button>
-          </div>
+              {/* ✅ button after months (NOT sticky) */}
+              <div className="pt-2 pb-2">
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl"
+                  onClick={loadMoreMonths}
+                >
+                  Load more dates
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
-  );
+      );
 
-  /* INLINE MODE */
-  if (inline) {
+      /* INLINE MODE */
+      if (inline) {
     return (
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-3">
@@ -314,47 +338,47 @@ export default function CalendarRange({
         </div>
         <div className="border rounded-xl bg-card">{calendarUI}</div>
       </div>
-    );
+      );
   }
 
-  /* POPOVER MODE */
-  return (
-    <Popover
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen && selectingRef.current) return;
-        setOpen(nextOpen);
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className="w-full h-14 grid grid-cols-2 rounded-xl"
-        >
-          <DateBox label="Check in" value={value?.from} />
-          <DateBox label="Check out" value={value?.to} />
-        </Button>
-      </PopoverTrigger>
+      /* POPOVER MODE */
+      return (
+      <Popover
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && selectingRef.current) return;
+          setOpen(nextOpen);
+        }}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="w-full h-14 grid grid-cols-2 rounded-xl"
+          >
+            <DateBox label="Check in" value={value?.from} />
+            <DateBox label="Check out" value={value?.to} />
+          </Button>
+        </PopoverTrigger>
 
-      {/* ✅ DESKTOP width same, MOBILE becomes square fixed */}
-      <PopoverContent className="calendar-popover p-0 w-full md:w-[680px]">
-        {calendarUI}
-      </PopoverContent>
-    </Popover>
-  );
+        {/* ✅ DESKTOP width same, MOBILE becomes square fixed */}
+        <PopoverContent className="calendar-popover p-0 w-full md:w-[680px]">
+          {calendarUI}
+        </PopoverContent>
+      </Popover>
+      );
 }
 
-/* ===============================
-   DATE BOX
-================================ */
-function DateBox({ label, value }) {
+      /* ===============================
+         DATE BOX
+      ================================ */
+      function DateBox({label, value}) {
   return (
-    <div className="flex flex-col items-center">
-      <span className="text-[11px] uppercase">{label}</span>
-      <span className="flex items-center gap-2 text-sm">
-        <CalendarDays size={14} />
-        {value ? format(value, "dd MMM yyyy") : "Add date"}
-      </span>
-    </div>
-  );
+      <div className="flex flex-col items-center">
+        <span className="text-[11px] uppercase">{label}</span>
+        <span className="flex items-center gap-2 text-sm">
+          <CalendarDays size={14} />
+          {value ? format(value, "dd MMM yyyy") : "Add date"}
+        </span>
+      </div>
+      );
 }
