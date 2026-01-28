@@ -23,6 +23,7 @@
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.13",
+    "@react-oauth/google": "^0.13.4",
     "axios": "^1.11.0",
     "canvas-confetti": "^1.9.4",
     "card": "^2.5.4",
