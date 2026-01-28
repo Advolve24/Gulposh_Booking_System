@@ -73,8 +73,6 @@ Dates: ${data.dates}`,
       };
       break;
   }
-
-  /* ---------------- SAVE TO DATABASE ---------------- */
   /* ---------------- SAVE TO DATABASE ---------------- */
   const notification = await Notification.create({
     type,

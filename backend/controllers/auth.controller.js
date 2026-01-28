@@ -9,7 +9,7 @@ import { notifyAdmin } from "../utils/notifyAdmin.js"; // ✅ NEW
    HELPERS
 ================================ */
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const normalizePhone = (phone = "") =>
   phone.replace(/\D/g, "").slice(-10);
@@ -70,7 +70,7 @@ export const phoneLogin = async (req, res) => {
       });
       isNewUser = true;
 
-    /* 🔔 NOTIFY ADMIN — NEW USER (PHONE) */
+      /* 🔔 NOTIFY ADMIN — NEW USER (PHONE) */
       await notifyAdmin("NEW_USER", {
         userId: user._id,
         phone: user.phone,
@@ -97,69 +97,67 @@ export const phoneLogin = async (req, res) => {
 /* ===============================
    🌐 GOOGLE OAUTH LOGIN
 ================================ */
-
 export const googleLogin = async (req, res) => {
   try {
-    const { idToken } = req.body;
-    if (!idToken)
-      return res.status(400).json({ message: "Google token missing" });
+    const payload = await googleRes.json();
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+  const email = payload.email?.toLowerCase();
+  const name = payload.name || null;
 
-    const payload = ticket.getPayload();
-    const email = payload.email?.toLowerCase();
-    const name = payload.name || null;
 
-    if (!email)
-      return res.status(400).json({ message: "Email not found in Google token" });
-
-    let user = await User.findOne({ email });
-    let isNewUser = false;
-
-    if (!user) {
-      user = await User.create({
-        email,
-        name,
-        authProvider: "google",
-      });
-      isNewUser = true;
-
-      /* 🔔 NOTIFY ADMIN — NEW USER (GOOGLE) */
-      await notifyAdmin("NEW_USER", {
-        userId: user._id,
-        name,
-        email,
-        authProvider: "google",
-      });
-    } else {
-      // keep data fresh
-      if (!user.name && name) {
-        user.name = name;
-        await user.save();
-      }
-    }
-
-    issueSession(res, user);
-
-    res.json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      authProvider: user.authProvider,
-      profileComplete: user.profileComplete,
-      isNewUser,
-      isAdmin: !!user.isAdmin,
-    });
-  } catch (err) {
-    console.error("googleLogin error:", err);
-    res.status(401).json({ message: "Invalid Google token" });
+  if (!email) {
+    return res
+      .status(400)
+      .json({ message: "Email not found in Google account" });
   }
-};
 
+
+  let user = await User.findOne({ email });
+  let isNewUser = false;
+
+
+  if (!user) {
+    user = await User.create({
+      email,
+      name,
+      authProvider: "google",
+    });
+    isNewUser = true;
+
+
+    await notifyAdmin("NEW_USER", {
+      userId: user._id,
+      name,
+      email,
+      authProvider: "google",
+    });
+  } else {
+    // keep profile fresh
+    if (!user.name && name) {
+      user.name = name;
+      await user.save();
+    }
+  }
+
+
+  issueSession(res, user);
+
+
+  res.json({
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    authProvider: user.authProvider,
+    profileComplete: user.profileComplete,
+    isNewUser,
+    isAdmin: !!user.isAdmin,
+  });
+} catch (err) {
+  console.error("googleLogin error:", err);
+  res.status(401).json({ message: "Google login failed" });
+}
+};
 /* ===============================
    LOGOUT
 ================================ */
