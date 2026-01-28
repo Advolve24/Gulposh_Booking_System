@@ -277,6 +277,9 @@ height: 334px; /* fixed popup height */
 overflow-y: auto;
 padding: 14px 14px 10px; /* neat padding (no cut dates) */
 background: #fff;
+display: flex;
+flex-direction: column;
+align-items: center;
 }
 
 
@@ -285,6 +288,9 @@ background: #fff;
 border-radius: 16px;
 padding: 0; /* padding handled by scroll container */
 overflow: visible;
+width: auto;
+margin-left: auto;
+margin-right: auto;
 }
 
 
@@ -292,6 +298,12 @@ overflow: visible;
 .airbnb-calendar .rdp-month,
 .airbnb-calendar .rdp-table {
 width: 100%;
+margin-left: auto;
+margin-right: auto;
+}
+/* Center weekday row */
+.airbnb-calendar .rdp-head_row {
+justify-content: center;
 }
 }
 
