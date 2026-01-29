@@ -690,7 +690,7 @@ export default function Checkout() {
                   )}
 
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Tax ({taxPercent}%)</span>
+                    <span>GST ({taxPercent}%)</span>
                     <span>₹{totalTax.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
@@ -950,7 +950,7 @@ export default function Checkout() {
               )}
 
               <div className="flex justify-between">
-                <span>Total Tax</span>
+                <span>GST</span>
                 <span>
                   <span>₹{totalTax.toLocaleString("en-IN")}</span>
                 </span>
