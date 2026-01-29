@@ -93,8 +93,7 @@ export default function Checkout() {
   const [adults, setAdults] = useState(initialAdults);
   const [children, setChildren] = useState(initialChildren);
   const totalGuests = adults + children;
-  const initialWithMeal = Boolean(state?.withMeal);
-  const [withMeal, setWithMeal] = useState(initialWithMeal);
+  const [withMeal, setWithMeal] = useState(false);
   const [vegGuests, setVegGuests] = useState(0);
   const [nonVegGuests, setNonVegGuests] = useState(0);
 
@@ -230,14 +229,14 @@ export default function Checkout() {
   /* ================= CALCULATIONS (PREVIEW ONLY) ================= */
 
   const nights = useMemo(() => {
-  if (!range.from || !range.to) return 0;
+    if (!range.from || !range.to) return 0;
 
-  const diff =
-    (toDateOnly(range.to) - toDateOnly(range.from)) /
-    (1000 * 60 * 60 * 24);
+    const diff =
+      (toDateOnly(range.to) - toDateOnly(range.from)) /
+      (1000 * 60 * 60 * 24);
 
-  return Math.max(0, Math.round(diff));
-}, [range]);
+    return Math.max(0, Math.round(diff));
+  }, [range]);
 
   const roomTotal = useMemo(() => {
     return nights * (room?.pricePerNight || 0);
@@ -882,48 +881,82 @@ export default function Checkout() {
               </div>
             </div>
 
-            {/* ================= MEALS ================= */}
-            <div className="space-y-4 pt-2">
-              {withMeal && (
-                <div className="space-y-4">
+            {/* ================= MEALS TOGGLE ================= */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Checkbox
+                  checked={withMeal}
+                  onCheckedChange={(v) => {
+                    setWithMeal(Boolean(v));
+                    setVegGuests(0);
+                    setNonVegGuests(0);
+                  }}
+                />
+                <span className="flex items-center gap-1">
+                  <Utensils className="w-4 h-4" />
+                  Include Meals
+                </span>
+              </Label>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <Counter
-                      label="Veg Guests"
-                      value={vegGuests}
-                      min={0}
-                      max={totalGuests}
-                      onChange={(v) => {
-                        if (v + nonVegGuests > totalGuests) {
-                          setVegGuests(totalGuests - nonVegGuests);
-                        } else {
-                          setVegGuests(v);
-                        }
-                      }}
-                    />
+              {withMeal && room && (
+                <div className="rounded-xl border bg-[#faf7f4] p-4 space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    Meal prices are per guest per night
+                  </p>
 
-                    <Counter
-                      label="Non-Veg Guests"
-                      value={nonVegGuests}
-                      min={0}
-                      max={totalGuests}
-                      onChange={(v) => {
-                        if (vegGuests + v > totalGuests) {
-                          setNonVegGuests(totalGuests - vegGuests);
-                        } else {
-                          setNonVegGuests(v);
-                        }
-                      }}
-                    />
+                  <div className="flex justify-between text-sm">
+                    <span>Veg Meal</span>
+                    <span>₹{room.mealPriceVeg} / guest / night</span>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">
-                    Meal Guests Selected: <strong>{vegGuests + nonVegGuests}</strong> / {totalGuests}
-                  </p>
+                  <div className="flex justify-between text-sm">
+                    <span>Non-Veg Meal</span>
+                    <span>₹{room.mealPriceNonVeg} / guest / night</span>
+                  </div>
                 </div>
               )}
-
             </div>
+            {/* ================= MEALS ================= */}
+            {/* ================= MEAL GUEST COUNTS ================= */}
+            {withMeal && (
+              <div className="space-y-4 pt-2">
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Counter
+                    label="Veg Guests"
+                    value={vegGuests}
+                    min={0}
+                    max={totalGuests}
+                    onChange={(v) => {
+                      if (v + nonVegGuests > totalGuests) {
+                        setVegGuests(totalGuests - nonVegGuests);
+                      } else {
+                        setVegGuests(v);
+                      }
+                    }}
+                  />
+
+                  <Counter
+                    label="Non-Veg Guests"
+                    value={nonVegGuests}
+                    min={0}
+                    max={totalGuests}
+                    onChange={(v) => {
+                      if (vegGuests + v > totalGuests) {
+                        setNonVegGuests(totalGuests - vegGuests);
+                      } else {
+                        setNonVegGuests(v);
+                      }
+                    }}
+                  />
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Meal Guests Selected:{" "}
+                  <strong>{vegGuests + nonVegGuests}</strong> / {totalGuests}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Payment Summary */}

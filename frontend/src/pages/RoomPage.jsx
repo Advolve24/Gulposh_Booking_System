@@ -243,7 +243,6 @@ export default function RoomPage() {
   const [showDrawer, setShowDrawer] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
-  const [withMeal, setWithMeal] = useState(false);
 
 
   // useEffect(() => {
@@ -342,7 +341,6 @@ export default function RoomPage() {
       guests: Number(totalGuests),
       adults,
       children,
-       withMeal,
     };
 
     // 🔐 NOT LOGGED IN → OPEN OTP MODAL
@@ -714,28 +712,6 @@ export default function RoomPage() {
               <p className="mt-2 text-xs text-muted-foreground">
                 Total guests: <strong>{totalGuests}</strong>
               </p>
-            </div>
-            {/* MEALS */}
-            <div className="space-y-2">
-              <label className="text-[11px] font-medium text-muted-foreground">
-                MEALS
-              </label>
-
-              <div className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  checked={withMeal}
-                  onChange={(e) => setWithMeal(e.target.checked)}
-                  className="mt-1"
-                />
-                <div className="text-sm">
-                  Include Meals
-                  <div className="text-xs text-muted-foreground">
-                    Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg}
-                    <br />per guest per night
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* BOOK NOW */}
