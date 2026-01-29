@@ -5,6 +5,7 @@ import { adminGlobalSearch } from "@/api/admin";
 import { useNotificationStore } from "@/store/useNotificationStore";
 import { formatDistanceToNow } from "date-fns";
 import { markAllAdminNotificationsRead } from "@/api/admin";
+import { Link } from "react-router-dom";
 
 function Section({ title, children }) {
   return (
@@ -198,15 +199,21 @@ export default function Topbar({ onMenuClick }) {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+
+          <Link
+            to="/settings?tab=profile"
+            className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-muted transition"
+          >
             <div className="h-9 w-9 flex items-center justify-center rounded-full bg-primary/20 text-gray-500">
               <span className="text-[16px]">A</span>
             </div>
+
             <span className="hidden sm:block text-sm font-medium text-[#2b1e1e]">
               Admin
             </span>
-          </div>
+          </Link>
         </div>
+
       </div>
     </header>
   );

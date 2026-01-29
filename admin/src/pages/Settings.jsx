@@ -29,7 +29,7 @@ setTab(tabFromUrl);
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-2 sm:px-6 space-y-6">
 
         {/* ================= PILL TABS ================= */}
         <div className="inline-flex items-center gap-1 rounded-xl bg-muted p-1">
@@ -118,9 +118,9 @@ function ProfileTab() {
   };
 
   return (
-    <div className="bg-card border rounded-2xl p-6 sm:p-10">
+    <div className="bg-card border rounded-2xl p-4 sm:p-10">
       <div className="mb-8">
-        <h2 className="text-2xl font-serif font-semibold">
+        <h2 className="text-xl sm:text-2xl font-serif font-semibold">
           Profile Information
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -214,7 +214,7 @@ function ProfileTab() {
 }
 
 /* =====================================================
-   NOTIFICATIONS TAB
+   NOTIFICATIONS TAB (COMPACT)
 ===================================================== */
 
 function NotificationsTab() {
@@ -225,8 +225,13 @@ function NotificationsTab() {
     pruneOld(30);
   }, [pruneOld]);
 
+  const newItems = items.filter((n) => !n.isRead);
+  const oldItems = items.filter((n) => n.isRead);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+
+      {/* HEADER */}
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">
           {unread} unread notifications
@@ -239,35 +244,79 @@ function NotificationsTab() {
         )}
       </div>
 
-      {items.length === 0 ? (
+      {items.length === 0 && (
         <p className="text-sm text-muted-foreground">
           No notifications yet
         </p>
-      ) : (
-        <div className="space-y-3">
-          {items.map((n) => (
-            <div
-              key={n.createdAt}
-              className={cn(
-                "border rounded-xl p-4 text-sm",
-                n.isRead ? "bg-muted/40" : "bg-card"
-              )}
-            >
-              <div className="font-medium">{n.title}</div>
-              <div className="opacity-80 mt-1 whitespace-pre-line">
-                {n.message}
-              </div>
-              <div className="text-xs text-muted-foreground mt-2">
-                {new Date(n.createdAt).toLocaleString()}
-              </div>
-            </div>
-          ))}
+      )}
+
+      {/* ================= NEW ================= */}
+      {newItems.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold uppercase text-muted-foreground">
+            New
+          </h4>
+
+          <div className="space-y-2">
+            {newItems.map((n) => (
+              <CompactNotification key={n.createdAt} n={n} highlight />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ================= OLDER ================= */}
+      {oldItems.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold uppercase text-muted-foreground">
+            Older
+          </h4>
+
+          <div className="space-y-2">
+            {oldItems.map((n) => (
+              <CompactNotification key={n.createdAt} n={n} />
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
+function CompactNotification({ n, highlight }) {
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-3 rounded-lg border px-3 py-2 text-sm",
+        highlight
+          ? "bg-primary/5 border-primary/30"
+          : "bg-muted/40"
+      )}
+    >
+      {/* DOT */}
+      <span
+        className={cn(
+          "mt-1 h-2 w-2 rounded-full",
+          highlight ? "bg-primary" : "bg-muted-foreground/40"
+        )}
+      />
 
+      {/* CONTENT */}
+      <div className="flex-1 leading-tight">
+        <div className="font-medium">
+          {n.title}
+        </div>
+
+        <div className="text-xs text-muted-foreground line-clamp-2">
+          {n.message}
+        </div>
+
+        <div className="text-[11px] text-muted-foreground mt-0.5">
+          {new Date(n.createdAt).toLocaleString()}
+        </div>
+      </div>
+    </div>
+  );
+}
 /* =====================================================
    FIELD
 ===================================================== */
