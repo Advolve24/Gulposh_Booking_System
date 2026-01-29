@@ -34,6 +34,7 @@ export const getInvoice = async (req, res) => {
         vegGuests: booking.vegGuests || 0,
         nonVegGuests: booking.nonVegGuests || 0,
         mealTotal: booking.mealTotal || 0,
+        totalTax: booking.totalTax || 0,
         amount: booking.amount,
         paymentProvider: booking.paymentProvider,
         orderId: booking.orderId,
@@ -374,12 +375,12 @@ export const downloadInvoicePDF = async (req, res) => {
           <span>₹${booking.amount}</span>
         </div>
         <div class="total-line">
-          <span>Tax 12%</span>
-          <span>₹${Math.round(booking.amount * 0.12)}</span>
+          <span>Total Tax</span>
+          <span>₹${booking.totalTax || 0}</span>
         </div>
         <div class="total-line grand">
           <span>Grand Total</span>
-          <span>₹${Math.round(booking.amount * 1.12)}</span>
+          <span>₹${booking.amount}</span>
         </div>
       </div>
     </div>
