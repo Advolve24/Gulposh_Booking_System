@@ -245,6 +245,11 @@ export default function Checkout() {
     return roomTotal + mealTotal;
   }, [roomTotal, mealTotal]);
 
+  // 👇 Safe preview total (before backend response)
+    const previewGrandTotal = useMemo(() => {
+      return subTotal + totalTax;
+    }, [subTotal, totalTax]);
+
   const proceedPayment = async () => {
     const g = totalGuests;
 
