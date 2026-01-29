@@ -278,6 +278,16 @@ export default function Checkout() {
     return subTotal + totalTax;
   }, [subTotal, totalTax]);
 
+  useEffect(() => {
+    api.get("/admin/tax-settings/active")
+      .then(({ data }) => {
+        setTaxSetting(data);
+      })
+      .catch(() => {
+        toast.error("Failed to load tax configuration");
+      });
+  }, []);
+
   const proceedPayment = async () => {
     const g = totalGuests;
 
@@ -981,6 +991,7 @@ export default function Checkout() {
           <Button
             className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
             onClick={proceed}
+            disabled={!taxSetting}
           >
             Proceed to Payment
           </Button>
