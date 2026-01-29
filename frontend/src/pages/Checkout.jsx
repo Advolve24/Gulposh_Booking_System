@@ -129,7 +129,7 @@ export default function Checkout() {
     return out;
   }
 
-  const [taxSetting, setTaxSetting] = useState(null);
+  const [pricing, setPricing] = useState(null);
 
 
 
@@ -217,8 +217,8 @@ export default function Checkout() {
     }
   }, [totalGuests, withMeal]);
 
+  /* ================= CALCULATIONS (PREVIEW ONLY) ================= */
 
-  /* ================= CALCULATIONS ================= */
   const nights = useMemo(() => {
     if (!range.from || !range.to) return 0;
     return (
@@ -226,7 +226,6 @@ export default function Checkout() {
       (1000 * 60 * 60 * 24)
     );
   }, [range]);
-
 
   const roomTotal = useMemo(() => {
     return nights * (room?.pricePerNight || 0);
@@ -241,52 +240,10 @@ export default function Checkout() {
     );
   }, [withMeal, room, nights, vegGuests, nonVegGuests]);
 
-  /* 3️⃣ Subtotal (⚠️ NOT final total) */
-  const subTotal = useMemo(() => {
+  /* ⚠️ Preview subtotal only (NOT FINAL) */
+  const previewSubTotal = useMemo(() => {
     return roomTotal + mealTotal;
   }, [roomTotal, mealTotal]);
-
-  /* 4️⃣ Tax percentages (admin controlled) */
-  const stayTaxPercent = useMemo(() => {
-    if (!taxSetting) return 0;
-    return withMeal
-      ? taxSetting.withFood.stayTaxPercent
-      : taxSetting.withoutFood.stayTaxPercent;
-  }, [taxSetting, withMeal]);
-
-  const foodTaxPercent = useMemo(() => {
-    if (!taxSetting || !withMeal) return 0;
-    return taxSetting.withFood.foodTaxPercent;
-  }, [taxSetting, withMeal]);
-
-  /* 5️⃣ Tax amounts */
-  const stayTaxAmount = useMemo(() => {
-    return Math.round((roomTotal * stayTaxPercent) / 100);
-  }, [roomTotal, stayTaxPercent]);
-
-  const foodTaxAmount = useMemo(() => {
-    return Math.round((mealTotal * foodTaxPercent) / 100);
-  }, [mealTotal, foodTaxPercent]);
-
-  /* 6️⃣ Total tax (shown as ONE line in UI) */
-  const totalTax = useMemo(() => {
-    return stayTaxAmount + foodTaxAmount;
-  }, [stayTaxAmount, foodTaxAmount]);
-
-  /* 7️⃣ Final payable amount (🔥 single source of truth) */
-  const grandTotal = useMemo(() => {
-    return subTotal + totalTax;
-  }, [subTotal, totalTax]);
-
-  useEffect(() => {
-    api.get("/admin/tax-settings/active")
-      .then(({ data }) => {
-        setTaxSetting(data);
-      })
-      .catch(() => {
-        toast.error("Failed to load tax configuration");
-      });
-  }, []);
 
   const proceedPayment = async () => {
     const g = totalGuests;
@@ -316,6 +273,7 @@ export default function Checkout() {
       return;
     }
 
+    // ✅ Backend calculates EVERYTHING (tax, totals, amount)
     const { data } = await api.post("/payments/create-order", {
       roomId,
       startDate: toYMD(range.from),
@@ -329,6 +287,18 @@ export default function Checkout() {
       contactName: form.name,
       contactEmail: form.email,
       contactPhone: form.phone,
+    });
+
+    // ✅ Save backend-calculated pricing
+    setPricing({
+      nights: data.nights,
+      roomTotal: data.roomTotal,
+      mealTotal: data.mealTotal,
+      stayTax: data.stayTax,
+      foodTax: data.foodTax,
+      totalTax: data.totalTax,
+      subTotal: data.subTotal,
+      grandTotal: data.grandTotal,
     });
 
     const rzp = new window.Razorpay({
@@ -956,30 +926,36 @@ export default function Checkout() {
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Room Charges</span>
-                <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+                <span>Room Charges</span>
+                <span>
+                  ₹{(pricing?.roomTotal ?? roomTotal).toLocaleString("en-IN")}
+                </span>
               </div>
 
               {withMeal && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Meals</span>
-                  <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                  <span>Meals</span>
+                  <span>
+                    ₹{(pricing?.mealTotal ?? mealTotal).toLocaleString("en-IN")}
+                  </span>
                 </div>
               )}
 
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Tax</span>
-                <span>₹{totalTax.toLocaleString("en-IN")}</span>
+                <span>Total Tax</span>
+                <span>
+                  ₹{(pricing?.totalTax ?? 0).toLocaleString("en-IN")}
+                </span>
               </div>
-            </div>
 
-            <Separator />
+              <Separator />
 
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Total Payable</span>
-              <span className="text-lg font-semibold text-red-700">
-                ₹{grandTotal.toLocaleString("en-IN")}
-              </span>
+              <div className="flex justify-between font-semibold">
+                <span>Total Payable</span>
+                <span className="text-red-700">
+                  ₹{(pricing?.grandTotal ?? previewSubTotal).toLocaleString("en-IN")}
+                </span>
+              </div>
             </div>
 
             <p className="text-xs text-muted-foreground">
