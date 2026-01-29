@@ -90,11 +90,11 @@ export default function Checkout() {
   const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
 
   /* ================= GUESTS & MEALS ================= */
-  /* ================= GUESTS & MEALS ================= */
   const [adults, setAdults] = useState(initialAdults);
   const [children, setChildren] = useState(initialChildren);
   const totalGuests = adults + children;
-  const [withMeal, setWithMeal] = useState(false);
+  const initialWithMeal = Boolean(state?.withMeal);
+  const [withMeal, setWithMeal] = useState(initialWithMeal);
   const [vegGuests, setVegGuests] = useState(0);
   const [nonVegGuests, setNonVegGuests] = useState(0);
 
@@ -128,6 +128,9 @@ export default function Checkout() {
     }
     return out;
   }
+
+  const [taxSetting, setTaxSetting] = useState(null);
+
 
 
   /* ================= OTP ================= */
@@ -225,16 +228,55 @@ export default function Checkout() {
   }, [range]);
 
 
-  const roomTotal = nights * (room?.pricePerNight || 0);
+  const roomTotal = useMemo(() => {
+    return nights * (room?.pricePerNight || 0);
+  }, [nights, room]);
 
-  const mealTotal =
-    withMeal && room
-      ? nights *
+  const mealTotal = useMemo(() => {
+    if (!withMeal || !room) return 0;
+    return (
+      nights *
       (vegGuests * room.mealPriceVeg +
         nonVegGuests * room.mealPriceNonVeg)
-      : 0;
+    );
+  }, [withMeal, room, nights, vegGuests, nonVegGuests]);
 
-  const total = roomTotal + mealTotal;
+  /* 3️⃣ Subtotal (⚠️ NOT final total) */
+  const subTotal = useMemo(() => {
+    return roomTotal + mealTotal;
+  }, [roomTotal, mealTotal]);
+
+  /* 4️⃣ Tax percentages (admin controlled) */
+  const stayTaxPercent = useMemo(() => {
+    if (!taxSetting) return 0;
+    return withMeal
+      ? taxSetting.withFood.stayTaxPercent
+      : taxSetting.withoutFood.stayTaxPercent;
+  }, [taxSetting, withMeal]);
+
+  const foodTaxPercent = useMemo(() => {
+    if (!taxSetting || !withMeal) return 0;
+    return taxSetting.withFood.foodTaxPercent;
+  }, [taxSetting, withMeal]);
+
+  /* 5️⃣ Tax amounts */
+  const stayTaxAmount = useMemo(() => {
+    return Math.round((roomTotal * stayTaxPercent) / 100);
+  }, [roomTotal, stayTaxPercent]);
+
+  const foodTaxAmount = useMemo(() => {
+    return Math.round((mealTotal * foodTaxPercent) / 100);
+  }, [mealTotal, foodTaxPercent]);
+
+  /* 6️⃣ Total tax (shown as ONE line in UI) */
+  const totalTax = useMemo(() => {
+    return stayTaxAmount + foodTaxAmount;
+  }, [stayTaxAmount, foodTaxAmount]);
+
+  /* 7️⃣ Final payable amount (🔥 single source of truth) */
+  const grandTotal = useMemo(() => {
+    return subTotal + totalTax;
+  }, [subTotal, totalTax]);
 
   const proceedPayment = async () => {
     const g = totalGuests;
@@ -589,7 +631,7 @@ export default function Checkout() {
                     {room?.name}
                   </span>
 
-                  
+
 
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <MapPin className="w-4 h-4" />
@@ -677,7 +719,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="text-xl font-semibold text-red-600">
-                    ₹{total.toLocaleString("en-IN")}
+                    ₹{grandTotal.toLocaleString("en-IN")}
                   </div>
                 </div>
 
@@ -854,76 +896,86 @@ export default function Checkout() {
 
             {/* ================= MEALS ================= */}
             <div className="space-y-4 pt-2">
-
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  checked={withMeal}
-                  onCheckedChange={(v) => {
-                    setWithMeal(v);
-
-                    if (v) {
-                      // ✅ minimum 1 meal guest
-                      setVegGuests(1);
-                      setNonVegGuests(0);
-                    } else {
-                      setVegGuests(0);
-                      setNonVegGuests(0);
-                    }
-                  }}
-                />
-                <Label className="leading-snug">
-                  Include Meals
-                  <span className="block text-xs text-muted-foreground">
-                    Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg}
-                    <br />
-                    <span className="italic">per guest per night</span>
-                  </span>
-                </Label>
-              </div>
-
-              {/* MEAL COUNTERS */}
               {withMeal && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
 
-                  <Counter
-                    label="Veg Guests"
-                    value={vegGuests}
-                    min={0}
-                    max={totalGuests}
-                    onChange={(v) => {
-                      // clamp so total meal guests ≤ totalGuests
-                      if (v + nonVegGuests > totalGuests) {
-                        setVegGuests(totalGuests - nonVegGuests);
-                      } else {
-                        setVegGuests(v);
-                      }
-                    }}
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Counter
+                      label="Veg Guests"
+                      value={vegGuests}
+                      min={0}
+                      max={totalGuests}
+                      onChange={(v) => {
+                        if (v + nonVegGuests > totalGuests) {
+                          setVegGuests(totalGuests - nonVegGuests);
+                        } else {
+                          setVegGuests(v);
+                        }
+                      }}
+                    />
 
-                  <Counter
-                    label="Non-Veg Guests"
-                    value={nonVegGuests}
-                    min={0}
-                    max={totalGuests}
-                    onChange={(v) => {
-                      if (vegGuests + v > totalGuests) {
-                        setNonVegGuests(totalGuests - vegGuests);
-                      } else {
-                        setNonVegGuests(v);
-                      }
-                    }}
-                  />
-
-                  <div className="col-span-2 text-xs text-muted-foreground">
-                    Meal Guests Selected: <strong>{vegGuests + nonVegGuests}</strong> / {totalGuests}
+                    <Counter
+                      label="Non-Veg Guests"
+                      value={nonVegGuests}
+                      min={0}
+                      max={totalGuests}
+                      onChange={(v) => {
+                        if (vegGuests + v > totalGuests) {
+                          setNonVegGuests(totalGuests - vegGuests);
+                        } else {
+                          setNonVegGuests(v);
+                        }
+                      }}
+                    />
                   </div>
 
+                  <p className="text-xs text-muted-foreground">
+                    Meal Guests Selected: <strong>{vegGuests + nonVegGuests}</strong> / {totalGuests}
+                  </p>
                 </div>
               )}
 
             </div>
           </div>
 
+          {/* Payment Summary */}
+          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-3">
+            <h4 className="text-sm font-semibold text-foreground">
+              Payment Summary
+            </h4>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Room Charges</span>
+                <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+              </div>
+
+              {withMeal && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Meals</span>
+                  <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Tax</span>
+                <span>₹{totalTax.toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="flex justify-between items-center">
+              <span className="font-medium">Total Payable</span>
+              <span className="text-lg font-semibold text-red-700">
+                ₹{grandTotal.toLocaleString("en-IN")}
+              </span>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Includes all applicable taxes & fees
+            </p>
+          </div>
 
           {/* ================= CTA ================= */}
           <Button
