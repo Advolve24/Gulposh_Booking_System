@@ -20,8 +20,12 @@ router.use(requireAdminSession);
  */
 router.get("/", async (req, res) => {
   try {
+    const since = new Date();
+    since.setDate(since.getDate() - 14); // last 14 days only
+
     const notifications = await Notification.find({
       audience: "admin",
+      createdAt: { $gte: since },
     })
       .sort({ createdAt: -1 })
       .limit(100);

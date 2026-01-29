@@ -32,15 +32,32 @@ Amount: ₹${data.amount}`,
       };
       break;
 
-    case "BOOKING_CANCELLED":
+    case "BOOKING_CANCELLED": {
+      const roomName =
+        data?.roomName ||
+        data?.room ||
+        data?.room?.name ||
+        "Entire Villa";
+
+      const guestName =
+        data?.guestName ||
+        data?.guest ||
+        data?.user?.name ||
+        "Guest";
+
+      const refundAmount = data?.refundAmount ?? 0;
+      const refundPercentage = data?.refundPercentage ?? 0;
+
       payload = {
         type: "warning",
         title: "Booking Cancelled",
-        message: `Room: ${data.room}
-Refund: ₹${data.refundAmount} (${data.refundPercentage}%)`,
+        message: `Room: ${roomName}
+Guest: ${guestName}
+Refund: ₹${refundAmount} (${refundPercentage}%)`,
         meta: data,
       };
       break;
+    }
 
     case "VILLA_ENQUIRY":
       payload = {
@@ -53,7 +70,30 @@ Dates: ${data.dates}`,
       };
       break;
 
-    case "NEW_USER":
+    case "NEW_USER": {
+      /**
+       * 🧠 PROFILE COMPLETION CHECK
+       * Name + (Email or Phone) + Address
+       */
+
+      const hasBasicProfile =
+        Boolean(data?.name) &&
+        (Boolean(data?.email) || Boolean(data?.phone));
+
+      const hasAddress =
+        Boolean(data?.address) &&
+        Boolean(data?.city) &&
+        Boolean(data?.state) &&
+        Boolean(data?.pincode) &&
+        Boolean(data?.country);
+
+      const isProfileCompleted = hasBasicProfile && hasAddress;
+
+      if (!isProfileCompleted) {
+        // 🚫 Do not notify admin if profile is incomplete
+        return null;
+      }
+
       payload = {
         type: "success",
         title: "New User Registered",
@@ -63,6 +103,7 @@ Dates: ${data.dates}`,
         meta: data,
       };
       break;
+    }
 
     case "SUPPORT_TICKET":
       payload = {

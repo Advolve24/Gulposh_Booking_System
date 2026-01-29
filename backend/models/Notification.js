@@ -28,8 +28,16 @@ const NotificationSchema = new mongoose.Schema(
       type: String,
       default: "admin",
     },
+
+     expiresAt: {
+      type: Date,
+      default: () =>
+        new Date(Date.now() + 1000 * 60 * 60 * 24 * 90),
+      index: { expires: 0 }, // MongoDB TTL
+    },
   },
   { timestamps: true }
 );
 
+NotificationSchema.index({ audience: 1, createdAt: -1 });
 export default mongoose.model("Notification", NotificationSchema);
