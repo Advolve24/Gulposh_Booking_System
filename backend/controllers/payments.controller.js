@@ -22,26 +22,6 @@ const nightsBetween = (start, end) => {
   return Math.max(0, Math.round((e - s) / 86400000));
 };
 
-const computeTax = ({ roomTotal, mealTotal, withMeal, taxSetting }) => {
-  const config = withMeal
-    ? taxSetting.withFood
-    : taxSetting.withoutFood;
-
-  const stayTax = (roomTotal * config.stayTaxPercent) / 100;
-  const foodTax = withMeal
-    ? (mealTotal * config.foodTaxPercent) / 100
-    : 0;
-
-  const totalTax = stayTax + foodTax;
-
-  return {
-    stayTax: Math.round(stayTax),
-    foodTax: Math.round(foodTax),
-    totalTax: Math.round(totalTax),
-  };
-};
-
-
 /* ============================= CREATE ORDER ============================= */
 export const createOrder = async (req, res) => {
   try {
@@ -98,20 +78,18 @@ export const createOrder = async (req, res) => {
         nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
-      const taxSetting = await TaxSetting.findOne({ isActive: true });
+     const subTotal = roomTotal + mealTotal;
+
+    /* ---------------- SINGLE TAX ---------------- */
+    const taxSetting = await TaxSetting.findOne();
     if (!taxSetting) {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
-    // ✅ tax
-    const { stayTax, foodTax, totalTax } = computeTax({
-      roomTotal,
-      mealTotal,
-      withMeal,
-      taxSetting,
-    });
 
-    // ✅ totals
-    const subTotal = roomTotal + mealTotal;
+    const totalTax = Math.round(
+      (subTotal * taxSetting.taxPercent) / 100
+    );
+
     const grandTotal = subTotal + totalTax;
 
     const amountPaise = Math.round(grandTotal * 100);
@@ -135,10 +113,8 @@ export const createOrder = async (req, res) => {
       nights,
       roomTotal,
       mealTotal,
-      stayTax,
-      foodTax,
-      totalTax,
       subTotal,
+      totalTax,
       grandTotal,
     });
   } catch (err) {
@@ -236,19 +212,17 @@ export const verifyPayment = async (req, res) => {
         nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
-    const taxSetting = await TaxSetting.findOne({ isActive: true });
+    const subTotal = roomTotal + mealTotal;
+
+    const taxSetting = await TaxSetting.findOne();
     if (!taxSetting) {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
-    const { stayTax, foodTax, totalTax } = computeTax({
-      roomTotal,
-      mealTotal,
-      withMeal,
-      taxSetting,
-    });
+    const totalTax = Math.round(
+      (subTotal * taxSetting.taxPercent) / 100
+    );
 
-    const subTotal = roomTotal + mealTotal;
     const grandTotal = subTotal + totalTax;
 
     /* ---------------- Create Booking ---------------- */
@@ -267,8 +241,6 @@ export const verifyPayment = async (req, res) => {
       vegGuests,
       nonVegGuests,
       mealTotal,
-      stayTax,
-      foodTax,
       totalTax,
       subTotal,
       amount: grandTotal,

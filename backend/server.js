@@ -18,6 +18,8 @@ import adminUploadRoutes from "./routes/admin.upload.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js";
 import { verifySMTP } from "./utils/mailer.js";
 import enquiryRoutes from "./routes/enquiry.routes.js";
+import taxRoutes from "./routes/tax.routes.js";
+
 
 
 import http from "http";
@@ -78,6 +80,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/blackouts", blackoutRoutes);
 app.use("/api/admin/blackouts", adminBlackoutRoutes);
 app.use("/api/enquiries", enquiryRoutes);
+app.use("/api/tax", taxRoutes);
 
 
 

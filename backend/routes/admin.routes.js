@@ -10,10 +10,7 @@ import { adminGlobalSearch } from "../controllers/admin.search.controller.js";
 import {
   adminActionBooking,
 } from "../controllers/admin.booking.controller.js";
-import {
-  getActiveTaxSetting,
-  updateTaxSetting,
-} from "../controllers/taxSetting.controller.js";
+
 
 
 const router = express.Router();
@@ -83,9 +80,5 @@ router.post("/villa-order", createVillaOrder);
 router.post("/villa-verify", verifyVillaPayment);
 router.get("/search", adminGlobalSearch);
 router.post("/bookings/:id/cancel", cancelBookingAdmin);
-/* ================= TAX SETTINGS ================= */
-router.get("/tax-settings/active", getActiveTaxSetting);
-router.put("/tax-settings/active", updateTaxSetting);
-
 
 export default router;

@@ -4,23 +4,24 @@ import TaxSetting from "../models/TaxSetting.js";
 
 dotenv.config();
 
-await mongoose.connect(process.env.MONGO_URL);
+async function seedTax() {
+  try {
+    await mongoose.connect(process.env.MONGO_URL);
 
-await TaxSetting.updateMany(
-  { isActive: true },
-  { $set: { isActive: false } }
-);
+    // ❌ Remove any existing tax config (keep only one)
+    await TaxSetting.deleteMany({});
 
-await TaxSetting.create({
-  withoutFood: {
-    stayTaxPercent: 12,
-  },
-  withFood: {
-    stayTaxPercent: 12,
-    foodTaxPercent: 5,
-  },
-  isActive: true,
-});
+    // ✅ Insert single tax config
+    await TaxSetting.create({
+      taxPercent: 12, // 12% tax
+    });
 
-console.log("✅ Tax seed inserted");
-process.exit();
+    console.log("✅ Tax seed inserted (12%)");
+    process.exit(0);
+  } catch (err) {
+    console.error("❌ Tax seed failed:", err);
+    process.exit(1);
+  }
+}
+
+seedTax();
