@@ -967,7 +967,6 @@ export default function Checkout() {
           <Button
             className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
             onClick={proceed}
-            disabled={!taxSetting}
           >
             Proceed to Payment
           </Button>
