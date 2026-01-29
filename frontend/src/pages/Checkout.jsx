@@ -245,11 +245,6 @@ export default function Checkout() {
     return roomTotal + mealTotal;
   }, [roomTotal, mealTotal]);
 
-  // 👇 Safe preview total (before backend response)
-    const previewGrandTotal = useMemo(() => {
-      return subTotal + totalTax;
-    }, [subTotal, totalTax]);
-
   const proceedPayment = async () => {
     const g = totalGuests;
 
@@ -704,7 +699,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="text-xl font-semibold text-red-600">
-                     ₹{(pricing?.grandTotal ?? previewGrandTotal).toLocaleString("en-IN")}
+                     ₹{(pricing?.grandTotal ?? previewSubTotal).toLocaleString("en-IN")}
                   </div>
                 </div>
 
