@@ -89,11 +89,20 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
-    const taxSetting = await TaxSetting.findOne({ isActive: true });
+    // ✅ after nights calculation
+    const roomTotal = nights * room.pricePerNight;
+
+    const mealTotal = withMeal
+      ? nights *
+      (vegGuests * room.mealPriceVeg +
+        nonVegGuests * room.mealPriceNonVeg)
+      : 0;
+
+      const taxSetting = await TaxSetting.findOne({ isActive: true });
     if (!taxSetting) {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
-
+    // ✅ tax
     const { stayTax, foodTax, totalTax } = computeTax({
       roomTotal,
       mealTotal,
@@ -101,8 +110,10 @@ export const createOrder = async (req, res) => {
       taxSetting,
     });
 
+    // ✅ totals
     const subTotal = roomTotal + mealTotal;
     const grandTotal = subTotal + totalTax;
+
     const amountPaise = Math.round(grandTotal * 100);
     if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
       return res.status(400).json({ message: "Invalid payment amount" });
@@ -120,7 +131,7 @@ export const createOrder = async (req, res) => {
       amount: order.amount,
       currency: "INR",
 
-       /* ✅ frontend display */
+      /* ✅ frontend display */
       nights,
       roomTotal,
       mealTotal,
@@ -283,8 +294,8 @@ export const verifyPayment = async (req, res) => {
       dates: `${startDate} → ${endDate}`,
       paymentProvider: "razorpay",
     });
-    
-   /* ---------------- Send Confirmation Mail ---------------- */
+
+    /* ---------------- Send Confirmation Mail ---------------- */
     const emailToSend = contactEmail || req.user?.email;
 
     if (emailToSend) {
