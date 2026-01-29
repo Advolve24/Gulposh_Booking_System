@@ -68,7 +68,7 @@ export const downloadInvoicePDF = async (req, res) => {
 
     // 🔐 USER OWNERSHIP CHECK (VERY IMPORTANT)
     if (!req.user?.isAdmin) {
-      if (booking.user.toString() !== req.user.id) {
+      if (booking.user._id.toString() !== req.user.id) {
         return res
           .status(403)
           .set("Content-Type", "text/plain")
