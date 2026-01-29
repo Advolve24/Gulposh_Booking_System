@@ -699,7 +699,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="text-xl font-semibold text-red-600">
-                    ₹{grandTotal.toLocaleString("en-IN")}
+                     ₹{(pricing?.grandTotal ?? previewGrandTotal).toLocaleString("en-IN")}
                   </div>
                 </div>
 
