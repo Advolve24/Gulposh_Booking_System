@@ -17,22 +17,34 @@ import EditBookingDialog from "@/components/EditBookingDialog";
 import AdminCancelBookingDialog from "@/components/AdminCancelBookingDialog";
 
 
-const downloadInvoiceDirect = (bookingId) => {
+const downloadInvoiceDirect = async (bookingId) => {
   const toastId = toast.loading("PDF is generating...");
 
-  const url = `${import.meta.env.VITE_API_URL}/invoice/admin/${bookingId}/download`;
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/invoice/admin/${bookingId}/download`,
+      {
+        credentials: "include", // important for auth cookie
+      }
+    );
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+    if (!res.ok) throw new Error("Failed to generate PDF");
 
-  setTimeout(() => {
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Invoice-${bookingId}.pdf`;
+    a.click();
+
+    window.URL.revokeObjectURL(url);
     toast.success("Invoice downloaded!", { id: toastId });
-  }, 2000);
+  } catch (err) {
+    toast.error("PDF generation failed", { id: toastId });
+  }
 };
+
 
 
 const toDateOnly = (d) => {
