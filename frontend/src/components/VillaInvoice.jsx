@@ -49,21 +49,28 @@ export default function VillaInvoice() {
     );
   }
 
+  /* ================= BACKEND SOURCE OF TRUTH ================= */
   const nights = booking.nights || 1;
-  const roomTotal = booking.pricePerNight * nights;
 
+  const roomTotal = booking.roomTotal || 0;
+  const mealTotal = booking.mealMeta?.mealTotal || booking.mealTotal || 0;
+
+  const subTotal = roomTotal + mealTotal;
+  const grandTotal = booking.amount || 0;
+
+  // derive tax safely from backend final amount
+  const taxAmount = Math.max(grandTotal - subTotal, 0);
+
+  // tax % only for display (optional)
+  const taxPercent =
+    subTotal > 0 ? ((taxAmount / subTotal) * 100).toFixed(2) : 0;
+
+  /* ================= MEAL BREAKUP (DISPLAY ONLY) ================= */
   const vegTotal =
     booking.vegGuests * booking.room?.mealPriceVeg * nights || 0;
+
   const nonVegTotal =
     booking.nonVegGuests * booking.room?.mealPriceNonVeg * nights || 0;
-  const comboTotal =
-    booking.comboGuests * booking.room?.mealPriceCombo * nights || 0;
-
-  const mealTotal = vegTotal + nonVegTotal + comboTotal;
-  const subTotal = roomTotal + mealTotal;
-  const taxPercent = 12;
-  const taxAmount = (subTotal * taxPercent) / 100;
-  const grandTotal = subTotal + taxAmount;
 
 const generatePDF = async (isAuto = false) => {
   if (isDownloadingRef.current) return;
