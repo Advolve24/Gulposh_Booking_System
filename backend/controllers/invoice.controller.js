@@ -67,15 +67,8 @@ export const downloadInvoicePDF = async (req, res) => {
         .send("Booking not found");
     }
 
-    // 🔐 USER OWNERSHIP CHECK
-    if (!req.user) {
-      return res
-        .status(401)
-        .set("Content-Type", "text/plain")
-        .send("Authentication required");
-    }
-
-    if (!req.user.isAdmin) {
+    // 🔐 USER OWNERSHIP CHECK (VERY IMPORTANT)
+    if (!req.user?.isAdmin) {
       if (booking.user._id.toString() !== req.user.id) {
         return res
           .status(403)
@@ -83,7 +76,6 @@ export const downloadInvoicePDF = async (req, res) => {
           .send("Unauthorized access to invoice");
       }
     }
-
 
     const html = `
 <!DOCTYPE html>
@@ -456,4 +448,7 @@ export const downloadInvoicePDF = async (req, res) => {
       .send(err.message);
   }
 };
+
+
+
 
