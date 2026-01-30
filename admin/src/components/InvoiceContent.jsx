@@ -12,6 +12,23 @@ export default function InvoiceContent({ booking, responsive }) {
     const adults = booking.adults || 0;
     const children = booking.children || 0;
 
+    /* ================= BACKEND SOURCE OF TRUTH ================= */
+
+    const roomTotal = booking.roomTotal || 0;
+    const mealTotal =
+        booking.mealMeta?.mealTotal || booking.mealTotal || 0;
+
+    const subTotal = roomTotal + mealTotal;
+    const grandTotal = booking.amount || 0;
+
+    // derive tax safely from backend
+    const taxAmount = Math.max(grandTotal - subTotal, 0);
+
+    // tax % only for display
+    const taxPercent =
+        subTotal > 0 ? ((taxAmount / subTotal) * 100).toFixed(2) : 0;
+
+
     return (
         <>
             {/* HEADER */}
@@ -125,15 +142,15 @@ export default function InvoiceContent({ booking, responsive }) {
                 </div>
 
                 <div>
-                    <Total label="SubTotal" value={booking.amount} />
+                    <Total label="Sub Total" value={subTotal} />
                     <Total
-                        label="Tax 12%"
-                        value={Math.round(booking.amount * 0.12)}
+                        label={`Tax (${taxPercent}%)`}
+                        value={taxAmount}
                     />
                     <div className="flex justify-between font-semibold mt-2">
                         <span>Grand Total</span>
                         <span>
-                            ₹{Math.round(booking.amount * 1.12).toLocaleString("en-IN")}
+                            ₹{grandTotal.toLocaleString("en-IN")}
                         </span>
                     </div>
                 </div>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { useAuth } from "@/store/auth";
@@ -5,6 +6,8 @@ import { useNotificationStore } from "@/store/useNotificationStore";
 import { Bell, User, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
+import { getAdminTax, updateAdminTax} from "@/api/admin";
+
 
 // shadcn
 import { Input } from "@/components/ui/input";
@@ -21,11 +24,11 @@ export default function Settings() {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-const tabFromUrl = searchParams.get("tab");
-if (tabFromUrl) {
-setTab(tabFromUrl);
-}
-}, [searchParams]);
+    const tabFromUrl = searchParams.get("tab");
+    if (tabFromUrl) {
+      setTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   return (
     <AppLayout>
@@ -40,6 +43,12 @@ setTab(tabFromUrl);
             label="Profile"
           />
           <PillTab
+            active={tab === "tax"}
+            onClick={() => setTab("tax")}
+            icon={<Save size={16} />}
+            label="Tax "
+          />
+          <PillTab
             active={tab === "notifications"}
             onClick={() => setTab("notifications")}
             icon={<Bell size={16} />}
@@ -49,6 +58,7 @@ setTab(tabFromUrl);
 
         {/* ================= TAB CONTENT ================= */}
         {tab === "profile" && <ProfileTab />}
+        {tab === "tax" && <TaxSettingsTab />}
         {tab === "notifications" && <NotificationsTab />}
       </div>
     </AppLayout>
@@ -64,7 +74,7 @@ function PillTab({ active, onClick, icon, label }) {
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition",
+        "inline-flex items-center gap-2 rounded-lg px-2 sm:px-4 py-2 text-sm font-medium transition",
         "focus:outline-none focus:ring-2 focus:ring-primary/30",
         active
           ? "bg-background shadow-sm text-foreground"
@@ -171,45 +181,116 @@ function ProfileTab() {
             />
           </Field>
 
-        <Separator />
+          <Separator />
 
-        <h3 className="font-serif font-medium text-lg">
-          Property Details
-        </h3>
+          <h3 className="font-serif font-medium text-lg">
+            Property Details
+          </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <Field label="Property Name">
-            <Input
-              value={form.propertyName}
-              onChange={(e) =>
-                setForm({ ...form, propertyName: e.target.value })
-              }
-            />
-          </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Field label="Property Name">
+              <Input
+                value={form.propertyName}
+                onChange={(e) =>
+                  setForm({ ...form, propertyName: e.target.value })
+                }
+              />
+            </Field>
 
-          <Field label="Address">
-            <Input
-              value={form.address}
-              onChange={(e) =>
-                setForm({ ...form, address: e.target.value })
-              }
-            />
-          </Field>
-        </div>
+            <Field label="Address">
+              <Input
+                value={form.address}
+                onChange={(e) =>
+                  setForm({ ...form, address: e.target.value })
+                }
+              />
+            </Field>
+          </div>
 
-        <div className="flex justify-end pt-6">
-          <Button
-            onClick={saveProfile}
-            disabled={saving}
-            className="rounded-xl px-6"
-          >
-            <Save size={16} className="mr-2" />
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
+          <div className="flex justify-end pt-6">
+            <Button
+              onClick={saveProfile}
+              disabled={saving}
+              className="rounded-xl px-6"
+            >
+              <Save size={16} className="mr-2" />
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
     </div >
+  );
+}
+
+/* =====================================================
+   Tax  TAB (COMPACT)
+===================================================== */
+
+
+function TaxSettingsTab() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [taxPercent, setTaxPercent] = useState(0);
+
+  useEffect(() => {
+    fetchTax();
+  }, []);
+
+  const fetchTax = async () => {
+    try {
+      const data = await getAdminTax();
+      setTaxPercent(data.taxPercent ?? 0);
+    } catch {
+      toast.error("Failed to load tax settings");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveTax = async () => {
+    try {
+      setSaving(true);
+      await updateAdminTax(Number(taxPercent));
+      toast.success("Tax updated successfully");
+    } catch {
+      toast.error("Failed to save tax");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <p>Loading tax settings…</p>;
+
+  return (
+    <div className="bg-card border rounded-2xl p-6 space-y-6">
+      <h2 className="text-xl font-serif font-semibold">
+        GST / Tax Configuration
+      </h2>
+
+      <p className="text-sm text-muted-foreground">
+        This tax will be applied to the total booking amount (room + meals).
+      </p>
+
+      <Field label="GST Percentage (%)">
+        <Input
+          type="number"
+          min={0}
+          max={100}
+          value={taxPercent}
+          onChange={(e) => setTaxPercent(e.target.value)}
+        />
+      </Field>
+
+      <Separator />
+
+      <div className="flex justify-end">
+        <Button onClick={saveTax} disabled={saving}>
+          <Save size={16} className="mr-2" />
+          {saving ? "Saving…" : "Save Tax"}
+        </Button>
+      </div>
+    </div>
   );
 }
 
