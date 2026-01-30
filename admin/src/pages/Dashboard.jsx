@@ -158,7 +158,7 @@ function CalendarLegendItem({ color, label }) {
 
 const downloadInvoiceDirect = (bookingId) => {
   const toastId = toast.loading("PDF is generating...");
-  const url = `${import.meta.env.VITE_API_URL}/invoice/${bookingId}/download`;
+  const url = `${import.meta.env.VITE_API_URL}/invoice/admin/${bookingId}/download`;
   const a = document.createElement("a");
   a.href = url;
   a.target = "_self";
@@ -242,6 +242,34 @@ export default function Dashboard() {
       }
     })();
   }, []);
+
+
+  const downloadInvoiceDirect = async (bookingId) => {
+  const toastId = toast.loading("PDF is generating...");
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/invoice/admin/${bookingId}/download`,
+      { credentials: "include" }
+    );
+
+    if (!res.ok) throw new Error("Failed");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Invoice-${bookingId}.pdf`;
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+    toast.success("Invoice downloaded", { id: toastId });
+  } catch {
+    toast.error("Invoice download failed", { id: toastId });
+  }
+};
+
 
 
 
