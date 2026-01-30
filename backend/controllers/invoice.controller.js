@@ -174,14 +174,15 @@ export const downloadInvoicePDF = async (req, res) => {
   }
 
   .card {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 24px;
-  }
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
 
   .guest-info p {
     margin: 4px 0;

@@ -20,7 +20,7 @@ import AdminCancelBookingDialog from "@/components/AdminCancelBookingDialog";
 const downloadInvoiceDirect = (bookingId) => {
   const toastId = toast.loading("PDF is generating...");
 
-  const url = `${import.meta.env.VITE_API_URL}/invoice/${bookingId}/download`;
+  const url = `${import.meta.env.VITE_API_URL}/invoice/admin/${bookingId}/download`;
 
   const a = document.createElement("a");
   a.href = url;

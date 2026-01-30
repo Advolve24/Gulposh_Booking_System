@@ -84,10 +84,10 @@ export default function InvoicePage() {
             position: "fixed",
             left: "-10000px",
             top: 0,
-            width: "794px",
+            width: "894px",
           }}
         >
-          <div className="bg-white p-6 text-[13px]">
+          <div className="bg-white p-6 text-[13px] w-full">
             <InvoiceContent booking={booking} />
           </div>
         </div>
