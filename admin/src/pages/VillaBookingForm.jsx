@@ -180,9 +180,32 @@ export default function VillaBookingForm() {
 
       if (!data.exists) {
         setUserId(null);
+        setUserChecked(true);
+
+        setForm((f) => ({
+          ...f,
+          name: "",
+          email: "",
+          dob: null,
+          address: "",
+          country: "India",
+          state: "",
+          city: "",
+          pincode: "",
+          govIdType: "",
+          govIdNumber: "",
+        }));
+
+        setCountryCode("IN");
+        setStateCode("");
+        setCityName("");
+        setStates(State.getStatesOfCountry("IN"));
+        setCities([]);
+
         toast.info("User not found. Please enter details.");
         return;
       }
+
 
       const u = data.user;
       setUserId(u.id);
