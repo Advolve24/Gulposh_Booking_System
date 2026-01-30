@@ -2,8 +2,11 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Room from "../models/Room.js";
 import Booking from "../models/Booking.js";
+import TaxSetting from "../models/TaxSetting.js";
 import { sendBookingConfirmationMail } from "../utils/mailer.js";
 import { parseYMD, toDateOnly } from "../lib/date.js";
+import { notifyAdmin } from "../utils/notifyAdmin.js"; // ✅ NEW
+
 
 /* ----------------------------- Razorpay ----------------------------- */
 const rp = new Razorpay({
@@ -66,16 +69,30 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
+    // ✅ after nights calculation
     const roomTotal = nights * room.pricePerNight;
+
     const mealTotal = withMeal
       ? nights *
       (vegGuests * room.mealPriceVeg +
         nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
-    const amountINR = roomTotal + mealTotal;
-    const amountPaise = Math.round(amountINR * 100);
+     const subTotal = roomTotal + mealTotal;
 
+    /* ---------------- SINGLE TAX ---------------- */
+    const taxSetting = await TaxSetting.findOne();
+    if (!taxSetting) {
+      return res.status(500).json({ message: "Tax configuration missing" });
+    }
+
+    const totalTax = Math.round(
+      (subTotal * taxSetting.taxPercent) / 100
+    );
+
+    const grandTotal = subTotal + totalTax;
+
+    const amountPaise = Math.round(grandTotal * 100);
     if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
       return res.status(400).json({ message: "Invalid payment amount" });
     }
@@ -91,6 +108,14 @@ export const createOrder = async (req, res) => {
       orderId: order.id,
       amount: order.amount,
       currency: "INR",
+
+      /* ✅ frontend display */
+      nights,
+      roomTotal,
+      mealTotal,
+      subTotal,
+      totalTax,
+      grandTotal,
     });
   } catch (err) {
     console.error("❌ createOrder error:", err);
@@ -187,7 +212,18 @@ export const verifyPayment = async (req, res) => {
         nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
-    const amountINR = roomTotal + mealTotal;
+    const subTotal = roomTotal + mealTotal;
+
+    const taxSetting = await TaxSetting.findOne();
+    if (!taxSetting) {
+      return res.status(500).json({ message: "Tax configuration missing" });
+    }
+
+    const totalTax = Math.round(
+      (subTotal * taxSetting.taxPercent) / 100
+    );
+
+    const grandTotal = subTotal + totalTax;
 
     /* ---------------- Create Booking ---------------- */
     const booking = await Booking.create({
@@ -205,7 +241,9 @@ export const verifyPayment = async (req, res) => {
       vegGuests,
       nonVegGuests,
       mealTotal,
-      amount: amountINR,
+      totalTax,
+      subTotal,
+      amount: grandTotal,
       currency: "INR",
       contactName,
       contactEmail,
@@ -218,6 +256,18 @@ export const verifyPayment = async (req, res) => {
       addressInfo: { address, country, state, city, pincode },
     });
 
+    /* 🔔 NOTIFY ADMIN — BOOKING CONFIRMED */
+    await notifyAdmin("BOOKING_CREATED", {
+      bookingId: booking._id,
+      room: room.name,
+      guest: contactName,
+      guests,
+      amount: grandTotal,
+      dates: `${startDate} → ${endDate}`,
+      paymentProvider: "razorpay",
+    });
+
+    /* ---------------- Send Confirmation Mail ---------------- */
     const emailToSend = contactEmail || req.user?.email;
 
     if (emailToSend) {

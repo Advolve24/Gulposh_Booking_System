@@ -8,10 +8,9 @@ import {
 
 const router = express.Router();
 
-
-router.get("/:id", requireAdminSession, getInvoice);
-router.get("/:id/download", requireAdminSession, downloadInvoicePDF);
-
+/* ================= ADMIN ================= */
+router.get("/admin/:id", requireAdminSession, getInvoice);
+router.get("/admin/:id/download", requireAdminSession, downloadInvoicePDF);
 
 router.get(
   "/user/:id/download",

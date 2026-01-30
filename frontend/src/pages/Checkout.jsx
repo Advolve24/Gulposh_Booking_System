@@ -90,7 +90,6 @@ export default function Checkout() {
   const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
 
   /* ================= GUESTS & MEALS ================= */
-  /* ================= GUESTS & MEALS ================= */
   const [adults, setAdults] = useState(initialAdults);
   const [children, setChildren] = useState(initialChildren);
   const totalGuests = adults + children;
@@ -128,6 +127,9 @@ export default function Checkout() {
     }
     return out;
   }
+
+  const [taxPercent, setTaxPercent] = useState(0);
+
 
 
   /* ================= OTP ================= */
@@ -197,33 +199,86 @@ export default function Checkout() {
   }, [user]);
 
 
-  /* ================= CALCULATIONS ================= */
+  useEffect(() => {
+    if (!withMeal) return;
+
+    const totalMeal = vegGuests + nonVegGuests;
+
+    // ensure minimum 1 meal guest
+    if (totalMeal === 0 && totalGuests > 0) {
+      setVegGuests(1);
+      setNonVegGuests(0);
+    }
+
+    // clamp if guests reduced
+    if (totalMeal > totalGuests) {
+      setNonVegGuests(Math.max(0, totalGuests - vegGuests));
+    }
+  }, [totalGuests, withMeal]);
+
+  useEffect(() => {
+    api.get("/tax")
+      .then(({ data }) => {
+        setTaxPercent(data.taxPercent);
+      })
+      .catch(() => {
+        toast.error("Failed to load tax configuration");
+      });
+  }, []);
+
+  /* ================= CALCULATIONS (PREVIEW ONLY) ================= */
+
   const nights = useMemo(() => {
     if (!range.from || !range.to) return 0;
-    return (
+
+    const diff =
       (toDateOnly(range.to) - toDateOnly(range.from)) /
-      (1000 * 60 * 60 * 24)
-    );
+      (1000 * 60 * 60 * 24);
+
+    return Math.max(0, Math.round(diff));
   }, [range]);
 
+  const roomTotal = useMemo(() => {
+    return nights * (room?.pricePerNight || 0);
+  }, [nights, room]);
 
-  const roomTotal = nights * (room?.pricePerNight || 0);
-
-  const mealTotal =
-    withMeal && room
-      ? nights *
+  const mealTotal = useMemo(() => {
+    if (!withMeal || !room) return 0;
+    return (
+      nights *
       (vegGuests * room.mealPriceVeg +
         nonVegGuests * room.mealPriceNonVeg)
-      : 0;
+    );
+  }, [withMeal, room, nights, vegGuests, nonVegGuests]);
 
-  const total = roomTotal + mealTotal;
+  const subTotal = useMemo(() => {
+    return roomTotal + mealTotal;
+  }, [roomTotal, mealTotal]);
+
+  const totalTax = useMemo(() => {
+    if (!taxPercent) return 0;
+    return Math.round((subTotal * taxPercent) / 100);
+  }, [subTotal, taxPercent]);
+
+  const grandTotal = useMemo(() => {
+    return subTotal + totalTax;
+  }, [subTotal, totalTax]);
 
   const proceedPayment = async () => {
     const g = totalGuests;
 
-    if (withMeal && vegGuests + nonVegGuests !== g) {
-      toast.error("Veg + Non-Veg guests must equal total guests");
-      return;
+    if (withMeal) {
+      const mealGuests = vegGuests + nonVegGuests;
+
+      if (mealGuests < 1) {
+        toast.error("Please select at least 1 guest for meals");
+        return;
+      }
+
+      if (mealGuests > g) {
+        toast.error("Meal guests cannot exceed total guests");
+        return;
+      }
     }
 
     if (!form.email || !form.email.trim()) {
@@ -237,6 +292,7 @@ export default function Checkout() {
       return;
     }
 
+    // ✅ Backend calculates EVERYTHING (tax, totals, amount)
     const { data } = await api.post("/payments/create-order", {
       roomId,
       startDate: toYMD(range.from),
@@ -427,6 +483,37 @@ export default function Checkout() {
   }
 
 
+  function MobileRoomCard({ room, image }) {
+    if (!room) return null;
+
+    return (
+      <div className="lg:hidden">
+        <div className="flex items-center gap-3 rounded-2xl border bg-white p-3 shadow-sm">
+          {/* IMAGE */}
+          <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-muted">
+            {image && (
+              <img
+                src={image}
+                alt={room.name}
+                className="h-full w-full object-cover"
+              />
+            )}
+          </div>
+
+          {/* CONTENT */}
+          <div className="flex-1">
+            <p className="text-sm font-semibold leading-tight">
+              {room.name}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Ref: {room._id?.slice(-8).toUpperCase()}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   /* ================= UI ================= */
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -526,9 +613,17 @@ export default function Checkout() {
 
                 {/* TITLE */}
                 {/* LOCATION */}
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>Karjat, Maharashtra</span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-semibold text-foreground">
+                    {room?.name}
+                  </span>
+
+
+
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    <span>Karjat, Maharashtra</span>
+                  </div>
                 </div>
 
                 {/* GUESTS + MEALS */}
@@ -594,8 +689,8 @@ export default function Checkout() {
                   )}
 
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Taxes & Fees</span>
-                    <span>Included</span>
+                    <span>GST ({taxPercent}%)</span>
+                    <span>₹{totalTax.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 
@@ -611,7 +706,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="text-xl font-semibold text-red-600">
-                    ₹{total.toLocaleString("en-IN")}
+                    ₹{grandTotal.toLocaleString("en-IN")}
                   </div>
                 </div>
 
@@ -622,8 +717,11 @@ export default function Checkout() {
 
 
         <section className="lg:col-span-6 space-y-6">
-
-
+          {/* ================= MOBILE ROOM CARD ================= */}
+          <div className="lg:hidden">
+            <MobileRoomCard room={room} image={roomImage} />
+            <Separator className="mt-4" />
+          </div>
           {/* ================= PERSONAL INFORMATION ================= */}
           <div className="rounded-2xl border bg-white p-5 sm:p-6">
             <div className="flex items-start gap-3 mb-5">
@@ -679,10 +777,10 @@ export default function Checkout() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
-              {/* STREET ADDRESS — FULL ROW */}
-              <div className="md:col-span-4">
+              {/* STREET ADDRESS — FULL ROW (mobile + desktop) */}
+              <div className="col-span-2 md:col-span-4">
                 <ReadOnlyField
                   label="Street Address"
                   value={address.address}
@@ -783,65 +881,128 @@ export default function Checkout() {
               </div>
             </div>
 
-            {/* ================= MEALS ================= */}
-            <div className="space-y-4 pt-2">
-
-              <div className="flex items-start gap-3">
+            {/* ================= MEALS TOGGLE ================= */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
                 <Checkbox
                   checked={withMeal}
                   onCheckedChange={(v) => {
-                    setWithMeal(v);
-                    if (!v) {
-                      setVegGuests(0);
-                      setNonVegGuests(0);
-                    }
+                    setWithMeal(Boolean(v));
+                    setVegGuests(0);
+                    setNonVegGuests(0);
                   }}
                 />
-                <Label className="leading-snug">
+                <span className="flex items-center gap-1">
+                  <Utensils className="w-4 h-4" />
                   Include Meals
-                  <span className="block text-xs text-muted-foreground">
-                    Veg ₹{room.mealPriceVeg} / Non-Veg ₹{room.mealPriceNonVeg}
-                    <br />
-                    <span className="italic">per guest per night</span>
-                  </span>
-                </Label>
-              </div>
+                </span>
+              </Label>
 
-              {/* MEAL COUNTERS */}
-              {withMeal && (
+              {withMeal && room && (
+                <div className="rounded-xl border bg-[#faf7f4] p-4 space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    Meal prices are per guest per night
+                  </p>
+
+                  <div className="flex justify-between text-sm">
+                    <span>Veg Meal</span>
+                    <span>₹{room.mealPriceVeg} / guest / night</span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span>Non-Veg Meal</span>
+                    <span>₹{room.mealPriceNonVeg} / guest / night</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* ================= MEALS ================= */}
+            {/* ================= MEAL GUEST COUNTS ================= */}
+            {withMeal && (
+              <div className="space-y-4 pt-2">
+
                 <div className="grid grid-cols-2 gap-4">
-
                   <Counter
                     label="Veg Guests"
                     value={vegGuests}
                     min={0}
-                    max={totalGuests - nonVegGuests}
-                    onChange={setVegGuests}
+                    max={totalGuests}
+                    onChange={(v) => {
+                      if (v + nonVegGuests > totalGuests) {
+                        setVegGuests(totalGuests - nonVegGuests);
+                      } else {
+                        setVegGuests(v);
+                      }
+                    }}
                   />
 
                   <Counter
                     label="Non-Veg Guests"
                     value={nonVegGuests}
                     min={0}
-                    max={totalGuests - vegGuests}
-                    onChange={setNonVegGuests}
+                    max={totalGuests}
+                    onChange={(v) => {
+                      if (vegGuests + v > totalGuests) {
+                        setNonVegGuests(totalGuests - vegGuests);
+                      } else {
+                        setNonVegGuests(v);
+                      }
+                    }}
                   />
+                </div>
 
-                  <div className="col-span-2 text-xs text-muted-foreground">
-                    Selected: {vegGuests + nonVegGuests} / {totalGuests}
-                    {vegGuests + nonVegGuests !== totalGuests && (
-                      <span className="text-red-600 ml-2">
-                        (Veg + Non-Veg must equal total guests)
-                      </span>
-                    )}
-                  </div>
+                <p className="text-xs text-muted-foreground">
+                  Meal Guests Selected:{" "}
+                  <strong>{vegGuests + nonVegGuests}</strong> / {totalGuests}
+                </p>
+              </div>
+            )}
+          </div>
 
+          {/* Payment Summary */}
+          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-3">
+            <h4 className="text-sm font-semibold text-foreground">
+              Payment Summary
+            </h4>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Room Charges</span>
+                <span>
+                  <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+                </span>
+              </div>
+
+              {withMeal && (
+                <div className="flex justify-between">
+                  <span>Meals</span>
+                  <span>
+                    <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                  </span>
                 </div>
               )}
 
-            </div>
-          </div>
+              <div className="flex justify-between">
+                <span>GST</span>
+                <span>
+                  <span>₹{totalTax.toLocaleString("en-IN")}</span>
+                </span>
+              </div>
 
+              <Separator />
+
+              <div className="flex justify-between font-semibold">
+                <span>Total Payable</span>
+                <span className="text-red-700">
+                  ₹{grandTotal.toLocaleString("en-IN")}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Includes all applicable taxes & fees
+            </p>
+          </div>
 
           {/* ================= CTA ================= */}
           <Button

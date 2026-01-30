@@ -244,6 +244,7 @@ export default function RoomPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
 
+
   // useEffect(() => {
   //   // If user navigated without search state (e.g. back + new room)
   //   if (!location.state) {

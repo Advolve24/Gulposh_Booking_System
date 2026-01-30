@@ -29,24 +29,33 @@ export default function Invoices() {
     navigate(`/invoice-view/${id}`);
   };
 
-  const downloadInvoiceDirect = (bookingId) => {
-  const toastId = toast.loading("PDF is generating...");
+  const downloadInvoiceDirect = async (bookingId) => {
+  const toastId = toast.loading("Generating invoice PDF...");
 
-  const url = `${import.meta.env.VITE_API_URL}/invoice/${bookingId}/download`;
+  try {
+    const res = await api.get(
+      `/invoice/user/${bookingId}/download`,
+      { responseType: "blob" }
+    );
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+    const blob = new Blob([res.data], { type: "application/pdf" });
+    const url = window.URL.createObjectURL(blob);
 
-  setTimeout(() => {
-    toast.success("Invoice downloaded!", { id: toastId });
-  }, 2000);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Invoice-${bookingId.slice(-6).toUpperCase()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    toast.success("Invoice downloaded", { id: toastId });
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to download invoice", { id: toastId });
+  }
 };
-
-
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">

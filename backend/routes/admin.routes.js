@@ -1,4 +1,5 @@
 import express from "express";
+import User from "../models/User.js";
 import { requireAdminSession } from "../middleware/adminSession.js";
 import { createRoom, listRoomsAdmin, deleteRoom, getRoomAdmin, updateRoom } from "../controllers/admin.room.controller.js";
 import { getAdminStats } from "../controllers/admin.stats.controller.js";
@@ -9,11 +10,55 @@ import { adminGlobalSearch } from "../controllers/admin.search.controller.js";
 import {
   adminActionBooking,
 } from "../controllers/admin.booking.controller.js";
+import {
+  getActiveTax,
+  updateTax,
+} from "../controllers/taxSetting.controller.js";
+
 
 
 const router = express.Router();
 
 router.use(requireAdminSession);
+
+/* ================= FCM ================= */
+
+
+router.post("/fcm-token", async (req, res) => {
+console.log("🔥 FCM ROUTE HIT", req.user.id);
+
+
+const { token } = req.body;
+if (!token) {
+return res.status(400).json({ message: "FCM token required" });
+}
+
+
+await User.updateOne(
+{ _id: req.user.id, isAdmin: true },
+{ $addToSet: { fcmTokens: token } }
+);
+
+
+res.json({ success: true });
+});
+
+
+router.delete("/fcm-token", async (req, res) => {
+const { token } = req.body;
+if (!token) return res.json({ success: true });
+
+
+await User.updateOne(
+{ _id: req.user.id },
+{ $pull: { fcmTokens: token } }
+);
+
+
+res.json({ success: true });
+});
+
+
 router.get("/stats", getAdminStats);
 router.get("/rooms", listRoomsAdmin);
 router.post("/rooms", createRoom);
@@ -39,6 +84,12 @@ router.post("/villa-order", createVillaOrder);
 router.post("/villa-verify", verifyVillaPayment);
 router.get("/search", adminGlobalSearch);
 router.post("/bookings/:id/cancel", cancelBookingAdmin);
+/* ================= TAX SETTINGS ================= */
 
+// Get current tax (admin panel)
+router.get("/tax", getActiveTax);
+
+// Update tax (admin panel)
+router.put("/tax", updateTax);
 
 export default router;

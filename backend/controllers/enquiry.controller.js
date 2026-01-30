@@ -1,4 +1,5 @@
 import Enquiry from "../models/Enquiry.js";
+import { notifyAdmin } from "../utils/notifyAdmin.js"; // ✅ NEW
 
 export const createEntireVillaEnquiry = async (req, res) => {
   try {
@@ -37,6 +38,17 @@ export const createEntireVillaEnquiry = async (req, res) => {
 
       source: source || "frontend",
       status: "enquiry",
+    });
+
+     /* 🔔 NOTIFY ADMIN — VILLA ENQUIRY */
+    await notifyAdmin("VILLA_ENQUIRY", {
+      enquiryId: enquiry._id,
+      name,
+      email,
+      phone,
+      guests,
+      dates: `${startDate} → ${endDate}`,
+      source: enquiry.source,
     });
 
     res.status(201).json({

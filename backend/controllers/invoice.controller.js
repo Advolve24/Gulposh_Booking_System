@@ -34,6 +34,7 @@ export const getInvoice = async (req, res) => {
         vegGuests: booking.vegGuests || 0,
         nonVegGuests: booking.nonVegGuests || 0,
         mealTotal: booking.mealTotal || 0,
+        totalTax: booking.totalTax || 0,
         amount: booking.amount,
         paymentProvider: booking.paymentProvider,
         orderId: booking.orderId,
@@ -65,6 +66,36 @@ export const downloadInvoicePDF = async (req, res) => {
         .set("Content-Type", "text/plain")
         .send("Booking not found");
     }
+
+    // 🔐 USER OWNERSHIP CHECK (VERY IMPORTANT)
+    if (!req.user?.isAdmin) {
+      if (booking.user._id.toString() !== req.user.id) {
+        return res
+          .status(403)
+          .set("Content-Type", "text/plain")
+          .send("Unauthorized access to invoice");
+      }
+    }
+
+    /* ================= BACKEND SOURCE OF TRUTH ================= */
+
+    const nights = booking.nights || 1;
+
+    const roomTotal =
+      booking.roomTotal || booking.pricePerNight * nights;
+
+    const mealTotal =
+      booking.mealMeta?.mealTotal || booking.mealTotal || 0;
+
+    const subTotal = roomTotal + mealTotal;
+    const grandTotal = booking.amount || 0;
+
+    // derive tax safely
+    const taxAmount = Math.max(grandTotal - subTotal, 0);
+
+    // optional: % only for display
+    const taxPercent =
+      subTotal > 0 ? ((taxAmount / subTotal) * 100).toFixed(2) : 0;
 
     const html = `
 <!DOCTYPE html>
@@ -360,17 +391,17 @@ export const downloadInvoicePDF = async (req, res) => {
 
       <div>
         <div class="total-line">
-          <span>SubTotal</span>
-          <span>₹${booking.amount}</span>
-        </div>
-        <div class="total-line">
-          <span>Tax 12%</span>
-          <span>₹${Math.round(booking.amount * 0.12)}</span>
-        </div>
-        <div class="total-line grand">
-          <span>Grand Total</span>
-          <span>₹${Math.round(booking.amount * 1.12)}</span>
-        </div>
+        <span>Sub Total</span>
+        <span>₹${subTotal}</span>
+      </div>
+      <div class="total-line">
+        <span>Tax (${taxPercent}%)</span>
+        <span>₹${taxAmount}</span>
+      </div>
+      <div class="total-line grand">
+        <span>Grand Total</span>
+        <span>₹${grandTotal}</span>
+      </div>
       </div>
     </div>
 
@@ -437,3 +468,7 @@ export const downloadInvoicePDF = async (req, res) => {
       .send(err.message);
   }
 };
+
+
+
+

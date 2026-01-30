@@ -34,8 +34,6 @@ export const listBlackouts = () =>
 export const createBlackout = (payload) =>
   api.post("/admin/blackouts", payload);
 
-// export const addBlackout = ({ from, to, note }) =>
-//   api.post("/admin/blackouts", { from, to, note }).then(r => r.data);
 export const deleteBlackout = (id) =>
   api.delete(`/admin/blackouts/${id}`);
 
@@ -70,5 +68,33 @@ export const getBookingAdmin = (id) =>
 export const adminGlobalSearch = (q) =>
   api.get(`/admin/search?q=${encodeURIComponent(q)}`).then(r => r.data);
 
+/**
+* Fetch admin notifications
+*/
+export const getAdminNotifications = () =>
+api.get("/admin/notifications").then(r => r.data);
 
 
+/**
+* Mark all admin notifications as read
+*/
+export const markAllAdminNotificationsRead = () =>
+api.put("/admin/notifications/mark-all-read").then(r => r.data);
+
+
+// ================= FCM =================
+
+/**
+ * Save admin FCM token
+ */
+export const saveAdminFcmToken = (token) => {
+  return api.post("/admin/fcm-token", { token }).then(r => r.data);
+};
+
+// ================= TAX SETTINGS =================
+
+export const getAdminTax = () =>
+  api.get("/admin/tax").then(r => r.data);
+
+export const updateAdminTax = (taxPercent) =>
+  api.put("/admin/tax", { taxPercent }).then(r => r.data);
