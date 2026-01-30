@@ -34,7 +34,7 @@ export default function InvoicePage() {
     await new Promise((r) => setTimeout(r, 100));
 
     const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
+      scale: 1.25,
       backgroundColor: "#ffffff",
       windowWidth: 794,
       scrollX: 0,
