@@ -258,7 +258,6 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl rounded-2xl p-0 overflow-hidden">
 
-        {/* ===== HEADER ===== */}
         <div className="px-6 py-4 border-b">
           <h2 className="text-lg font-semibold">Edit Booking</h2>
           <p className="text-xs text-muted-foreground">
@@ -266,7 +265,6 @@ export default function EditBookingDialog({ open, onOpenChange, booking, reload 
           </p>
         </div>
 
-        {/* ===== BODY ===== */}
         <div className="px-6 py-2 space-y-6 text-sm">
 
           {/* Dates */}
