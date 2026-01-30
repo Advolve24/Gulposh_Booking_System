@@ -15,6 +15,14 @@ export const getInvoice = async (req, res) => {
       return res.status(404).json({ success: false, message: "Booking not found" });
     }
 
+    const roomTotal = booking.roomTotal || 0;
+    const mealTotal = booking.mealTotal || 0;
+    const taxTotal = booking.totalTax || 0;
+    const grandTotal = booking.amount || 0;
+
+    const subTotal = roomTotal + mealTotal;
+
+
     res.json({
       success: true,
       data: {
@@ -67,8 +75,15 @@ export const downloadInvoicePDF = async (req, res) => {
         .send("Booking not found");
     }
 
-    // 🔐 USER OWNERSHIP CHECK (VERY IMPORTANT)
-    if (!req.user?.isAdmin) {
+    // 🔐 USER OWNERSHIP CHECK
+    if (!req.user) {
+      return res
+        .status(401)
+        .set("Content-Type", "text/plain")
+        .send("Authentication required");
+    }
+
+    if (!req.user.isAdmin) {
       if (booking.user._id.toString() !== req.user.id) {
         return res
           .status(403)
@@ -76,6 +91,7 @@ export const downloadInvoicePDF = async (req, res) => {
           .send("Unauthorized access to invoice");
       }
     }
+
 
     const html = `
 <!DOCTYPE html>
@@ -362,28 +378,42 @@ export const downloadInvoicePDF = async (req, res) => {
 
     <!-- TOTALS -->
     <div class="totals">
-      <div class="payment-info">
-        <p><strong>Payment Info:</strong></p>
-        <p>${booking.user?.name}</p>
-        <p>${booking.paymentProvider} – ${booking.paymentId}</p>
-        <p>Amount: ₹${booking.amount}</p>
-      </div>
+  <div class="payment-info">
+    <p><strong>Payment Info:</strong></p>
+    <p>${booking.user?.name}</p>
+    <p>${booking.paymentProvider} – ${booking.paymentId}</p>
+  </div>
 
-      <div>
-        <div class="total-line">
-          <span>SubTotal</span>
-          <span>₹${booking.amount}</span>
-        </div>
-        <div class="total-line">
-          <span>Total Tax</span>
-          <span>₹${booking.totalTax || 0}</span>
-        </div>
-        <div class="total-line grand">
-          <span>Grand Total</span>
-          <span>₹${booking.amount}</span>
-        </div>
-      </div>
+  <div>
+    <div class="total-line">
+      <span>Room Total</span>
+      <span>₹${roomTotal}</span>
     </div>
+
+    ${mealTotal > 0 ? `
+    <div class="total-line">
+      <span>Meal Total</span>
+      <span>₹${mealTotal}</span>
+    </div>
+    ` : ``}
+
+    <div class="total-line">
+      <span>Sub Total</span>
+      <span>₹${subTotal}</span>
+    </div>
+
+    <div class="total-line">
+      <span>Total Tax</span>
+      <span>₹${taxTotal}</span>
+    </div>
+
+    <div class="total-line grand">
+      <span>Grand Total</span>
+      <span>₹${grandTotal}</span>
+    </div>
+  </div>
+</div>
+
 
     <!-- SIGNATURE -->
     <div class="signature">
