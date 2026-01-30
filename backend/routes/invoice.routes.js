@@ -10,16 +10,12 @@ const router = express.Router();
 
 /* ================= ADMIN ================= */
 router.get("/admin/:id", requireAdminSession, getInvoice);
+router.get("/admin/:id/download", requireAdminSession, downloadInvoicePDF);
 
-/* ================= BOTH ADMIN + USER (PDF DOWNLOAD) ================= */
-router.get("/:id/download", authRequired, downloadInvoicePDF);
-
-// router.get("/admin/:id/download", requireAdminSession, downloadInvoicePDF);
-
-// router.get(
-//   "/user/:id/download",
-//   authRequired,
-//   downloadInvoicePDF
-// );
+router.get(
+  "/user/:id/download",
+  authRequired,
+  downloadInvoicePDF
+);
 
 export default router;
