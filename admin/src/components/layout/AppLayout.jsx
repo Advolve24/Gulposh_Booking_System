@@ -32,8 +32,7 @@ export default function AppLayout({ children }) {
 
 
   return (
-    <div
-      className="min-h-screen bg-background overflow-x-hidden"
+    <div className="min-h-screen bg-background"
       style={{
         "--sidebar-width": sidebarCollapsed ? "80px" : "256px",
       }}

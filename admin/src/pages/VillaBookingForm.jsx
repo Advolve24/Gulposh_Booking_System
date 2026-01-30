@@ -395,7 +395,7 @@ export default function VillaBookingForm() {
         <div className="flex flex-col md:flex-row gap-5 relative">
 
           {/* ================= CALENDAR ================= */}
-          <div className="w-full md:w-[44%]">
+          <div className="w-full md:w-[44%] md:sticky md:top-24 self-start">
             <Label className="mb-4 block text-gray-600">Select Booking Dates</Label>
             <Calendar
               mode="range"
