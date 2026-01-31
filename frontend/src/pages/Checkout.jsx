@@ -90,13 +90,12 @@ export default function Checkout() {
   const [adults, setAdults] = useState(initialAdults);
   const [children, setChildren] = useState(initialChildren);
   const totalGuests = adults + children;
+  const [withMealState, setWithMealState] = useState(false);
   const withMeal = room?.mealMode === "only"
     ? true
     : room?.mealMode === "price"
       ? withMealState
       : false;
-
-  const [withMealState, setWithMealState] = useState(false);
 
   const [vegGuests, setVegGuests] = useState(0);
   const [nonVegGuests, setNonVegGuests] = useState(0);
