@@ -332,17 +332,30 @@ function RoomCard({ room, view, onDelete }) {
 
         {/* MEALS */}
         <div className="flex flex-wrap gap-2 pt-1">
-          {room.mealPriceVeg > 0 && (
-            <span className="px-2 py-1 rounded-full bg-muted text-xs">
-              Veg: ₹{room.mealPriceVeg}
+
+          {room.mealMode === "only" && (
+            <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs">
+              Meal Included
             </span>
           )}
-          {room.mealPriceNonVeg > 0 && (
-            <span className="px-2 py-1 rounded-full bg-muted text-xs">
-              Non-Veg: ₹{room.mealPriceNonVeg}
-            </span>
+
+          {room.mealMode === "price" && (
+            <>
+              {room.mealPriceVeg > 0 && (
+                <span className="px-2 py-1 rounded-full bg-muted text-xs">
+                  Veg: ₹{room.mealPriceVeg}
+                </span>
+              )}
+              {room.mealPriceNonVeg > 0 && (
+                <span className="px-2 py-1 rounded-full bg-muted text-xs">
+                  Non-Veg: ₹{room.mealPriceNonVeg}
+                </span>
+              )}
+            </>
           )}
+
         </div>
+
 
         {/* MOBILE / LIST QUICK ACTIONS */}
         <div className="flex gap-2 pt-3 lg:hidden">

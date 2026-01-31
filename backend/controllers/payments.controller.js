@@ -78,7 +78,7 @@ export const createOrder = async (req, res) => {
         nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
-     const subTotal = roomTotal + mealTotal;
+    const subTotal = roomTotal + mealTotal;
 
     /* ---------------- SINGLE TAX ---------------- */
     const taxSetting = await TaxSetting.findOne();
@@ -206,11 +206,18 @@ export const verifyPayment = async (req, res) => {
     }
 
     const roomTotal = nights * room.pricePerNight;
-    const mealTotal = withMeal
-      ? nights *
-      (vegGuests * room.mealPriceVeg +
-        nonVegGuests * room.mealPriceNonVeg)
-      : 0;
+    let mealTotal = 0;
+
+    if (room.mealMode === "only") {
+      mealTotal = 0;
+    }
+
+    if (room.mealMode === "price" && withMeal) {
+      mealTotal =
+        nights *
+        (vegGuests * room.mealPriceVeg +
+          nonVegGuests * room.mealPriceNonVeg);
+    }
 
     const subTotal = roomTotal + mealTotal;
 

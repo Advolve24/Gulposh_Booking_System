@@ -44,6 +44,7 @@ export default function RoomsNew() {
 
   const [name, setName] = useState("");
   const [pricePerNight, setPricePerNight] = useState("");
+  const [mealMode, setMealMode] = useState("");
   const [mealPriceVeg, setMealPriceVeg] = useState("");
   const [mealPriceNonVeg, setMealPriceNonVeg] = useState("");
   const [mealPriceCombo, setMealPriceCombo] = useState("");
@@ -94,6 +95,7 @@ export default function RoomsNew() {
         setName(r.name || "");
         setPricePerNight(String(r.pricePerNight ?? ""));
         setMaxGuests(String(r.maxGuests ?? ""));
+        setMealMode(r.mealMode || "");
         setMealPriceVeg(String(r.mealPriceVeg ?? ""));
         setMealPriceNonVeg(String(r.mealPriceNonVeg ?? ""));
         setDescription(r.description || "");
@@ -210,9 +212,10 @@ export default function RoomsNew() {
       const payload = {
         name: name.trim(),
         pricePerNight: Number(pricePerNight),
-         maxGuests: Number(maxGuests),
-        mealPriceVeg: Number(mealPriceVeg) || 0,
-        mealPriceNonVeg: Number(mealPriceNonVeg) || 0,
+        maxGuests: Number(maxGuests),
+        mealMode,
+        mealPriceVeg: mealMode === "price" ? Number(mealPriceVeg) : 0,
+        mealPriceNonVeg: mealMode === "price" ? Number(mealPriceNonVeg) : 0,
         description,
         coverImage: coverUrl,
         galleryImages: [...galleryUrls, ...newGallery],
@@ -248,10 +251,7 @@ export default function RoomsNew() {
 
 
       case "meals":
-        return (
-          mealPriceVeg ||
-          mealPriceNonVeg
-        );
+        return mealMode === "only" || mealMode === "price";
 
       case "images":
         return coverImage || coverFile;
@@ -419,18 +419,99 @@ export default function RoomsNew() {
           )}
 
           {step === 1 && (
-            <Section title="Meal Pricing">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-                <InputField
-                  label="Veg Meal (₹)"
-                  value={mealPriceVeg}
-                  set={setMealPriceVeg}
-                />
-                <InputField
-                  label="Non-Veg Meal (₹)"
-                  value={mealPriceNonVeg}
-                  set={setMealPriceNonVeg}
-                />
+            <Section title="Meal Options">
+
+              <div className="space-y-4">
+
+                {/* OPTION 1 */}
+                <div
+                  onClick={() => setMealMode(mealMode === "only" ? "" : "only")}
+                  className={`
+          flex items-center justify-between
+          border rounded-xl p-4 cursor-pointer
+          transition
+          ${mealMode === "only"
+                      ? "border-primary bg-primary/5"
+                      : "hover:bg-muted"}
+        `}
+                >
+                  <div>
+                    <div className="font-medium text-sm">
+                      Meal Included (Veg + Non-Veg)
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Guests can select meal without extra pricing
+                    </div>
+                  </div>
+
+                  <div
+                    className={`
+            h-5 w-5 rounded-full border flex items-center justify-center
+            ${mealMode === "only"
+                        ? "border-primary bg-primary"
+                        : "border-muted-foreground"}
+          `}
+                  >
+                    {mealMode === "only" && (
+                      <div className="h-2.5 w-2.5 rounded-full bg-white" />
+                    )}
+                  </div>
+                </div>
+
+                {/* OPTION 2 */}
+                <div
+                  onClick={() => setMealMode(mealMode === "price" ? "" : "price")}
+                  className={`
+          border rounded-xl p-4 cursor-pointer
+          transition space-y-3
+          ${mealMode === "price"
+                      ? "border-primary bg-primary/5"
+                      : "hover:bg-muted"}
+        `}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-sm">
+                        Custom Meal Pricing
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Define separate prices for veg and non-veg
+                      </div>
+                    </div>
+
+                    <div
+                      className={`
+              h-5 w-5 rounded-full border flex items-center justify-center
+              ${mealMode === "price"
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground"}
+            `}
+                    >
+                      {mealMode === "price" && (
+                        <div className="h-2.5 w-2.5 rounded-full bg-white" />
+                      )}
+                    </div>
+                  </div>
+
+                  {mealMode === "price" && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2"
+                    >
+                      <InputField
+                        label="Veg Meal Price (₹)"
+                        value={mealPriceVeg}
+                        set={setMealPriceVeg}
+                      />
+                      <InputField
+                        label="Non-Veg Meal Price (₹)"
+                        value={mealPriceNonVeg}
+                        set={setMealPriceNonVeg}
+                      />
+                    </div>
+                  )}
+                </div>
+
               </div>
             </Section>
           )}

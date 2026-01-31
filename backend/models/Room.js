@@ -23,8 +23,8 @@ const roomSchema = new mongoose.Schema(
 
     galleryImages: { type: [String], default: [] },
 
+    mealMode: { type: String, enum: ["only", "price"], default: "" },
     mealPriceVeg: { type: Number, default: 0 },
-
     mealPriceNonVeg: { type: Number, default: 0 },
 
     // mealPriceCombo: { type: Number, default: 0 },

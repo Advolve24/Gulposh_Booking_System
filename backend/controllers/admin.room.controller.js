@@ -49,10 +49,10 @@ export const createRoom = async (req, res) => {
     const {
       name,
       pricePerNight,
-      maxGuests, 
+      maxGuests,
+      mealMode,
       mealPriceVeg,
       mealPriceNonVeg,
-      mealPriceCombo,
       coverImage,
       galleryImages,
       description,
@@ -76,9 +76,13 @@ export const createRoom = async (req, res) => {
           ? Math.max(1, Number(maxGuests))
           : 1,
 
-      mealPriceVeg: Number(mealPriceVeg) || 0,
-      mealPriceNonVeg: Number(mealPriceNonVeg) || 0,
-      mealPriceCombo: Number(mealPriceCombo) || 0,
+      mealMode: mealMode || "",
+
+      mealPriceVeg:
+        mealMode === "price" ? Number(mealPriceVeg) || 0 : 0,
+
+      mealPriceNonVeg:
+        mealMode === "price" ? Number(mealPriceNonVeg) || 0 : 0,
 
       coverImage: coverImage || "",
       galleryImages: toArray(galleryImages),
@@ -118,10 +122,10 @@ export const updateRoom = async (req, res) => {
     const {
       name,
       pricePerNight,
-      maxGuests, 
+      maxGuests,
+      mealMode,
       mealPriceVeg,
       mealPriceNonVeg,
-      mealPriceCombo,
       coverImage,
       galleryImages,
       description,
@@ -150,8 +154,16 @@ export const updateRoom = async (req, res) => {
       update.mealPriceNonVeg = Number(mealPriceNonVeg) || 0;
     }
 
-    if (mealPriceCombo !== undefined) {
-      update.mealPriceCombo = Number(mealPriceCombo) || 0;
+    if (mealMode !== undefined) {
+      update.mealMode = mealMode || "";
+    }
+
+    if (mealMode === "price") {
+      update.mealPriceVeg = Number(mealPriceVeg) || 0;
+      update.mealPriceNonVeg = Number(mealPriceNonVeg) || 0;
+    } else {
+      update.mealPriceVeg = 0;
+      update.mealPriceNonVeg = 0;
     }
 
     if (coverImage !== undefined) {

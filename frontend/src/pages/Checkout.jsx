@@ -38,7 +38,6 @@ import {
 
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -61,7 +60,6 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { user, init, phoneLogin } = useAuth();
 
-  /* ================= ROOM ================= */
   const roomId = state?.roomId;
 
   const initialAdults = Number(state?.adults ?? 1);
@@ -89,15 +87,20 @@ export default function Checkout() {
   const [blackoutRanges, setBlackoutRanges] = useState([]);
   const toYMD = (d) => (d ? format(new Date(d), "yyyy-MM-dd") : null);
 
-  /* ================= GUESTS & MEALS ================= */
   const [adults, setAdults] = useState(initialAdults);
   const [children, setChildren] = useState(initialChildren);
   const totalGuests = adults + children;
-  const [withMeal, setWithMeal] = useState(false);
+  const withMeal = room?.mealMode === "only"
+    ? true
+    : room?.mealMode === "price"
+      ? withMealState
+      : false;
+
+  const [withMealState, setWithMealState] = useState(false);
+
   const [vegGuests, setVegGuests] = useState(0);
   const [nonVegGuests, setNonVegGuests] = useState(0);
 
-  /* ================= DATE RANGE ================= */
   const [range, setRange] = useState({
     from: state?.startDate ? new Date(state.startDate) : null,
     to: state?.endDate ? new Date(state.endDate) : null,
@@ -130,14 +133,10 @@ export default function Checkout() {
 
   const [taxPercent, setTaxPercent] = useState(0);
 
-
-
-  /* ================= OTP ================= */
   const [otpStep, setOtpStep] = useState("idle");
   const [otp, setOtp] = useState("");
   const pendingProceedRef = useRef(false);
 
-  /* ================= LOCATION DATA ================= */
   const countries = getAllCountries();
   const statesList = address.country
     ? getStatesByCountry(address.country)
@@ -148,7 +147,6 @@ export default function Checkout() {
       : [];
 
   useEffect(() => {
-    // global bookings + blocked
     api.get("/rooms/disabled/all").then(({ data }) =>
       setBookedAll(
         (data || []).map((b) => ({
@@ -158,7 +156,6 @@ export default function Checkout() {
       )
     );
 
-    // global blackouts
     api.get("/blackouts").then(({ data }) =>
       setBlackoutRanges(
         (data || []).map((b) => ({
@@ -170,13 +167,11 @@ export default function Checkout() {
   }, []);
 
 
-  /* ================= LOAD ROOM ================= */
   useEffect(() => {
     if (!roomId) return navigate("/", { replace: true });
     api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
   }, [roomId, navigate]);
 
-  /* ================= AUTOFILL PROFILE (READ-ONLY) ================= */
   useEffect(() => {
     if (!user) return;
 
@@ -243,13 +238,21 @@ export default function Checkout() {
   }, [nights, room]);
 
   const mealTotal = useMemo(() => {
-    if (!withMeal || !room) return 0;
-    return (
-      nights *
-      (vegGuests * room.mealPriceVeg +
-        nonVegGuests * room.mealPriceNonVeg)
-    );
-  }, [withMeal, room, nights, vegGuests, nonVegGuests]);
+    if (!room) return 0;
+
+    if (room.mealMode === "only") return 0;
+
+    if (room.mealMode === "price" && withMeal) {
+      return (
+        nights *
+        (vegGuests * room.mealPriceVeg +
+          nonVegGuests * room.mealPriceNonVeg)
+      );
+    }
+
+    return 0;
+  }, [room, nights, withMeal, vegGuests, nonVegGuests]);
+
 
   const subTotal = useMemo(() => {
     return roomTotal + mealTotal;
@@ -267,7 +270,7 @@ export default function Checkout() {
   const proceedPayment = async () => {
     const g = totalGuests;
 
-    if (withMeal) {
+    if (room.mealMode === "price" && withMeal) {
       const mealGuests = vegGuests + nonVegGuests;
 
       if (mealGuests < 1) {
@@ -280,6 +283,7 @@ export default function Checkout() {
         return;
       }
     }
+
 
     if (!form.email || !form.email.trim()) {
       toast.error("Email is required for booking confirmation");
@@ -635,7 +639,13 @@ export default function Checkout() {
 
                   <div className="flex items-center gap-2">
                     <Utensils className="w-4 h-4" />
-                    <span>{withMeal ? "With Meals" : "Without Meals"}</span>
+                    <span>
+                      {room.mealMode === "only"
+                        ? "Meals Included"
+                        : withMeal
+                          ? "With Meals"
+                          : "Without Meals"}
+                    </span>
                   </div>
                 </div>
 
@@ -679,12 +689,17 @@ export default function Checkout() {
                     </span>
                   </div>
 
-                  {withMeal && (
+                  {room.mealMode === "price" && withMeal && (
                     <div className="flex justify-between">
                       <span>Meals</span>
-                      <span>
-                        ₹{mealTotal.toLocaleString("en-IN")}
-                      </span>
+                      <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+
+                  {room.mealMode === "only" && (
+                    <div className="flex justify-between text-green-700">
+                      <span>Meals</span>
+                      <span>Included</span>
                     </div>
                   )}
 
@@ -883,22 +898,31 @@ export default function Checkout() {
 
             {/* ================= MEALS TOGGLE ================= */}
             <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <Checkbox
-                  checked={withMeal}
-                  onCheckedChange={(v) => {
-                    setWithMeal(Boolean(v));
-                    setVegGuests(0);
-                    setNonVegGuests(0);
-                  }}
-                />
-                <span className="flex items-center gap-1">
-                  <Utensils className="w-4 h-4" />
-                  Include Meals
-                </span>
-              </Label>
+              {room.mealMode === "price" && (
+                <Label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={withMealState}
+                    onCheckedChange={(v) => {
+                      setWithMealState(Boolean(v));
+                      setVegGuests(0);
+                      setNonVegGuests(0);
+                    }}
+                  />
+                  <span className="flex items-center gap-1">
+                    <Utensils className="w-4 h-4" />
+                    Include Meals
+                  </span>
+                </Label>
+              )}
 
-              {withMeal && room && (
+
+              {room.mealMode === "only" && (
+                <div className="rounded-xl border bg-green-50 p-4 text-sm text-green-700">
+                  Meals are included in your stay (Veg & Non-Veg)
+                </div>
+              )}
+
+              {room.mealMode === "price" && withMeal && (
                 <div className="rounded-xl border bg-[#faf7f4] p-4 space-y-3">
                   <p className="text-xs text-muted-foreground">
                     Meal prices are per guest per night
@@ -915,9 +939,9 @@ export default function Checkout() {
                   </div>
                 </div>
               )}
+
             </div>
             {/* ================= MEALS ================= */}
-            {/* ================= MEAL GUEST COUNTS ================= */}
             {withMeal && (
               <div className="space-y-4 pt-2">
 

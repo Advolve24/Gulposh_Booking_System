@@ -357,13 +357,13 @@ export default function AdminRoomView() {
             <div className="sticky top-[96px] self-start bg-card border border-border rounded-xl p-5 space-y-4">
               <h3 className="font-semibold">Pricing</h3>
 
-                              {/* MAX GUESTS */}
-                {room.maxGuests && (
-                  <div className="flex items-center justify-between text-sm border border-border rounded-lg px-3 py-2 bg-muted/40">
-                    <span className="text-muted-foreground">Max Guests</span>
-                    <span className="font-medium">{room.maxGuests}</span>
-                  </div>
-                )}
+              {/* MAX GUESTS */}
+              {room.maxGuests && (
+                <div className="flex items-center justify-between text-sm border border-border rounded-lg px-3 py-2 bg-muted/40">
+                  <span className="text-muted-foreground">Max Guests</span>
+                  <span className="font-medium">{room.maxGuests}</span>
+                </div>
+              )}
 
               <div className="bg-muted rounded-lg p-4">
                 <div className="text-sm text-muted-foreground">Per Night</div>
@@ -373,19 +373,37 @@ export default function AdminRoomView() {
               </div>
 
               <div className="text-sm space-y-2">
-                {room.mealPriceVeg > 0 && (
-                  <div className="flex justify-between">
-                    <span>Vegetarian</span>
-                    <span>₹{room.mealPriceVeg}</span>
+
+                {room.mealMode === "only" && (
+                  <div className="flex items-center justify-between border border-green-200 bg-green-50 rounded-lg px-3 py-2">
+                    <span className="font-medium text-green-700">
+                      Meal Included
+                    </span>
+                    <span className="text-green-700 text-xs">
+                      Veg + Non-Veg
+                    </span>
                   </div>
                 )}
-                {room.mealPriceNonVeg > 0 && (
-                  <div className="flex justify-between">
-                    <span>Non-Vegetarian</span>
-                    <span>₹{room.mealPriceNonVeg}</span>
-                  </div>
+
+                {room.mealMode === "price" && (
+                  <>
+                    {room.mealPriceVeg > 0 && (
+                      <div className="flex justify-between">
+                        <span>Vegetarian</span>
+                        <span>₹{room.mealPriceVeg}</span>
+                      </div>
+                    )}
+                    {room.mealPriceNonVeg > 0 && (
+                      <div className="flex justify-between">
+                        <span>Non-Vegetarian</span>
+                        <span>₹{room.mealPriceNonVeg}</span>
+                      </div>
+                    )}
+                  </>
                 )}
+
               </div>
+
             </div>
           </aside>
         </div>
