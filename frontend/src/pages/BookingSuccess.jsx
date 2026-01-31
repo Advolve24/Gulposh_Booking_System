@@ -93,7 +93,6 @@ export default function BookingSuccess() {
     const confettiRan = { current: false };
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
-    const mealMode = room?.mealMode;
 
     useLayoutEffect(() => {
         if (confettiRan.current) return;
@@ -120,6 +119,7 @@ export default function BookingSuccess() {
     if (loading || !booking) return null;
 
     const room = booking.room;
+    const mealMode = room?.mealMode;
     const nights = calcNights(
         booking.startDate,
         booking.endDate
