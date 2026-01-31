@@ -40,6 +40,7 @@ export default function BookingViewPopup({
   );
 
   const isVilla = booking.isVilla;
+  const mealMode = booking.room?.mealMode;
   const vegPrice = booking.room?.mealPriceVeg || 0;
   const nonVegPrice = booking.room?.mealPriceNonVeg || 0;
   const vegTotal =
@@ -137,35 +138,35 @@ export default function BookingViewPopup({
                 </p>
 
                 {/* Meal info */}
-                {(booking.vegGuests || booking.nonVegGuests) && (
+                {mealMode === "only" && (
+                  <div className="text-muted-foreground text-xs">
+                    Meals included (Veg & Non-Veg)
+                  </div>
+                )}
+
+                {mealMode === "price" && (booking.vegGuests || booking.nonVegGuests) && (
                   <div className="text-muted-foreground text-xs space-y-0.5">
-                    {/* VILLA → only counts */}
-                    {isVilla && (
+                    {booking.vegGuests > 0 && (
                       <p>
-                        Veg: {booking.vegGuests || 0} · Non-Veg: {booking.nonVegGuests || 0}
+                        Veg: ₹{vegPrice} × {booking.vegGuests} × {nights} night(s)
+                        {" = "}
+                        <b>₹{vegTotal}</b>
                       </p>
                     )}
 
-                    {/* ROOM → per-person price breakdown */}
-                    {!isVilla && (
-                      <>
-                        {booking.vegGuests > 0 && (
-                          <p>
-                            Veg: ₹{vegPrice} × {booking.vegGuests} × {nights} night(s)
-                            {" = "}
-                            <b>₹{vegTotal}</b>
-                          </p>
-                        )}
-
-                        {booking.nonVegGuests > 0 && (
-                          <p>
-                            Non-Veg: ₹{nonVegPrice} × {booking.nonVegGuests} × {nights} night(s)
-                            {" = "}
-                            <b>₹{nonVegTotal}</b>
-                          </p>
-                        )}
-                      </>
+                    {booking.nonVegGuests > 0 && (
+                      <p>
+                        Non-Veg: ₹{nonVegPrice} × {booking.nonVegGuests} × {nights} night(s)
+                        {" = "}
+                        <b>₹{nonVegTotal}</b>
+                      </p>
                     )}
+                  </div>
+                )}
+
+                {mealMode === "none" && (
+                  <div className="text-muted-foreground text-xs">
+                    Meals not included
                   </div>
                 )}
 

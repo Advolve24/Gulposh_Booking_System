@@ -5,7 +5,8 @@ import { format } from "date-fns";
 import { useAuth } from "@/store/authStore";
 
 
-import { Check,
+import {
+    Check,
     MapPin,
     Calendar,
     Users,
@@ -20,7 +21,6 @@ import { api } from "@/api/http";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
-/* ---------------- HELPERS ---------------- */
 
 const fmt = (d) =>
     format(new Date(d), "dd MMM yyyy");
@@ -34,31 +34,28 @@ const calcNights = (start, end) =>
         )
     );
 
-/* ---------------- CONFETTI BLAST (TOP → FULL SCREEN) ---------------- */
 
 const fireConfetti = () => {
     const colors = [
-        "#ff3b3b", // red
-        "#ffb703", // yellow
-        "#3a86ff", // blue
-        "#8338ec", // purple
-        "#06d6a0", // green
-        "#ff006e", // pink
+        "#ff3b3b",
+        "#ffb703",
+        "#3a86ff",
+        "#8338ec",
+        "#06d6a0",
+        "#ff006e",
     ];
 
-    /* ---------- PHASE 1: INSTANT STRONG BLAST ---------- */
     confetti({
-        particleCount: 160,       // 🔥 strong instant impact
+        particleCount: 160,
         spread: 90,
         startVelocity: 65,
         gravity: 0.8,
         ticks: 200,
         scalar: 1,
         colors,
-        origin: { x: 0.5, y: -0.15 }, // center-top
+        origin: { x: 0.5, y: -0.15 },
     });
 
-    /* ---------- PHASE 2: SOFT CONTINUOUS FALL ---------- */
     const duration = 1100;
     const animationEnd = Date.now() + duration;
 
@@ -77,8 +74,8 @@ const fireConfetti = () => {
             scalar: 1,
             colors,
             origin: {
-                x: Math.random(), // full width coverage
-                y: -0.15,         // 🔥 always from top
+                x: Math.random(),
+                y: -0.15,
             },
         });
 
@@ -88,26 +85,25 @@ const fireConfetti = () => {
     frame();
 };
 
-/* ---------------- COMPONENT ---------------- */
 
 export default function BookingSuccess() {
     const { user } = useAuth();
     const { id } = useParams();
     const navigate = useNavigate();
-    const confettiRan = { current: false }; // works even in StrictMode
+    const confettiRan = { current: false };
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
+    const mealMode = room?.mealMode;
 
-    /* ---------------- LOAD BOOKING ---------------- */
     useLayoutEffect(() => {
-        if (confettiRan.current) return; // 🔒 run once only
+        if (confettiRan.current) return;
         confettiRan.current = true;
 
-        fireConfetti(); // 💥 INSTANT on page load
+        fireConfetti();
     }, []);
 
     useEffect(() => {
-        fireConfetti(); // 🎉 blast on entry
+        fireConfetti();
 
         (async () => {
             try {
@@ -134,12 +130,6 @@ export default function BookingSuccess() {
         room?.coverImage ||
         "/placeholder.jpg";
 
-    /* ---------------- UI ---------------- */
-
-//     useEffect(() => {
-//   // ✅ Clear Home search card data after successful booking
-//   sessionStorage.removeItem("searchParams");
-// }, []);
 
 
     return (
@@ -215,9 +205,18 @@ export default function BookingSuccess() {
                                 {booking.guests} Guests
                             </div>
 
-                            <div className="text-muted-foreground">
-                                {booking.withMeal ? "With Meals" : "Without Meals"}
-                            </div>
+                            {mealMode === "price" && booking.withMeal && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    Veg: {booking.vegGuests || 0} · Non-Veg: {booking.nonVegGuests || 0}
+                                </div>
+                            )}
+
+                            {mealMode === "only" && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    Veg & Non-Veg meals included
+                                </div>
+                            )}
+
                         </div>
 
                         <Separator />
