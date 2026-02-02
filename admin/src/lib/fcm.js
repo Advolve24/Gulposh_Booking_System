@@ -1,4 +1,3 @@
-// admin/src/lib/fcm.js
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { firebaseApp } from "./firebase";
 
@@ -11,27 +10,37 @@ import { firebaseApp } from "./firebase";
  */
 export async function initFCM(onNotification) {
   try {
-    // 🔹 Browser support check
+    // 🔐 HARD SECURITY GUARD
+    if (
+      location.protocol !== "https:" &&
+      location.hostname !== "localhost"
+    ) {
+      console.warn("FCM disabled: requires HTTPS");
+      return null;
+    }
+
     if (!("serviceWorker" in navigator)) {
       console.warn("❌ Service workers not supported");
       return null;
     }
 
-    // 🔹 Register Firebase Messaging Service Worker
+    if (!("Notification" in window)) {
+      console.warn("❌ Notifications not supported");
+      return null;
+    }
+
     const swRegistration = await navigator.serviceWorker.register(
       "/firebase-messaging-sw.js"
     );
 
     const messaging = getMessaging(firebaseApp);
 
-    // 🔹 Ask permission
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       console.warn("🔕 Notification permission denied");
       return null;
     }
 
-    // 🔹 Get FCM token (IMPORTANT: pass service worker)
     const token = await getToken(messaging, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
       serviceWorkerRegistration: swRegistration,
@@ -44,10 +53,7 @@ export async function initFCM(onNotification) {
 
     console.log("✅ FCM TOKEN:", token);
 
-    // 🔔 FOREGROUND messages (tab open)
     onMessage(messaging, (payload) => {
-      console.log("🔔 FCM FOREGROUND MESSAGE:", payload);
-
       const notif = {
         title: payload.notification?.title || "Notification",
         message: payload.notification?.body || "",
