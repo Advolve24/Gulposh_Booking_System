@@ -123,33 +123,35 @@ export default function App() {
 
 
   useEffect(() => {
-    if (!isAdmin) return;
-    if (fcmInitRef.current) return;
+  if (!isAdmin) return;
 
+  // 🔐 Extra hard guard at app level
+  if (!window.isSecureContext) {
+    console.warn("FCM skipped: not secure context");
+    return;
+  }
 
-    fcmInitRef.current = true;
+  if (fcmInitRef.current) return;
+  fcmInitRef.current = true;
 
-
-    async function setupFCM() {
+  async function setupFCM() {
+    try {
       const token = await initFCM((notification) => {
-        console.log("🔔 FCM NOTIFICATION:", notification);
         handleIncomingNotification(notification);
       });
 
-
       if (!token) return;
 
-
-      try {
-        await saveAdminFcmToken(token);
-        console.log("✅ FCM token saved");
-      } catch (err) {
-        console.error("❌ Failed to save FCM token", err);
-      }
+      await saveAdminFcmToken(token);
+      console.log("✅ FCM token saved");
+    } catch (err) {
+      console.warn("FCM completely disabled:", err);
     }
+  }
 
-    setupFCM();
-  }, [isAdmin]);
+  setupFCM();
+}, [isAdmin]);
+
 
   return (
     <BrowserRouter>
