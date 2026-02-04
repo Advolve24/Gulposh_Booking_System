@@ -36,7 +36,7 @@ api.interceptors.response.use(
       setUser(null);
 
       if (!window.location.pathname.startsWith("/login")) {
-        window.location.replace("/login");
+        window.location.replace("/admin/login");
       }
     }
 
