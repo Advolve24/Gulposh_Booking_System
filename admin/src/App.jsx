@@ -144,7 +144,7 @@ export default function App() {
               !ready ? null : isAdmin ? (
                 <Navigate to="/dashboard" replace />
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="/admin/login" replace />
               )
             }
           />
