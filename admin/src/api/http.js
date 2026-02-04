@@ -35,11 +35,13 @@ api.interceptors.response.use(
       const { setUser } = useAuth.getState();
       setUser(null);
 
-      if (!window.location.pathname.startsWith("/login")) {
-        window.location.replace("/admin/login");
+      const adminLoginPath = "/admin/login";
+      if (window.location.pathname !== adminLoginPath) {
+        window.location.replace(adminLoginPath);
       }
     }
 
     return Promise.reject(err);
   }
 );
+
