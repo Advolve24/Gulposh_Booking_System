@@ -154,7 +154,7 @@ export default function App() {
 
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/admin">
       <InitAuthWatcher>
         <Routes>
           <Route
