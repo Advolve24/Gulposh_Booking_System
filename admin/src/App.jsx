@@ -1,12 +1,6 @@
 import { useEffect, useRef } from "react";
 import { socket } from "./lib/socket";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { toast } from "sonner";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { useAuth } from "./store/auth";
 import { useNotificationStore } from "./store/useNotificationStore";
@@ -32,6 +26,7 @@ import Settings from "./pages/Settings";
 import { getAdminNotifications } from "@/api/admin";
 
 
+/* ==================== AUTH INIT WRAPPER ==================== */
 function InitAuthWatcher({ children }) {
   const { init, ready } = useAuth();
   const ran = useRef(false);
@@ -48,22 +43,18 @@ function InitAuthWatcher({ children }) {
 
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const isAdmin = Boolean(user?.isAdmin);
 
-  /* 🔔 notification store */
   const setInitial = useNotificationStore((s) => s.setInitial);
   const addNotification = useNotificationStore((s) => s.addNotification);
+
   const socketInitRef = useRef(false);
   const fcmInitRef = useRef(false);
 
-
   /* ================= LOAD EXISTING NOTIFICATIONS ================= */
-
-
   useEffect(() => {
     if (!isAdmin) return;
-
 
     (async () => {
       try {
@@ -75,10 +66,7 @@ export default function App() {
     })();
   }, [isAdmin, setInitial]);
 
-
   /* ================= SOCKET.IO ================= */
-
-
   useEffect(() => {
     if (!isAdmin) {
       if (socket.connected) socket.disconnect();
@@ -86,81 +74,74 @@ export default function App() {
       return;
     }
 
-
     if (socketInitRef.current) return;
     socketInitRef.current = true;
 
-
     socket.connect();
-
 
     socket.on("connect", () => {
       console.log("🟢 Admin socket connected:", socket.id);
       socket.emit("admin:online");
     });
 
-
     socket.on("disconnect", (reason) => {
       console.log("🔴 Admin socket disconnected:", reason);
     });
 
-
     socket.on("ADMIN_NOTIFICATION", (payload) => {
       console.log("🔔 SOCKET NOTIFICATION:", payload);
-      handleIncomingNotification(payload);
+      addNotification(payload);
     });
-
 
     return () => {
       socket.off("connect");
       socket.off("disconnect");
       socket.off("ADMIN_NOTIFICATION");
     };
-  }, [isAdmin]);
-
+  }, [isAdmin, addNotification]);
 
   /* ================= FCM ================= */
-
-
   useEffect(() => {
-  if (!isAdmin) return;
+    if (!isAdmin) return;
 
-  // 🔐 Extra hard guard at app level
-  if (!window.isSecureContext) {
-    console.warn("FCM skipped: not secure context");
-    return;
-  }
-
-  if (fcmInitRef.current) return;
-  fcmInitRef.current = true;
-
-  async function setupFCM() {
-    try {
-      const token = await initFCM((notification) => {
-        handleIncomingNotification(notification);
-      });
-
-      if (!token) return;
-
-      await saveAdminFcmToken(token);
-      console.log("✅ FCM token saved");
-    } catch (err) {
-      console.warn("FCM completely disabled:", err);
+    if (!window.isSecureContext) {
+      console.warn("FCM skipped: not secure context");
+      return;
     }
-  }
 
-  setupFCM();
-}, [isAdmin]);
+    if (fcmInitRef.current) return;
+    fcmInitRef.current = true;
+
+    async function setupFCM() {
+      try {
+        const token = await initFCM((notification) => {
+          addNotification(notification);
+        });
+
+        if (!token) return;
+
+        await saveAdminFcmToken(token);
+        console.log("✅ FCM token saved");
+      } catch (err) {
+        console.warn("FCM completely disabled:", err);
+      }
+    }
+
+    setupFCM();
+  }, [isAdmin, addNotification]);
 
 
+  /* ================= ROUTES ================= */
   return (
     <BrowserRouter basename="/admin">
       <InitAuthWatcher>
         <Routes>
+
+          {/* Root redirect */}
           <Route
             path="/"
             element={
-              isAdmin ? (
+              !ready ? null : isAdmin ? (
                 <Navigate to="/dashboard" replace />
               ) : (
                 <Navigate to="/login" replace />
@@ -168,9 +149,22 @@ export default function App() {
             }
           />
 
-          <Route path="/login" element={<Login />} />
+          {/* Login */}
+          <Route
+            path="/login"
+            element={
+              !ready ? null : isAdmin ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <Login />
+              )
+            }
+          />
+
+          {/* Logout */}
           <Route path="/logout" element={<Logout />} />
 
+          {/* Protected Routes */}
           <Route
             path="/dashboard"
             element={
@@ -179,7 +173,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/rooms"
             element={
@@ -188,7 +181,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/rooms/new"
             element={
@@ -197,7 +189,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/rooms/view/:id"
             element={
@@ -206,7 +197,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/users"
             element={
@@ -215,7 +205,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/bookings"
             element={
@@ -224,7 +213,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route path="/bookings/:id" element={<BookingViewPage />} />
           <Route
             path="/bookings/:id/invoice"
@@ -234,8 +222,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-
           <Route
             path="/villa-booking"
             element={
@@ -244,7 +230,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/invoice/:bookingId"
             element={
@@ -253,8 +238,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-
           <Route
             path="/block-dates"
             element={
@@ -263,7 +246,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/settings"
             element={
@@ -273,11 +255,11 @@ export default function App() {
             }
           />
 
-
+          {/* Fallback */}
           <Route
             path="*"
             element={
-              isAdmin ? (
+              !ready ? null : isAdmin ? (
                 <Navigate to="/dashboard" replace />
               ) : (
                 <Navigate to="/login" replace />
