@@ -154,18 +154,34 @@ export default function App() {
 
 
   return (
-    <BrowserRouter basename="/admin">
+    <BrowserRouter basename="/admin/">
       <InitAuthWatcher>
         <Routes>
-          <Route path="/" element={isAdmin ? <Navigate to="dashboard" replace /> : <Navigate to="login" replace />} />
+          <Route
+            path="/"
+            element={
+              isAdmin ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
 
-          <Route path="login" element={<Login />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/logout" element={<Logout />} />
 
-          <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
-            path="rooms"
+            path="/rooms"
             element={
               <ProtectedRoute>
                 <Rooms />
@@ -174,7 +190,7 @@ export default function App() {
           />
 
           <Route
-            path="rooms/new"
+            path="/rooms/new"
             element={
               <ProtectedRoute>
                 <RoomsNew />
@@ -183,7 +199,7 @@ export default function App() {
           />
 
           <Route
-            path="rooms/view/:id"
+            path="/rooms/view/:id"
             element={
               <ProtectedRoute>
                 <AdminRoomView />
@@ -192,7 +208,7 @@ export default function App() {
           />
 
           <Route
-            path="users"
+            path="/users"
             element={
               <ProtectedRoute>
                 <Users />
@@ -201,7 +217,7 @@ export default function App() {
           />
 
           <Route
-            path="bookings"
+            path="/bookings"
             element={
               <ProtectedRoute>
                 <Bookings />
@@ -209,9 +225,9 @@ export default function App() {
             }
           />
 
-          <Route path="bookings/:id" element={<BookingViewPage />} />
+          <Route path="/bookings/:id" element={<BookingViewPage />} />
           <Route
-            path="bookings/:id/invoice"
+            path="/bookings/:id/invoice"
             element={
               <ProtectedRoute>
                 <InvoicePage />
@@ -221,7 +237,7 @@ export default function App() {
 
 
           <Route
-            path="villa-booking"
+            path="/villa-booking"
             element={
               <ProtectedRoute>
                 <VillaBookingForm />
@@ -230,7 +246,7 @@ export default function App() {
           />
 
           <Route
-            path="invoice/:bookingId"
+            path="/invoice/:bookingId"
             element={
               <ProtectedRoute>
                 <AdminInvoiceTemplate />
@@ -240,7 +256,7 @@ export default function App() {
 
 
           <Route
-            path="block-dates"
+            path="/block-dates"
             element={
               <ProtectedRoute>
                 <BlockDates />
@@ -249,7 +265,7 @@ export default function App() {
           />
 
           <Route
-            path="settings"
+            path="/settings"
             element={
               <ProtectedRoute>
                 <Settings />
@@ -258,7 +274,16 @@ export default function App() {
           />
 
 
-          <Route path="*" element={isAdmin ? <Navigate to="dashboard" replace /> : <Navigate to="login" replace />} />
+          <Route
+            path="*"
+            element={
+              isAdmin ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
         </Routes>
       </InitAuthWatcher>
     </BrowserRouter>
