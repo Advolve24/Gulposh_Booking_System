@@ -24,7 +24,7 @@ import taxRoutes from "./routes/tax.routes.js";
 
 import http from "http";
 
-import { initSocket } from "./lib/socket.js"; // ✅ NEW (Socket.IO init)
+import { initSocket } from "./lib/socket.js"; 
 
 
 const app = express();
@@ -36,7 +36,8 @@ const ALLOWED_ORIGINS = [
   "http://localhost:5174",
   "https://gulposhbookingsystem.netlify.app",
   "https://gulposhadminsystem.netlify.app",
-  "https://gulposh-booking-system.vercel.app"
+  "https://gulposh-booking-system.vercel.app",
+  "https://booking.villagulposh.com","https://admin.villagulposh.com"
 ];
 
 app.use(
@@ -55,6 +56,8 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.options("*", cors());
 
 app.use(express.json());
 app.use(cookieParser());

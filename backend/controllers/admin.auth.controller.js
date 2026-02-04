@@ -39,8 +39,8 @@ if (!user.passwordHash)
 
     res.cookie("admin_token", token, {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  secure: true,
+  sameSite: "none",
   maxAge: 60 * 60 * 1000,
 });
 
@@ -62,11 +62,11 @@ res.json({
 
 export const adminLogout = (_req, res) => {
   res.clearCookie("admin_token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    path: "/",
-  });
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  path: "/",
+});
   res.json({ message: "Logged out" });
 };
 
