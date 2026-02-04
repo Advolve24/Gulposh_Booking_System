@@ -25,7 +25,6 @@ import BlockDates from "./pages/BlockDates";
 import Settings from "./pages/Settings";
 import { getAdminNotifications } from "@/api/admin";
 
-
 /* ==================== AUTH INIT WRAPPER ==================== */
 function InitAuthWatcher({ children }) {
   const { init, ready } = useAuth();
@@ -40,7 +39,6 @@ function InitAuthWatcher({ children }) {
   if (!ready) return null;
   return children;
 }
-
 
 export default function App() {
   const { user, ready } = useAuth();
@@ -130,31 +128,29 @@ export default function App() {
     setupFCM();
   }, [isAdmin, addNotification]);
 
-
   /* ================= ROUTES ================= */
   return (
     <BrowserRouter basename="/admin">
       <InitAuthWatcher>
         <Routes>
-
           {/* Root redirect */}
           <Route
             path="/"
             element={
               !ready ? null : isAdmin ? (
-                <Navigate to="/dashboard" replace />
+                <Navigate to="dashboard" replace />
               ) : (
-                <Navigate to="/admin/login" replace />
+                <Navigate to="login" replace />
               )
             }
           />
 
           {/* Login */}
           <Route
-            path="/login"
+            path="login"
             element={
               !ready ? null : isAdmin ? (
-                <Navigate to="/dashboard" replace />
+                <Navigate to="dashboard" replace />
               ) : (
                 <Login />
               )
@@ -162,11 +158,11 @@ export default function App() {
           />
 
           {/* Logout */}
-          <Route path="/logout" element={<Logout />} />
+          <Route path="logout" element={<Logout />} />
 
           {/* Protected Routes */}
           <Route
-            path="/dashboard"
+            path="dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
@@ -174,7 +170,7 @@ export default function App() {
             }
           />
           <Route
-            path="/rooms"
+            path="rooms"
             element={
               <ProtectedRoute>
                 <Rooms />
@@ -182,7 +178,7 @@ export default function App() {
             }
           />
           <Route
-            path="/rooms/new"
+            path="rooms/new"
             element={
               <ProtectedRoute>
                 <RoomsNew />
@@ -190,7 +186,7 @@ export default function App() {
             }
           />
           <Route
-            path="/rooms/view/:id"
+            path="rooms/view/:id"
             element={
               <ProtectedRoute>
                 <AdminRoomView />
@@ -198,7 +194,7 @@ export default function App() {
             }
           />
           <Route
-            path="/users"
+            path="users"
             element={
               <ProtectedRoute>
                 <Users />
@@ -206,16 +202,16 @@ export default function App() {
             }
           />
           <Route
-            path="/bookings"
+            path="bookings"
             element={
               <ProtectedRoute>
                 <Bookings />
               </ProtectedRoute>
             }
           />
-          <Route path="/bookings/:id" element={<BookingViewPage />} />
+          <Route path="bookings/:id" element={<BookingViewPage />} />
           <Route
-            path="/bookings/:id/invoice"
+            path="bookings/:id/invoice"
             element={
               <ProtectedRoute>
                 <InvoicePage />
@@ -223,7 +219,7 @@ export default function App() {
             }
           />
           <Route
-            path="/villa-booking"
+            path="villa-booking"
             element={
               <ProtectedRoute>
                 <VillaBookingForm />
@@ -231,7 +227,7 @@ export default function App() {
             }
           />
           <Route
-            path="/invoice/:bookingId"
+            path="invoice/:bookingId"
             element={
               <ProtectedRoute>
                 <AdminInvoiceTemplate />
@@ -239,7 +235,7 @@ export default function App() {
             }
           />
           <Route
-            path="/block-dates"
+            path="block-dates"
             element={
               <ProtectedRoute>
                 <BlockDates />
@@ -247,7 +243,7 @@ export default function App() {
             }
           />
           <Route
-            path="/settings"
+            path="settings"
             element={
               <ProtectedRoute>
                 <Settings />
@@ -260,9 +256,9 @@ export default function App() {
             path="*"
             element={
               !ready ? null : isAdmin ? (
-                <Navigate to="/dashboard" replace />
+                <Navigate to="dashboard" replace />
               ) : (
-                <Navigate to="/login" replace />
+                <Navigate to="login" replace />
               )
             }
           />
