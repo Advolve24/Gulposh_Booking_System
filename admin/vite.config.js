@@ -1,9 +1,10 @@
+// vite.config.js
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
-  base: "/admin/",  
+  base: "/admin/",  // important for admin SPA
   plugins: [react()],
   resolve: {
     alias: {

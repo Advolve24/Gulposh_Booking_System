@@ -157,28 +157,12 @@ export default function App() {
     <BrowserRouter basename="/admin">
       <InitAuthWatcher>
         <Routes>
-          <Route
-            path="/"
-            element={
-              isAdmin ? (
-                <Navigate to="dashboard" replace />
-              ) : (
-                <Navigate to="login" replace />
-              )
-            }
-          />
+          <Route path="/" element={isAdmin ? <Navigate to="dashboard" replace /> : <Navigate to="login" replace />} />
 
           <Route path="login" element={<Login />} />
           <Route path="/logout" element={<Logout />} />
 
-          <Route
-            path="dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
           <Route
             path="rooms"
@@ -274,12 +258,7 @@ export default function App() {
           />
 
 
-          <Route
-            path="*"
-            element={
-              isAdmin ? <Navigate to="dashboard" replace /> : <Navigate to="login" replace />
-            }
-          />
+          <Route path="*" element={isAdmin ? <Navigate to="dashboard" replace /> : <Navigate to="login" replace />} />
         </Routes>
       </InitAuthWatcher>
     </BrowserRouter>
