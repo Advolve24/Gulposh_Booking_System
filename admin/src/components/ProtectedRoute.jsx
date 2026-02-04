@@ -9,5 +9,6 @@ export default function ProtectedRoute({ children }) {
   if (!user?.isAdmin) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
+
   return children;
 }
