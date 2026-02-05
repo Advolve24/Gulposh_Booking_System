@@ -39,7 +39,8 @@ if (!user.passwordHash)
     res.cookie("admin_token", token, {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  sameSite: "none",
+  domain: ".villagulposh.com", 
   maxAge: 60 * 60 * 1000,
 });
 
@@ -64,7 +65,8 @@ export const adminLogout = (_req, res) => {
   res.clearCookie("admin_token", {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  sameSite: "none",
+  domain: ".villagulposh.com", 
 });
 
   res.json({ message: "Logged out" });
