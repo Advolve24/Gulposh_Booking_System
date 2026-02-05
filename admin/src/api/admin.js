@@ -1,19 +1,15 @@
-// admin.js
 import { api } from "./http";
 
-// --- Auth for admin panel ---
 export const adminLogin  = (email, password) => api.post("/admin/login", { email, password }).then(r => r.data);
 export const adminLogout = () => api.post("/admin/logout");
 export const adminMe     = () => api.get("/admin/me").then(r => r.data);
 
-// --- Rooms ---
 export const createRoom  = (payload) => api.post("/admin/rooms", payload).then(r => r.data);
 export const listRooms   = () => api.get("/admin/rooms").then(r => r.data);
 export const getRoomAdmin = async (id) => (await api.get(`/admin/rooms/${id}`)).data;
 export const updateRoom = async (id, payload) => (await api.put(`/admin/rooms/${id}`, payload)).data;
 export const deleteRoom = (id) => api.delete(`/admin/rooms/${id}`).then(r => r.data);
 
-// --- Users ---
 export const listUsersAdmin = () => api.get("/admin/users").then(r => r.data);
 export const getUserAdminById = (id) => api.get(`/admin/users/${id}`).then(r => r.data);
 export const updateUserAdmin = (id, payload) => api.put(`/admin/users/${id}`, payload).then(r => r.data);
@@ -68,30 +64,20 @@ export const getBookingAdmin = (id) =>
 export const adminGlobalSearch = (q) =>
   api.get(`/admin/search?q=${encodeURIComponent(q)}`).then(r => r.data);
 
-/**
-* Fetch admin notifications
-*/
+
 export const getAdminNotifications = () =>
 api.get("/admin/notifications").then(r => r.data);
 
 
-/**
-* Mark all admin notifications as read
-*/
+
 export const markAllAdminNotificationsRead = () =>
 api.put("/admin/notifications/mark-all-read").then(r => r.data);
 
 
-// ================= FCM =================
-
-/**
- * Save admin FCM token
- */
 export const saveAdminFcmToken = (token) => {
   return api.post("/admin/fcm-token", { token }).then(r => r.data);
 };
 
-// ================= TAX SETTINGS =================
 
 export const getAdminTax = () =>
   api.get("/admin/tax").then(r => r.data);
