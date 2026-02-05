@@ -12,12 +12,18 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     const status = err.response?.status;
-    if (status === 401 || status === 403) {
+    const url = err.config?.url || "";
+
+    if (
+      (status === 401 || status === 403) &&
+      url.startsWith("/admin") &&
+      !window.location.pathname.startsWith("/login")
+    ) {
       useAuth.getState().setUser(null);
-      if (!window.location.pathname.startsWith("/login")) {
-        window.location.replace("/login");
-      }
+      window.location.replace("/login");
     }
+
     return Promise.reject(err);
   }
 );
+

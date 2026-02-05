@@ -26,19 +26,11 @@ export const useAuth = create((set) => ({
 
 
   logout: async () => {
-    try {
-      await adminLogout();
-    } catch { }
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_user");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("rzp_checkout_anon_id");
-    localStorage.removeItem("rzp_device_id");
-    localStorage.removeItem("rzp_stored_checkout_id");
+  try {
+    await adminLogout();
+  } catch {}
 
-    set({ user: null });
-  },
-
+  set({ user: null });
+},
 }));
 

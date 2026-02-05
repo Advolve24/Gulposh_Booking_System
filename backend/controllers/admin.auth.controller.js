@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
 
 const normalizeEmail = (e = "") => String(e).trim().toLowerCase();
 
@@ -39,10 +38,11 @@ if (!user.passwordHash)
 
     res.cookie("admin_token", token, {
   httpOnly: true,
-  secure: true,
-  sameSite: "none",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   maxAge: 60 * 60 * 1000,
 });
+
 
 res.json({
   user: {
@@ -63,10 +63,10 @@ res.json({
 export const adminLogout = (_req, res) => {
   res.clearCookie("admin_token", {
   httpOnly: true,
-  secure: true,
-  sameSite: "none",
-  path: "/",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 });
+
   res.json({ message: "Logged out" });
 };
 
