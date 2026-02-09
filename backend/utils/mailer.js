@@ -43,7 +43,7 @@ export const sendBookingConfirmationMail = async ({
     "https://images.unsplash.com/photo-1505691938895-1758d7feb511";
 
   const location =
-    room.location || booking.location || "Khopoli, Maharashtra, India";
+    room.location || booking.location || "Karjat, Maharashtra, India";
 
   return transporter.sendMail({
     from: `"Gulposh Villa" <${process.env.SMTP_USER}>`,
