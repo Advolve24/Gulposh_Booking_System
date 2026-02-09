@@ -18,7 +18,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { DialogTitle } from "@/components/ui/dialog";
 
 
@@ -78,6 +78,25 @@ export default function AuthModal() {
     }
   };
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getRedirectResult(auth);
+        if (!res?.user) return;
+
+        toast.loading("Signing in with Google...", { id: "google" });
+
+        const idToken = await res.user.getIdToken(true);
+        const user = await googleLoginWithToken(idToken);
+
+        toast.success("Login successful 🎉", { id: "google" });
+        closeAuth();
+        resumeFlow(user);
+      } catch (err) {
+        console.error("getRedirectResult error:", err);
+      }
+    })();
+  }, []);
 
 
   useEffect(() => {

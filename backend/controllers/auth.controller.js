@@ -3,11 +3,8 @@ import User from "../models/User.js";
 import admin from "../config/firebaseAdmin.js";
 import { OAuth2Client } from "google-auth-library";
 import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
-import { notifyAdmin } from "../utils/notifyAdmin.js"; // ✅ NEW
+import { notifyAdmin } from "../utils/notifyAdmin.js"; 
 
-/* ===============================
-   HELPERS
-================================ */
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -29,22 +26,16 @@ const createRefreshToken = (user) =>
   );
 
 const issueSession = (res, user) => {
-  // access token → SESSION cookie
   setSessionCookie(res, "token", createAccessToken(user), {
     persistent: false,
   });
 
-  // refresh token → PERSISTENT cookie
   setSessionCookie(res, "refresh_token", createRefreshToken(user), {
     persistent: true,
     days: 10,
   });
 };
 
-
-/* ===============================
-   📱 PHONE OTP LOGIN
-================================ */
 
 export const phoneLogin = async (req, res) => {
   try {
@@ -70,7 +61,6 @@ export const phoneLogin = async (req, res) => {
       });
       isNewUser = true;
 
-    /* 🔔 NOTIFY ADMIN — NEW USER (PHONE) */
       await notifyAdmin("NEW_USER", {
         userId: user._id,
         phone: user.phone,
@@ -94,9 +84,6 @@ export const phoneLogin = async (req, res) => {
   }
 };
 
-/* ===============================
-   🌐 GOOGLE OAUTH LOGIN
-================================ */
 
 export const googleLogin = async (req, res) => {
   try {
@@ -127,7 +114,6 @@ export const googleLogin = async (req, res) => {
       });
       isNewUser = true;
 
-      /* 🔔 NOTIFY ADMIN — NEW USER (GOOGLE) */
       await notifyAdmin("NEW_USER", {
         userId: user._id,
         name,
@@ -135,7 +121,6 @@ export const googleLogin = async (req, res) => {
         authProvider: "google",
       });
     } else {
-      // keep data fresh
       if (!user.name && name) {
         user.name = name;
         await user.save();
@@ -160,9 +145,6 @@ export const googleLogin = async (req, res) => {
   }
 };
 
-/* ===============================
-   LOGOUT
-================================ */
 
 export const logout = (_req, res) => {
   clearSessionCookie(res, "token", { path: "/" });
@@ -170,9 +152,6 @@ export const logout = (_req, res) => {
   res.json({ message: "Logged out" });
 };
 
-/* ===============================
-   CURRENT USER
-================================ */
 
 export const me = async (req, res) => {
   const user = await User.findById(req.user.id);
@@ -196,9 +175,6 @@ export const me = async (req, res) => {
   });
 };
 
-/* ===============================
-   UPDATE PROFILE
-================================ */
 
 export const updateMe = async (req, res) => {
   try {
@@ -232,7 +208,6 @@ export const updateMe = async (req, res) => {
     user.city = city || null;
     user.pincode = pincode || null;
 
-    // Google users MUST add phone
     if (user.authProvider === "google") {
       if (!phone)
         return res
@@ -261,7 +236,7 @@ export const updateMe = async (req, res) => {
   }
 };
 
-/* ===========Refresh Token======*/
+
 export const refresh = async (req, res) => {
   try {
     const refreshToken = req.cookies.refresh_token;

@@ -1,30 +1,15 @@
 import { create } from "zustand";
 import { api } from "../api/http";
 
-/* =====================================================
-   AUTH STORE (COOKIE-BASED, BACKEND IS SOURCE OF TRUTH)
-   Airbnb / Booking.com Style
-===================================================== */
-
 export const useAuth = create((set, get) => ({
-  /* ================= STATE ================= */
-
   user: null,
   loading: false,
-  initialized: false, // 🔥 REQUIRED
+  initialized: false, 
 
-  /* ================= UI ================= */
 
   showAuthModal: false,
   openAuth: () => set({ showAuthModal: true }),
   closeAuth: () => set({ showAuthModal: false }),
-
-  /* ================= INIT SESSION =================
-     ⚠️ CRITICAL RULES:
-     - NEVER logout here
-     - NEVER clear user here
-     - Just mark initialized when done
-  =============================================== */
 
   init: async () => {
     try {
@@ -42,19 +27,16 @@ export const useAuth = create((set, get) => ({
     } catch {
       set({
         loading: false,
-        initialized: true, // ✅ auth check completed
+        initialized: true, 
       });
       return null;
     }
   },
 
-  /* ================= PHONE OTP LOGIN ================= */
-
   phoneLoginWithToken: async (idToken) => {
     try {
       set({ loading: true });
 
-      // Backend creates session (cookies)
       await api.post(
         "/auth/phone-login",
         {},
@@ -81,8 +63,6 @@ export const useAuth = create((set, get) => ({
     }
   },
 
-  /* ================= GOOGLE OAUTH LOGIN ================= */
-
   googleLoginWithToken: async (idToken) => {
     try {
       set({ loading: true });
@@ -105,17 +85,11 @@ export const useAuth = create((set, get) => ({
     }
   },
 
-  /* ================= REFRESH USER (OPTIONAL) ================= */
-
   refreshUser: async () => {
     const { data } = await api.get("/auth/me");
     set({ user: data });
     return data;
   },
-
-  /* ================= LOGOUT =================
-     ✅ ONLY place where user is cleared
-  =========================================== */
 
   logout: async () => {
     try {
