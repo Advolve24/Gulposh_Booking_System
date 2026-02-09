@@ -6,7 +6,7 @@ const reviewSchema = new mongoose.Schema(
     rating: { type: Number, required: true, min: 1, max: 5 },
     comment: { type: String, default: "", trim: true },
   },
-  { _id: false } // keeps it lightweight
+  { _id: false } 
 );
 
 
@@ -27,8 +27,6 @@ const roomSchema = new mongoose.Schema(
     mealPriceVeg: { type: Number, default: 0 },
     mealPriceNonVeg: { type: Number, default: 0 },
 
-    // mealPriceCombo: { type: Number, default: 0 },
-
     description: { type: String, default: "" },
 
     amenities: { type: [String], default: [] },
@@ -40,6 +38,8 @@ const roomSchema = new mongoose.Schema(
     maxGuests: { type: Number, required: true, min: 1, default: 1 },
 
     isVilla: { type: Boolean, default: false },
+
+    location: { type: String, default: "" },
   },
   { timestamps: true }
 );

@@ -28,8 +28,22 @@ export const sendBookingConfirmationMail = async ({
   booking,
   room,
 }) => {
-  const checkIn = booking.startDate.toDateString();
-  const checkOut = booking.endDate.toDateString();
+  const checkIn = new Date(booking.startDate).toDateString();
+  const checkOut = new Date(booking.endDate).toDateString();
+
+  const adults = booking.adults || 0;
+  const children = booking.children || 0;
+
+  const grandTotal = Number(booking.amount).toLocaleString("en-IN");
+
+  // ✅ Dynamic image (fallback if missing)
+  const imageUrl =
+    room.coverImage ||
+    room.galleryImages?.[0] ||
+    "https://images.unsplash.com/photo-1505691938895-1758d7feb511";
+
+  const location =
+    room.location || booking.location || "Khopoli, Maharashtra, India";
 
   return transporter.sendMail({
     from: `"Gulposh Villa" <${process.env.SMTP_USER}>`,
@@ -38,18 +52,12 @@ export const sendBookingConfirmationMail = async ({
     html: `
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="UTF-8">
-<title>Booking Confirmed</title>
-</head>
-
 <body style="margin:0;padding:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;">
 
 <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
 <tr>
 <td align="center">
 
-<!-- Main Card -->
 <table width="600" cellpadding="0" cellspacing="0"
 style="background:#ffffff;border-radius:12px;overflow:hidden;
 box-shadow:0 4px 10px rgba(0,0,0,0.06);">
@@ -57,17 +65,12 @@ box-shadow:0 4px 10px rgba(0,0,0,0.06);">
 <!-- Header -->
 <tr>
 <td style="padding:24px 28px;border-bottom:1px solid #eee;">
-
 <table width="100%">
 <tr>
-<td width="40" valign="top">
-<div style="
-width:36px;height:36px;border-radius:50%;
-background:#e8f5e9;color:#2e7d32;
-text-align:center;line-height:36px;
-font-size:20px;font-weight:bold;">
-✓
-</div>
+<td width="40">
+<div style="width:36px;height:36px;border-radius:50%;
+background:#e8f5e9;color:#2e7d32;text-align:center;
+line-height:36px;font-size:20px;font-weight:bold;">✓</div>
 </td>
 
 <td style="padding-left:12px;">
@@ -80,7 +83,6 @@ Booking ID: ${booking._id || booking.paymentId}
 </td>
 </tr>
 </table>
-
 </td>
 </tr>
 
@@ -90,7 +92,6 @@ Booking ID: ${booking._id || booking.paymentId}
 <p style="margin:0 0 12px;font-size:15px;color:#333;">
 Hello <b>${name || "Guest"}</b>,
 </p>
-
 <p style="margin:0;font-size:15px;color:#555;">
 Thank you for your reservation. We're excited to host you!
 </p>
@@ -100,9 +101,8 @@ Thank you for your reservation. We're excited to host you!
 <!-- Property Image -->
 <tr>
 <td style="padding:20px 28px 0;">
-<img src="${room.image || "https://images.unsplash.com/photo-1505691938895-1758d7feb511"}"
-width="100%"
-style="border-radius:10px;display:block;">
+<img src="${imageUrl}" width="100%" height="250"
+style="border-radius:10px;object-fit:cover;display:block;">
 </td>
 </tr>
 
@@ -114,69 +114,57 @@ ${room.name}
 </h3>
 
 <p style="margin:6px 0 0;color:#777;font-size:13px;">
-📍 ${room.location || "Khopoli, Maharashtra, India"}
+📍 ${location}
 </p>
 </td>
 </tr>
 
-<!-- Checkin Checkout -->
+<!-- Check-in / Check-out -->
 <tr>
 <td style="padding:20px 28px;">
-
-<table width="100%" cellpadding="0" cellspacing="0">
+<table width="100%">
 <tr>
 
-<td width="48%" style="
-background:#f7f8f9;
-padding:14px;
-border-radius:8px;
-font-size:14px;
-color:#333;">
-
-<b>Check-in</b><br>
-${checkIn}
-
+<td width="48%" style="background:#f7f8f9;padding:14px;
+border-radius:8px;font-size:14px;">
+<b>Check-in</b><br>${checkIn}
 </td>
 
 <td width="4%"></td>
 
-<td width="48%" style="
-background:#f7f8f9;
-padding:14px;
-border-radius:8px;
-font-size:14px;
-color:#333;">
-
-<b>Check-out</b><br>
-${checkOut}
-
+<td width="48%" style="background:#f7f8f9;padding:14px;
+border-radius:8px;font-size:14px;">
+<b>Check-out</b><br>${checkOut}
 </td>
 
 </tr>
 </table>
-
 </td>
 </tr>
 
-<!-- Summary -->
+<!-- Guests + Total -->
 <tr>
 <td style="padding:0 28px 20px;">
-
 <table width="100%">
 <tr>
 
 <td style="font-size:14px;color:#666;">
-👥 ${booking.guests} Guests · ${booking.nights} Nights
+👥 <b>${adults}</b> Adults · <b>${children}</b> Children · ${
+      booking.nights
+    } Nights
 </td>
 
-<td align="right"
-style="font-size:18px;font-weight:bold;color:#2e7d32;">
-₹${booking.amount}
+<td align="right">
+<p style="margin:0;font-size:12px;color:#666;">
+Grand Total
+</p>
+<p style="margin:0;font-size:20px;font-weight:bold;color:#2e7d32;">
+₹${grandTotal}
+</p>
 </td>
 
 </tr>
 </table>
-
 </td>
 </tr>
 
