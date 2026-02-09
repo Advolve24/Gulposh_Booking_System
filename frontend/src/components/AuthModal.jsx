@@ -72,6 +72,7 @@ export default function AuthModal() {
       resumeFlow(user);
     } catch (err) {
       console.error(err);
+      console.error("code:", err?.code, "message:", err?.message);
       toast.error("Google login failed", { id: "google" });
     } finally {
       setLoading(false);
