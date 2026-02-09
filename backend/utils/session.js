@@ -11,13 +11,19 @@ export function setSessionCookie(
 ) {
   res.cookie(name, value, {
     httpOnly: true,
-    secure: true,          // REQUIRED for sameSite:none
-    sameSite: "none",
+
+    secure: process.env.NODE_ENV === "production",
+
+    sameSite: "lax",
+
     path,
     ...(domain ? { domain } : {}),
+
     ...(persistent
       ? { maxAge: days * 24 * 60 * 60 * 1000 }
-      : {}),               // ✅ session cookie if not persistent
+      : {}),
+
+
   });
 }
 
@@ -28,9 +34,11 @@ export function clearSessionCookie(
 ) {
   res.clearCookie(name, {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+
     path,
     ...(domain ? { domain } : {}),
+
   });
 }
