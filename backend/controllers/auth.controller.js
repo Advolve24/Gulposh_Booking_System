@@ -5,7 +5,7 @@ import { OAuth2Client } from "google-auth-library";
 import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
 import { notifyAdmin } from "../utils/notifyAdmin.js"; 
 
-
+console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const normalizePhone = (phone = "") =>
