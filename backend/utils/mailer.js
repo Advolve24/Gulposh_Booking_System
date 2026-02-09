@@ -36,7 +36,6 @@ export const sendBookingConfirmationMail = async ({
 
   const grandTotal = Number(booking.amount).toLocaleString("en-IN");
 
-  // ✅ Dynamic image (fallback if missing)
   const imageUrl =
     room.coverImage ||
     room.galleryImages?.[0] ||
@@ -127,14 +126,14 @@ ${room.name}
 
 <td width="48%" style="background:#f7f8f9;padding:14px;
 border-radius:8px;font-size:14px;">
-<b>Check-in</b><br>${checkIn}
+Check-in<br><b>${checkIn}</b>
 </td>
 
 <td width="4%"></td>
 
 <td width="48%" style="background:#f7f8f9;padding:14px;
 border-radius:8px;font-size:14px;">
-<b>Check-out</b><br>${checkOut}
+Check-out<br><b>${checkOut}</b>
 </td>
 
 </tr>
