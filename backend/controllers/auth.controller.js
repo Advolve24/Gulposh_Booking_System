@@ -91,17 +91,13 @@ export const googleLogin = async (req, res) => {
     if (!idToken)
       return res.status(400).json({ message: "Google token missing" });
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    const decoded = await admin.auth().verifyIdToken(idToken);
 
-    const payload = ticket.getPayload();
-    const email = payload.email?.toLowerCase();
-    const name = payload.name || null;
+    const email = decoded.email?.toLowerCase();
+    const name = decoded.name || null;
 
     if (!email)
-      return res.status(400).json({ message: "Email not found in Google token" });
+      return res.status(400).json({ message: "Email not found in token" });
 
     let user = await User.findOne({ email });
     let isNewUser = false;
@@ -120,11 +116,9 @@ export const googleLogin = async (req, res) => {
         email,
         authProvider: "google",
       });
-    } else {
-      if (!user.name && name) {
-        user.name = name;
-        await user.save();
-      }
+    } else if (!user.name && name) {
+      user.name = name;
+      await user.save();
     }
 
     issueSession(res, user);
@@ -139,11 +133,13 @@ export const googleLogin = async (req, res) => {
       isNewUser,
       isAdmin: !!user.isAdmin,
     });
+
   } catch (err) {
     console.error("googleLogin error:", err);
-    res.status(401).json({ message: "Invalid Google token" });
+    res.status(401).json({ message: err.message });
   }
 };
+
 
 
 export const logout = (_req, res) => {
