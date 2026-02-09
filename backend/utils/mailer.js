@@ -100,7 +100,7 @@ Thank you for your reservation. We're excited to host you!
 <!-- Property Image -->
 <tr>
 <td style="padding:20px 28px 0;">
-<img src="${imageUrl}" width="100%" height="250"
+<img src="${imageUrl}" width="100%" height="200"
 style="border-radius:10px;object-fit:cover;display:block;">
 </td>
 </tr>
