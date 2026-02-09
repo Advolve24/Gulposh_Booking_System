@@ -18,17 +18,14 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "firebase/auth";
+import { DialogTitle } from "@/components/ui/dialog";
 
-/* =====================================================
-   CONSTANTS
-===================================================== */
+
 
 const OTP_TIMER = 60;
 const isValidPhone = (v) => /^[0-9]{10}$/.test(v);
 
-/* =====================================================
-   COMPONENT
-===================================================== */
 
 export default function AuthModal() {
   const {
@@ -40,7 +37,7 @@ export default function AuthModal() {
 
   const navigate = useNavigate();
 
-  const [step, setStep] = useState("choice"); // choice | phone | otp
+  const [step, setStep] = useState("choice");
   const [form, setForm] = useState({ phone: "", otp: "" });
   const [loading, setLoading] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
@@ -48,72 +45,46 @@ export default function AuthModal() {
   const confirmationRef = useRef(null);
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
-  const googleReadyRef = useRef(false);
 
-  /* =====================================================
-     LOAD GOOGLE SCRIPT ONCE
-  ===================================================== */
 
-  useEffect(() => {
-    if (googleReadyRef.current) return;
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      toast.loading("Signing in with Google...", { id: "google" });
 
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.onload = () => {
-      googleReadyRef.current = true;
-    };
+      const provider = new GoogleAuthProvider();
 
-    document.body.appendChild(script);
-  }, []);
+      let result;
+      try {
+        result = await signInWithPopup(auth, provider);
+      } catch (err) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
 
-  /* =====================================================
-     GOOGLE LOGIN (TOKEN BASED – STABLE)
-  ===================================================== */
+      const idToken = await result.user.getIdToken(true);
 
-  const handleGoogleLogin = () => {
-    if (!window.google) {
-      toast.error("Google not ready. Try again.");
-      return;
+      const user = await googleLoginWithToken(idToken);
+
+      toast.success("Login successful 🎉", { id: "google" });
+
+      closeAuth();
+      resumeFlow(user);
+    } catch (err) {
+      console.error(err);
+      toast.error("Google login failed", { id: "google" });
+    } finally {
+      setLoading(false);
     }
-
-    window.google.accounts.id.initialize({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-      callback: async (res) => {
-        try {
-          setLoading(true);
-          toast.loading("Signing in with Google...", { id: "google" });
-
-          const user = await googleLoginWithToken(res.credential);
-
-          toast.success("Login successful 🎉", { id: "google" });
-          closeAuth();
-
-          resumeFlow(user);
-        } catch {
-          toast.error("Google login failed", { id: "google" });
-        } finally {
-          setLoading(false);
-        }
-      },
-    });
-
-    window.google.accounts.id.prompt();
   };
 
-  /* =====================================================
-     OTP TIMER
-  ===================================================== */
+
 
   useEffect(() => {
     if (step !== "otp" || secondsLeft <= 0) return;
     const t = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(t);
   }, [step, secondsLeft]);
-
-  /* =====================================================
-     RESET FLOW
-  ===================================================== */
 
   const resetFlow = () => {
     confirmationRef.current = null;
@@ -130,10 +101,6 @@ export default function AuthModal() {
     setSecondsLeft(OTP_TIMER);
     setLoading(false);
   };
-
-  /* =====================================================
-     SEND OTP
-  ===================================================== */
 
   const sendOtp = async () => {
     if (sendingRef.current) return;
@@ -168,9 +135,6 @@ export default function AuthModal() {
     }
   };
 
-  /* =====================================================
-     VERIFY OTP
-  ===================================================== */
 
   const verifyOtp = async () => {
     if (verifyingRef.current) return;
@@ -199,9 +163,6 @@ export default function AuthModal() {
     }
   };
 
-  /* =====================================================
-   AUTO VERIFY OTP WHEN 6 DIGITS ENTERED
-===================================================== */
 
   useEffect(() => {
     if (
@@ -215,10 +176,6 @@ export default function AuthModal() {
     }
   }, [form.otp, step]);
 
-
-  /* =====================================================
-     RESUME ORIGINAL FLOW
-  ===================================================== */
 
   const resumeFlow = (user) => {
     const raw = sessionStorage.getItem("postAuthRedirect");
@@ -244,10 +201,6 @@ export default function AuthModal() {
     navigate("/", { replace: true });
   };
 
-  /* =====================================================
-     UI
-  ===================================================== */
-
   return (
     <Dialog
       open={showAuthModal}
@@ -262,7 +215,7 @@ export default function AuthModal() {
 
       <DialogContent className="p-0 w-[92vw] max-w-[420px] rounded-3xl overflow-hidden bg-white border-0 shadow-2xl">
         <VisuallyHidden>
-          <h2>Authentication</h2>
+          <DialogTitle>Authentication</DialogTitle>
         </VisuallyHidden>
 
         <button
@@ -299,17 +252,17 @@ export default function AuthModal() {
                 onClick={() => setStep("phone")}
               >
                 <Phone size={18} />
-                Continue with Phone 
+                Continue with Phone
               </Button>
               <div className="relative text-center text-xs text-muted-foreground">
                 <span className="bg-white px-2">OR</span>
                 <div className="absolute inset-x-0 top-1/2 h-px bg-border -z-10" />
               </div>
 
-              <Button variant="outline" className="w-full h-11 rounded-xl gap-3"  onClick={handleGoogleLogin}>
-                  <FcGoogle size={20} />
-                  Continue with Google
-                </Button>
+              <Button variant="outline" className="w-full h-11 rounded-xl gap-3" onClick={handleGoogleLogin}>
+                <FcGoogle size={20} />
+                Continue with Google
+              </Button>
             </>
           )}
 
