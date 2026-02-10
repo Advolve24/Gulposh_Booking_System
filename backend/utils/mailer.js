@@ -185,12 +185,12 @@ color:#333;
 <tr>
 <td style="padding:18px;">
 
-<div style="margin-bottom:12px;">
+<div style="margin-bottom:5px;">
 Check-in<br>
 <b>${checkIn}</b>
 </div>
 
-<div style="margin-bottom:12px;">
+<div style="margin-bottom:5px;">
 Check-out<br>
 <b>${checkOut}</b>
 </div>
@@ -214,7 +214,7 @@ style="padding-left:7px;vertical-align:top;">
 
 <table width="100%" cellpadding="0" cellspacing="0"
 style="
-background:#dbe5f1;
+background:#f3f4f6;
 border-radius:10px;
 font-size:14px;
 color:#333;
@@ -223,12 +223,12 @@ color:#333;
 <tr>
 <td style="padding:18px;">
 
-<div style="margin-bottom:12px;">
+<div style="margin-bottom:5px;">
 Guests<br>
 <b>${adults} Adults, ${children} Children</b>
 </div>
 
-<div style="margin-bottom:12px;">
+<div style="margin-bottom:5px;">
 Food Preference<br>
 🥗 <b>${vegCount}</b> · 🍗 <b>${nonVegCount}</b>
 </div>
