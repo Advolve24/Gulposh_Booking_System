@@ -308,7 +308,7 @@ color:#333;
 ">
 
 <tr>
-<td style="padding:18px;" valign="top">
+<td style="padding:18px;padding-top:33px;padding-bottom:33px;" valign="top">
 
 <div style="font-weight:bold;margin-bottom:8px;">
 📶 WiFi Details
