@@ -152,51 +152,107 @@ ${room.name}
 </td>
 </tr>
 
-<!-- ================= BOOKING TABLE ================= -->
+<!-- ================= BOOKING SUMMARY CARDS ================= -->
+
+<style>
+@media only screen and (max-width:600px){
+  .stack-column{
+    display:block !important;
+    width:100% !important;
+  }
+}
+</style>
+
 <tr>
 <td style="padding:16px 26px;">
-<table width="100%" cellpadding="10" cellspacing="0"
-style="border-collapse:collapse;font-size:14px;border:1px solid #e3e5e7;">
 
-<tr style="background:#fafafa;">
-<td>Check-in</td>
-<td align="right"><b>${checkIn}</b></td>
-</tr>
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+
+<!-- ===== LEFT CARD ===== -->
+<td class="stack-column"
+width="50%"
+style="padding-right:7px;vertical-align:top;">
+
+<table width="100%" cellpadding="0" cellspacing="0"
+style="
+background:#f3f4f6;
+border-radius:10px;
+font-size:14px;
+color:#333;
+">
 
 <tr>
-<td>Check-out</td>
-<td align="right"><b>${checkOut}</b></td>
-</tr>
+<td style="padding:18px;">
 
-<tr style="background:#fafafa;">
-<td>Guests</td>
-<td align="right">
-<b>${adults} Adults, ${children} Children</b>
-</td>
-</tr>
+<div style="margin-bottom:12px;">
+Check-in<br>
+<b>${checkIn}</b>
+</div>
 
-<tr>
-<td>Food Preference</td>
-<td align="right">
-🥗 <b>${vegCount}</b> Veg · 🍗 <b>${nonVegCount}</b> Non-Veg
-</td>
-</tr>
+<div style="margin-bottom:12px;">
+Check-out<br>
+<b>${checkOut}</b>
+</div>
 
-<tr>
-<td>Nights</td>
-<td align="right"><b>${booking.nights}</b></td>
-</tr>
+<div>
+Nights<br>
+<b>${booking.nights}</b>
+</div>
 
-<tr style="background:#e8f5e9;font-weight:bold;">
-<td>Grand Total</td>
-<td align="right" style="color:#1f8f43;font-size:16px;">
-₹${grandTotal}
 </td>
 </tr>
 
 </table>
+
+</td>
+
+<!-- ===== RIGHT CARD ===== -->
+<td class="stack-column"
+width="50%"
+style="padding-left:7px;vertical-align:top;">
+
+<table width="100%" cellpadding="0" cellspacing="0"
+style="
+background:#dbe5f1;
+border-radius:10px;
+font-size:14px;
+color:#333;
+">
+
+<tr>
+<td style="padding:18px;">
+
+<div style="margin-bottom:12px;">
+Guests<br>
+<b>${adults} Adults, ${children} Children</b>
+</div>
+
+<div style="margin-bottom:12px;">
+Food Preference<br>
+🥗 <b>${vegCount}</b> · 🍗 <b>${nonVegCount}</b>
+</div>
+
+<div>
+Grand Total<br>
+<b style="font-size:16px;color:#1f8f43;">
+₹${grandTotal}
+</b>
+</div>
+
 </td>
 </tr>
+
+</table>
+
+</td>
+
+</tr>
+</table>
+
+</td>
+</tr>
+
 
 <!-- ================= LOCATION ================= -->
 <tr>
