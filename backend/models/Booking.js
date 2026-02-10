@@ -71,7 +71,6 @@ const bookingSchema = new mongoose.Schema(
         default: "Cash",
       },
     },
-    /* ================= CANCELLATION ================= */
     cancellation: {
       cancelledAt: {
         type: Date,
@@ -116,7 +115,6 @@ const bookingSchema = new mongoose.Schema(
         type: String,
       },
     },
-    /* ================= ADMIN ACTIONS ================= */
     adminAction: {
       actionType: {
         type: String,

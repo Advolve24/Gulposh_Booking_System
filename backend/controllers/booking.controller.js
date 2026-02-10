@@ -105,6 +105,9 @@ export const getBooking = async (req, res) => {
       vegGuests: booking.vegGuests || 0,
       nonVegGuests: booking.nonVegGuests || 0,
 
+      withMeal: booking.withMeal,
+      mealMode: booking.room?.mealMode || "none",
+
       room: booking.room,
       user: booking.user,
 

@@ -218,14 +218,14 @@ export default function BookingSuccess() {
                                 </div>
                             )}
 
-                            {mealMode === "price" && booking.withMeal && (
-                                <div className="text-xs text-muted-foreground">
-                                    Veg: {booking.vegGuests || 0}
-                                    {" • "}
-                                    Non-Veg: {booking.nonVegGuests || 0}
-                                </div>
-                            )}
-
+                            {booking.withMeal &&
+                                (booking.vegGuests > 0 || booking.nonVegGuests > 0) && (
+                                    <div className="text-xs text-muted-foreground">
+                                        Veg: {booking.vegGuests || 0}
+                                        {" • "}
+                                        Non-Veg: {booking.nonVegGuests || 0}
+                                    </div>
+                                )}
                             {mealMode === "only" && (
                                 <div className="text-xs text-muted-foreground">
                                     Veg & Non-Veg meals included
