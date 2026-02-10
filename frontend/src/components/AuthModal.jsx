@@ -210,10 +210,11 @@ export default function AuthModal() {
     }
 
     if (raw) {
-      const { redirectTo, state } = JSON.parse(raw);
+      const { redirectTo, bookingState } = JSON.parse(raw);
+
       navigate(redirectTo || "/", {
         replace: true,
-        state: state || null,
+        state: bookingState || null,
       });
       return;
     }

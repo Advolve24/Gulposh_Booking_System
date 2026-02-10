@@ -476,6 +476,9 @@ export default function RoomPage() {
         <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">{room.name}</h1>
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              Upto {room.maxGuests} guests
+            </span>
             {avgRating && (
               <div className="flex items-center gap-1 text-sm mt-1">
                 <Star className="w-4 h-4 text-yellow-500" />
