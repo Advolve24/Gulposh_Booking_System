@@ -229,9 +229,9 @@ export const updateMe = async (req, res) => {
   } catch (err) {
     console.error("updateMe error:", err);
 
-    // Mongo duplicate key error
     if (err.code === 11000) {
-      const field = Object.keys(err.keyPattern || {})[0];
+      const field =
+        Object.keys(err.keyValue || err.keyPattern || {})[0];
 
       if (field === "email") {
         return res.status(400).json({
@@ -249,6 +249,7 @@ export const updateMe = async (req, res) => {
         message: "Duplicate data detected",
       });
     }
+
 
     res.status(500).json({
       message: "Failed to update profile",
