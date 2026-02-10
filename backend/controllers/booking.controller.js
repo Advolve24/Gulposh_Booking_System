@@ -1,5 +1,5 @@
 import Booking from "../models/Booking.js";
-import { notifyAdmin } from "../utils/notifyAdmin.js"; 
+import { notifyAdmin } from "../utils/notifyAdmin.js";
 
 
 const nightsBetween = (start, end) => {
@@ -84,6 +84,12 @@ export const getBooking = async (req, res) => {
       booking.endDate
     );
 
+    const subtotal =
+      (booking.roomTotal || 0) +
+      (booking.mealTotal || 0);
+
+    const tax = booking.totalTax || 0;
+
     res.json({
       _id: booking._id,
       status: booking.status,
@@ -93,27 +99,30 @@ export const getBooking = async (req, res) => {
       nights,
 
       guests: booking.guests,
+      adults: booking.adults || 0,
+      children: booking.children || 0,
+
       vegGuests: booking.vegGuests || 0,
       nonVegGuests: booking.nonVegGuests || 0,
-      comboGuests: booking.comboGuests || 0,
 
       room: booking.room,
-
       user: booking.user,
 
-      pricePerNight: booking.pricePerNight,
-      roomTotal: booking.roomTotal,
-      mealTotal: booking.mealTotal,
-      amount: booking.amount,
-      currency: booking.currency || "INR",
+      subtotal,
+      tax,
+      grandTotal: booking.amount,
 
-      paymentProvider: booking.paymentProvider,
-      orderId: booking.orderId,
-      paymentId: booking.paymentId,
+      amount: booking.amount,
+
+      contactName: booking.contactName,
+      contactEmail: booking.contactEmail,
+      contactPhone: booking.contactPhone,
+
+      address: booking.addressInfo,
 
       createdAt: booking.createdAt,
-      updatedAt: booking.updatedAt,
     });
+
   } catch (err) {
     res.status(500).json({ message: "Failed to load booking" });
   }
@@ -126,7 +135,7 @@ export const getBooking = async (req, res) => {
 
 export const cancelMyBooking = async (req, res) => {
   try {
-  const { reason } = req.body || {};
+    const { reason } = req.body || {};
 
     const booking = await Booking.findOne({
       _id: req.params.id,
