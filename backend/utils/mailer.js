@@ -66,26 +66,30 @@ box-shadow:0 6px 18px rgba(0,0,0,0.08);">
 
 <!-- ================= HEADER ================= -->
 <tr>
-<td style="background:#004196;color:#ffffff;text-align:center;padding:30px 20px;">
+<td style="background:#004196;color:#ffffff;text-align:center;padding:23px 40px;">
 
 <div style="
-  width:52px;
-  height:52px;
+  width:38px;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   border:2px solid #ffffff;
   border-radius:6px;
   margin:0 auto 14px;
-  font-size:28px;
+  font-size:22px;
   font-weight:bold;
   line-height:52px;
 ">
 ✓
 </div>
 
-<h2 style="margin:0;font-size:22px;">Booking Confirmed!</h2>
-
+<div>
+<h2 style="margin:0;font-size:22px;margin-top:4px;">Booking Confirmed!</h2>
 <p style="margin:6px 0 0;font-size:13px;opacity:0.9;">
 Booking ID: ${booking._id || booking.paymentId}
 </p>
+</div>
 
 </td>
 </tr>
@@ -101,7 +105,7 @@ Thank you for your reservation. We're excited to host you!
 <!-- ================= IMAGE ================= -->
 <tr>
 <td style="padding:0 26px;">
-<img src="${imageUrl}" width="100%" height="220"
+<img src="${imageUrl}" width="100%" height="200"
 style="border-radius:10px;object-fit:cover;display:block;">
 </td>
 </tr>
@@ -203,9 +207,28 @@ Get Directions →
 </tr>
 
 
-<!-- ================= HOST ================= -->
+<!-- ================= HOST + WIFI GRID ================= -->
+
+<style>
+@media only screen and (max-width:600px){
+  .stack-column{
+    display:block !important;
+    width:100% !important;
+  }
+}
+</style>
+
 <tr>
 <td style="padding:0 26px 14px;">
+
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+
+<!-- ===== HOST COLUMN ===== -->
+<td class="stack-column"
+width="50%"
+style="padding-right:7px;vertical-align:top;">
+
 <table width="100%" cellpadding="0" cellspacing="0"
 style="
 background:#f3f4f6;
@@ -236,14 +259,16 @@ Priya Sharma
 
 </td>
 </tr>
+
 </table>
+
 </td>
-</tr>
 
+<!-- ===== WIFI COLUMN ===== -->
+<td class="stack-column"
+width="50%"
+style="padding-left:7px;vertical-align:top;">
 
-<!-- ================= WIFI ================= -->
-<tr>
-<td style="padding:0 26px 14px;">
 <table width="100%" cellpadding="0" cellspacing="0"
 style="
 background:#dbe5f1;
@@ -270,18 +295,21 @@ Password: <b>Welcome@2026</b>
 
 </td>
 </tr>
-</table>
-</td>
-</tr>
 
 </table>
+
+</td>
+
+</tr>
+</table>
+
 </td>
 </tr>
 
 <!-- ================= BUTTON ================= -->
 <tr>
 <td align="center" style="padding:10px 26px 24px;">
-<a href="https://boking.villagulposh.com"
+<a href="https://booking.villagulposh.com"
 style="
 background:#004196;
 color:#ffffff;
