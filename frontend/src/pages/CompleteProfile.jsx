@@ -3,26 +3,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../store/authStore";
 import { api } from "../api/http";
 import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-
 import { Country, State, City } from "country-state-city";
 
 export default function CompleteProfile() {
@@ -32,11 +20,9 @@ export default function CompleteProfile() {
 
   const isGoogleLogin = user?.authProvider === "google";
   const isPhoneLogin = user?.authProvider === "phone";
-
+  const [dobOpen, setDobOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
-
-  /* ================= LOCATION STATE ================= */
 
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
@@ -282,7 +268,7 @@ export default function CompleteProfile() {
 
           <div className="space-y-1">
             <Label>Date of Birth</Label>
-            <Popover>
+            <Popover open={dobOpen} onOpenChange={setDobOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -301,9 +287,10 @@ export default function CompleteProfile() {
                   fromYear={1950}
                   toYear={new Date().getFullYear()}
                   selected={form.dob}
-                  onSelect={(d) =>
-                    setForm((f) => ({ ...f, dob: d }))
-                  }
+                  onSelect={(d) => {
+                    setForm((f) => ({ ...f, dob: d }));
+                    setDobOpen(false);
+                  }}
                 />
               </PopoverContent>
             </Popover>
