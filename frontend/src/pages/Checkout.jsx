@@ -167,9 +167,14 @@ export default function Checkout() {
 
 
   useEffect(() => {
-    if (!roomId) return navigate("/", { replace: true });
-    api.get(`/rooms/${roomId}`).then(({ data }) => setRoom(data));
-  }, [roomId, navigate]);
+    if (state === undefined) return;
+    if (!state?.roomId) {
+      navigate("/", { replace: true });
+      return;
+    }
+    api.get(`/rooms/${state.roomId}`).then(({ data }) => setRoom(data));
+  }, [state, navigate]);
+
 
   useEffect(() => {
     if (!user) return;
