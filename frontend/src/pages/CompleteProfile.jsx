@@ -270,17 +270,18 @@ export default function CompleteProfile() {
             <Label>Date of Birth</Label>
             <Popover open={dobOpen} onOpenChange={setDobOpen}>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                >
+                <Button variant="outline" className="w-full justify-between">
                   {form.dob
                     ? format(form.dob, "dd MMM yyyy")
                     : "Select date of birth"}
                   <CalendarIcon className="h-4 w-4 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="p-0">
+
+              <PopoverContent
+                className="p-0"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
                 <Calendar
                   mode="single"
                   captionLayout="dropdown"
@@ -288,12 +289,14 @@ export default function CompleteProfile() {
                   toYear={new Date().getFullYear()}
                   selected={form.dob}
                   onSelect={(d) => {
+                    if (!d) return;
                     setForm((f) => ({ ...f, dob: d }));
-                    setDobOpen(false);
+                    setTimeout(() => setDobOpen(false), 0);
                   }}
                 />
               </PopoverContent>
             </Popover>
+
           </div>
 
           {/* ADDRESS (FULL WIDTH) */}
