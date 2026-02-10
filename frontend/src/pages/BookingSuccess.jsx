@@ -177,7 +177,7 @@ export default function BookingSuccess() {
                         className="h-20 md:h-full w-full object-cover"
                     />
 
-                    <div className="p-6 space-y-4">
+                    <div className="p-6 space-y-2">
                         <h2 className="text-xl font-serif font-semibold">
                             {room.name}
                         </h2>
