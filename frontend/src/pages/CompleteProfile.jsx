@@ -115,7 +115,6 @@ export default function CompleteProfile() {
     });
   }, [user, countries]);
 
-  /* ================= HANDLERS ================= */
 
   const onCountryChange = (code) => {
     const country = countries.find((c) => c.isoCode === code);
@@ -155,7 +154,6 @@ export default function CompleteProfile() {
     setForm((f) => ({ ...f, city: name }));
   };
 
-  /* ================= SUBMIT ================= */
 
   const submit = async () => {
     if (!form.name.trim()) {
@@ -204,7 +202,6 @@ export default function CompleteProfile() {
     }
   };
 
-  /* ================= UI ================= */
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">

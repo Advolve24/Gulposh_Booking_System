@@ -3,7 +3,7 @@ import User from "../models/User.js";
 import admin from "../config/firebaseAdmin.js";
 import { OAuth2Client } from "google-auth-library";
 import { setSessionCookie, clearSessionCookie } from "../utils/session.js";
-import { notifyAdmin } from "../utils/notifyAdmin.js"; 
+import { notifyAdmin } from "../utils/notifyAdmin.js";
 
 console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -228,7 +228,31 @@ export const updateMe = async (req, res) => {
     });
   } catch (err) {
     console.error("updateMe error:", err);
-    res.status(500).json({ message: "Failed to update profile" });
+
+    // Mongo duplicate key error
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern || {})[0];
+
+      if (field === "email") {
+        return res.status(400).json({
+          message: "This email is already registered with another account",
+        });
+      }
+
+      if (field === "phone") {
+        return res.status(400).json({
+          message: "This mobile number is already registered",
+        });
+      }
+
+      return res.status(400).json({
+        message: "Duplicate data detected",
+      });
+    }
+
+    res.status(500).json({
+      message: "Failed to update profile",
+    });
   }
 };
 
