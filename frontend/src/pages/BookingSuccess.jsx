@@ -94,6 +94,23 @@ export default function BookingSuccess() {
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const subtotal =
+        booking.subtotal ||
+        booking.baseAmount ||
+        booking.roomAmount ||
+        0;
+
+    const tax =
+        booking.tax ||
+        booking.taxes ||
+        booking.taxAmount ||
+        0;
+
+    const grandTotal =
+        booking.amount ||
+        booking.totalAmount ||
+        subtotal + tax;
+
     useLayoutEffect(() => {
         if (confettiRan.current) return;
         confettiRan.current = true;
@@ -199,20 +216,31 @@ export default function BookingSuccess() {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4 text-sm">
+                        <div className="space-y-1 text-sm">
+
                             <div className="flex items-center gap-2">
                                 <Users className="w-4 h-4" />
                                 {booking.guests} Guests
                             </div>
 
+                            {(booking.adults || booking.children) && (
+                                <div className="text-xs text-muted-foreground">
+                                    Adults: {booking.adults || 0}
+                                    {" • "}
+                                    Children: {booking.children || 0}
+                                </div>
+                            )}
+
                             {mealMode === "price" && booking.withMeal && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    Veg: {booking.vegGuests || 0} · Non-Veg: {booking.nonVegGuests || 0}
+                                <div className="text-xs text-muted-foreground">
+                                    Veg: {booking.vegGuests || 0}
+                                    {" • "}
+                                    Non-Veg: {booking.nonVegGuests || 0}
                                 </div>
                             )}
 
                             {mealMode === "only" && (
-                                <div className="text-xs text-muted-foreground mt-1">
+                                <div className="text-xs text-muted-foreground">
                                     Veg & Non-Veg meals included
                                 </div>
                             )}
@@ -221,19 +249,33 @@ export default function BookingSuccess() {
 
                         <Separator />
 
-                        <div className="flex justify-between items-end">
-                            <div>
-                                <div className="text-xs text-muted-foreground">
-                                    Total Paid ({nights} nights)
-                                </div>
-                                <div className="text-xl font-semibold text-red-600">
-                                    ₹{(booking.amount || booking.totalAmount || 0).toLocaleString("en-IN")}
-                                </div>
+                        <div className="space-y-2 text-sm">
+
+                            <div className="flex justify-between">
+                                <span>Subtotal</span>
+                                <span>₹{subtotal.toLocaleString("en-IN")}</span>
                             </div>
+
+                            <div className="flex justify-between text-muted-foreground">
+                                <span>Taxes & Fees</span>
+                                <span>₹{tax.toLocaleString("en-IN")}</span>
+                            </div>
+
+                            <Separator />
+
+                            <div className="flex justify-between font-semibold text-base">
+                                <span>Total Paid</span>
+                                <span className="text-red-600">
+                                    ₹{grandTotal.toLocaleString("en-IN")}
+                                </span>
+                            </div>
+
                             <div className="text-xs text-muted-foreground">
-                                Including all taxes
+                                Including all taxes • {nights} nights
                             </div>
+
                         </div>
+
                     </div>
                 </div>
 
@@ -327,9 +369,11 @@ export default function BookingSuccess() {
 
                 {/* ACTIONS */}
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <Button className="bg-red-700 hover:bg-red-800">
-                        <Download className="w-4 h-4 mr-2" />
-                        Download Confirmation
+                    <Button
+                        className="bg-red-700 hover:bg-red-800"
+                        onClick={() => navigate(`/bookings/`)}
+                    >
+                        View Booking
                     </Button>
 
                     <Button
