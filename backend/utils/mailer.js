@@ -252,6 +252,107 @@ Grand Total<br>
 
 </td>
 </tr>
+<!-- ================= BOOKING SUMMARY ================= -->
+
+<style>
+@media only screen and (max-width:600px){
+  .stack-card{
+    display:block !important;
+    width:100% !important;
+    margin-bottom:10px !important;
+  }
+}
+</style>
+
+<tr>
+<td style="padding:16px 26px;">
+
+<!-- ===== BOX 1 ===== -->
+<table class="stack-card" width="100%" cellpadding="0" cellspacing="0"
+style="background:#f3f4f6;border-radius:10px;margin-bottom:12px;">
+
+<tr>
+<td style="padding:16px;font-size:13px;color:#666;">
+Check-in
+</td>
+<td style="padding:16px;font-size:13px;color:#666;">
+Check-out
+</td>
+<td style="padding:16px;font-size:13px;color:#666;">
+Nights
+</td>
+</tr>
+
+<tr>
+<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+<b>${checkIn}</b>
+</td>
+<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+<b>${checkOut}</b>
+</td>
+<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+<b>${booking.nights}</b>
+</td>
+</tr>
+
+</table>
+
+<!-- ===== BOX 2 ===== -->
+<table class="stack-card" width="100%" cellpadding="0" cellspacing="0"
+style="background:#f3f4f6;border-radius:10px;margin-bottom:12px;">
+
+<tr>
+<td style="padding:16px;font-size:13px;color:#666;">
+Guests
+</td>
+<td style="padding:16px;font-size:13px;color:#666;">
+Food preference
+</td>
+</tr>
+
+<tr>
+<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+<b>${adults} Adults, ${children} Children</b>
+</td>
+<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+🥗 <b>${vegCount}</b> · 🍗 <b>${nonVegCount}</b>
+</td>
+</tr>
+
+</table>
+
+<!-- ===== BOX 3 ===== -->
+<table class="stack-card" width="100%" cellpadding="0" cellspacing="0"
+style="background:#e8f5e9;border-radius:10px;">
+
+<tr>
+<td style="padding:16px;font-size:13px;color:#666;">
+Room total
+</td>
+<td style="padding:16px;font-size:13px;color:#666;">
+GST
+</td>
+<td style="padding:16px;font-size:13px;color:#666;">
+Grand total
+</td>
+</tr>
+
+<tr>
+<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+<b>₹${grandTotal}</b>
+</td>
+<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+<b>₹0</b>
+</td>
+<td style="padding:0 16px 16px;font-size:16px;color:#1f8f43;">
+<b>₹${grandTotal}</b>
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
 
 
 <!-- ================= LOCATION ================= -->
