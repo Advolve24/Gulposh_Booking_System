@@ -152,200 +152,71 @@ ${room.name}
 </td>
 </tr>
 
-<!-- ================= BOOKING SUMMARY CARDS ================= -->
-
-<style>
-@media only screen and (max-width:600px){
-  .stack-column{
-    display:block !important;
-    width:100% !important;
-  }
-}
-</style>
+<!-- ================= BOOKING SUMMARY TABLE ================= -->
 
 <tr>
 <td style="padding:16px 26px;">
 
-<table width="100%" cellpadding="0" cellspacing="0">
-<tr>
-
-<!-- ===== LEFT CARD ===== -->
-<td class="stack-column"
-width="50%"
-style="padding-right:7px;vertical-align:top;">
-
 <table width="100%" cellpadding="0" cellspacing="0"
 style="
-background:#f3f4f6;
-border-radius:10px;
+border-collapse:collapse;
 font-size:14px;
-color:#333;
+border:1px solid #d1d5db;
 ">
 
-<tr>
-<td style="padding:18px;">
-
-<div style="margin-bottom:5px;">
-Check-in<br>
-<b>${checkIn}</b>
-</div>
-
-<div style="margin-bottom:5px;">
-Check-out<br>
-<b>${checkOut}</b>
-</div>
-
-<div>
-Nights<br>
-<b>${booking.nights}</b>
-</div>
-
-</td>
-</tr>
-
-</table>
-
-</td>
-
-<!-- ===== RIGHT CARD ===== -->
-<td class="stack-column"
-width="50%"
-style="padding-left:7px;vertical-align:top;">
-
-<table width="100%" cellpadding="0" cellspacing="0"
-style="
-background:#f3f4f6;
-border-radius:10px;
-font-size:14px;
-color:#333;
-">
-
-<tr>
-<td style="padding:18px;">
-
-<div style="margin-bottom:5px;">
-Guests<br>
-<b>${adults} Adults, ${children} Children</b>
-</div>
-
-<div style="margin-bottom:5px;">
-Food Preference<br>
-🥗 <b>${vegCount}</b> · 🍗 <b>${nonVegCount}</b>
-</div>
-
-<div>
-Grand Total<br>
-<b style="font-size:16px;color:#1f8f43;">
-₹${grandTotal}
-</b>
-</div>
-
-</td>
-</tr>
-
-</table>
-
-</td>
-
-</tr>
-</table>
-
-</td>
-</tr>
-<!-- ================= BOOKING SUMMARY ================= -->
-
-<style>
-@media only screen and (max-width:600px){
-  .stack-card{
-    display:block !important;
-    width:100% !important;
-    margin-bottom:10px !important;
-  }
-}
-</style>
-
-<tr>
-<td style="padding:16px 26px;">
-
-<!-- ===== BOX 1 ===== -->
-<table class="stack-card" width="100%" cellpadding="0" cellspacing="0"
-style="background:#f3f4f6;border-radius:10px;margin-bottom:12px;">
-
-<tr>
-<td style="padding:16px;font-size:13px;color:#666;">
+<tr style="background:#f9fafb;">
+<td style="padding:12px;border:1px solid #d1d5db;">
 Check-in
 </td>
-<td style="padding:16px;font-size:13px;color:#666;">
-Check-out
-</td>
-<td style="padding:16px;font-size:13px;color:#666;">
-Nights
-</td>
-</tr>
-
-<tr>
-<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+<td align="right" style="padding:12px;border:1px solid #d1d5db;">
 <b>${checkIn}</b>
 </td>
-<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+</tr>
+
+<tr>
+<td style="padding:12px;border:1px solid #d1d5db;">
+Check-out
+</td>
+<td align="right" style="padding:12px;border:1px solid #d1d5db;">
 <b>${checkOut}</b>
 </td>
-<td style="padding:0 16px 16px;font-size:14px;color:#111;">
-<b>${booking.nights}</b>
-</td>
 </tr>
 
-</table>
-
-<!-- ===== BOX 2 ===== -->
-<table class="stack-card" width="100%" cellpadding="0" cellspacing="0"
-style="background:#f3f4f6;border-radius:10px;margin-bottom:12px;">
-
-<tr>
-<td style="padding:16px;font-size:13px;color:#666;">
+<tr style="background:#f9fafb;">
+<td style="padding:12px;border:1px solid #d1d5db;">
 Guests
 </td>
-<td style="padding:16px;font-size:13px;color:#666;">
-Food preference
+<td align="right" style="padding:12px;border:1px solid #d1d5db;">
+<b>${adults} Adults, ${children} Children</b>
 </td>
 </tr>
 
 <tr>
-<td style="padding:0 16px 16px;font-size:14px;color:#111;">
-<b>${adults} Adults, ${children} Children</b>
+<td style="padding:12px;border:1px solid #d1d5db;">
+Food Preference
 </td>
-<td style="padding:0 16px 16px;font-size:14px;color:#111;">
+<td align="right" style="padding:12px;border:1px solid #d1d5db;">
 🥗 <b>${vegCount}</b> · 🍗 <b>${nonVegCount}</b>
 </td>
 </tr>
 
-</table>
-
-<!-- ===== BOX 3 ===== -->
-<table class="stack-card" width="100%" cellpadding="0" cellspacing="0"
-style="background:#e8f5e9;border-radius:10px;">
-
-<tr>
-<td style="padding:16px;font-size:13px;color:#666;">
-Room total
+<tr style="background:#f9fafb;">
+<td style="padding:12px;border:1px solid #d1d5db;">
+Nights
 </td>
-<td style="padding:16px;font-size:13px;color:#666;">
-GST
-</td>
-<td style="padding:16px;font-size:13px;color:#666;">
-Grand total
+<td align="right" style="padding:12px;border:1px solid #d1d5db;">
+<b>${booking.nights}</b>
 </td>
 </tr>
 
-<tr>
-<td style="padding:0 16px 16px;font-size:14px;color:#111;">
-<b>₹${grandTotal}</b>
+<tr style="background:#d1fae5;font-weight:bold;">
+<td style="padding:14px;border:1px solid #d1d5db;">
+Grand Total
 </td>
-<td style="padding:0 16px 16px;font-size:14px;color:#111;">
-<b>₹0</b>
-</td>
-<td style="padding:0 16px 16px;font-size:16px;color:#1f8f43;">
-<b>₹${grandTotal}</b>
+<td align="right"
+style="padding:14px;border:1px solid #d1d5db;
+font-size:16px;color:#059669;">
+₹${grandTotal}
 </td>
 </tr>
 
