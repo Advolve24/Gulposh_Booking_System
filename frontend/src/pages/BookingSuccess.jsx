@@ -94,23 +94,6 @@ export default function BookingSuccess() {
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const subtotal =
-        booking.subtotal ||
-        booking.baseAmount ||
-        booking.roomAmount ||
-        0;
-
-    const tax =
-        booking.tax ||
-        booking.taxes ||
-        booking.taxAmount ||
-        0;
-
-    const grandTotal =
-        booking.amount ||
-        booking.totalAmount ||
-        subtotal + tax;
-
     useLayoutEffect(() => {
         if (confettiRan.current) return;
         confettiRan.current = true;
@@ -134,6 +117,22 @@ export default function BookingSuccess() {
     }, [id, navigate]);
 
     if (loading || !booking) return null;
+
+    const subtotal =
+        booking.subtotal ??
+        booking.baseAmount ??
+        booking.roomTotal ??
+        0;
+
+    const tax =
+        booking.tax ??
+        booking.taxAmount ??
+        0;
+
+    const grandTotal =
+        booking.amount ??
+        booking.totalAmount ??
+        subtotal + tax;
 
     const room = booking.room;
     const mealMode = room?.mealMode;
