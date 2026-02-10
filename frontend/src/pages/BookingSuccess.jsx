@@ -174,7 +174,7 @@ export default function BookingSuccess() {
                     <img
                         src={roomImage}
                         alt={room.name}
-                        className="h-[372px] md:h-full w-full object-cover"
+                        className="h-20 md:h-[372px] w-full object-cover"
                     />
 
                     <div className="p-6 space-y-2">
@@ -240,8 +240,8 @@ export default function BookingSuccess() {
 
                             {/* ROOM CHARGES */}
                             <div className="flex justify-between">
-                                <span>Room Charges</span>
-                                <span>₹{subtotal.toLocaleString("en-IN")}</span>
+                                <span className="font-[500]">Room Charges</span>
+                                <span className="font-[500]">₹{subtotal.toLocaleString("en-IN")}</span>
                             </div>
 
                             {/* GST */}

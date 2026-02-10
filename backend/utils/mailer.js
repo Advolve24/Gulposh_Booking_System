@@ -51,132 +51,171 @@ export const sendBookingConfirmationMail = async ({
     html: `
 <!DOCTYPE html>
 <html>
-<body style="margin:0;padding:0;background:#f5f6f7;font-family:Arial,Helvetica,sans-serif;">
+<body style="margin:0;padding:0;background:#f4f5f7;font-family:Arial,Helvetica,sans-serif;">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 10px;">
 <tr>
 <td align="center">
 
 <table width="600" cellpadding="0" cellspacing="0"
-style="background:#ffffff;border-radius:12px;overflow:hidden;
-box-shadow:0 4px 10px rgba(0,0,0,0.06);">
+style="background:#ffffff;border-radius:14px;overflow:hidden;
+box-shadow:0 6px 18px rgba(0,0,0,0.08);">
 
-<!-- Header -->
+<!-- ================= HEADER ================= -->
 <tr>
-<td style="padding:24px 28px;border-bottom:1px solid #eee;">
-<table width="100%">
-<tr>
-<td width="40">
-<div style="width:36px;height:36px;border-radius:50%;
-background:#e8f5e9;color:#2e7d32;text-align:center;
-line-height:36px;font-size:20px;font-weight:bold;">✓</div>
-</td>
+<td style="background:#004196;color:#ffffff;text-align:center;padding:30px 20px;">
 
-<td style="padding-left:12px;">
-<h2 style="margin:0;font-size:20px;color:#111;">
-Booking Confirmed!
-</h2>
-<p style="margin:4px 0 0;color:#666;font-size:13px;">
+<div style="
+  width:52px;
+  height:52px;
+  border:2px solid #ffffff;
+  border-radius:6px;
+  margin:0 auto 14px;
+  font-size:28px;
+  font-weight:bold;
+  line-height:52px;
+">
+✓
+</div>
+
+<h2 style="margin:0;font-size:22px;">Booking Confirmed!</h2>
+
+<p style="margin:6px 0 0;font-size:13px;opacity:0.9;">
 Booking ID: ${booking._id || booking.paymentId}
 </p>
-</td>
-</tr>
-</table>
+
 </td>
 </tr>
 
-<!-- Greeting -->
+<!-- ================= GREETING ================= -->
 <tr>
-<td style="padding:24px 28px 0;">
-<p style="margin:0 0 12px;font-size:15px;color:#333;">
-Hello <b>${name || "Guest"}</b>,
-</p>
-<p style="margin:0;font-size:15px;color:#555;">
+<td style="padding:22px 26px 10px;font-size:15px;color:#333;">
+Hello <b>${name || "Guest"}</b>,<br><br>
 Thank you for your reservation. We're excited to host you!
-</p>
 </td>
 </tr>
 
-<!-- Property Image -->
+<!-- ================= IMAGE ================= -->
 <tr>
-<td style="padding:20px 28px 0;">
-<img src="${imageUrl}" width="100%" height="200"
+<td style="padding:0 26px;">
+<img src="${imageUrl}" width="100%" height="220"
 style="border-radius:10px;object-fit:cover;display:block;">
 </td>
 </tr>
 
-<!-- Property Info -->
+<!-- ================= PROPERTY INFO ================= -->
 <tr>
-<td style="padding:16px 28px 0;">
+<td style="padding:14px 26px 0;">
 <h3 style="margin:0;font-size:18px;color:#111;">
 ${room.name}
 </h3>
 
-<p style="margin:6px 0 0;color:#777;font-size:13px;">
+<p style="margin:4px 0 0;font-size:13px;color:#666;">
 📍 ${location}
 </p>
 </td>
 </tr>
 
-<!-- Check-in / Check-out -->
+<!-- ================= BOOKING TABLE ================= -->
 <tr>
-<td style="padding:20px 28px;">
-<table width="100%">
-<tr>
+<td style="padding:16px 26px;">
+<table width="100%" cellpadding="10" cellspacing="0"
+style="border-collapse:collapse;font-size:14px;border:1px solid #e3e5e7;">
 
-<td width="48%" style="background:#f7f8f9;padding:14px;
-border-radius:8px;font-size:14px;">
-Check-in<br><b>${checkIn}</b>
-</td>
-
-<td width="4%"></td>
-
-<td width="48%" style="background:#f7f8f9;padding:14px;
-border-radius:8px;font-size:14px;">
-Check-out<br><b>${checkOut}</b>
-</td>
-
-</tr>
-</table>
-</td>
+<tr style="background:#fafafa;">
+<td>Check-in</td>
+<td align="right"><b>${checkIn}</b></td>
 </tr>
 
-<!-- Guests + Total -->
 <tr>
-<td style="padding:0 28px 20px;">
-<table width="100%">
-<tr>
+<td>Check-out</td>
+<td align="right"><b>${checkOut}</b></td>
+</tr>
 
-<td style="font-size:14px;color:#666;">
-👥 <b>${adults}</b> Adults · <b>${children}</b> Children · ${
-      booking.nights
-    } Nights
-</td>
-
+<tr style="background:#fafafa;">
+<td>Guests</td>
 <td align="right">
-<p style="margin:0;font-size:12px;color:#666;">
-Grand Total
-</p>
-<p style="margin:0;font-size:20px;font-weight:bold;color:#2e7d32;">
-₹${grandTotal}
-</p>
+<b>${adults} Adults, ${children} Children</b>
 </td>
+</tr>
 
+<tr>
+<td>Nights</td>
+<td align="right"><b>${booking.nights}</b></td>
+</tr>
+
+<tr style="background:#e8f5e9;font-weight:bold;">
+<td>Grand Total</td>
+<td align="right" style="color:#1f8f43;font-size:16px;">
+₹${grandTotal}
+</td>
+</tr>
+
+</table>
+</td>
+</tr>
+
+<!-- ================= LOCATION ================= -->
+<tr>
+<td style="padding:0 26px 16px;font-size:14px;color:#444;">
+<b>📍 Location</b><br>
+${location}<br>
+<a href="#" style="color:#1f8f43;text-decoration:none;">
+Get Directions →
+</a>
+</td>
+</tr>
+
+<!-- ================= HOST ================= -->
+<tr>
+<td style="padding:16px 26px;background:#f7f8fa;font-size:14px;">
+<b>👤 Your Host</b><br>
+Priya Sharma<br>
+📞 +91 98765 43210<br>
+✉️ priya@grandrepose.in
+</td>
+</tr>
+
+<!-- ================= WIFI ================= -->
+<tr>
+<td style="padding:16px 26px;">
+<table width="100%" cellpadding="12" cellspacing="0"
+style="background:#eaf3ff;border-radius:8px;font-size:14px;">
+<tr>
+<td>
+<b>📶 WiFi Details</b><br>
+Network: <b>GrandRepose_Guest</b><br>
+Password: <b>Welcome@2026</b>
+</td>
 </tr>
 </table>
 </td>
 </tr>
 
-<!-- Footer -->
+<!-- ================= BUTTON ================= -->
 <tr>
-<td style="padding:24px 28px;border-top:1px solid #eee;">
-<p style="margin:0;color:#555;font-size:14px;">
-We look forward to welcoming you!
-</p>
+<td align="center" style="padding:10px 26px 24px;">
+<a href="#"
+style="
+background:#1f8f43;
+color:#ffffff;
+padding:14px 26px;
+border-radius:8px;
+text-decoration:none;
+font-weight:bold;
+display:inline-block;
+">
+View Full Booking Details
+</a>
+</td>
+</tr>
 
-<p style="margin:6px 0 0;font-weight:bold;">
+<!-- ================= FOOTER ================= -->
+<tr>
+<td style="padding:18px 26px;border-top:1px solid #eee;
+text-align:center;font-size:13px;color:#666;">
+We look forward to welcoming you!<br>
 — Team Gulposh
-</p>
 </td>
 </tr>
 
