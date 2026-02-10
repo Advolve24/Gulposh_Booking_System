@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 export const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
-  secure: false, 
+  secure: false,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -33,6 +33,9 @@ export const sendBookingConfirmationMail = async ({
 
   const adults = booking.adults || 0;
   const children = booking.children || 0;
+
+  const vegCount = booking.food?.veg || 0;
+  const nonVegCount = booking.food?.nonVeg || 0;
 
   const grandTotal = Number(booking.amount).toLocaleString("en-IN");
 
@@ -90,7 +93,7 @@ Booking ID: ${booking._id || booking.paymentId}
 <!-- ================= GREETING ================= -->
 <tr>
 <td style="padding:22px 26px 10px;font-size:15px;color:#333;">
-Hello <b>${name || "Guest"}</b>,<br><br>
+Hello <b>${name || "Guest"}</b>,<br>
 Thank you for your reservation. We're excited to host you!
 </td>
 </tr>
@@ -140,6 +143,13 @@ style="border-collapse:collapse;font-size:14px;border:1px solid #e3e5e7;">
 </tr>
 
 <tr>
+<td>Food Preference</td>
+<td align="right">
+🥗 <b>${vegCount}</b> Veg · 🍗 <b>${nonVegCount}</b> Non-Veg
+</td>
+</tr>
+
+<tr>
 <td>Nights</td>
 <td align="right"><b>${booking.nights}</b></td>
 </tr>
@@ -157,37 +167,113 @@ style="border-collapse:collapse;font-size:14px;border:1px solid #e3e5e7;">
 
 <!-- ================= LOCATION ================= -->
 <tr>
-<td style="padding:0 26px 16px;font-size:14px;color:#444;">
-<b>📍 Location</b><br>
-${location}<br>
-<a href="#" style="color:#1f8f43;text-decoration:none;">
+<td style="padding:0 26px 14px;">
+<table width="100%" cellpadding="0" cellspacing="0"
+style="
+background:#f3f4f6;
+border-radius:10px;
+padding:18px;
+font-size:14px;
+color:#333;
+">
+
+<tr>
+<td>
+<div style="font-weight:bold;margin-bottom:6px;">
+📍 Location
+</div>
+
+<div style="line-height:1.5;margin-bottom:8px;">
+${location}
+</div>
+
+<a href="https://maps.app.goo.gl/HFwk69Wm9ZuDwV8Q6"
+style="
+color:#1f4fff;
+text-decoration:none;
+font-weight:500;
+">
 Get Directions →
 </a>
+
 </td>
 </tr>
+</table>
+</td>
+</tr>
+
 
 <!-- ================= HOST ================= -->
 <tr>
-<td style="padding:16px 26px;background:#f7f8fa;font-size:14px;">
-<b>👤 Your Host</b><br>
-Priya Sharma<br>
-📞 +91 98765 43210<br>
+<td style="padding:0 26px 14px;">
+<table width="100%" cellpadding="0" cellspacing="0"
+style="
+background:#f3f4f6;
+border-radius:10px;
+padding:18px;
+font-size:14px;
+color:#333;
+">
+
+<tr>
+<td>
+
+<div style="font-weight:bold;margin-bottom:10px;">
+👤 Your Host
+</div>
+
+<div style="font-weight:600;margin-bottom:6px;">
+Priya Sharma
+</div>
+
+<div style="margin-bottom:6px;">
+📞 +91 98765 43210
+</div>
+
+<div>
 ✉️ priya@grandrepose.in
+</div>
+
+</td>
+</tr>
+</table>
 </td>
 </tr>
 
+
 <!-- ================= WIFI ================= -->
 <tr>
-<td style="padding:16px 26px;">
-<table width="100%" cellpadding="12" cellspacing="0"
-style="background:#eaf3ff;border-radius:8px;font-size:14px;">
+<td style="padding:0 26px 14px;">
+<table width="100%" cellpadding="0" cellspacing="0"
+style="
+background:#dbe5f1;
+border-radius:10px;
+padding:18px;
+font-size:14px;
+color:#333;
+">
+
 <tr>
 <td>
-<b>📶 WiFi Details</b><br>
-Network: <b>GrandRepose_Guest</b><br>
+
+<div style="font-weight:bold;margin-bottom:8px;">
+📶 WiFi Details
+</div>
+
+<div style="margin-bottom:4px;">
+Network: <b>GrandRepose_Guest</b>
+</div>
+
+<div>
 Password: <b>Welcome@2026</b>
+</div>
+
 </td>
 </tr>
+</table>
+</td>
+</tr>
+
 </table>
 </td>
 </tr>
@@ -195,9 +281,9 @@ Password: <b>Welcome@2026</b>
 <!-- ================= BUTTON ================= -->
 <tr>
 <td align="center" style="padding:10px 26px 24px;">
-<a href="#"
+<a href="https://boking.villagulposh.com"
 style="
-background:#1f8f43;
+background:#004196;
 color:#ffffff;
 padding:14px 26px;
 border-radius:8px;
