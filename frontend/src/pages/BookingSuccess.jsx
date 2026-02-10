@@ -238,18 +238,21 @@ export default function BookingSuccess() {
 
                         <div className="space-y-2 text-sm">
 
+                            {/* ROOM CHARGES */}
                             <div className="flex justify-between">
-                                <span>Subtotal</span>
+                                <span>Room Charges</span>
                                 <span>₹{subtotal.toLocaleString("en-IN")}</span>
                             </div>
 
+                            {/* GST */}
                             <div className="flex justify-between text-muted-foreground">
-                                <span>Taxes & Fees</span>
+                                <span>GST</span>
                                 <span>₹{tax.toLocaleString("en-IN")}</span>
                             </div>
 
                             <Separator />
 
+                            {/* TOTAL */}
                             <div className="flex justify-between font-semibold text-base">
                                 <span>Total Paid</span>
                                 <span className="text-red-600">
@@ -258,10 +261,11 @@ export default function BookingSuccess() {
                             </div>
 
                             <div className="text-xs text-muted-foreground">
-                                Including all taxes • {nights} nights
+                                Includes all applicable taxes & fees • {nights} nights
                             </div>
 
                         </div>
+
 
                     </div>
                 </div>
