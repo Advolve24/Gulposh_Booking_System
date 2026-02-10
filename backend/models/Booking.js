@@ -55,6 +55,7 @@ const bookingSchema = new mongoose.Schema(
     orderId: String,
     paymentId: String,
     signature: String,
+    totalTax: Number,
 
     adminMeta: {
       fullName: String,

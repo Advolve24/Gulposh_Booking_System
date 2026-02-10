@@ -174,7 +174,7 @@ export default function BookingSuccess() {
                     <img
                         src={roomImage}
                         alt={room.name}
-                        className="h-20 md:h-full w-full object-cover"
+                        className="h-[372px] md:h-full w-full object-cover"
                     />
 
                     <div className="p-6 space-y-2">
