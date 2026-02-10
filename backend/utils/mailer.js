@@ -65,10 +65,9 @@ style="background:#ffffff;border-radius:14px;overflow:hidden;
 box-shadow:0 6px 18px rgba(0,0,0,0.08);">
 
 <!-- ================= HEADER ================= -->
-<!-- ================= HEADER ================= -->
 <tr>
 <td style="
-background:#f2f3f5;
+background:#004196;
 padding:22px 28px;
 border-bottom:1px solid #e5e7eb;
 ">
@@ -82,12 +81,12 @@ border-bottom:1px solid #e5e7eb;
 <div style="
 width:40px;
 height:40px;
-background:#e6f4ea;
+background:#fff;
 border-radius:50%;
 text-align:center;
 line-height:40px;
 font-size:22px;
-color:#1f8f43;
+color:#004196;
 font-weight:bold;
 ">
 ✓
@@ -101,7 +100,7 @@ font-weight:bold;
 <h2 style="
 margin:0;
 font-size:20px;
-color:#111827;
+color:#fff;
 font-weight:600;
 ">
 Booking Confirmed!
@@ -110,7 +109,7 @@ Booking Confirmed!
 <p style="
 margin:4px 0 0;
 font-size:13px;
-color:#6b7280;
+color:#fff;
 ">
 Booking ID: ${booking._id || booking.paymentId}
 </p>
@@ -257,19 +256,19 @@ Get Directions →
 <!-- ===== HOST COLUMN ===== -->
 <td class="stack-column"
 width="50%"
-style="padding-right:7px;vertical-align:top;">
+valign="top"
+style="padding-right:7px;">
 
-<table width="100%" cellpadding="0" cellspacing="0"
+<table width="100%" height="100%" cellpadding="0" cellspacing="0"
 style="
 background:#f3f4f6;
 border-radius:10px;
-padding:18px;
 font-size:14px;
 color:#333;
 ">
 
 <tr>
-<td>
+<td style="padding:18px;" valign="top">
 
 <div style="font-weight:bold;margin-bottom:10px;">
 👤 Your Host
@@ -297,19 +296,19 @@ Priya Sharma
 <!-- ===== WIFI COLUMN ===== -->
 <td class="stack-column"
 width="50%"
-style="padding-left:7px;vertical-align:top;">
+valign="top"
+style="padding-left:7px;">
 
-<table width="100%" cellpadding="0" cellspacing="0"
+<table width="100%" height="100%" cellpadding="0" cellspacing="0"
 style="
 background:#dbe5f1;
 border-radius:10px;
-padding:18px;
 font-size:14px;
 color:#333;
 ">
 
 <tr>
-<td>
+<td style="padding:18px;" valign="top">
 
 <div style="font-weight:bold;margin-bottom:8px;">
 📶 WiFi Details
@@ -335,6 +334,7 @@ Password: <b>Welcome@2026</b>
 
 </td>
 </tr>
+
 
 <!-- ================= BUTTON ================= -->
 <tr>
