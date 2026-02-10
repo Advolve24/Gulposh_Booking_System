@@ -65,34 +65,64 @@ style="background:#ffffff;border-radius:14px;overflow:hidden;
 box-shadow:0 6px 18px rgba(0,0,0,0.08);">
 
 <!-- ================= HEADER ================= -->
+<!-- ================= HEADER ================= -->
 <tr>
-<td style="background:#004196;color:#ffffff;text-align:center;padding:23px 40px;">
+<td style="
+background:#f2f3f5;
+padding:22px 28px;
+border-bottom:1px solid #e5e7eb;
+">
+
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+
+<!-- ICON -->
+<td width="52" valign="top">
 
 <div style="
-  width:38px;
-  height:38px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border:2px solid #ffffff;
-  border-radius:6px;
-  margin:0 auto 14px;
-  font-size:22px;
-  font-weight:bold;
-  line-height:52px;
+width:40px;
+height:40px;
+background:#e6f4ea;
+border-radius:50%;
+text-align:center;
+line-height:40px;
+font-size:22px;
+color:#1f8f43;
+font-weight:bold;
 ">
 ✓
 </div>
 
-<div>
-<h2 style="margin:0;font-size:22px;margin-top:4px;">Booking Confirmed!</h2>
-<p style="margin:6px 0 0;font-size:13px;opacity:0.9;">
+</td>
+
+<!-- TEXT -->
+<td valign="middle" style="padding-left:14px;">
+
+<h2 style="
+margin:0;
+font-size:20px;
+color:#111827;
+font-weight:600;
+">
+Booking Confirmed!
+</h2>
+
+<p style="
+margin:4px 0 0;
+font-size:13px;
+color:#6b7280;
+">
 Booking ID: ${booking._id || booking.paymentId}
 </p>
-</div>
+
+</td>
+
+</tr>
+</table>
 
 </td>
 </tr>
+
 
 <!-- ================= GREETING ================= -->
 <tr>
