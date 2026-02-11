@@ -358,7 +358,7 @@ border-radius:12px;
         </td>
       </tr>
 
-      
+
       <!-- GST -->
       <tr>
         <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
@@ -405,7 +405,7 @@ border-radius:12px;
 <td style="padding:14px;">
 <b>📍 Location</b><br><br>
 ${location}<br>
-<a href="https://maps.google.com" style="
+<a href="https://maps.app.goo.gl/irFHzTvRRZwTi8nr9" style="
 color:#1f5f54;
 text-decoration:none;
 font-weight:600;
