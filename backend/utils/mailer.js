@@ -40,15 +40,21 @@ export const sendBookingConfirmationMail = async ({
   const mealTotal = Number(booking.mealTotal || 0);
   const gst = Number(booking.totalTax || 0);
   const roomTotal = Number(booking.roomTotal || 0);
+
   const subtotal = roomTotal + mealTotal;
   const grandTotal = Number(booking.amount || 0);
+
+  const gstPercent =
+    subtotal > 0
+      ? Math.round((gst / subtotal) * 100)
+      : 0;
 
   const foodText =
     room.mealMode === "only"
       ? "Included in room charges"
       : mealTotal > 0
         ? `₹${mealTotal.toLocaleString("en-IN")}`
-        : "Included in room charges";
+        : "Not selected";
 
   const imageUrl =
     room.coverImage ||
@@ -267,7 +273,7 @@ border-radius:12px;
             </svg>
           </span>
 
-          <b>${adults}</b> Adults, <b>${children}</b> Child
+          <b>${adults}</b> Adults, <b>${children}</b> Children
         </td>
 
         <!-- Night -->
@@ -372,13 +378,14 @@ border-radius:12px;
 
       <!-- GST -->
       <tr>
-        <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
-          GST (18%)
-        </td>
-        <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
-          ₹${gst.toLocaleString("en-IN")}
-        </td>
-      </tr>
+  <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
+    GST (${gstPercent}%)
+  </td>
+  <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
+    ₹${gst.toLocaleString("en-IN")}
+  </td>
+</tr>
+
 
       <!-- Grand Total (green bar) -->
       <tr>
