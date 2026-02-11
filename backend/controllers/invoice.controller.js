@@ -35,6 +35,7 @@ export const getInvoice = async (req, res) => {
         nonVegGuests: booking.nonVegGuests || 0,
         mealTotal: booking.mealTotal || 0,
         totalTax: booking.totalTax || 0,
+        taxPercent: booking.taxPercent || 0,
         amount: booking.amount,
         paymentProvider: booking.paymentProvider,
         orderId: booking.orderId,
@@ -88,14 +89,11 @@ export const downloadInvoicePDF = async (req, res) => {
       booking.mealMeta?.mealTotal || booking.mealTotal || 0;
 
     const subTotal = roomTotal + mealTotal;
+
+    const taxAmount = booking.totalTax || 0;
+    const taxPercent = booking.taxPercent || 0;
+
     const grandTotal = booking.amount || 0;
-
-    // derive tax safely
-    const taxAmount = Math.max(grandTotal - subTotal, 0);
-
-    // optional: % only for display
-    const taxPercent =
-      subTotal > 0 ? ((taxAmount / subTotal) * 100).toFixed(2) : 0;
 
     const html = `
 <!DOCTYPE html>

@@ -49,95 +49,88 @@ export default function VillaInvoice() {
     );
   }
 
-  /* ================= BACKEND SOURCE OF TRUTH ================= */
+
   const nights = booking.nights || 1;
 
   const roomTotal = booking.roomTotal || 0;
   const mealTotal = booking.mealMeta?.mealTotal || booking.mealTotal || 0;
 
   const subTotal = roomTotal + mealTotal;
+
+  const taxAmount = booking.totalTax || 0;
+  const taxPercent = booking.taxPercent || 0;
+
   const grandTotal = booking.amount || 0;
 
-  // derive tax safely from backend final amount
-  const taxAmount = Math.max(grandTotal - subTotal, 0);
+  const vegTotal = 0;
+  const nonVegTotal = 0;
 
-  // tax % only for display (optional)
-  const taxPercent =
-    subTotal > 0 ? ((taxAmount / subTotal) * 100).toFixed(2) : 0;
+  const generatePDF = async (isAuto = false) => {
+    if (isDownloadingRef.current) return;
+    isDownloadingRef.current = true;
 
-  /* ================= MEAL BREAKUP (DISPLAY ONLY) ================= */
-  const vegTotal =
-    booking.vegGuests * booking.room?.mealPriceVeg * nights || 0;
-
-  const nonVegTotal =
-    booking.nonVegGuests * booking.room?.mealPriceNonVeg * nights || 0;
-
-const generatePDF = async (isAuto = false) => {
-  if (isDownloadingRef.current) return;
-  isDownloadingRef.current = true;
-
-  const original = invoiceRef.current;
-  if (!original) {
-    isDownloadingRef.current = false;
-    return;
-  }
-
-  let clone;
-
-  try {
-    clone = original.cloneNode(true);
-
-    clone.style.width = "1024px";
-    clone.style.position = "fixed";
-    clone.style.left = "-9999px";
-    clone.style.top = "0";
-    clone.style.background = "#ffffff";
-    clone.style.padding = "24px";
-
-    document.body.appendChild(clone);
-
-    const images = clone.querySelectorAll("img");
-    await Promise.all(
-      [...images].map(
-        (img) =>
-          img.complete ||
-          new Promise((res) => {
-            img.onload = res;
-            img.onerror = res;
-          })
-      )
-    );
-
-    await new Promise((r) => setTimeout(r, 200));
-
-    const canvas = await html2canvas(clone, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      windowWidth: 1024,
-    });
-
-    const imgData = canvas.toDataURL("image/jpeg", 0.95);
-
-    const pdf = new jsPDF("p", "pt", "a4");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = (canvas.height * pageWidth) / canvas.width;
-
-    pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, pageHeight);
-    pdf.save(`Villa-Gulposh-Invoice-${booking._id.slice(-6)}.pdf`);
-
-    if (isAuto) {
-      setTimeout(() => {
-        window.close();
-      }, 300);
+    const original = invoiceRef.current;
+    if (!original) {
+      isDownloadingRef.current = false;
+      return;
     }
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-  } finally {
-    if (clone) document.body.removeChild(clone);
-    isDownloadingRef.current = false;
-  }
-};
+
+    let clone;
+
+    try {
+      clone = original.cloneNode(true);
+
+      clone.style.width = "1024px";
+      clone.style.position = "fixed";
+      clone.style.left = "-9999px";
+      clone.style.top = "0";
+      clone.style.background = "#ffffff";
+      clone.style.padding = "24px";
+
+      document.body.appendChild(clone);
+
+      const images = clone.querySelectorAll("img");
+      await Promise.all(
+        [...images].map(
+          (img) =>
+            img.complete ||
+            new Promise((res) => {
+              img.onload = res;
+              img.onerror = res;
+            })
+        )
+      );
+
+      await new Promise((r) => setTimeout(r, 200));
+
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        windowWidth: 1024,
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
+      const pdf = new jsPDF("p", "pt", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = (canvas.height * pageWidth) / canvas.width;
+
+      pdf.addImage(imgData, "JPEG", 0, 0, pageWidth, pageHeight);
+      pdf.save(`Villa-Gulposh-Invoice-${booking._id.slice(-6)}.pdf`);
+
+      if (isAuto) {
+        setTimeout(() => {
+          window.close();
+        }, 300);
+      }
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+    } finally {
+      if (clone) document.body.removeChild(clone);
+      isDownloadingRef.current = false;
+    }
+  };
 
 
   return (
