@@ -210,14 +210,14 @@ export default function BookingSuccess() {
 
                             <div className="flex items-center gap-2">
                                 <Users className="w-4 h-4" />
-                                {booking.guests} Guests
+                                <b>{booking.guests}</b> Guests
                             </div>
-
+                            <div className="flex gap-3 items-center">
                             {(booking.adults || booking.children) && (
                                 <div className="text-xs text-muted-foreground">
-                                    Adults: {booking.adults || 0}
+                                    Adults: <b>{booking.adults || 0}</b>
                                     {" • "}
-                                    Children: {booking.children || 0}
+                                    Children: <b>{booking.children || 0}</b>
                                 </div>
                             )}
 
@@ -229,7 +229,7 @@ export default function BookingSuccess() {
 
                             {room.mealMode === "price" && booking.withMeal && (
                                 <div className="text-xs text-muted-foreground">
-                                    🍽 Veg: {booking.vegGuests} • Non-Veg: {booking.nonVegGuests}
+                                    🍽 Veg: <b>{booking.vegGuests}</b> • Non-Veg: <b>{booking.nonVegGuests}</b>
                                 </div>
                             )}
 
@@ -238,6 +238,7 @@ export default function BookingSuccess() {
                                     🍽 No meals selected
                                 </div>
                             )}
+                            </div>
 
                         </div>
 
