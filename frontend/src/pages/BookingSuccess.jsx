@@ -213,31 +213,28 @@ export default function BookingSuccess() {
                                 <b>{booking.guests}</b> Guests
                             </div>
                             <div className="flex gap-3 items-center">
-                            {(booking.adults || booking.children) && (
-                                <div className="text-xs text-muted-foreground">
-                                    Adults: <b>{booking.adults || 0}</b>
-                                    {" • "}
-                                    Children: <b>{booking.children || 0}</b>
-                                </div>
-                            )}
+                                {(booking.adults || booking.children) && (
+                                    <div className="text-xs text-muted-foreground">
+                                        Adults: <b>{booking.adults || 0}</b>
+                                        {" • "}
+                                        Children: <b>{booking.children || 0}</b>
+                                    </div>
+                                )}
 
-                            {room.mealMode === "only" && (
-                                <div className="text-xs text-muted-foreground">
-                                    🍽 Meals included in room charges
-                                </div>
-                            )}
+                                {(
+                                    room.mealMode === "only" ||
+                                    (room.mealMode === "price" && booking.withMeal)
+                                ) && (
+                                        <div className="text-xs text-muted-foreground">
+                                            🍽 Veg: <b>{booking.vegGuests || 0}</b> • Non-Veg: <b>{booking.nonVegGuests || 0}</b>
+                                        </div>
+                                    )}
 
-                            {room.mealMode === "price" && booking.withMeal && (
-                                <div className="text-xs text-muted-foreground">
-                                    🍽 Veg: <b>{booking.vegGuests}</b> • Non-Veg: <b>{booking.nonVegGuests}</b>
-                                </div>
-                            )}
-
-                            {room.mealMode === "price" && !booking.withMeal && (
-                                <div className="text-xs text-muted-foreground">
-                                    🍽 No meals selected
-                                </div>
-                            )}
+                                {room.mealMode === "price" && !booking.withMeal && (
+                                    <div className="text-xs text-muted-foreground">
+                                        🍽 No meals selected
+                                    </div>
+                                )}
                             </div>
 
                         </div>
