@@ -430,8 +430,42 @@ border-radius:12px;
 <tr>
 <td style="padding:14px;">
 <b>📶 WiFi</b><br><br>
-GrandRepose_Guest<br>
-Pass: <b>Welcome@2026 <svg xmlns="http://www.w3.org/2000/svg"
+
+<div style="
+background:#ffffff;
+border:1px solid #e5e7eb;
+border-radius:8px;
+padding:10px;
+font-family:monospace;
+">
+
+<div style="margin-bottom:6px;">
+GrandRepose_Guest
+</div>
+
+<div style="
+display:flex;
+align-items:center;
+justify-content:space-between;
+">
+
+<span style="
+user-select:all;
+-webkit-user-select:all;
+font-weight:700;
+font-size:14px;
+letter-spacing:0.5px;
+background:#f3f4f6;
+padding:4px 8px;
+border-radius:6px;
+">
+
+Welcome@2026
+
+</span>
+
+<!-- visual copy icon -->
+<svg xmlns="http://www.w3.org/2000/svg"
 width="16"
 height="16"
 viewBox="0 0 24 24"
@@ -445,7 +479,22 @@ style="margin-left:10px;">
 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
 <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
 
-</svg></b>
+</svg>
+
+</div>
+
+<div style="
+margin-top:6px;
+font-size:12px;
+color:#6b7280;
+">
+
+Tap & hold to copy
+
+</div>
+
+</div>
+
 </td>
 </tr>
 
