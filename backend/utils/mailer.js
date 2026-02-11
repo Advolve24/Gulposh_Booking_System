@@ -347,6 +347,18 @@ border-radius:12px;
 </tr>
 
 
+
+<!-- Subtotal -->
+      <tr>
+        <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
+          Subtotal
+        </td>
+        <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#111827;">
+          ₹${subtotal.toLocaleString("en-IN")}
+        </td>
+      </tr>
+
+      
       <!-- GST -->
       <tr>
         <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
@@ -354,16 +366,6 @@ border-radius:12px;
         </td>
         <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
           ₹${gst.toLocaleString("en-IN")}
-        </td>
-      </tr>
-
-      <!-- Subtotal -->
-      <tr>
-        <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
-          Subtotal
-        </td>
-        <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#111827;">
-          ₹${subtotal.toLocaleString("en-IN")}
         </td>
       </tr>
 
