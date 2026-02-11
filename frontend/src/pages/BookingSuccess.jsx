@@ -177,7 +177,7 @@ export default function BookingSuccess() {
                     <img
                         src={roomImage}
                         alt={room.name}
-                        className="h-[400px] w-full object-cover"
+                        className="h-[410px] w-full object-cover"
                     />
 
                     <div className="p-6 space-y-2">
@@ -289,7 +289,7 @@ export default function BookingSuccess() {
                                 </span>
                             </div>
 
-                            <div className="text-xs text-muted-foreground m-0">
+                            <div className="text-xs text-muted-foreground">
                                 Includes all applicable taxes & fees • {nights} nights
                             </div>
 
