@@ -112,6 +112,9 @@ export const getBooking = async (req, res) => {
 
       pricePerNight: booking.room?.pricePerNight || booking.pricePerNight || 0,
 
+      paymentProvider: booking.paymentProvider,
+      paymentId: booking.paymentId,
+
       roomTotal,
       mealTotal,
       subtotal,
