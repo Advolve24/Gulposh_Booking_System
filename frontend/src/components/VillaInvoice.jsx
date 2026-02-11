@@ -290,7 +290,8 @@ export default function VillaInvoice() {
                   <tr className="border-t">
                     <td className="p-3">Veg Meal</td>
                     <td className="p-3">
-                      ₹{booking.room.mealPriceVeg} × {booking.vegGuests}
+                      ₹{booking.room.mealPriceVeg.toLocaleString("en-IN")} ×{" "}
+                      {booking.vegGuests} Guests × {nights} Nights
                     </td>
                     <td className="p-3 text-right">
                       ₹{vegTotal.toLocaleString("en-IN")}
@@ -302,7 +303,8 @@ export default function VillaInvoice() {
                   <tr className="border-t">
                     <td className="p-3">Non-Veg Meal</td>
                     <td className="p-3">
-                      ₹{booking.room.mealPriceNonVeg} × {booking.nonVegGuests}
+                      ₹{booking.room.mealPriceNonVeg.toLocaleString("en-IN")} ×{" "}
+                      {booking.nonVegGuests} Guests × {nights} Nights
                     </td>
                     <td className="p-3 text-right">
                       ₹{nonVegTotal.toLocaleString("en-IN")}
