@@ -289,7 +289,7 @@ export default function BookingSuccess() {
                                 </span>
                             </div>
 
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground m-0">
                                 Includes all applicable taxes & fees • {nights} nights
                             </div>
 
