@@ -39,7 +39,8 @@ export const sendBookingConfirmationMail = async ({
 
   const mealTotal = Number(booking.mealTotal || 0);
   const gst = Number(booking.totalTax || 0);
-  const subtotal = Number(booking.subTotal || 0);
+  const roomTotal = Number(booking.roomTotal || 0);
+  const subtotal = roomTotal + mealTotal;
   const grandTotal = Number(booking.amount || 0);
 
   const foodText =
