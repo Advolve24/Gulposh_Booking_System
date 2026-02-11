@@ -115,7 +115,7 @@ Booking Confirmed!
 </h1>
 
 <p style="
-margin:6px 0 0;
+margin:0px 0 0;
 font-size:13px;
 color:#e5e7eb;
 ">
@@ -143,7 +143,7 @@ Hello <b>${name}</b>, thank you for your reservation!
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
 <td style="border-radius:14px;overflow:hidden;">
-<img src="${imageUrl}" width="100%" height="240" style="
+<img src="${imageUrl}" width="100%" height="200" style="
 display:block;
 object-fit:cover;
 ">
@@ -168,7 +168,7 @@ ${room.name}
 </h2>
 
 <p style="
-margin:6px 0 0;
+margin:0px 0 0;
 font-size:13px;
 color:#6b7280;
 ">
@@ -198,8 +198,8 @@ Stay Details
 <td width="50%" style="padding-right:6px;">
 
 <table width="100%" style="
-background:#f9fafb;
-border:1px solid #e5e7eb;
+background:#f5f3ef;
+border:1px solid #f5f3ef;
 border-radius:12px;
 ">
 
@@ -217,8 +217,8 @@ border-radius:12px;
 <td width="50%" style="padding-left:6px;">
 
 <table width="100%" style="
-background:#f9fafb;
-border:1px solid #e5e7eb;
+background:#f5f3ef;
+border:1px solid #f5f3ef;
 border-radius:12px;
 ">
 
@@ -242,20 +242,16 @@ border-radius:12px;
 
 <!-- ================= DETAILS ROW ================= -->
 <tr>
-<td style="padding:14px 28px;">
+<td style="padding:0px 35px;">
 
-<table width="100%" style="
-background:#f9fafb;
-border:1px solid #e5e7eb;
-border-radius:12px;
-">
+<table width="100%">
 
 <tr>
 <td style="padding:14px;font-size:14px;">
-${adults} Adults, ${children} Child
+👤 ${adults} Adults, ${children} Child
 </td>
 <td align="right" style="padding:14px;font-size:14px;">
-${booking.nights} Night
+🌙 ${booking.nights} Night
 </td>
 </tr>
 
@@ -263,6 +259,52 @@ ${booking.nights} Night
 
 </td>
 </tr>
+
+
+<!-- ================= FOOD PREFERENCE ================= -->
+<tr>
+<td style="padding:0 28px 14px;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="
+background:#f5f3ef;
+border:1px solid #e5e7eb;
+border-radius:12px;
+">
+
+<tr>
+
+<!-- LEFT LABEL -->
+<td style="
+padding:14px;
+font-size:14px;
+color:#374151;
+">
+
+🍽️ <b>Food Preference</b>
+
+</td>
+
+<!-- RIGHT COUNTS -->
+<td align="right" style="
+padding:14px;
+font-size:14px;
+color:#374151;
+white-space:nowrap;
+">
+
+🥦 ${vegCount}
+&nbsp;&nbsp;
+🍗 ${nonVegCount}
+
+</td>
+
+</tr>
+
+</table>
+
+</td>
+</tr>
+
 
 <!-- ================= BILL SUMMARY ================= -->
 <tr>
@@ -321,8 +363,8 @@ border-radius:12px;
 
 <tr>
 <td style="padding:14px;">
-<b>📍 Location</b><br><br>
-${location}<br><br>
+<b>📍 Location</b><br>
+${location}<br>
 <a href="https://maps.google.com" style="
 color:#1f5f54;
 text-decoration:none;
