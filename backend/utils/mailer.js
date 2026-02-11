@@ -34,12 +34,12 @@ export const sendBookingConfirmationMail = async ({
   const adults = booking.adults || 0;
   const children = booking.children || 0;
 
-  const vegCount = booking.food?.veg || 0;
-  const nonVegCount = booking.food?.nonVeg || 0;
+  const vegCount = booking.vegGuests || 0;
+  const nonVegCount = booking.nonVegGuests || 0;
 
   const mealTotal = Number(booking.mealTotal || 0);
-  const gst = Number(booking.gst || 0);
-  const subtotal = Number(booking.subtotal || 0);
+  const gst = Number(booking.totalTax || 0);
+  const subtotal = Number(booking.subTotal || 0);
   const grandTotal = Number(booking.amount || 0);
 
   const foodText =
@@ -272,13 +272,9 @@ border-radius:12px;
         <!-- Night -->
         <td align="right" style="padding:6px 0;font-size:14px;color:#111827;white-space:nowrap;">
           <span style="display:inline-block;vertical-align:middle;margin-right:8px;">
-            <!-- moon icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
           </span>
 
-          ${booking.nights} Night
+          <b>${booking.nights}</b> Night
         </td>
       </tr>
     </table>
