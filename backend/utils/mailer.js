@@ -292,12 +292,7 @@ border-radius:12px;
         <!-- Left -->
         <td style="padding:14px 14px;font-size:14px;color:#111827;">
           <span style="display:inline-block;vertical-align:middle;margin-right:10px;">
-            <!-- cutlery icon (green) -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1f5f54" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 2v7a3 3 0 0 0 6 0V2"></path>
-              <path d="M7 2v20"></path>
-              <path d="M21 2v10a2 2 0 0 1-2 2h-1v8"></path>
-              <path d="M18 2v10"></path>
+            🍴
             </svg>
           </span>
 
@@ -317,9 +312,9 @@ border-radius:12px;
             </svg>
           </span>
           <span style="display:inline-block;vertical-align:middle;margin-left:6px;margin-right:14px;color:#111827;">
-            ${nonVegCount}
+           Non-veg ${nonVegCount}
           </span>
-
+           |
           <!-- Veg icon -->
           <span style="display:inline-block;vertical-align:middle;">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -330,7 +325,7 @@ border-radius:12px;
             </svg>
           </span>
           <span style="display:inline-block;vertical-align:middle;margin-left:6px;color:#111827;">
-            ${vegCount}
+            Veg${vegCount}
           </span>
         </td>
       </tr>
@@ -418,7 +413,7 @@ border-radius:12px;
 
 <tr>
 <td style="padding:14px;">
-<b>📍 Location</b><br>
+<b>📍 Location</b><br><br>
 ${location}<br>
 <a href="https://maps.google.com" style="
 color:#1f5f54;
