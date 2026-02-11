@@ -57,13 +57,27 @@ export default function VillaInvoice() {
 
   const subTotal = roomTotal + mealTotal;
 
-  const taxAmount = booking.totalTax || 0;
-  const taxPercent = booking.taxPercent || 0;
+  const mealDisplayText =
+    booking.room?.mealMode === "only"
+      ? "Included in room charges"
+      : `Veg ₹${vegTotal.toLocaleString("en-IN")} • Non-Veg ₹${nonVegTotal.toLocaleString("en-IN")}`;
+
 
   const grandTotal = booking.amount || 0;
 
-  const vegTotal = 0;
-  const nonVegTotal = 0;
+  const vegTotal =
+    booking.vegGuests &&
+      booking.room?.mealPriceVeg &&
+      booking.mealTotal
+      ? booking.vegGuests * booking.room.mealPriceVeg * nights
+      : 0;
+
+  const nonVegTotal =
+    booking.nonVegGuests &&
+      booking.room?.mealPriceNonVeg &&
+      booking.mealTotal
+      ? booking.nonVegGuests * booking.room.mealPriceNonVeg * nights
+      : 0;
 
   const generatePDF = async (isAuto = false) => {
     if (isDownloadingRef.current) return;
@@ -226,8 +240,8 @@ export default function VillaInvoice() {
                 </div>
 
                 <div>
-                  Rooms<br />
-                  <b>1</b>
+                  <b>{booking.guests}</b> Guests<br />
+                  <b>{booking.adults || 0}</b> Adults, <b>{booking.children || 0}</b> Children
                 </div>
 
                 <div>
@@ -251,7 +265,8 @@ export default function VillaInvoice() {
                 <tr className="border-t">
                   <td className="p-3">Room Charges</td>
                   <td className="p-3">
-                    ₹{booking.pricePerNight} × {nights}
+                    ₹{(booking.pricePerNight || booking.room?.pricePerNight || 0)
+                      .toLocaleString("en-IN")} × {nights}
                   </td>
                   <td className="p-3 text-right font-medium">
                     ₹{roomTotal.toLocaleString("en-IN")}
@@ -295,20 +310,44 @@ export default function VillaInvoice() {
                 </p>
               </div>
 
-              <div className="w-full md:w-64">
+              <div className="w-full md:w-72">
+
+                {/* Room Charges */}
                 <div className="flex justify-between mb-1">
-                  <span>SubTotal</span>
+                  <span>Room Charges</span>
+                  <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+                </div>
+
+                {/* Meal Total */}
+                <div className="flex justify-between mb-1">
+                  <span>Meal Total</span>
+                  <span className="text-right text-sm">
+                    {booking.room?.mealMode === "only"
+                      ? "Included"
+                      : `₹${mealTotal.toLocaleString("en-IN")}`}
+                  </span>
+                </div>
+
+                {/* Subtotal */}
+                <div className="flex justify-between mb-1 border-t pt-1">
+                  <span>Subtotal</span>
                   <span>₹{subTotal.toLocaleString("en-IN")}</span>
                 </div>
+
+                {/* Tax */}
                 <div className="flex justify-between mb-1">
-                  <span>Tax {taxPercent}%</span>
+                  <span>Tax ({taxPercent}%)</span>
                   <span>+ ₹{taxAmount.toLocaleString("en-IN")}</span>
                 </div>
-                <div className="flex justify-between font-bold text-[13px] sm:text-[18px]">
+
+                {/* Grand Total */}
+                <div className="flex justify-between font-bold text-[16px] sm:text-[18px] border-t pt-2">
                   <span>Grand Total</span>
                   <span>₹{grandTotal.toLocaleString("en-IN")}</span>
                 </div>
+
               </div>
+
             </div>
 
             {/* SIGNATURE */}
@@ -344,7 +383,7 @@ export default function VillaInvoice() {
             className="bg-white border px-6 py-3 rounded-xl flex items-center gap-2"
           >
             <Printer className="w-4 h-4" />
-            Print PDF
+            Print
           </button>
         </div>
       </div>

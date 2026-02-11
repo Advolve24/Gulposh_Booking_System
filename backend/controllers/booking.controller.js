@@ -110,6 +110,8 @@ export const getBooking = async (req, res) => {
       room: booking.room,
       user: booking.user,
 
+      pricePerNight: booking.room?.pricePerNight || booking.pricePerNight || 0,
+
       roomTotal,
       mealTotal,
       subtotal,
