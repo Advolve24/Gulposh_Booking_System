@@ -57,13 +57,12 @@ export default function VillaInvoice() {
 
   const subTotal = roomTotal + mealTotal;
 
-  const mealDisplayText =
-    booking.room?.mealMode === "only"
-      ? "Included in room charges"
-      : `Veg ₹${vegTotal.toLocaleString("en-IN")} • Non-Veg ₹${nonVegTotal.toLocaleString("en-IN")}`;
+  const taxAmount = booking.totalTax || 0;
 
-
-  const grandTotal = booking.amount || 0;
+  const taxPercent =
+    subTotal > 0
+      ? ((taxAmount / subTotal) * 100).toFixed(0)
+      : 0;
 
   const vegTotal =
     booking.vegGuests &&
@@ -78,6 +77,14 @@ export default function VillaInvoice() {
       booking.mealTotal
       ? booking.nonVegGuests * booking.room.mealPriceNonVeg * nights
       : 0;
+
+  const mealDisplayText =
+    booking.room?.mealMode === "only"
+      ? "Included in room charges"
+      : `Veg ₹${vegTotal.toLocaleString("en-IN")} • Non-Veg ₹${nonVegTotal.toLocaleString("en-IN")}`;
+
+  const grandTotal = booking.amount || 0;
+
 
   const generatePDF = async (isAuto = false) => {
     if (isDownloadingRef.current) return;
