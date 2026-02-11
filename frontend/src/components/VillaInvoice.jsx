@@ -317,10 +317,10 @@ export default function VillaInvoice() {
               <div>
                 <h4 className="font-semibold mb-2">Payment Info:</h4>
                 <p>
-                  {booking.user?.name}<br />
-                  {booking.paymentProvider} – {booking.paymentId}<br />
-                  Amount: ₹{booking.amount}
+                  {booking.paymentProvider || "Payment"} – {booking.paymentId || "—"}<br />
+                  Amount: ₹{grandTotal.toLocaleString("en-IN")}
                 </p>
+
               </div>
 
               <div className="w-full md:w-72">
