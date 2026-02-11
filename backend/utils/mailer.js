@@ -240,111 +240,166 @@ border-radius:12px;
 </td>
 </tr>
 
-<!-- ================= DETAILS ROW ================= -->
+<!-- ================= DETAILS ROW (Guests + Night) ================= -->
 <tr>
-<td style="padding:0px 35px;">
+  <td style="padding:0 28px 10px;">
 
-<table width="100%">
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      <tr>
+        <!-- Guests -->
+        <td style="padding:6px 0;font-size:14px;color:#111827;">
+          <span style="display:inline-block;vertical-align:middle;margin-right:8px;">
+            <!-- user icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21a8 8 0 0 0-16 0"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </span>
 
+          ${adults} Adults, ${children} Child
+        </td>
+
+        <!-- Night -->
+        <td align="right" style="padding:6px 0;font-size:14px;color:#111827;white-space:nowrap;">
+          <span style="display:inline-block;vertical-align:middle;margin-right:8px;">
+            <!-- moon icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </span>
+
+          ${booking.nights} Night
+        </td>
+      </tr>
+    </table>
+
+  </td>
+</tr>
+
+<!-- ================= FOOD PREFERENCE ROW (white, bordered like screenshot) ================= -->
 <tr>
-<td style="padding:14px;font-size:14px;">
-👤 ${adults} Adults, ${children} Child
-</td>
-<td align="right" style="padding:14px;font-size:14px;">
-🌙 ${booking.nights} Night
-</td>
+  <td style="padding:0 28px 14px;">
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="
+      border-collapse:separate;
+      border-spacing:0;
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      overflow:hidden;
+    ">
+      <tr>
+        <!-- Left -->
+        <td style="padding:14px 14px;font-size:14px;color:#111827;">
+          <span style="display:inline-block;vertical-align:middle;margin-right:10px;">
+            <!-- cutlery icon (green) -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1f5f54" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 2v7a3 3 0 0 0 6 0V2"></path>
+              <path d="M7 2v20"></path>
+              <path d="M21 2v10a2 2 0 0 1-2 2h-1v8"></path>
+              <path d="M18 2v10"></path>
+            </svg>
+          </span>
+
+          <span style="vertical-align:middle;color:#374151;">Food Preference</span>
+        </td>
+
+        <!-- Right -->
+        <td align="right" style="padding:14px 14px;font-size:14px;color:#111827;white-space:nowrap;">
+          <!-- Non-Veg icon -->
+          <span style="display:inline-block;vertical-align:middle;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7c4 0 4 10 0 10"></path>
+              <path d="M20 7c-4 0-4 10 0 10"></path>
+              <path d="M7 12h10"></path>
+              <path d="M9 9l-2 3 2 3"></path>
+              <path d="M15 9l2 3-2 3"></path>
+            </svg>
+          </span>
+          <span style="display:inline-block;vertical-align:middle;margin-left:6px;margin-right:14px;color:#111827;">
+            ${nonVegCount}
+          </span>
+
+          <!-- Veg icon -->
+          <span style="display:inline-block;vertical-align:middle;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 3h16"></path>
+              <path d="M6 3v7a6 6 0 0 0 12 0V3"></path>
+              <path d="M9 21h6"></path>
+              <path d="M12 17v4"></path>
+            </svg>
+          </span>
+          <span style="display:inline-block;vertical-align:middle;margin-left:6px;color:#111827;">
+            ${vegCount}
+          </span>
+        </td>
+      </tr>
+    </table>
+
+  </td>
 </tr>
 
-</table>
-
-</td>
-</tr>
-
-
-<!-- ================= FOOD PREFERENCE ================= -->
+<!-- ================= BILL SUMMARY (white box + dividers like screenshot) ================= -->
 <tr>
-<td style="padding:0 28px 14px;">
+  <td style="padding:0 28px;">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="
-background:#f5f3ef;
-border:1px solid #e5e7eb;
-border-radius:12px;
-">
+    <table width="100%" cellpadding="0" cellspacing="0" style="
+      border-collapse:separate;
+      border-spacing:0;
+      background:#ffffff;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      overflow:hidden;
+      font-size:14px;
+      color:#111827;
+    ">
 
-<tr>
+      <!-- Food Charges -->
+      <tr>
+        <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
+          Food Charges
+        </td>
+        <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
+          ₹0
+        </td>
+      </tr>
 
-<!-- LEFT LABEL -->
-<td style="
-padding:14px;
-font-size:14px;
-color:#374151;
-">
+      <!-- GST -->
+      <tr>
+        <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
+          GST (18%)
+        </td>
+        <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
+          ₹${booking.gst || 0}
+        </td>
+      </tr>
 
-🍽️ <b>Food Preference</b>
+      <!-- Subtotal -->
+      <tr>
+        <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
+          Subtotal
+        </td>
+        <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#111827;">
+          ₹${grandTotal}
+        </td>
+      </tr>
 
-</td>
+      <!-- Grand Total (green bar) -->
+      <tr>
+        <td style="padding:18px 16px;background:#1f5f54;color:#ffffff;font-weight:700;">
+          Grand Total
+        </td>
+        <td align="right" style="padding:18px 16px;background:#1f5f54;color:#ffffff;font-weight:800;font-size:16px;">
+          ₹${grandTotal}
+        </td>
+      </tr>
 
-<!-- RIGHT COUNTS -->
-<td align="right" style="
-padding:14px;
-font-size:14px;
-color:#374151;
-white-space:nowrap;
-">
+    </table>
 
-🥦 ${vegCount}
-&nbsp;&nbsp;
-🍗 ${nonVegCount}
-
-</td>
-
+  </td>
 </tr>
 
-</table>
 
-</td>
-</tr>
-
-
-<!-- ================= BILL SUMMARY ================= -->
-<tr>
-<td style="padding:0 28px;">
-
-<table width="100%" style="
-border:1px solid #e5e7eb;
-border-radius:12px;
-overflow:hidden;
-font-size:14px;
-">
-
-<tr>
-<td style="padding:14px;">Food Charges</td>
-<td align="right" style="padding:14px;">₹0</td>
-</tr>
-
-<tr style="background:#f9fafb;">
-<td style="padding:14px;">GST (18%)</td>
-<td align="right" style="padding:14px;">₹${booking.gst || 0}</td>
-</tr>
-
-<tr>
-<td style="padding:14px;font-weight:600;">Subtotal</td>
-<td align="right" style="padding:14px;font-weight:600;">
-₹${grandTotal}
-</td>
-</tr>
-
-<tr style="background:#1f5f54;color:#ffffff;">
-<td style="padding:16px;font-weight:600;">Grand Total</td>
-<td align="right" style="padding:16px;font-size:16px;font-weight:700;">
-₹${grandTotal}
-</td>
-</tr>
-
-</table>
-
-</td>
-</tr>
 
 <!-- ================= LOCATION + WIFI ================= -->
 <tr>
