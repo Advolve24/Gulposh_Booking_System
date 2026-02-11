@@ -65,15 +65,16 @@ export const getBooking = async (req, res) => {
       .populate(
         "room",
         `
-          name
-          description
-          coverImage
-          pricePerNight
-          mealPriceVeg
-          mealPriceNonVeg
-          maxGuests
-        `
-      );
+    name
+    description
+    coverImage
+    pricePerNight
+    mealPriceVeg
+    mealPriceNonVeg
+    mealMode
+    maxGuests
+  `
+      )
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
@@ -84,10 +85,9 @@ export const getBooking = async (req, res) => {
       booking.endDate
     );
 
-    const subtotal =
-      (booking.roomTotal || 0) +
-      (booking.mealTotal || 0);
-
+    const roomTotal = booking.roomTotal || 0;
+    const mealTotal = booking.mealTotal || 0;
+    const subtotal = roomTotal + mealTotal;
     const tax = booking.totalTax || 0;
 
     res.json({
@@ -106,13 +106,14 @@ export const getBooking = async (req, res) => {
       nonVegGuests: booking.nonVegGuests || 0,
 
       withMeal: booking.withMeal,
-      mealMode: booking.room?.mealMode || "none",
 
       room: booking.room,
       user: booking.user,
 
+      roomTotal,
+      mealTotal,
       subtotal,
-      tax,
+      totalTax: tax,
       grandTotal: booking.amount,
 
       amount: booking.amount,

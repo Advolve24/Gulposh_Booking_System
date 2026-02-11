@@ -122,7 +122,7 @@ export default function BookingSuccess() {
     const mealTotal = Number(booking.mealTotal || 0);
 
     const subtotal = roomTotal + mealTotal;
-    const tax = Number(booking.tax || booking.totalTax || 0);
+    const tax = Number(booking.totalTax || 0);
     const grandTotal = Number(booking.grandTotal || booking.amount || 0);
 
     const room = booking.room;
@@ -221,19 +221,19 @@ export default function BookingSuccess() {
                                 </div>
                             )}
 
-                            {mealMode === "only" && (
+                            {room.mealMode === "only" && (
                                 <div className="text-xs text-muted-foreground">
-                                    🍽 Meals included in stay
+                                    🍽 Meals included in room charges
                                 </div>
                             )}
 
-                            {mealMode === "price" && booking.withMeal && (
+                            {room.mealMode === "price" && booking.withMeal && (
                                 <div className="text-xs text-muted-foreground">
-                                    🍽 Veg: {booking.vegGuests || 0} • Non-Veg: {booking.nonVegGuests || 0}
+                                    🍽 Veg: {booking.vegGuests} • Non-Veg: {booking.nonVegGuests}
                                 </div>
                             )}
 
-                            {mealMode === "price" && !booking.withMeal && (
+                            {room.mealMode === "price" && !booking.withMeal && (
                                 <div className="text-xs text-muted-foreground">
                                     🍽 No meals selected
                                 </div>
@@ -254,7 +254,7 @@ export default function BookingSuccess() {
                             </div>
 
                             {/* FOOD CHARGES */}
-                            {mealMode === "only" ? (
+                            {room.mealMode === "only" ? (
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>Food Charges</span>
                                     <span>Included</span>
