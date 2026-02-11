@@ -37,7 +37,17 @@ export const sendBookingConfirmationMail = async ({
   const vegCount = booking.food?.veg || 0;
   const nonVegCount = booking.food?.nonVeg || 0;
 
-  const grandTotal = Number(booking.amount).toLocaleString("en-IN");
+  const mealTotal = Number(booking.mealTotal || 0);
+  const gst = Number(booking.gst || 0);
+  const subtotal = Number(booking.subtotal || 0);
+  const grandTotal = Number(booking.amount || 0);
+
+  const foodText =
+    room.mealMode === "only"
+      ? "Included in room charges"
+      : mealTotal > 0
+        ? `₹${mealTotal.toLocaleString("en-IN")}`
+        : "Included in room charges";
 
   const imageUrl =
     room.coverImage ||
@@ -256,7 +266,7 @@ border-radius:12px;
             </svg>
           </span>
 
-          ${adults} Adults, ${children} Child
+          <b>${adults}</b> Adults, <b>${children}</b> Child
         </td>
 
         <!-- Night -->
@@ -293,7 +303,6 @@ border-radius:12px;
         <td style="padding:14px 14px;font-size:14px;color:#111827;">
           <span style="display:inline-block;vertical-align:middle;margin-right:10px;">
             🍴
-            </svg>
           </span>
 
           <span style="vertical-align:middle;color:#374151;">Food Preference</span>
@@ -301,31 +310,12 @@ border-radius:12px;
 
         <!-- Right -->
         <td align="right" style="padding:14px 14px;font-size:14px;color:#111827;white-space:nowrap;">
-          <!-- Non-Veg icon -->
-          <span style="display:inline-block;vertical-align:middle;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 7c4 0 4 10 0 10"></path>
-              <path d="M20 7c-4 0-4 10 0 10"></path>
-              <path d="M7 12h10"></path>
-              <path d="M9 9l-2 3 2 3"></path>
-              <path d="M15 9l2 3-2 3"></path>
-            </svg>
-          </span>
           <span style="display:inline-block;vertical-align:middle;margin-left:6px;margin-right:14px;color:#111827;">
-           Non-veg ${nonVegCount}
+           Non-veg <b>${nonVegCount}</b>
           </span>
            |
-          <!-- Veg icon -->
-          <span style="display:inline-block;vertical-align:middle;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 3h16"></path>
-              <path d="M6 3v7a6 6 0 0 0 12 0V3"></path>
-              <path d="M9 21h6"></path>
-              <path d="M12 17v4"></path>
-            </svg>
-          </span>
           <span style="display:inline-block;vertical-align:middle;margin-left:6px;color:#111827;">
-            Veg${vegCount}
+            Veg <b>${vegCount}</b>
           </span>
         </td>
       </tr>
@@ -351,13 +341,14 @@ border-radius:12px;
 
       <!-- Food Charges -->
       <tr>
-        <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
-          Food Charges
-        </td>
-        <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
-          ₹0
-        </td>
-      </tr>
+  <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
+    Food Charges
+  </td>
+  <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
+    ${foodText}
+  </td>
+</tr>
+
 
       <!-- GST -->
       <tr>
@@ -365,7 +356,7 @@ border-radius:12px;
           GST (18%)
         </td>
         <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
-          ₹${booking.gst || 0}
+          ₹${gst.toLocaleString("en-IN")}
         </td>
       </tr>
 
@@ -375,7 +366,7 @@ border-radius:12px;
           Subtotal
         </td>
         <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#111827;">
-          ₹${grandTotal}
+          ₹${subtotal.toLocaleString("en-IN")}
         </td>
       </tr>
 
@@ -385,7 +376,7 @@ border-radius:12px;
           Grand Total
         </td>
         <td align="right" style="padding:18px 16px;background:#1f5f54;color:#ffffff;font-weight:800;font-size:16px;">
-          ₹${grandTotal}
+          ₹${grandTotal.toLocaleString("en-IN")}
         </td>
       </tr>
 
@@ -522,6 +513,6 @@ We look forward to welcoming you! — Team Gulposh
 </body>
 </html>
 `
-,
+    ,
   });
 };
