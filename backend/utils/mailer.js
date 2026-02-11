@@ -347,6 +347,17 @@ border-radius:12px;
 </tr>
 
 
+<!-- Room Charges -->
+<tr>
+  <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
+    Room Charges
+  </td>
+  <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
+    ₹${roomTotal.toLocaleString("en-IN")}
+  </td>
+</tr>
+
+
 
 <!-- Subtotal -->
       <tr>
