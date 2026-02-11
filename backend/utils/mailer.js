@@ -54,168 +54,247 @@ export const sendBookingConfirmationMail = async ({
     html: `
 <!DOCTYPE html>
 <html>
-<body style="margin:0;padding:0;background:#f4f5f7;font-family:Arial,Helvetica,sans-serif;">
+<head>
+<meta charset="UTF-8">
+<title>Booking Confirmed</title>
+</head>
 
-<table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 10px;">
-<tr>
-<td align="center">
-
-<table width="600" cellpadding="0" cellspacing="0"
-style="background:#ffffff;border-radius:14px;overflow:hidden;
-box-shadow:0 6px 18px rgba(0,0,0,0.08);">
-
-<!-- ================= HEADER ================= -->
-<tr>
-<td style="
-background:#004196;
-padding:22px 28px;
-border-bottom:1px solid #e5e7eb;
+<body style="
+margin:0;
+padding:0;
+background:#f3f4f6;
+font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
 ">
 
 <table width="100%" cellpadding="0" cellspacing="0">
 <tr>
+<td align="center" style="padding:30px 10px;">
 
-<!-- ICON -->
-<td width="52" valign="top">
+<!-- MAIN CARD -->
+<table width="640" cellpadding="0" cellspacing="0" style="
+background:#ffffff;
+border-radius:16px;
+overflow:hidden;
+">
 
+<!-- ================= HEADER ================= -->
+<tr>
+<td style="
+background:#1f5f54;
+padding:28px;
+">
+
+<table width="100%">
+<tr>
+
+<td width="48" valign="top">
 <div style="
-width:40px;
-height:40px;
-background:#fff;
+width:44px;
+height:44px;
+background:#ffffff22;
 border-radius:50%;
 text-align:center;
-line-height:40px;
+line-height:44px;
 font-size:22px;
-color:#004196;
+color:#ffffff;
 font-weight:bold;
 ">
 ✓
 </div>
-
 </td>
 
-<!-- TEXT -->
-<td valign="middle" style="padding-left:14px;">
+<td style="padding-left:14px;">
 
-<h2 style="
+<h1 style="
 margin:0;
-font-size:20px;
-color:#fff;
+font-size:22px;
+color:#ffffff;
 font-weight:600;
 ">
 Booking Confirmed!
-</h2>
+</h1>
 
 <p style="
-margin:4px 0 0;
+margin:6px 0 0;
 font-size:13px;
-color:#fff;
+color:#e5e7eb;
 ">
-Booking ID: ${booking._id || booking.paymentId}
+ID: ${booking._id || booking.paymentId}
 </p>
 
 </td>
-
 </tr>
 </table>
 
 </td>
 </tr>
 
-
 <!-- ================= GREETING ================= -->
 <tr>
-<td style="padding:22px 26px 10px;font-size:15px;color:#333;">
-Hello <b>${name || "Guest"}</b>,<br>
-Thank you for your reservation. We're excited to host you!
+<td style="padding:22px 28px 10px;font-size:15px;color:#111827;">
+Hello <b>${name}</b>, thank you for your reservation!
 </td>
 </tr>
 
-<!-- ================= IMAGE ================= -->
+<!-- ================= IMAGE CARD ================= -->
 <tr>
-<td style="padding:0 26px;">
-<img src="${imageUrl}" width="100%" height="200"
-style="border-radius:10px;object-fit:cover;display:block;">
+<td style="padding:0 28px;">
+
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="border-radius:14px;overflow:hidden;">
+<img src="${imageUrl}" width="100%" height="240" style="
+display:block;
+object-fit:cover;
+">
+</td>
+</tr>
+</table>
+
 </td>
 </tr>
 
-<!-- ================= PROPERTY INFO ================= -->
+<!-- PROPERTY INFO -->
 <tr>
-<td style="padding:14px 26px 0;">
-<h3 style="margin:0;font-size:18px;color:#111;">
+<td style="padding:14px 28px 0;">
+
+<h2 style="
+margin:0;
+font-size:20px;
+font-weight:600;
+color:#111827;
+">
 ${room.name}
-</h3>
+</h2>
 
-<p style="margin:4px 0 0;font-size:13px;color:#666;">
+<p style="
+margin:6px 0 0;
+font-size:13px;
+color:#6b7280;
+">
 📍 ${location}
 </p>
+
 </td>
 </tr>
 
-<!-- ================= BOOKING SUMMARY TABLE ================= -->
+<!-- ================= STAY DETAILS ================= -->
+<tr>
+<td style="padding:18px 28px 0;">
+
+<h3 style="
+margin:0 0 12px;
+font-size:16px;
+font-weight:600;
+color:#111827;
+">
+Stay Details
+</h3>
+
+<table width="100%" cellpadding="0" cellspacing="0">
 
 <tr>
-<td style="padding:16px 26px;">
 
-<table width="100%" cellpadding="0" cellspacing="0"
-style="
-border-collapse:collapse;
-font-size:14px;
-border:1px solid #d1d5db;
+<td width="50%" style="padding-right:6px;">
+
+<table width="100%" style="
+background:#f9fafb;
+border:1px solid #e5e7eb;
+border-radius:12px;
 ">
 
+<tr>
+<td style="padding:14px;text-align:center;">
+<div style="font-size:12px;color:#6b7280;margin-bottom:6px;">CHECK-IN</div>
+<div style="font-size:14px;font-weight:600;">${checkIn}</div>
+</td>
+</tr>
+
+</table>
+
+</td>
+
+<td width="50%" style="padding-left:6px;">
+
+<table width="100%" style="
+background:#f9fafb;
+border:1px solid #e5e7eb;
+border-radius:12px;
+">
+
+<tr>
+<td style="padding:14px;text-align:center;">
+<div style="font-size:12px;color:#6b7280;margin-bottom:6px;">CHECK-OUT</div>
+<div style="font-size:14px;font-weight:600;">${checkOut}</div>
+</td>
+</tr>
+
+</table>
+
+</td>
+
+</tr>
+
+</table>
+
+</td>
+</tr>
+
+<!-- ================= DETAILS ROW ================= -->
+<tr>
+<td style="padding:14px 28px;">
+
+<table width="100%" style="
+background:#f9fafb;
+border:1px solid #e5e7eb;
+border-radius:12px;
+">
+
+<tr>
+<td style="padding:14px;font-size:14px;">
+${adults} Adults, ${children} Child
+</td>
+<td align="right" style="padding:14px;font-size:14px;">
+${booking.nights} Night
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+
+<!-- ================= BILL SUMMARY ================= -->
+<tr>
+<td style="padding:0 28px;">
+
+<table width="100%" style="
+border:1px solid #e5e7eb;
+border-radius:12px;
+overflow:hidden;
+font-size:14px;
+">
+
+<tr>
+<td style="padding:14px;">Food Charges</td>
+<td align="right" style="padding:14px;">₹0</td>
+</tr>
+
 <tr style="background:#f9fafb;">
-<td style="padding:12px;border:1px solid #d1d5db;">
-Check-in
-</td>
-<td align="right" style="padding:12px;border:1px solid #d1d5db;">
-<b>${checkIn}</b>
-</td>
+<td style="padding:14px;">GST (18%)</td>
+<td align="right" style="padding:14px;">₹${booking.gst || 0}</td>
 </tr>
 
 <tr>
-<td style="padding:12px;border:1px solid #d1d5db;">
-Check-out
-</td>
-<td align="right" style="padding:12px;border:1px solid #d1d5db;">
-<b>${checkOut}</b>
+<td style="padding:14px;font-weight:600;">Subtotal</td>
+<td align="right" style="padding:14px;font-weight:600;">
+₹${grandTotal}
 </td>
 </tr>
 
-<tr style="background:#f9fafb;">
-<td style="padding:12px;border:1px solid #d1d5db;">
-Guests
-</td>
-<td align="right" style="padding:12px;border:1px solid #d1d5db;">
-<b>${adults} Adults, ${children} Children</b>
-</td>
-</tr>
-
-<tr>
-<td style="padding:12px;border:1px solid #d1d5db;">
-Food Preference
-</td>
-<td align="right" style="padding:12px;border:1px solid #d1d5db;">
-🥗 <b>${vegCount}</b> · 🍗 <b>${nonVegCount}</b>
-</td>
-</tr>
-
-<tr style="background:#f9fafb;">
-<td style="padding:12px;border:1px solid #d1d5db;">
-Nights
-</td>
-<td align="right" style="padding:12px;border:1px solid #d1d5db;">
-<b>${booking.nights}</b>
-</td>
-</tr>
-
-<tr style="background:#d1fae5;font-weight:bold;">
-<td style="padding:14px;border:1px solid #d1d5db;">
-Grand Total
-</td>
-<td align="right"
-style="padding:14px;border:1px solid #d1d5db;
-font-size:16px;color:#059669;">
+<tr style="background:#1f5f54;color:#ffffff;">
+<td style="padding:16px;font-weight:600;">Grand Total</td>
+<td align="right" style="padding:16px;font-size:16px;font-weight:700;">
 ₹${grandTotal}
 </td>
 </tr>
@@ -225,169 +304,120 @@ font-size:16px;color:#059669;">
 </td>
 </tr>
 
-
-<!-- ================= LOCATION ================= -->
+<!-- ================= LOCATION + WIFI ================= -->
 <tr>
-<td style="padding:0 26px 14px;">
-<table width="100%" cellpadding="0" cellspacing="0"
-style="
-background:#f3f4f6;
-border-radius:10px;
-padding:18px;
-font-size:14px;
-color:#333;
+<td style="padding:18px 28px 0;">
+
+<table width="100%">
+<tr>
+
+<td width="50%" style="padding-right:6px;">
+
+<table width="100%" style="
+background:#f9fafb;
+border:1px solid #e5e7eb;
+border-radius:12px;
 ">
 
 <tr>
-<td>
-<div style="font-weight:bold;margin-bottom:6px;">
-📍 Location
-</div>
-
-<div style="line-height:1.5;margin-bottom:8px;">
-${location}
-</div>
-
-<a href="https://maps.app.goo.gl/HFwk69Wm9ZuDwV8Q6"
-style="
-color:#1f4fff;
+<td style="padding:14px;">
+<b>📍 Location</b><br><br>
+${location}<br><br>
+<a href="https://maps.google.com" style="
+color:#1f5f54;
 text-decoration:none;
-font-weight:500;
+font-weight:600;
 ">
 Get Directions →
 </a>
-
 </td>
 </tr>
+
 </table>
+
 </td>
-</tr>
 
+<td width="50%" style="padding-left:6px;">
 
-<!-- ================= HOST + WIFI GRID ================= -->
-
-<style>
-@media only screen and (max-width:600px){
-  .stack-column{
-    display:block !important;
-    width:100% !important;
-  }
-}
-</style>
-
-<tr>
-<td style="padding:0 26px 14px;">
-
-<table width="100%" cellpadding="0" cellspacing="0">
-<tr>
-
-<!-- ===== HOST COLUMN ===== -->
-<td class="stack-column"
-width="50%"
-valign="top"
-style="padding-right:7px;">
-
-<table width="100%" height="100%" cellpadding="0" cellspacing="0"
-style="
-background:#f3f4f6;
-border-radius:10px;
-font-size:14px;
-color:#333;
+<table width="100%" style="
+background:#f9fafb;
+border:1px solid #e5e7eb;
+border-radius:12px;
 ">
 
 <tr>
-<td style="padding:18px;" valign="top">
+<td style="padding:14px;">
+<b>📶 WiFi</b><br><br>
+GrandRepose_Guest<br>
+Pass: <b>Welcome@2026</b>
+</td>
+</tr>
 
-<div style="font-weight:bold;margin-bottom:10px;">
-👤 Your Host
-</div>
+</table>
 
-<div style="font-weight:600;margin-bottom:6px;">
-Priya Sharma
-</div>
+</td>
 
-<div style="margin-bottom:6px;">
-📞 +91 98765 43210
-</div>
+</tr>
+</table>
 
-<div>
+</td>
+</tr>
+
+<!-- ================= HOST ================= -->
+<tr>
+<td style="padding:14px 28px;">
+
+<table width="100%" style="
+background:#f9fafb;
+border:1px solid #e5e7eb;
+border-radius:12px;
+">
+
+<tr>
+<td style="padding:14px;">
+<b>Your Host — Priya Sharma</b><br>
+📞 +91 98765 43210<br>
 ✉️ priya@grandrepose.in
-</div>
-
 </td>
 </tr>
 
 </table>
 
 </td>
+</tr>
 
-<!-- ===== WIFI COLUMN ===== -->
-<td class="stack-column"
-width="50%"
-valign="top"
-style="padding-left:7px;">
-
-<table width="100%" height="100%" cellpadding="0" cellspacing="0"
-style="
-background:#dbe5f1;
-border-radius:10px;
-font-size:14px;
-color:#333;
-">
-
+<!-- ================= CTA ================= -->
 <tr>
-<td style="padding:18px;padding-top:33px;padding-bottom:33px;" valign="top">
+<td align="center" style="padding:14px 28px 24px;">
 
-<div style="font-weight:bold;margin-bottom:8px;">
-📶 WiFi Details
-</div>
-
-<div style="margin-bottom:4px;">
-Network: <b>GrandRepose_Guest</b>
-</div>
-
-<div>
-Password: <b>Welcome@2026</b>
-</div>
-
-</td>
-</tr>
-
-</table>
-
-</td>
-
-</tr>
-</table>
-
-</td>
-</tr>
-
-
-<!-- ================= BUTTON ================= -->
-<tr>
-<td align="center" style="padding:10px 26px 24px;">
-<a href="https://booking.villagulposh.com"
-style="
-background:#004196;
+<a href="https://booking.villagulposh.com" style="
+background:#1f5f54;
 color:#ffffff;
-padding:14px 26px;
-border-radius:8px;
+padding:16px 26px;
+border-radius:12px;
 text-decoration:none;
-font-weight:bold;
+font-weight:600;
+font-size:15px;
 display:inline-block;
 ">
-View Full Booking Details
+View Full Booking Details →
 </a>
+
 </td>
 </tr>
 
 <!-- ================= FOOTER ================= -->
 <tr>
-<td style="padding:18px 26px;border-top:1px solid #eee;
-text-align:center;font-size:13px;color:#666;">
-We look forward to welcoming you!<br>
-— Team Gulposh
+<td style="
+padding:18px;
+text-align:center;
+font-size:13px;
+color:#6b7280;
+border-top:1px solid #e5e7eb;
+">
+
+We look forward to welcoming you! — Team Gulposh
+
 </td>
 </tr>
 
@@ -399,6 +429,7 @@ We look forward to welcoming you!<br>
 
 </body>
 </html>
-`,
+`
+,
   });
 };
