@@ -85,6 +85,12 @@ export default function VillaInvoice() {
 
   const grandTotal = booking.amount || 0;
 
+  const isMealNotSelected =
+    booking.room?.mealMode !== "only" &&
+    mealTotal === 0 &&
+    !booking.vegGuests &&
+    !booking.nonVegGuests;
+
 
   const generatePDF = async (isAuto = false) => {
     if (isDownloadingRef.current) return;
@@ -331,9 +337,12 @@ export default function VillaInvoice() {
                   <span className="text-right text-sm">
                     {booking.room?.mealMode === "only"
                       ? "Included"
-                      : `₹${mealTotal.toLocaleString("en-IN")}`}
+                      : isMealNotSelected
+                        ? "Meal is not selected"
+                        : `₹${mealTotal.toLocaleString("en-IN")}`}
                   </span>
                 </div>
+
 
                 {/* Subtotal */}
                 <div className="flex justify-between mb-1 border-t pt-1">
