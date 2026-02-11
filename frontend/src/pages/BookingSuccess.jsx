@@ -118,9 +118,12 @@ export default function BookingSuccess() {
 
     if (loading || !booking) return null;
 
-    const subtotal = booking.subtotal || 0;
-    const tax = booking.tax || 0;
-    const grandTotal = booking.grandTotal || booking.amount || 0;
+    const roomTotal = Number(booking.roomTotal || 0);
+    const mealTotal = Number(booking.mealTotal || 0);
+
+    const subtotal = roomTotal + mealTotal;
+    const tax = Number(booking.tax || booking.totalTax || 0);
+    const grandTotal = Number(booking.grandTotal || booking.amount || 0);
 
     const room = booking.room;
     const mealMode = room?.mealMode;
@@ -218,17 +221,21 @@ export default function BookingSuccess() {
                                 </div>
                             )}
 
-                            {booking.withMeal &&
-                                (booking.vegGuests > 0 || booking.nonVegGuests > 0) && (
-                                    <div className="text-xs text-muted-foreground">
-                                        Veg: {booking.vegGuests || 0}
-                                        {" • "}
-                                        Non-Veg: {booking.nonVegGuests || 0}
-                                    </div>
-                                )}
                             {mealMode === "only" && (
                                 <div className="text-xs text-muted-foreground">
-                                    Veg & Non-Veg meals included
+                                    🍽 Meals included in stay
+                                </div>
+                            )}
+
+                            {mealMode === "price" && booking.withMeal && (
+                                <div className="text-xs text-muted-foreground">
+                                    🍽 Veg: {booking.vegGuests || 0} • Non-Veg: {booking.nonVegGuests || 0}
+                                </div>
+                            )}
+
+                            {mealMode === "price" && !booking.withMeal && (
+                                <div className="text-xs text-muted-foreground">
+                                    🍽 No meals selected
                                 </div>
                             )}
 
@@ -241,7 +248,28 @@ export default function BookingSuccess() {
                             {/* ROOM CHARGES */}
                             <div className="flex justify-between">
                                 <span className="font-[500]">Room Charges</span>
-                                <span className="font-[500]">₹{subtotal.toLocaleString("en-IN")}</span>
+                                <span className="font-[500]">
+                                    ₹{roomTotal.toLocaleString("en-IN")}
+                                </span>
+                            </div>
+
+                            {/* FOOD CHARGES */}
+                            {mealMode === "only" ? (
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Food Charges</span>
+                                    <span>Included</span>
+                                </div>
+                            ) : mealTotal > 0 ? (
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>Food Charges</span>
+                                    <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                                </div>
+                            ) : null}
+
+                            {/* SUBTOTAL */}
+                            <div className="flex justify-between">
+                                <span>Subtotal</span>
+                                <span>₹{subtotal.toLocaleString("en-IN")}</span>
                             </div>
 
                             {/* GST */}
@@ -329,12 +357,10 @@ export default function BookingSuccess() {
                                     </div>
                                     <div className="font-medium leading-relaxed space-y-1">
 
-                                        {/* ROW 1 — STREET */}
                                         <div>
                                             {user?.address || booking.address?.address || "—"}
                                         </div>
 
-                                        {/* ROW 2 — CITY / STATE / PIN / COUNTRY */}
                                         <div>
                                             {(user?.city || booking.address?.city) && (
                                                 <>
