@@ -327,3 +327,16 @@ justify-content: center;
     display:none;
     }
 }
+
+
+.invoice-page {
+  min-height: 1222px; 
+  display: flex;
+  flex-direction: column;
+}
+
+@media print {
+  .invoice-page {
+    height: 1122px;
+  }
+}

@@ -72,6 +72,12 @@ const bookingSchema = new mongoose.Schema(
         default: "Cash",
       },
     },
+
+    userSnapshot: {
+      name: String,
+      email: String,
+      phone: String,
+    },
     cancellation: {
       cancelledAt: {
         type: Date,

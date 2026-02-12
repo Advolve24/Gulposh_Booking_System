@@ -177,7 +177,7 @@ export default function VillaInvoice() {
 
           <div
             ref={invoiceRef}
-            className="bg-white shadow-xl rounded-lg max-w-[900px] mx-auto p-8 text-[14px] leading-relaxed"
+            className="invoice-page bg-white shadow-xl rounded-lg max-w-[900px] mx-auto p-8 text-[14px] leading-relaxed"
           >
             {/* HEADER */}
             <div className="flex justify-between items-start border-b pb-4">
@@ -340,7 +340,7 @@ export default function VillaInvoice() {
                   <span>
                     {mealTotal > 0
                       ? `₹${mealTotal.toLocaleString("en-IN")}`
-                      : "Included"}
+                      : "₹0"}
                   </span>
                 </div>
 
@@ -362,17 +362,19 @@ export default function VillaInvoice() {
             </div>
 
             {/* SIGNATURE */}
-            <div className="text-right mt-8">
-              <p className="font-semibold">Jhon Donate</p>
-              <p className="text-gray-500 text-sm">Accounts Manager</p>
+            <div className="mt-auto">
+            <div className="text-right">
+              <p className="font-semibold">Sneha Shinde</p>
+              <p className="text-gray-500 text-sm">Manager</p>
             </div>
 
             {/* TERMS */}
-            <div className="text-center text-xs text-gray-500 border-t pt-4 mt-6">
+            <div className="text-center text-xs text-gray-500 border-t pt-4 mt-12">
               <p className="text-red-600 font-semibold uppercase mb-1">
                 Terms and Conditions
               </p>
               Your use of the website constitutes agreement to our Privacy Policy.
+            </div>
             </div>
           </div>
 

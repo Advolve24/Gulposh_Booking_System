@@ -38,6 +38,7 @@ export const getMyBookings = async (req, res) => {
 
     const items = bookings.map((b) => ({
       _id: b._id,
+      user: b.userSnapshot || b.user,
       status: b.status,
       startDate: b.startDate,
       endDate: b.endDate,
@@ -108,7 +109,7 @@ export const getBooking = async (req, res) => {
       withMeal: booking.withMeal,
 
       room: booking.room,
-      user: booking.user,
+      user: booking.userSnapshot || booking.user,
 
       pricePerNight: booking.room?.pricePerNight || booking.pricePerNight || 0,
 

@@ -1,30 +1,14 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-
-import {
-  Calendar,
-  Users,
-  IndianRupee,
-  CreditCard,
-} from "lucide-react";
-
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
-
-import {
-  Drawer,
-  DrawerContent,
-} from "@/components/ui/drawer";
-
+import { Calendar, Users, IndianRupee, CreditCard } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "../api/http";
-
-/* ---------------- HELPERS ---------------- */
+import { Wifi, Phone, Mail, Copy } from "lucide-react";
 
 const fmt = (d) =>
   new Date(d).toLocaleDateString("en-GB", {
@@ -41,7 +25,6 @@ const calcNights = (start, end) =>
     )
   );
 
-/* ---------------- COMPONENT ---------------- */
 
 export default function ViewBookingDialog({
   open,
@@ -54,8 +37,6 @@ export default function ViewBookingDialog({
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(false);
   const [canceling, setCanceling] = useState(false);
-
-  /* ---------------- LOAD BOOKING ---------------- */
 
   useEffect(() => {
     if (!open || !bookingId) return;
@@ -74,7 +55,6 @@ export default function ViewBookingDialog({
     })();
   }, [open, bookingId, onOpenChange]);
 
-  /* ---------------- CANCEL ---------------- */
 
   const cancelBooking = async () => {
     if (!confirm("Cancel this booking?")) return;
@@ -94,141 +74,208 @@ export default function ViewBookingDialog({
     }
   };
 
-  /* ---------------- CONTAINER SWITCH ---------------- */
+  const roomTotal = booking?.roomTotal || 0;
+  const mealTotal =
+    booking?.mealMeta?.mealTotal ||
+    booking?.mealTotal ||
+    0;
+  const subTotal = roomTotal + mealTotal;
+  const taxAmount = booking?.totalTax || 0;
+  const taxPercent =
+    subTotal > 0
+      ? ((taxAmount / subTotal) * 100).toFixed(0)
+      : 0;
+  const grandTotal = booking?.amount || 0;
 
   const Container = isDesktop ? Dialog : Drawer;
   const Content = isDesktop ? DialogContent : DrawerContent;
 
-  /* ---------------- UI ---------------- */
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Password copied!");
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  if (!open) return null;
 
   return (
-    <Container open={open} onOpenChange={onOpenChange}>
+    <Container open={open} onOpenChange={onOpenChange} className="gap-0">
       <Content
         className={`
-          ${isDesktop ? "max-w-lg rounded-2xl" : "rounded-t-2xl"}
-          p-0
-          overflow-hidden
-        `}
+        ${isDesktop ? "max-w-lg rounded-2xl" : "rounded-t-2xl"}
+        p-0 overflow-hidden
+        [&>button]:text-white
+      `}
       >
-        {/* SCROLLABLE BODY */}
-        <div className="max-h-[85vh] overflow-y-auto p-6 space-y-6">
 
-          {loading ? (
-            <div className="text-center text-sm text-muted-foreground">
-              Loading booking…
+        {loading ? (
+          <div className="p-6 text-center text-sm text-muted-foreground">
+            Loading booking…
+          </div>
+        ) : !booking ? null : (
+
+          <>
+            {/* ================= HEADER ================= */}
+            <div className="bg-primary text-white p-5 rounded-t-xl relative">
+
+
+              <h2 className="text-2xl font-serif font-semibold">
+                {booking.room?.name}
+              </h2>
+
+              <p className="text-sm opacity-90">
+                Booking ID: {booking._id.slice(-6)}
+              </p>
+
+              <span className="absolute top-5 right-12 bg-white/20 px-3 py-1 text-xs rounded-full font-semibold">
+                CONFIRMED
+              </span>
             </div>
-          ) : !booking ? null : (
-            <>
-              {/* HEADER */}
-              <div>
-                <h2 className="text-xl font-serif font-semibold">
-                  {booking.room?.name}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Booking ID: {booking._id.slice(-6)}
-                </p>
-              </div>
 
-              <Separator />
+            {/* ================= BODY ================= */}
+            <div className="p-4 space-y-2 bg-[#f9f7f6] -mt-4">
 
-              {/* CHECK-IN / CHECK-OUT */}
-              <div className="space-y-2">
-                <div className="inline-flex px-3 py-1 text-xs rounded-lg bg-muted text-muted-foreground">
-                  CHECK-IN – CHECK-OUT
-                </div>
+              {/* GRID CARDS */}
+              <div className="grid grid-cols-2 gap-2">
 
-                <div className="flex gap-3">
-                  <Calendar className="w-5 h-5 text-primary mt-1" />
-                  <div>
-                    <div className="font-medium">
-                      {fmt(booking.startDate)} → {fmt(booking.endDate)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {calcNights(
-                        booking.startDate,
-                        booking.endDate
-                      )}{" "}
-                      night(s)
-                    </div>
-                  </div>
-                </div>
-              </div>
+                {/* CHECK-IN */}
+                <InfoCard
+                  icon={<Calendar className="w-4 h-4" />}
+                  title="CHECK-IN → CHECK-OUT"
+                  main={`${fmt(booking.startDate)} → ${fmt(booking.endDate)}`}
+                  sub={`${calcNights(
+                    booking.startDate,
+                    booking.endDate
+                  )} night(s)`}
+                />
 
-              {/* GUESTS */}
-              <div className="flex gap-3">
-                <Users className="w-5 h-5 text-primary mt-1" />
-                <div>
-                  <div className="font-medium">
-                    {booking.guests} Guests
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Veg: {booking.vegGuests || 0} · Non-Veg:{" "}
-                    {booking.nonVegGuests || 0}
-                  </div>
-                </div>
-              </div>
+                {/* GUESTS */}
+                <InfoCard
+                  icon={<Users className="w-4 h-4" />}
+                  title="GUESTS"
+                  main={`${booking.guests} Guests`}
+                  sub={`${booking.adults || 0} Adults · ${booking.children || 0
+                    } Children`}
+                />
 
-              <Separator />
+                {/* FOOD */}
+                <InfoCard
+                  icon={"🍽️"}
+                  title="FOOD PREFERENCE"
+                  main={`Veg: ${booking.vegGuests || 0} · Non-Veg: ${booking.nonVegGuests || 0
+                    }`}
+                />
 
-              {/* PRICE */}
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Room Total</span>
-                  <span>
-                    ₹{booking.roomTotal?.toLocaleString("en-IN")}
-                  </span>
-                </div>
+                {/* WIFI */}
+                <div className="bg-[#f7f3ef] rounded-xl px-4 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase mb-1">
+                    WIFI
+                  </p>
 
-                {booking.mealTotal > 0 && (
-                  <div className="flex justify-between">
-                    <span>Meal Total</span>
-                    <span>
-                      ₹{booking.mealTotal?.toLocaleString("en-IN")}
-                    </span>
-                  </div>
-                )}
+                  <p className="font-semibold text-sm">
+                    Villa_Repose_5G
+                  </p>
 
-                <div className="flex justify-between font-semibold pt-2">
-                  <span>Total Amount</span>
-                  <span className="flex items-center gap-1">
-                    <IndianRupee className="w-4 h-4" />
-                    {booking.amount?.toLocaleString("en-IN")}
-                  </span>
-                </div>
-              </div>
+                  <div className="flex items-center gap-2 text-sm mt-0">
+                    Pass: <b>welcome@123</b>
 
-              <Separator />
-
-              {/* PAYMENT */}
-              <div className="flex gap-3 text-sm">
-                <CreditCard className="w-5 h-5 text-primary mt-1" />
-                <div>
-                  <div className="font-medium capitalize">
-                    Payment via {booking.paymentProvider}
-                  </div>
-                  <div className="text-muted-foreground break-all">
-                    Payment ID: {booking.paymentId}
-                  </div>
-                </div>
-              </div>
-
-              {/* ACTION */}
-              {/* {booking.status === "confirmed" &&
-                new Date(booking.startDate) > new Date() && (
-                  <div className="pt-4">
-                    <Button
-                      onClick={cancelBooking}
-                      disabled={canceling}
-                      className="w-full rounded-xl bg-primary text-primary-foreground"
+                    <button
+                      onClick={() =>
+                        copyToClipboard("welcome@123")
+                      }
                     >
-                      {canceling ? "Cancelling…" : "Cancel Booking"}
-                    </Button>
+                      <Copy className="w-4 h-4 opacity-60" />
+                    </button>
                   </div>
-                )} */}
-            </>
-          )}
-        </div>
+                </div>
+
+                {/* HOST */}
+                <div className="bg-[#f7f3ef] rounded-xl px-4 py-3 col-span-1">
+                  <p className="text-[10px] text-muted-foreground uppercase mb-1">
+                    HOST
+                  </p>
+
+                  <p className="font-semibold text-sm">
+                    Sneha Shinde
+                  </p>
+
+                  <p className="text-sm text-red-600 mt-1">
+                    +91 98200 74617
+                  </p>
+                </div>
+
+                {/* LOCATION */}
+                <div className="bg-[#f7f3ef] rounded-xl px-4 py-3">
+                  <p className="text-[10px] text-muted-foreground uppercase mb-1">
+                    VILLA LOCATION
+                  </p>
+
+                  <p className="font-semibold text-sm">
+                    Kirawali, Karjat, Maharashtra
+                  </p>
+
+                  <a
+                    href="https://maps.app.goo.gl/qhNFKD37QUUhqGMB7"
+                    className="text-red-600 text-sm mt-1 inline-block"
+                  >
+                    Open in Maps ↗
+                  </a>
+                </div>
+              </div>
+
+              {/* ================= BILLING ================= */}
+              <div className="border-t pt-4 space-y-2">
+
+                <p className="text-xs uppercase text-muted-foreground tracking-wide">
+                  Billing Details
+                </p>
+
+                <Row label="Room Total" value={roomTotal} />
+                <Row label="Food Total" value={mealTotal} />
+                <Row
+                  label={`GST (${taxPercent}%)`}
+                  value={taxAmount}
+                />
+
+                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <span>Grand Total</span>
+                  <span>
+                    ₹{grandTotal.toLocaleString("en-IN")}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </>
+        )}
+
       </Content>
     </Container>
   );
 }
+
+
+const InfoCard = ({ icon, title, main, sub }) => (
+  <div className="bg-[#f7f3ef] rounded-xl px-4 py-3">
+    <p className="text-[10px] text-muted-foreground uppercase mb-1 flex items-center gap-2">
+      {icon} {title}
+    </p>
+    <p className="font-semibold text-sm">{main}</p>
+    {sub && (
+      <p className="text-[11px] text-muted-foreground">
+        {sub}
+      </p>
+    )}
+  </div>
+);
+
+const Row = ({ label, value }) => (
+  <div className="flex justify-between text-sm">
+    <span>{label}</span>
+    <span>₹{value.toLocaleString("en-IN")}</span>
+  </div>
+);
+

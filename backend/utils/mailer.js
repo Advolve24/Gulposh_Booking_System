@@ -489,9 +489,9 @@ border-radius:12px;
 
 <tr>
 <td style="padding:14px;">
-<b>Your Host — Priya Sharma</b><br>
-📞 +91 98765 43210<br>
-✉️ priya@grandrepose.in
+<b>Your Host — Sneha Shinde</b><br>
+📞 +91 98200 74617<br>
+✉️ stay@villagulposh.com
 </td>
 </tr>
 

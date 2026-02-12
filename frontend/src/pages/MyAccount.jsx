@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/http";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useAuth } from "../store/authStore";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,9 @@ export default function MyAccount() {
   const [stateCode, setStateCode] = useState("");
   const [cityName, setCityName] = useState("");
 
+  const logout = useAuth((s) => s.logout);
+  const setUser = useAuth((s) => s.setUser);
+
   /* ================= LOAD PROFILE ================= */
 
   useEffect(() => {
@@ -120,7 +124,12 @@ export default function MyAccount() {
 
         setPhone(data.phone || "");
         setOriginalPhone(data.phone || "");
-      } catch {
+      } catch (err) {
+        if (err?.response?.status === 401) {
+          navigate("/", { replace: true });
+          return;
+        }
+
         toast.error("Failed to load profile");
       } finally {
         setLoading(false);
@@ -273,20 +282,23 @@ export default function MyAccount() {
   /* ================= DELETE ================= */
 
   const onDeleteAccount = async () => {
-    if (!confirm("This will permanently delete your account. Continue?"))
-      return;
+  if (!confirm("This will permanently delete your account. Continue?"))
+    return;
 
-    try {
-      setDeleting(true);
-      await api.delete("/auth/me");
-      toast.success("Account deleted");
-      window.location.href = "/";
-    } catch {
-      toast.error("Failed to delete account");
-    } finally {
-      setDeleting(false);
-    }
-  };
+  try {
+    setDeleting(true);
+    await api.delete("/auth/me");
+    toast.success("Account deleted successfully");
+    await logout();
+    navigate("/", { replace: true });
+  } catch (err) {
+    console.error(err);
+    toast.error(err?.response?.data?.message || "Failed to delete account");
+  } finally {
+    setDeleting(false);
+  }
+};
+
 
   /* ================= UI ================= */
 
@@ -328,7 +340,7 @@ export default function MyAccount() {
               <Button variant="outline" onClick={() => setEditMode(false)}>
                 Cancel
               </Button>
-              <Button onClick={onSave} disabled={saving}>
+              <Button onClick={onSave} disabled={saving || !hasChanges}>
                 {saving ? "Saving…" : "Save"}
               </Button>
             </div>

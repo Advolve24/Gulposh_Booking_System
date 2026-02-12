@@ -39,13 +39,19 @@ api.interceptors.response.use(
     ) {
       return Promise.reject(error);
     }
+    if (status === 403 && message === "This account has been deleted") {
+      const { logout, setUser } = useAuth.getState();
+      await logout();
+      setUser(null);
+      window.location.replace("/");
+      return Promise.reject(error);
+    }
 
     if (status === 401) {
       const { logout } = useAuth.getState();
       await logout();
       window.location.replace("/");
     }
-
     return Promise.reject(error);
   }
 );

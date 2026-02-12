@@ -6,7 +6,7 @@ export const useAuth = create((set, get) => ({
   loading: false,
   initialized: false, 
 
-
+  setUser: (user) => set({ user }),
   showAuthModal: false,
   openAuth: () => set({ showAuthModal: true }),
   closeAuth: () => set({ showAuthModal: false }),

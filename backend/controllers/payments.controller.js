@@ -5,7 +5,8 @@ import Booking from "../models/Booking.js";
 import TaxSetting from "../models/TaxSetting.js";
 import { sendBookingConfirmationMail } from "../utils/mailer.js";
 import { parseYMD, toDateOnly } from "../lib/date.js";
-import { notifyAdmin } from "../utils/notifyAdmin.js"; // ✅ NEW
+import { notifyAdmin } from "../utils/notifyAdmin.js"; 
+import User from "../models/User.js";
 
 
 /* ----------------------------- Razorpay ----------------------------- */
@@ -127,6 +128,7 @@ export const createOrder = async (req, res) => {
 export const verifyPayment = async (req, res) => {
   try {
     const userId = req.user?.id;
+    const user = await User.findById(userId);
     if (!userId) {
       return res.status(401).json({ message: "Auth required" });
     }
@@ -235,6 +237,11 @@ export const verifyPayment = async (req, res) => {
     /* ---------------- Create Booking ---------------- */
     const booking = await Booking.create({
       user: userId,
+      userSnapshot: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+      },
       room: room._id,
       startDate: sDate,
       endDate: eDate,

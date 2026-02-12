@@ -6,6 +6,7 @@ import {
   me,
   updateMe,
   refresh,
+  deleteMe
 } from "../controllers/auth.controller.js";
 import { authRequired } from "../middleware/auth.js";
 
@@ -20,6 +21,7 @@ router.post("/refresh", refresh);
 
 router.post("/logout", logout);
 
+router.delete("/me", authRequired, deleteMe);
 router.get("/me", authRequired, me);
 router.put("/me", authRequired, updateMe);
 

@@ -52,6 +52,11 @@ export const phoneLogin = async (req, res) => {
       return res.status(400).json({ message: "Phone not found in token" });
 
     let user = await User.findOne({ phone });
+    if (user?.deleted) {
+      return res.status(403).json({
+        message: "This account has been deleted",
+      });
+    }
     let isNewUser = false;
 
     if (!user) {
@@ -100,6 +105,11 @@ export const googleLogin = async (req, res) => {
       return res.status(400).json({ message: "Email not found in token" });
 
     let user = await User.findOne({ email });
+    if (user?.deleted) {
+      user.deleted = false;
+      user.deletedAt = null;
+      await user.save();
+    }
     let isNewUser = false;
 
     if (!user) {
@@ -151,8 +161,12 @@ export const logout = (_req, res) => {
 
 export const me = async (req, res) => {
   const user = await User.findById(req.user.id);
-  if (!user)
-    return res.status(401).json({ message: "Unauthorized" });
+
+  if (!user || user.deleted) {
+    return res.status(403).json({
+      message: "This account has been deleted",
+    });
+  }
 
   res.json({
     id: user._id,
@@ -256,6 +270,30 @@ export const updateMe = async (req, res) => {
     });
   }
 };
+
+
+
+export const deleteMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    user.deleted = true;
+    user.deletedAt = new Date();
+    await user.save();
+    clearSessionCookie(res, "token", { path: "/" });
+    clearSessionCookie(res, "refresh_token", { path: "/" });
+    res.json({ message: "Account deleted successfully" });
+  } catch (err) {
+    console.error("deleteMe error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+
 
 
 export const refresh = async (req, res) => {

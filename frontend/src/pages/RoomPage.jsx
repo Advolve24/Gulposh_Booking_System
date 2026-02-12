@@ -732,13 +732,21 @@ export default function RoomPage() {
             >
               Book Now
             </Button>
+             
+             <div className="border rounded-[12px]">
+              <p className="text-[16px] font-[600] text-green-600 p-3 flex items-center justify-center">
+                <ShieldCheck className="inline w-5 h-5 mr-1 " />
+                100% safe and secure payments.
+              </p>
 
-            {/* BENEFITS */}
-            <div className="pt-2 space-y-2 text-sm text-green-700">
-              <div>✓ Free cancellation up to 10 days</div>
-              <div>✓ Instant confirmation</div>
-              <div>✓ Best price guarantee</div>
-            </div>
+              <div className="border-t flex items-center justify-between">
+                <img src="/verifiedbyvisa.png" alt="Verified by Visa" className="w-full h-11 object-contain p-2" />
+                <img src="/mastercard.png" alt="Mastercard" className="w-full h-10 object-contain p-2" />
+                <img src="/Rupay.png" alt="Rupay" className="w-full h-8 object-contain p-2" />
+                <img src="/Upi.png" alt="UPI" className="w-full h-8 object-contain p-2" />
+              </div>
+             </div>
+           
           </div>
         </div>
       </div>

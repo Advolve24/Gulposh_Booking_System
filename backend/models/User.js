@@ -15,14 +15,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       match: [/^\d{10}$/, "Phone number must be exactly 10 digits"],
-      default: undefined, 
+      default: undefined,
     },
 
     email: {
       type: String,
       trim: true,
       lowercase: true,
-      default: undefined, 
+      default: undefined,
     },
 
     dob: {
@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-     passwordHash: {
+    passwordHash: {
       type: String,
       select: false,
     },
@@ -57,7 +57,9 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
-     /* ================= NOTIFICATIONS (FCM) ================= */
+    deleted: { type: Boolean, default: false },
+    deletedAt: Date,
+    /* ================= NOTIFICATIONS (FCM) ================= */
 
     /**
      * FCM tokens for push notifications
