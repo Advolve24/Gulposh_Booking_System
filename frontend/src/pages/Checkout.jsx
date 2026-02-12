@@ -91,9 +91,8 @@ export default function Checkout() {
   const [children, setChildren] = useState(initialChildren);
   const totalGuests = adults + children;
   const [withMealState, setWithMealState] = useState(false);
-  const withMeal = room?.mealMode === "only"
-    ? true
-    : room?.mealMode === "price"
+  const withMeal =
+    room?.mealMode === "only" || room?.mealMode === "price"
       ? withMealState
       : false;
 
@@ -188,8 +187,8 @@ export default function Checkout() {
 
     setAddress({
       address: user.address || "",
-      country: user.country || "",   // ✅ name
-      state: user.state || "",       // ✅ name
+      country: user.country || "",
+      state: user.state || "",
       city: user.city || "",
       pincode: user.pincode || "",
     });
@@ -300,7 +299,6 @@ export default function Checkout() {
       return;
     }
 
-    // ✅ Backend calculates EVERYTHING (tax, totals, amount)
     const { data } = await api.post("/payments/create-order", {
       roomId,
       startDate: toYMD(range.from),
@@ -522,7 +520,6 @@ export default function Checkout() {
     );
   }
 
-  /* ================= UI ================= */
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* reCAPTCHA – hidden, no layout impact */}
@@ -621,8 +618,8 @@ export default function Checkout() {
 
                 {/* TITLE */}
                 {/* LOCATION */}
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-semibold text-foreground">
+                <div className="flex flex-wrap flex-col items-start gap-x-2 gap-y-2">
+                  <span className="font-semibold text-foreground text-[22px]">
                     {room?.name}
                   </span>
 
@@ -718,7 +715,7 @@ export default function Checkout() {
                 {/* TOTAL */}
                 <div className="flex justify-between items-end">
                   <div>
-                    <div className="text-sm font-medium">Total</div>
+                    <div className="text-[18px] font-medium">Total</div>
                     <div className="text-xs text-muted-foreground">
                       Including all taxes
                     </div>
@@ -858,7 +855,7 @@ export default function Checkout() {
               <CalendarRange
                 value={range}
                 onChange={setRange}
-                disabledRanges={disabledAll} // ✅ booked + blackout (global)
+                disabledRanges={disabledAll} 
               />
 
               {!range?.from && (
@@ -902,7 +899,7 @@ export default function Checkout() {
 
             {/* ================= MEALS TOGGLE ================= */}
             <div className="space-y-3">
-              {room.mealMode === "price" && (
+              {(room.mealMode === "only" || room.mealMode === "price") && (
                 <Label className="flex items-center gap-2">
                   <Checkbox
                     checked={withMealState}
@@ -922,7 +919,7 @@ export default function Checkout() {
 
               {room.mealMode === "only" && (
                 <div className="rounded-xl border bg-green-50 p-4 text-sm text-green-700">
-                  Meals are included in your stay (Veg & Non-Veg)
+                  Meals are included in room price. You can opt out if not required.
                 </div>
               )}
 
@@ -1020,8 +1017,8 @@ export default function Checkout() {
               <Separator />
 
               <div className="flex justify-between font-semibold">
-                <span>Total Payable</span>
-                <span className="text-red-700">
+                <span className="text-[16px]">Total Payable</span>
+                <span className="text-red-700 text-[18px]">
                   ₹{grandTotal.toLocaleString("en-IN")}
                 </span>
               </div>

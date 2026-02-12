@@ -2,18 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/http";
 import { format, addMonths, subMonths } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { toDateOnlyFromAPIUTC, todayDateOnly } from "../lib/date";
 
-/* ===============================
-   MEDIA QUERY
-================================ */
+
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== "undefined" ? window.innerWidth >= 768 : true
@@ -28,9 +22,7 @@ function useIsDesktop() {
   return isDesktop;
 }
 
-/* ===============================
-   CALENDAR RANGE
-================================ */
+
 export default function CalendarRange({
   roomId,
   value,
@@ -46,17 +38,14 @@ export default function CalendarRange({
 
   const [month, setMonth] = useState(new Date());
 
-  /* 🔥 KEEP YOUR DESKTOP SLIDE STATES (no impact on desktop) */
-  const [slideDir, setSlideDir] = useState(null); // kept as-is
+  const [slideDir, setSlideDir] = useState(null); 
 
-  /* swipe tracking (desktop unaffected) */
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const SWIPE_THRESHOLD = 50;
 
   const selectingRef = useRef(false);
 
-  /* ✅ MOBILE MONTH STACK (Airbnb scroll) */
   const INITIAL_MOBILE_MONTHS = 3;
   const [mobileMonths, setMobileMonths] = useState(() => {
     const base = new Date();
@@ -76,7 +65,6 @@ export default function CalendarRange({
         addMonths(lastMonth, 2),
       ];
 
-      // 🔥 wait for DOM render, then scroll
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           const el = monthRefs.current[firstNewMonthIndex];
@@ -93,33 +81,42 @@ export default function CalendarRange({
     });
   };
 
-  /* ===============================
-     HANDLE DATE SELECTION
-  ============================== */
   const handleSelect = (range) => {
-    if (!range) return;
+    const prevFrom = value?.from ? new Date(value.from) : null;
+    const prevTo = value?.to ? new Date(value.to) : null;
 
-    setOpen(true);
+    const newFrom = range?.from ? new Date(range.from) : null;
+    const newTo = range?.to ? new Date(range.to) : null;
+
+    if (
+      prevFrom &&
+      !prevTo &&
+      newFrom &&
+      !newTo &&
+      prevFrom.getTime() === newFrom.getTime()
+    ) {
+      onChange(undefined);
+      selectingRef.current = false;
+      setOpen(false);
+      return;
+    }
+
     onChange(range);
+    setOpen(true);
 
-    const from = range?.from ? new Date(range.from) : null;
-    const to = range?.to ? new Date(range.to) : null;
-
-    if (from && (!to || from.getTime() === to.getTime())) {
+    if (newFrom && (!newTo || newFrom.getTime() === newTo.getTime())) {
       selectingRef.current = true;
       return;
     }
 
-    if (from && to) {
+    if (newFrom && newTo) {
       selectingRef.current = false;
       setTimeout(() => setOpen(false), 120);
     }
   };
 
-  /* ===============================
-     TOUCH HANDLERS (MOBILE ONLY)
-     ✅ Disabled month-slide when using scroll calendar
-  ============================== */
+
+
   const onTouchStart = (e) => {
     if (isDesktop || selectingRef.current) return;
     touchStartX.current = e.touches[0].clientX;
@@ -133,15 +130,10 @@ export default function CalendarRange({
   const onTouchEnd = () => {
     if (isDesktop || selectingRef.current) return;
 
-    // ✅ For Airbnb vertical scroll, we do NOT change month on swipe
-    // (keeping your code structure but stopping slide behavior)
     const deltaX = touchStartX.current - touchEndX.current;
     if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
   };
 
-  /* ===============================
-     LOAD DISABLED RANGES
-  ============================== */
   useEffect(() => {
     if (!roomId || disabledRanges) return;
 
@@ -195,9 +187,7 @@ export default function CalendarRange({
     [globalRanges, roomRanges, disabledRanges]
   );
 
-  /* ===============================
-     CALENDAR UI
-  ============================== */
+
   const calendarUI = (
     <div className="calendar-wrapper">
       {/* ✅ KEEP YOUR NAV BUTTONS EXACTLY */}
@@ -206,7 +196,6 @@ export default function CalendarRange({
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
           if (!isDesktop) {
-            // ✅ mobile scroll calendar: do nothing / no slide
             return;
           } else {
             setMonth((m) => subMonths(m, 1));
@@ -221,7 +210,6 @@ export default function CalendarRange({
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
           if (!isDesktop) {
-            // ✅ mobile scroll calendar: do nothing / no slide
             return;
           } else {
             setMonth((m) => addMonths(m, 1));
@@ -231,7 +219,6 @@ export default function CalendarRange({
         <ChevronRight size={20} />
       </button>
 
-      {/* ✅ DESKTOP CALENDAR — EXACT SAME AS YOURS */}
       {isDesktop ? (
         <div
           className="calendar-viewport"
@@ -271,7 +258,6 @@ export default function CalendarRange({
           />
         </div>
       ) : (
-        /* ✅ MOBILE AIRBNB SCROLL (only mobile changed) */
         <div
           className="mobile-calendar-scroll"
           onTouchStart={onTouchStart}
@@ -368,9 +354,7 @@ export default function CalendarRange({
       );
 }
 
-      /* ===============================
-         DATE BOX
-      ================================ */
+
       function DateBox({label, value}) {
   return (
       <div className="flex flex-col items-center">
