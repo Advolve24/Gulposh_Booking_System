@@ -53,9 +53,7 @@ export const phoneLogin = async (req, res) => {
 
     let user = await User.findOne({ phone });
     if (user?.deleted) {
-      return res.status(403).json({
-        message: "This account has been deleted",
-      });
+      user = null; 
     }
     let isNewUser = false;
 
@@ -106,9 +104,7 @@ export const googleLogin = async (req, res) => {
 
     let user = await User.findOne({ email });
     if (user?.deleted) {
-      user.deleted = false;
-      user.deletedAt = null;
-      await user.save();
+      user = null;
     }
     let isNewUser = false;
 
@@ -275,22 +271,18 @@ export const updateMe = async (req, res) => {
 
 export const deleteMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    user.deleted = true;
-    user.deletedAt = new Date();
-    await user.save();
+    const userId = req.user.id;
+    await User.deleteOne({ _id: userId });
     clearSessionCookie(res, "token", { path: "/" });
     clearSessionCookie(res, "refresh_token", { path: "/" });
-    res.json({ message: "Account deleted successfully" });
+
+    return res.json({ message: "Account deleted successfully" });
   } catch (err) {
     console.error("deleteMe error:", err);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: "Failed to delete account" });
   }
 };
+
 
 
 

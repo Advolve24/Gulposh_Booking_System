@@ -29,16 +29,12 @@ const getRefundPolicy = (daysBeforeCheckIn) => {
 export const getMyBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user.id })
-      .populate("user", "name email phone")
-      .populate(
-        "room",
-        "name coverImage pricePerNight maxGuests"
-      )
+      .populate("room", "name coverImage pricePerNight maxGuests")
       .sort({ startDate: 1 });
 
     const items = bookings.map((b) => ({
       _id: b._id,
-      user: b.userSnapshot || b.user,
+      user: b.userSnapshot,
       status: b.status,
       startDate: b.startDate,
       endDate: b.endDate,
