@@ -63,13 +63,28 @@ const ICONS = {
   "3 bhk villa": Home,
 };
 
-/* ================= HELPERS ================= */
 const prettify = (str = "") =>
   str
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-/* ================= ICON GRID ================= */
+const getDiscountedPrice = (room) => {
+  if (!room || room.discountType === "none") return null;
+  if (room.discountType === "percent") {
+    return Math.round(
+      room.pricePerNight -
+      (room.pricePerNight * room.discountValue) / 100
+    );
+  }
+  if (room.discountType === "flat") {
+    return Math.max(
+      0,
+      room.pricePerNight - room.discountValue
+    );
+  }
+  return null;
+};
+
 function IconRow({ title, list }) {
   if (!Array.isArray(list) || list.length === 0) return null;
 
@@ -242,22 +257,54 @@ export default function AdminRoomView() {
           <div className="space-y-8">
             <ImageSlider images={images} />
 
-            <div  className="space-y-1 flex md:flex-row flex-col items-start justify-between md:items-center">
-              <h1 className="text-[20px] sm:text-2xl font-semibold">{room.name}</h1>
+            <div className="space-y-1 flex md:flex-row flex-col items-start justify-between md:items-center">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-[20px] sm:text-2xl font-semibold">
+                  {room.name}
+                </h1>
+
+                {room.discountType !== "none" && (
+                  <span className="
+      px-2 py-1
+      rounded-full
+      text-xs font-semibold
+      bg-green-100
+      text-green-700
+    ">
+                    {room.discountType === "percent"
+                      ? `${room.discountValue}% OFF`
+                      : `₹${room.discountValue} OFF`}
+                  </span>
+                )}
+              </div>
+
               <div className="flex gap-4 items-center">
-              <p className="text-[16px] md:text-[18px] font-bold sm:text-black">
-                ₹{room.pricePerNight.toLocaleString("en-IN")} / night
-              </p>
-              {/* ✅ MAX GUESTS */}
-              {room.maxGuests && (
-                <p className="text-sm flex gap-2 items-center text-muted-foreground">
-                 <Users className="h-4 w-4" /> <span className="font-medium text-foreground"> {room.maxGuests}</span> guests
-                </p>
-              )}
+                <div className="text-[16px] md:text-[18px] font-bold sm:text-black">
+                  {room.discountType !== "none" ? (
+                    <div className="flex flex-col">
+                      <span className="line-through text-sm text-muted-foreground">
+                        ₹{room.pricePerNight.toLocaleString("en-IN")}
+                      </span>
+                      <span className="font-bold text-green-600">
+                        ₹{getDiscountedPrice(room).toLocaleString("en-IN")} / night
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-bold">
+                      ₹{room.pricePerNight.toLocaleString("en-IN")} / night
+                    </span>
+                  )}
+                </div>
+                {/* ✅ MAX GUESTS */}
+                {room.maxGuests && (
+                  <p className="text-sm flex gap-2 items-center text-muted-foreground">
+                    <Users className="h-4 w-4" /> <span className="font-medium text-foreground"> {room.maxGuests}</span> guests
+                  </p>
+                )}
               </div>
             </div>
 
-          
+
             {/* ================= AMENITIES ================= */}
             {Array.isArray(room.amenities) && room.amenities.length > 0 && (
               <div className="bg-card border border-border rounded-xl p-6">
@@ -368,11 +415,55 @@ export default function AdminRoomView() {
               <div className="bg-muted rounded-lg p-4">
                 <div className="text-sm text-muted-foreground">Per Night</div>
                 <div className="text-2xl font-semibold text-primary">
-                  ₹{room.pricePerNight.toLocaleString("en-IN")}
+                  {room.discountType !== "none" ? (
+                    <div className="flex flex-col">
+                      <span className="line-through text-sm text-muted-foreground">
+                        ₹{room.pricePerNight.toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-green-600">
+                        ₹{getDiscountedPrice(room).toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                  ) : (
+                    `₹${room.pricePerNight.toLocaleString("en-IN")}`
+                  )}
                 </div>
+
               </div>
 
               <div className="text-sm space-y-2">
+
+                {room.discountType !== "none" && (
+                  <div className="
+    border border-green-200
+    bg-green-50
+    rounded-lg
+    p-3
+    space-y-1
+  ">
+                    <div className="font-medium text-green-700">
+                      Discount Active
+                    </div>
+
+                    <div className="text-sm text-green-700">
+                      {room.discountType === "percent"
+                        ? `${room.discountValue}% off`
+                        : `₹${room.discountValue} off`}
+                    </div>
+
+                    {room.discountLabel && (
+                      <div className="text-xs text-green-600">
+                        {room.discountLabel}
+                      </div>
+                    )}
+
+                    {room.discountCode && (
+                      <div className="text-xs font-mono bg-white px-2 py-1 rounded border inline-block">
+                        Code: {room.discountCode}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {room.mealMode === "only" && (
                   <div className="flex items-center justify-between border border-green-200 bg-green-50 rounded-lg px-3 py-2">
