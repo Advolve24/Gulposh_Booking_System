@@ -44,6 +44,13 @@ const roomSchema = new mongoose.Schema(
       default: "",
     },
 
+    discountCode: {
+      type: String,
+      default: "",
+      uppercase: true,
+      trim: true,
+    },
+
     description: { type: String, default: "" },
 
     amenities: { type: [String], default: [] },

@@ -64,6 +64,7 @@ export default function RoomsNew() {
   const [discountType, setDiscountType] = useState("none");
   const [discountValue, setDiscountValue] = useState("");
   const [discountLabel, setDiscountLabel] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
 
   const [step, setStep] = useState(0);
 
@@ -103,6 +104,7 @@ export default function RoomsNew() {
         setDiscountType(r.discountType || "none");
         setDiscountValue(String(r.discountValue ?? ""));
         setDiscountLabel(r.discountLabel || "");
+        setDiscountCode(r.discountCode || "");
 
         setCoverImage(r.coverImage || "");
         setGalleryUrls(r.galleryImages || []);
@@ -227,6 +229,7 @@ export default function RoomsNew() {
           ? Number(discountValue)
           : 0,
         discountLabel,
+        discountCode,
       };
 
       if (isEdit) {
@@ -438,7 +441,7 @@ export default function RoomsNew() {
               </Field>
 
               {discountType !== "none" && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <InputField
                     label={
                       discountType === "percent"
@@ -454,6 +457,16 @@ export default function RoomsNew() {
                       value={discountLabel}
                       onChange={(e) => setDiscountLabel(e.target.value)}
                       placeholder="e.g. Summer Offer"
+                    />
+                  </Field>
+
+                  <Field label="Discount Code *">
+                    <Input
+                      value={discountCode}
+                      onChange={(e) =>
+                        setDiscountCode(e.target.value.toUpperCase())
+                      }
+                      placeholder="e.g. SUMMER5"
                     />
                   </Field>
                 </div>

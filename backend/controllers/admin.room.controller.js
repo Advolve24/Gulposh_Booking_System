@@ -62,6 +62,7 @@ export const createRoom = async (req, res) => {
       discountType,
       discountValue,
       discountLabel,
+      discountCode,
     } = req.body || {};
 
     if (!name || pricePerNight === undefined || pricePerNight === null) {
@@ -93,6 +94,7 @@ export const createRoom = async (req, res) => {
           ? Number(discountValue) || 0
           : 0,
       discountLabel: discountLabel || "",
+      discountCode: discountCode || "",
 
       coverImage: coverImage || "",
       galleryImages: toArray(galleryImages),
@@ -145,6 +147,7 @@ export const updateRoom = async (req, res) => {
       discountType,
       discountValue,
       discountLabel,
+      discountCode,
     } = req.body || {};
 
     const update = {};
@@ -191,6 +194,10 @@ export const updateRoom = async (req, res) => {
 
     if (discountLabel !== undefined) {
       update.discountLabel = discountLabel || "";
+    }
+
+    if (discountCode !== undefined) {
+      update.discountCode = discountCode || "";
     }
 
     if (coverImage !== undefined) {

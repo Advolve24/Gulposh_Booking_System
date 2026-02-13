@@ -104,6 +104,8 @@ export default function Checkout() {
     to: state?.endDate ? new Date(state.endDate) : null,
   });
 
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
 
   const disabledAll = useMemo(
     () => mergeRanges([...blackoutRanges, ...bookedAll]),
@@ -256,7 +258,13 @@ export default function Checkout() {
   }, [roomTotal, mealTotal]);
 
   const discountAmount = useMemo(() => {
-    if (!room) return 0;
+    if (!room || !couponApplied) return 0;
+    if (
+      room.discountCode &&
+      couponCode.trim().toUpperCase() !==
+      room.discountCode
+    )
+      return 0;
     if (room.discountType === "percent") {
       return Math.round(
         (subTotal * (room.discountValue || 0)) / 100
@@ -266,7 +274,7 @@ export default function Checkout() {
       return room.discountValue || 0;
     }
     return 0;
-  }, [room, subTotal]);
+  }, [room, subTotal, couponApplied, couponCode]);
 
   const discountedSubtotal = useMemo(() => {
     return Math.max(0, subTotal - discountAmount);
@@ -733,7 +741,7 @@ export default function Checkout() {
                     </div>
                   )}
 
-                  <div className="flex justify-between text-muted-foreground">
+                  <div className="flex flex-col justify-between text-muted-foreground">
                     <div className="flex justify-between">
                       <span>CGST ({cgstPercent}%)</span>
                       <span>₹{cgstAmount.toLocaleString("en-IN")}</span>
@@ -1058,6 +1066,36 @@ export default function Checkout() {
               </div>
 
               <Separator />
+
+              <div className="space-y-2">
+                <Label>Discount Code</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={couponCode}
+                    onChange={(e) =>
+                      setCouponCode(e.target.value.toUpperCase())
+                    }
+                    placeholder="Enter code"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        room.discountCode &&
+                        couponCode === room.discountCode
+                      ) {
+                        setCouponApplied(true);
+                        toast.success("Coupon applied!");
+                      } else {
+                        setCouponApplied(false);
+                        toast.error("Invalid coupon");
+                      }
+                    }}
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
 
               <div className="flex justify-between font-semibold">
                 <span className="text-[16px]">Total Payable</span>
