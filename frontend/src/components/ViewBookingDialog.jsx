@@ -80,11 +80,30 @@ export default function ViewBookingDialog({
     booking?.mealTotal ||
     0;
   const subTotal = roomTotal + mealTotal;
-  const taxAmount = booking?.totalTax || 0;
-  const taxPercent =
-    subTotal > 0
-      ? ((taxAmount / subTotal) * 100).toFixed(0)
-      : 0;
+
+  const cgstAmount = Number(
+    booking?.taxBreakup?.cgstAmount ??
+    (booking?.totalTax ? booking.totalTax / 2 : 0)
+  );
+
+  const sgstAmount = Number(
+    booking?.taxBreakup?.sgstAmount ??
+    (booking?.totalTax ? booking.totalTax / 2 : 0)
+  );
+
+  const cgstPercent =
+    booking?.taxBreakup?.cgstPercent ??
+    (subTotal > 0
+      ? ((cgstAmount / subTotal) * 100).toFixed(0)
+      : 0);
+
+  const sgstPercent =
+    booking?.taxBreakup?.sgstPercent ??
+    (subTotal > 0
+      ? ((sgstAmount / subTotal) * 100).toFixed(0)
+      : 0);
+
+  const taxAmount = cgstAmount + sgstAmount;
   const grandTotal = booking?.amount || 0;
 
   const Container = isDesktop ? Dialog : Drawer;
@@ -236,8 +255,13 @@ export default function ViewBookingDialog({
                 <Row label="Room Total" value={roomTotal} />
                 <Row label="Food Total" value={mealTotal} />
                 <Row
-                  label={`GST (${taxPercent}%)`}
-                  value={taxAmount}
+                  label={`CGST (${cgstPercent}%)`}
+                  value={cgstAmount}
+                />
+
+                <Row
+                  label={`SGST (${sgstPercent}%)`}
+                  value={sgstAmount}
                 />
 
                 <div className="flex justify-between font-bold text-lg border-t pt-2">

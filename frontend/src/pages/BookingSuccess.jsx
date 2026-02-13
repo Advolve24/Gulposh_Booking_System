@@ -122,8 +122,22 @@ export default function BookingSuccess() {
     const mealTotal = Number(booking.mealTotal || 0);
 
     const subtotal = roomTotal + mealTotal;
-    const tax = Number(booking.totalTax || 0);
-    const grandTotal = Number(booking.grandTotal || booking.amount || 0);
+
+    const cgstAmount = Number(
+        booking.taxBreakup?.cgstAmount ??
+        (booking.totalTax ? booking.totalTax / 2 : 0)
+    );
+
+    const sgstAmount = Number(
+        booking.taxBreakup?.sgstAmount ??
+        (booking.totalTax ? booking.totalTax / 2 : 0)
+    );
+
+    const tax = cgstAmount + sgstAmount;
+
+    const grandTotal = Number(
+        booking.grandTotal || booking.amount || 0
+    );
 
     const room = booking.room;
     const mealMode = room?.mealMode;
@@ -177,7 +191,7 @@ export default function BookingSuccess() {
                     <img
                         src={roomImage}
                         alt={room.name}
-                        className="h-[410px] w-full object-cover"
+                        className="h-[430px] w-full object-cover"
                     />
 
                     <div className="p-6 space-y-2">
@@ -271,9 +285,16 @@ export default function BookingSuccess() {
                             </div>
 
                             {/* GST */}
-                            <div className="flex justify-between text-muted-foreground">
-                                <span>GST</span>
-                                <span>₹{tax.toLocaleString("en-IN")}</span>
+                            <div className="flex flex-col justify-between text-muted-foreground">
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>CGST</span>
+                                    <span>₹{cgstAmount.toLocaleString("en-IN")}</span>
+                                </div>
+
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>SGST</span>
+                                    <span>₹{sgstAmount.toLocaleString("en-IN")}</span>
+                                </div>
                             </div>
 
                             <Separator />

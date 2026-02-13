@@ -1,16 +1,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
-// import MobileRoomForm from "@/components/MobileRoomForm";
-import {
-  createRoom,
-  getRoomAdmin,
-  updateRoom,
-  uploadImage,
-  uploadImages,
-} from "@/api/admin";
+import { createRoom, getRoomAdmin, updateRoom, uploadImage, uploadImages, } from "@/api/admin";
 import { toast } from "sonner";
-
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -69,6 +61,10 @@ export default function RoomsNew() {
   const [reviewRating, setReviewRating] = useState("5");
   const [reviewComment, setReviewComment] = useState("");
 
+  const [discountType, setDiscountType] = useState("none");
+  const [discountValue, setDiscountValue] = useState("");
+  const [discountLabel, setDiscountLabel] = useState("");
+
   const [step, setStep] = useState(0);
 
   const [completedSteps, setCompletedSteps] = useState({
@@ -103,6 +99,10 @@ export default function RoomsNew() {
         setAmenities(r.amenities || []);
         setHouseRules(r.houseRules || []);
         setReviews(r.reviews || []);
+
+        setDiscountType(r.discountType || "none");
+        setDiscountValue(String(r.discountValue ?? ""));
+        setDiscountLabel(r.discountLabel || "");
 
         setCoverImage(r.coverImage || "");
         setGalleryUrls(r.galleryImages || []);
@@ -222,6 +222,11 @@ export default function RoomsNew() {
         amenities,
         houseRules,
         reviews,
+        discountType,
+        discountValue: discountType !== "none"
+          ? Number(discountValue)
+          : 0,
+        discountLabel,
       };
 
       if (isEdit) {
@@ -415,6 +420,45 @@ export default function RoomsNew() {
                   className="text-sm"
                 />
               </Field>
+
+              <Field label="Room Discount">
+                <Select
+                  value={discountType}
+                  onValueChange={setDiscountType}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select discount type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Discount</SelectItem>
+                    <SelectItem value="percent">Percentage (%)</SelectItem>
+                    <SelectItem value="flat">Flat Amount (₹)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              {discountType !== "none" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <InputField
+                    label={
+                      discountType === "percent"
+                        ? "Discount %"
+                        : "Discount Amount ₹"
+                    }
+                    value={discountValue}
+                    set={setDiscountValue}
+                  />
+
+                  <Field label="Label (Optional)">
+                    <Input
+                      value={discountLabel}
+                      onChange={(e) => setDiscountLabel(e.target.value)}
+                      placeholder="e.g. Summer Offer"
+                    />
+                  </Field>
+                </div>
+              )}
+
             </Section>
           )}
 

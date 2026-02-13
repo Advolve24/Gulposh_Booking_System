@@ -55,7 +55,23 @@ const bookingSchema = new mongoose.Schema(
     orderId: String,
     paymentId: String,
     signature: String,
-    totalTax: Number,
+
+    taxBreakup: {
+      cgstPercent: Number,
+      sgstPercent: Number,
+      cgstAmount: Number,
+      sgstAmount: Number,
+      totalTax: Number,
+    },
+
+    discountMeta: {
+      type: {
+        discountType: String,
+        discountValue: Number,
+        discountAmount: Number,
+      },
+      default: null,
+    },
 
     adminMeta: {
       fullName: String,

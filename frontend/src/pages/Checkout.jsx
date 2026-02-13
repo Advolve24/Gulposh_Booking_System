@@ -104,6 +104,7 @@ export default function Checkout() {
     to: state?.endDate ? new Date(state.endDate) : null,
   });
 
+
   const disabledAll = useMemo(
     () => mergeRanges([...blackoutRanges, ...bookedAll]),
     [blackoutRanges, bookedAll]
@@ -202,13 +203,11 @@ export default function Checkout() {
 
     const totalMeal = vegGuests + nonVegGuests;
 
-    // ensure minimum 1 meal guest
     if (totalMeal === 0 && totalGuests > 0) {
       setVegGuests(1);
       setNonVegGuests(0);
     }
 
-    // clamp if guests reduced
     if (totalMeal > totalGuests) {
       setNonVegGuests(Math.max(0, totalGuests - vegGuests));
     }
@@ -224,7 +223,6 @@ export default function Checkout() {
       });
   }, []);
 
-  /* ================= CALCULATIONS (PREVIEW ONLY) ================= */
 
   const nights = useMemo(() => {
     if (!range.from || !range.to) return 0;
@@ -242,9 +240,7 @@ export default function Checkout() {
 
   const mealTotal = useMemo(() => {
     if (!room) return 0;
-
     if (room.mealMode === "only") return 0;
-
     if (room.mealMode === "price" && withMeal) {
       return (
         nights *
@@ -252,23 +248,50 @@ export default function Checkout() {
           nonVegGuests * room.mealPriceNonVeg)
       );
     }
-
     return 0;
   }, [room, nights, withMeal, vegGuests, nonVegGuests]);
-
 
   const subTotal = useMemo(() => {
     return roomTotal + mealTotal;
   }, [roomTotal, mealTotal]);
 
-  const totalTax = useMemo(() => {
-    if (!taxPercent) return 0;
-    return Math.round((subTotal * taxPercent) / 100);
-  }, [subTotal, taxPercent]);
+  const discountAmount = useMemo(() => {
+    if (!room) return 0;
+    if (room.discountType === "percent") {
+      return Math.round(
+        (subTotal * (room.discountValue || 0)) / 100
+      );
+    }
+    if (room.discountType === "flat") {
+      return room.discountValue || 0;
+    }
+    return 0;
+  }, [room, subTotal]);
+
+  const discountedSubtotal = useMemo(() => {
+    return Math.max(0, subTotal - discountAmount);
+  }, [subTotal, discountAmount]);
+
+  const cgstPercent = taxPercent / 2;
+  const sgstPercent = taxPercent / 2;
+
+  const cgstAmount = useMemo(() => {
+    return Math.round(
+      (discountedSubtotal * cgstPercent) / 100
+    );
+  }, [discountedSubtotal, cgstPercent]);
+
+  const sgstAmount = useMemo(() => {
+    return Math.round(
+      (discountedSubtotal * sgstPercent) / 100
+    );
+  }, [discountedSubtotal, sgstPercent]);
+
+  const totalTax = cgstAmount + sgstAmount;
 
   const grandTotal = useMemo(() => {
-    return subTotal + totalTax;
-  }, [subTotal, totalTax]);
+    return discountedSubtotal + totalTax;
+  }, [discountedSubtotal, totalTax]);
 
   const proceedPayment = async () => {
     const g = totalGuests;
@@ -337,7 +360,6 @@ export default function Checkout() {
         let toastId;
 
         try {
-          // 🔄 show loading toast and keep its id
           toastId = toast.loading("Confirming your booking...");
 
           const countryObj = countries.find(
@@ -697,6 +719,13 @@ export default function Checkout() {
                     </div>
                   )}
 
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-green-700">
+                      <span>Discount</span>
+                      <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+
                   {room.mealMode === "only" && (
                     <div className="flex justify-between text-green-700">
                       <span>Meals</span>
@@ -705,8 +734,15 @@ export default function Checkout() {
                   )}
 
                   <div className="flex justify-between text-muted-foreground">
-                    <span>GST ({taxPercent}%)</span>
-                    <span>₹{totalTax.toLocaleString("en-IN")}</span>
+                    <div className="flex justify-between">
+                      <span>CGST ({cgstPercent}%)</span>
+                      <span>₹{cgstAmount.toLocaleString("en-IN")}</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>SGST ({sgstPercent}%)</span>
+                      <span>₹{sgstAmount.toLocaleString("en-IN")}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -855,7 +891,7 @@ export default function Checkout() {
               <CalendarRange
                 value={range}
                 onChange={setRange}
-                disabledRanges={disabledAll} 
+                disabledRanges={disabledAll}
               />
 
               {!range?.from && (
@@ -980,6 +1016,13 @@ export default function Checkout() {
                   Meal Guests Selected:{" "}
                   <strong>{vegGuests + nonVegGuests}</strong> / {totalGuests}
                 </p>
+              </div>
+            )}
+
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-green-700">
+                <span>Discount</span>
+                <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
               </div>
             )}
           </div>

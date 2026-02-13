@@ -6,7 +6,7 @@ const reviewSchema = new mongoose.Schema(
     rating: { type: Number, required: true, min: 1, max: 5 },
     comment: { type: String, default: "", trim: true },
   },
-  { _id: false } 
+  { _id: false }
 );
 
 
@@ -26,6 +26,23 @@ const roomSchema = new mongoose.Schema(
     mealMode: { type: String, enum: ["only", "price"], default: "" },
     mealPriceVeg: { type: Number, default: 0 },
     mealPriceNonVeg: { type: Number, default: 0 },
+
+    discountType: {
+      type: String,
+      enum: ["none", "percent", "flat"],
+      default: "none",
+    },
+
+    discountValue: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    discountLabel: {
+      type: String,
+      default: "",
+    },
 
     description: { type: String, default: "" },
 

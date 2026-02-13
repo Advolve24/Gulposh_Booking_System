@@ -340,3 +340,7 @@ justify-content: center;
     height: 1122px;
   }
 }
+
+.rdp-dropdowns{
+  flex-direction: row-reverse;
+}

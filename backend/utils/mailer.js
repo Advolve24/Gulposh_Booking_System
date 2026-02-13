@@ -38,16 +38,31 @@ export const sendBookingConfirmationMail = async ({
   const nonVegCount = booking.nonVegGuests || 0;
 
   const mealTotal = Number(booking.mealTotal || 0);
-  const gst = Number(booking.totalTax || 0);
   const roomTotal = Number(booking.roomTotal || 0);
-
   const subtotal = roomTotal + mealTotal;
+
+  const cgstAmount = Number(
+    booking.taxBreakup?.cgstAmount ??
+    (booking.totalTax ? booking.totalTax / 2 : 0)
+  );
+
+  const sgstAmount = Number(
+    booking.taxBreakup?.sgstAmount ??
+    (booking.totalTax ? booking.totalTax / 2 : 0)
+  );
+
+  const gst = cgstAmount + sgstAmount;
+
+  const cgstPercent =
+    booking.taxBreakup?.cgstPercent ??
+    (subtotal > 0 ? Math.round((cgstAmount / subtotal) * 100) : 0);
+
+  const sgstPercent =
+    booking.taxBreakup?.sgstPercent ??
+    (subtotal > 0 ? Math.round((sgstAmount / subtotal) * 100) : 0);
+
   const grandTotal = Number(booking.amount || 0);
 
-  const gstPercent =
-    subtotal > 0
-      ? Math.round((gst / subtotal) * 100)
-      : 0;
 
   const foodText =
     room.mealMode === "only"
@@ -375,16 +390,26 @@ border-radius:12px;
         </td>
       </tr>
 
-
-      <!-- GST -->
-      <tr>
+     <!-- CGST -->
+<tr>
   <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
-    GST (${gstPercent}%)
+    CGST (${cgstPercent}%)
   </td>
   <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
-    ₹${gst.toLocaleString("en-IN")}
+    ₹${cgstAmount.toLocaleString("en-IN")}
   </td>
 </tr>
+
+<!-- SGST -->
+<tr>
+  <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
+    SGST (${sgstPercent}%)
+  </td>
+  <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">
+    ₹${sgstAmount.toLocaleString("en-IN")}
+  </td>
+</tr>
+
 
 
       <!-- Grand Total (green bar) -->

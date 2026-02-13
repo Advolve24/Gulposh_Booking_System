@@ -85,7 +85,7 @@ export const getBooking = async (req, res) => {
     const roomTotal = booking.roomTotal || 0;
     const mealTotal = booking.mealTotal || 0;
     const subtotal = roomTotal + mealTotal;
-    const tax = booking.totalTax || 0;
+    const tax = booking.taxBreakup?.totalTax || 0;
 
     res.json({
       _id: booking._id,
@@ -113,9 +113,17 @@ export const getBooking = async (req, res) => {
       paymentId: booking.paymentId,
 
       roomTotal,
-      mealTotal,
+      mealTotal, address: booking.addressInfo,
       subtotal,
-      totalTax: tax,
+
+      taxBreakup: {
+        cgstPercent: booking.taxBreakup?.cgstPercent || 0,
+        sgstPercent: booking.taxBreakup?.sgstPercent || 0,
+        cgstAmount: booking.taxBreakup?.cgstAmount || 0,
+        sgstAmount: booking.taxBreakup?.sgstAmount || 0,
+        totalTax: tax,
+      },
+
       grandTotal: booking.amount,
 
       amount: booking.amount,
@@ -124,7 +132,11 @@ export const getBooking = async (req, res) => {
       contactEmail: booking.contactEmail,
       contactPhone: booking.contactPhone,
 
-      address: booking.addressInfo,
+      address: booking.addressInfo?.address || "",
+      city: booking.addressInfo?.city || "",
+      state: booking.addressInfo?.state || "",
+      country: booking.addressInfo?.country || "",
+      pincode: booking.addressInfo?.pincode || "",
 
       createdAt: booking.createdAt,
     });

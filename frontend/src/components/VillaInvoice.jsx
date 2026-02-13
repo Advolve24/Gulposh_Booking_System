@@ -5,6 +5,13 @@ import html2canvas from "html2canvas";
 import { api } from "../api/http";
 import { format } from "date-fns";
 import { Download, Printer, ArrowLeft } from "lucide-react";
+import { toWords } from "number-to-words";
+
+
+const convertNumberToWords = (num) => {
+  const words = toWords(num);
+  return `Rupees ${words.charAt(0).toUpperCase() + words.slice(1)}`;
+};
 
 
 export default function VillaInvoice() {
@@ -53,11 +60,26 @@ export default function VillaInvoice() {
   const nights = booking.nights || 1;
 
   const roomTotal = booking.roomTotal || 0;
-  const mealTotal = booking.mealMeta?.mealTotal || booking.mealTotal || 0;
+  const vegGuests = booking.vegGuests || 0;
+  const nonVegGuests = booking.nonVegGuests || 0;
+
+  const vegPrice = booking.room?.mealPriceVeg || 0;
+  const nonVegPrice = booking.room?.mealPriceNonVeg || 0;
+
+  const mealTotal =
+    nights * (
+      vegGuests * vegPrice +
+      nonVegGuests * nonVegPrice
+    );
+
+  const hasMeals = vegGuests > 0 || nonVegGuests > 0;
+
 
   const subTotal = roomTotal + mealTotal;
 
-  const taxAmount = booking.totalTax || 0;
+  const cgstAmount = booking.taxBreakup?.cgstAmount || 0;
+  const sgstAmount = booking.taxBreakup?.sgstAmount || 0;
+  const taxAmount = cgstAmount + sgstAmount;
 
   const taxPercent =
     subTotal > 0
@@ -84,6 +106,20 @@ export default function VillaInvoice() {
       : `Veg ₹${vegTotal.toLocaleString("en-IN")} • Non-Veg ₹${nonVegTotal.toLocaleString("en-IN")}`;
 
   const grandTotal = booking.amount || 0;
+
+  const mealMode = booking.room?.mealMode;
+
+  const guestAddressLine = booking.address || "";
+  const guestCity = booking.city || "";
+  const guestState = booking.state || "";
+  const guestCountry = booking.country || "";
+  const guestPincode = booking.pincode || "";
+
+  const guestLocationLine = [
+    guestCity,
+    guestState,
+    guestPincode
+  ].filter(Boolean).join(", ");
 
   const isMealNotSelected =
     booking.room?.mealMode !== "only" &&
@@ -159,6 +195,19 @@ export default function VillaInvoice() {
     }
   };
 
+  const foodParts = [];
+  if (vegGuests > 0) {
+    foodParts.push(
+      `Veg (${vegGuests} × ₹${vegPrice.toLocaleString("en-IN")})`
+    );
+  }
+  if (nonVegGuests > 0) {
+    foodParts.push(
+      `Non-Veg (${nonVegGuests} × ₹${nonVegPrice.toLocaleString("en-IN")})`
+    );
+  }
+  const foodBreakdownText = foodParts.join(" + ");
+
 
   return (
     <div className="min-h-screen bg-[#faf7f4] px-3 md:px-6 py-4 md:py-8">
@@ -177,206 +226,370 @@ export default function VillaInvoice() {
 
           <div
             ref={invoiceRef}
-            className="invoice-page bg-white shadow-xl rounded-lg max-w-[900px] mx-auto p-8 text-[14px] leading-relaxed"
+            className="bg-white rounded-2xl p-8 text-[14px] leading-relaxed max-w-[900px] mx-auto"
           >
-            {/* HEADER */}
-            <div className="flex justify-between items-start border-b pb-4">
-              <img src="/pdfLogo.png" alt="logo" className="h-16 mt-2" />
-
-              <div className="text-right">
-                <h1 className="text-3xl font-serif font-semibold">Invoice</h1>
-                <p className="text-sm text-gray-500 mt-1">Invoice Number</p>
-                <p className="font-semibold">
-                  INV-{booking._id.slice(-6).toUpperCase()}
-                </p>
-              </div>
-            </div>
-
-            {/* FROM / BILL TO */}
-            <div className="grid grid-cols-2 gap-8 mt-6">
-              <div>
-                <p className="text-red-600 font-semibold uppercase text-xs mb-1">
-                  From
-                </p>
-                <p className="font-semibold">
-                  Villa Gulposh Vidyasagar Properties Pvt Ltd.
-                </p>
-                <p>
-                  Kirawali, Karjat – 410201<br />
-                  stay@villagulposh.com<br />
-                  +91 98200 74617
-                </p>
-              </div>
-
-              <div className="text-right">
-                <p className="text-red-600 font-semibold uppercase text-xs mb-1">
-                  Bill To
-                </p>
-                <p className="font-semibold">
-                  {booking.contactName || booking.user?.name}
-                </p>
-                <p>
-                  {booking.contactPhone || booking.user?.phone}
-                  <br />
-                  {booking.contactEmail || booking.user?.email}
-                </p>
-              </div>
-            </div>
-
-            {/* BOOKING DETAILS */}
-            <div className="mt-6 border rounded-lg overflow-hidden">
-              <div className="bg-primary text-white px-4 py-2 font-semibold uppercase text-sm">
-                Booking Details
-              </div>
-
-              <div className="grid grid-cols-6 text-center divide-x">
-                <div className="p-3">
-                  <p className="text-gray-500 text-xs">Check In</p>
-                  <p className="font-semibold">
-                    {format(new Date(booking.startDate), "dd MMM yy")}
+            {/* ================= HEADER ================= */}
+            <div className="flex justify-between items-start border-b pb-3">
+              <div className="flex gap-4 items-center">
+                <img src="/logo1.png" className="w-18 h-14 bg-white rounded-lg p-2 border" />
+                <div>
+                  <p className="font-bold text-[22px]">Villa Gulposh</p>
+                  <p className="text-gray-600 text-sm">
+                    A unit of <span className="font-semibold">Vidyasagar Properties Private Limited</span>
                   </p>
-                </div>
-
-                <div className="p-3">
-                  <p className="text-gray-500 text-xs">Check Out</p>
-                  <p className="font-semibold">
-                    {format(new Date(booking.endDate), "dd MMM yy")}
-                  </p>
-                </div>
-
-                <div className="p-3">
-                  <p className="text-gray-500 text-xs">Nights</p>
-                  <p className="font-semibold">{nights}</p>
-                </div>
-
-                <div className="p-3">
-                  <p className="text-gray-500 text-xs">Guests</p>
-                  <p className="font-semibold">{booking.guests}</p>
-                  <span>{booking.adults} <span className="text-[11px]"> Adults,</span> {booking.children}<span className="text-[11px]"> Children</span></span>
-                </div>
-
-                <div className="p-3">
-                  <p className="text-gray-500 text-xs">Room Type</p>
-                  <p className="font-semibold">{booking.room?.name}</p>
-                </div>
-
-                <div className="p-3">
-                  <p className="text-gray-500 text-xs">Booking ID</p>
-                  <p className="font-semibold">
-                    INV-{booking._id.slice(-6).toUpperCase()}
+                  <p className="text-gray-600 text-sm">
+                    GSTIN: <span className="font-semibold">27AABCV3237E2Z1</span>
                   </p>
                 </div>
               </div>
-            </div>
 
-            {/* ITEM TABLE */}
-            <table className="w-full mt-6 border rounded-lg overflow-hidden">
-              <thead className="bg-primary text-white">
-                <tr>
-                  <th className="p-3 text-left">Description</th>
-                  <th className="p-3 text-left">Rate</th>
-                  <th className="p-3 text-right">Total</th>
-                </tr>
-              </thead>
+              <div className="text-right min-w-[260px]">
 
-              <tbody>
-                <tr className="border-t">
-                  <td className="p-3">Room Charges</td>
-                  <td className="p-3">
-                    ₹{booking.pricePerNight.toLocaleString("en-IN")} X {nights} nights
-                  </td>
-                  <td className="p-3 text-right">
-                    ₹{roomTotal.toLocaleString("en-IN")}
-                  </td>
-                </tr>
-
-                {mealTotal > 0 && (
-                  <tr className="border-t">
-                    <td className="p-3">Veg Total</td>
-                    <td className="p-3">₹{booking.room?.mealPriceVeg || 0} x {booking.vegGuests || 0} Guests x {nights} nights</td>
-                    <td className="p-3 text-right">
-                      ₹{vegTotal.toLocaleString("en-IN")}
-                    </td>
-                  </tr>
-                )}
-
-                {mealTotal > 0 && (
-                  <tr className="border-t">
-                    <td className="p-3">Non-Veg Total</td>
-                    <td className="p-3">₹{booking.room?.mealPriceNonVeg || 0} x {booking.nonVegGuests || 0} Guests x {nights} nights</td>
-                    <td className="p-3 text-right">
-                      ₹{nonVegTotal.toLocaleString("en-IN")}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-
-            {/* PAYMENT + TOTALS */}
-            <div className="grid grid-cols-2 gap-8 mt-6">
-              <div>
-                <p className="text-red-600 font-semibold uppercase text-xs mb-2">
-                  Payment Info
-                </p>
-                <p>
-                  Name: {booking.contactName}
-                  <br />
-                  Mode: {booking.paymentProvider}
-                  <br />
-                  Payment ID: {booking.paymentId}
-                  <br />
-                  Status: <span className="text-green-600 font-semibold">Paid</span>
-                </p>
-              </div>
-
-              <div className="text-right space-y-1">
-                <div className="flex justify-between">
-                  <span>Room Charges</span>
-                  <span>₹{roomTotal.toLocaleString("en-IN")}</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span>Meal Total</span>
-                  <span>
-                    {mealTotal > 0
-                      ? `₹${mealTotal.toLocaleString("en-IN")}`
-                      : "₹0"}
+                {/* TAX INVOICE badge */}
+                <div className="flex justify-end mb-2">
+                  <span className="bg-red-100 text-primary px-3 py-2 rounded-full text-xs font-semibold tracking-wide">
+                    TAX INVOICE
                   </span>
                 </div>
 
-                <div className="flex justify-between border-t pt-1">
-                  <span>Subtotal</span>
-                  <span>₹{subTotal.toLocaleString("en-IN")}</span>
-                </div>
+                {/* Details grid */}
+                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-0 text-[14px]">
 
-                <div className="flex justify-between">
-                  <span>GST ({taxPercent}%)</span>
-                  <span>+ ₹{taxAmount.toLocaleString("en-IN")}</span>
-                </div>
+                  <span className="text-gray-600 text-sm">Invoice No</span>
+                  <span className="font-bold text-gray-900 text-right text-[12px]">
+                    VG-INV-{booking._id.slice(-6)}
+                  </span>
 
-                <div className="flex justify-between border-t pt-2 text-xl font-bold text-red-600">
-                  <span>Grand Total</span>
-                  <span>₹{grandTotal.toLocaleString("en-IN")}</span>
+                  <span className="text-gray-600 text-sm">Invoice Date</span>
+                  <span className="font-bold text-gray-900 text-right text-[12px]">
+                    {format(new Date(), "dd MMM yyyy")}
+                  </span>
+
+                  <span className="text-gray-600 text-sm">Booking ID</span>
+                  <span className="font-bold text-gray-900 text-right text-[12px]">
+                    BK-{booking._id.slice(-6)}
+                  </span>
+
+                  <span className="text-gray-600 text-sm">Place of Supply</span>
+                  <span className="font-bold text-gray-900 text-right text-[12px]">
+                    Maharashtra
+                  </span>
+
                 </div>
               </div>
             </div>
 
-            {/* SIGNATURE */}
-            <div className="mt-auto">
-            <div className="text-right">
-              <p className="font-semibold">Sneha Shinde</p>
-              <p className="text-gray-500 text-sm">Manager</p>
+            {/* ================= SELLER + BILL ================= */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="border rounded-xl p-4">
+                <p className="font-bold text-sm mb-2">
+                  SELLER (REGISTERED)
+                </p>
+
+                <p className="font-bold">
+                  Vidyasagar Properties Private Limited<br></br>
+                  <span className="font-[300]">Trade name: Villa Gulposh</span>
+                </p>
+
+                <p className="text-gray-600 text-sm mt-2">
+                  Ground Floor, Belle View
+                  <br />
+                  L Napo Road, Dadar East
+                  <br />
+                  Mumbai, Maharashtra - 400014
+                </p>
+
+                <p className="text-sm mt-2">
+                  GSTIN: <span className="font-semibold">27AABCV3237E2Z1</span>
+                </p>
+              </div>
+
+              <div className="border rounded-xl p-4">
+                <p className="font-bold text-sm mb-2">BILL TO</p>
+
+                <p className="font-bold">
+                  {booking.contactName}
+                </p>
+
+                <p className="text-gray-600 text-sm mt-1">
+                  Email: {booking.contactEmail}
+                  <br />
+                  Phone: {booking.contactPhone}
+                </p>
+
+                {(guestAddressLine || guestLocationLine) && (
+                  <p className="text-gray-600 text-sm mt-3 leading-relaxed">
+                    {guestAddressLine && (
+                      <>
+                        {guestAddressLine}
+                        <br />
+                      </>
+                    )}
+
+                    {guestLocationLine && (
+                      <>
+                        {guestLocationLine}
+                        <br />
+                      </>
+                    )}
+
+                    {guestCountry}
+                  </p>
+                )}
+
+              </div>
+
             </div>
 
-            {/* TERMS */}
-            <div className="text-center text-xs text-gray-500 border-t pt-4 mt-12">
-              <p className="text-red-600 font-semibold uppercase mb-1">
-                Terms and Conditions
+            {/* ================= STAY DETAILS ================= */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 mt-3 text-[14px]">
+
+              <p className="font-bold text-gray-800 mb-2 uppercase tracking-wide">
+                Stay Details
               </p>
-              Your use of the website constitutes agreement to our Privacy Policy.
+
+              {/* Row 1 */}
+              <div className="grid grid-cols-2 gap-6 py-2 pb-4 border-b border-dashed border-gray-300">
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Property</span>
+                  <span className="font-bold text-gray-900">
+                    {booking.room?.name}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Nights</span>
+                  <span className="font-bold text-gray-900">
+                    {nights}
+                  </span>
+                </div>
+
+              </div>
+
+              {/* Row 2 */}
+              <div className="grid grid-cols-2 gap-6 py-2 pb-4 border-b border-dashed border-gray-300">
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Check-in</span>
+                  <span className="font-bold text-gray-900">
+                    {format(new Date(booking.startDate), "dd MMM yyyy • hh:mm a")}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Guests</span>
+                  <span className="font-bold text-gray-900">
+                    Adults {booking.adults}, Children {booking.children}
+                  </span>
+                </div>
+
+              </div>
+
+              {/* Row 3 */}
+              <div className="grid grid-cols-2 gap-6 py-2">
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Check-out</span>
+                  <span className="font-bold text-gray-900">
+                    {format(new Date(booking.endDate), "dd MMM yyyy • hh:mm a")}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">SAC</span>
+                  <span className="font-bold text-gray-900">
+                    996311 (Accommodation Services)
+                  </span>
+                </div>
+
+              </div>
+
             </div>
+
+            {/* ================= ITEMS TABLE ================= */}
+            <div className="mt-3 border border-gray-200 rounded-2xl overflow-hidden">
+
+              <table className="w-full text-[14px]">
+
+                {/* HEADER */}
+                <thead className="bg-[#f3f4f6] text-gray-600">
+                  <tr>
+                    <th className="py-2 px-4 text-left font-semibold">Description</th>
+                    <th className="py-2 px-4 text-left font-semibold">HSN/SAC</th>
+                    <th className="py-2 px-4 text-right font-semibold">Qty</th>
+                    <th className="py-2 px-4 text-right font-semibold">Rate</th>
+                    <th className="py-2 px-4 text-right font-semibold">Amount</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  {/* ================= ROOM ================= */}
+                  <tr className="border-t border-gray-200">
+
+                    <td className="py-2 px-4 pb-4">
+
+                      <div className="font-bold text-gray-900">
+                        Accommodation Charges
+                      </div>
+
+                      <div className="text-gray-500 text-sm ">
+                        Room tariff (per night)
+                      </div>
+
+                    </td>
+
+                    <td className="p-4">996311</td>
+
+                    <td className="p-4 text-right">1</td>
+
+                    <td className="p-4 text-right">
+                      ₹{roomTotal.toLocaleString("en-IN")}
+                    </td>
+
+                    <td className="p-4 text-right font-semibold">
+                      ₹{roomTotal.toLocaleString("en-IN")}
+                    </td>
+
+                  </tr>
+
+                  {/* ================= FOOD ================= */}
+                  <tr className="border-t border-dashed border-gray-300">
+                    <td className="py-2 px-4 pb-4">
+
+                      <div className="font-bold text-gray-900">
+                        Meal Information
+                      </div>
+
+                      <div className="text-gray-500 text-sm mt-0">
+
+                        {mealMode === "only" ? (
+                          <>
+                            Included in accommodation package
+                            {hasMeals && (
+                              <> • Veg {vegGuests} • Non-Veg {nonVegGuests}</>
+                            )}
+                          </>
+                        ) : hasMeals ? (
+                          foodBreakdownText
+                        ) : (
+                          "Meals not selected"
+                        )}
+
+                      </div>
+
+                    </td>
+
+                    <td className="p-4">996311</td>
+
+                    <td className="p-4 text-right">—</td>
+                    <td className="p-4 text-right">—</td>
+
+                    <td className="p-4 text-right font-semibold">
+                      {mealMode === "only"
+                        ? "Included"
+                        : `₹${mealTotal.toLocaleString("en-IN")}`}
+                    </td>
+                  </tr>
+
+
+                </tbody>
+
+              </table>
+            </div>
+
+
+            {/* ================= TOTALS ================= */}
+            <div className="flex items-start gap-3 mt-3">
+              <div className="w-[75%] bg-[#fff5f5] border border-dashed border-red-300 rounded-2xl p-5 text-[13px] text-red-700 leading-relaxed">
+                <span className="font-semibold">Note:</span>{" "}
+                Meals are optional add-ons for in-house guests and are billed as part of
+                the accommodation package. GST is calculated on the package subtotal at
+                the applicable accommodation rate.
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-2xl p-5 text-[14px]">
+                <p className="font-bold text-gray-800 mb-2 uppercase tracking-wide">
+                  Totals
+                </p>
+
+                {/* Subtotal */}
+                <div className="flex justify-between py-1 pb-3">
+                  <span className="text-gray-600">
+                    Subtotal (Taxable Value)
+                  </span>
+                  <span className="font-bold">
+                    ₹{subTotal.toLocaleString("en-IN")}
+                  </span>
+                </div>
+
+                {/* CGST */}
+                <div className="flex border-t border-dashed border-gray-300 border-b items-center justify-between">
+                  <div className="flex justify-between py-1 mt-1 pb-3">
+                    <span className="text-gray-600">
+                      CGST @ 9% :
+                    </span>
+                    <span className="font-bold">
+                      ₹{cgstAmount.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+
+                  {/* SGST */}
+                  <div className="flex justify-between py-1 mt-1 pb-3">
+                    <span className="text-gray-600">
+                      SGST @ 9% :
+                    </span>
+                    <span className="font-bold">
+                      ₹{sgstAmount.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* TOTAL */}
+                <div className="flex justify-between mt-3">
+                  <span className="font-semibold text-gray-900">
+                    Total Payable
+                  </span>
+                  <span className="font-bold text-primary text-xl">
+                    ₹{grandTotal.toLocaleString("en-IN")}
+                  </span>
+                </div>
+
+                {/* Amount in words */}
+                <p className="text-gray-600 text-[14px] mt-0 leading-snug">
+                  Amount in words:{" "}
+                  <span className="font-medium text-gray-800">
+                    {convertNumberToWords(grandTotal)} Only
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {/* ================= PAYMENT ================= */}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="border rounded-xl p-4 text-sm">
+                <p className="font-bold mb-2">PAYMENT DETAILS</p>
+                <p>Mode: <span className="capitalize font-bold">{booking.paymentProvider}</span></p>
+                <p>Transaction ID: <span className="font-bold">{booking.paymentId}</span></p>
+                <p>
+                  Payment Status: <span className="text-green-500 font-bold">PAID</span>
+                </p>
+              </div>
+
+              <div className="border rounded-xl p-4 text-sm text-right">
+                <p>
+                  For <span className="font-bold">Vidyasagar Properties Private Limited</span>
+                  <br />
+                  <span>(Trade name: Villa Gulposh)</span>
+                </p>
+                <div className="mt-10 border-t pt-2">
+                  Authorized Signatory
+                </div>
+              </div>
             </div>
           </div>
+
 
         </div>
 

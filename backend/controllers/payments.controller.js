@@ -5,7 +5,7 @@ import Booking from "../models/Booking.js";
 import TaxSetting from "../models/TaxSetting.js";
 import { sendBookingConfirmationMail } from "../utils/mailer.js";
 import { parseYMD, toDateOnly } from "../lib/date.js";
-import { notifyAdmin } from "../utils/notifyAdmin.js"; 
+import { notifyAdmin } from "../utils/notifyAdmin.js";
 import User from "../models/User.js";
 
 
@@ -79,7 +79,22 @@ export const createOrder = async (req, res) => {
         nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
-    const subTotal = roomTotal + mealTotal;
+    let subTotal = roomTotal + mealTotal;
+
+    let discountAmount = 0;
+
+    if (room.discountType === "percent") {
+      discountAmount = Math.round(
+        (subTotal * room.discountValue) / 100
+      );
+    }
+    if (room.discountType === "flat") {
+      discountAmount = room.discountValue;
+    }
+    const discountedSubtotal = Math.max(
+      0,
+      subTotal - discountAmount
+    );
 
     /* ---------------- SINGLE TAX ---------------- */
     const taxSetting = await TaxSetting.findOne();
@@ -87,11 +102,19 @@ export const createOrder = async (req, res) => {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
-    const totalTax = Math.round(
-      (subTotal * taxSetting.taxPercent) / 100
+    const cgstPercent = taxSetting.taxPercent / 2;
+    const sgstPercent = taxSetting.taxPercent / 2;
+
+    const cgstAmount = Math.round(
+      (discountedSubtotal * cgstPercent) / 100
+    );
+    const sgstAmount = Math.round(
+      (discountedSubtotal * sgstPercent) / 100
     );
 
-    const grandTotal = subTotal + totalTax;
+    const totalTax = cgstAmount + sgstAmount;
+
+    const grandTotal = discountedSubtotal + totalTax;
 
     const amountPaise = Math.round(grandTotal * 100);
     if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
@@ -109,14 +132,18 @@ export const createOrder = async (req, res) => {
       orderId: order.id,
       amount: order.amount,
       currency: "INR",
-
-      /* ✅ frontend display */
       nights,
       roomTotal,
       mealTotal,
       subTotal,
+      cgstPercent,
+      sgstPercent,
+      cgstAmount,
+      sgstAmount,
       totalTax,
       grandTotal,
+      discountAmount,
+      discountedSubtotal,
     });
   } catch (err) {
     console.error("❌ createOrder error:", err);
@@ -228,9 +255,13 @@ export const verifyPayment = async (req, res) => {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
-    const totalTax = Math.round(
-      (subTotal * taxSetting.taxPercent) / 100
-    );
+    const cgstPercent = taxSetting.taxPercent / 2;
+    const sgstPercent = taxSetting.taxPercent / 2;
+
+    const cgstAmount = Math.round((subTotal * cgstPercent) / 100);
+    const sgstAmount = Math.round((subTotal * sgstPercent) / 100);
+
+    const totalTax = cgstAmount + sgstAmount;
 
     const grandTotal = subTotal + totalTax;
 
@@ -255,7 +286,18 @@ export const verifyPayment = async (req, res) => {
       vegGuests,
       nonVegGuests,
       mealTotal,
-      totalTax,
+      taxBreakup: {
+        cgstPercent,
+        sgstPercent,
+        cgstAmount,
+        sgstAmount,
+        totalTax,
+      },
+      discountMeta: {
+        discountType: room.discountType,
+        discountValue: room.discountValue,
+        discountAmount,
+      },
       subTotal,
       amount: grandTotal,
       currency: "INR",

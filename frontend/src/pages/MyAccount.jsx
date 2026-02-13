@@ -1,40 +1,29 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import { api } from "../api/http";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuth } from "../store/authStore";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-
 import { Calendar as CalendarIcon, ShieldCheck } from "lucide-react";
-
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
-
 import { Country, State, City } from "country-state-city";
+
+
+
 
 export default function MyAccount() {
   const navigate = useNavigate();
 
-  /* ================= STATE ================= */
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,11 +47,10 @@ export default function MyAccount() {
   const [phone, setPhone] = useState("");
   const [originalPhone, setOriginalPhone] = useState("");
 
-  const [otpStep, setOtpStep] = useState("idle"); // idle | sent | verified
+  const [otpStep, setOtpStep] = useState("idle");
   const [otp, setOtp] = useState("");
   const [confirmRef, setConfirmRef] = useState(null);
 
-  /* ================= LOCATION ================= */
 
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
@@ -75,7 +63,6 @@ export default function MyAccount() {
   const logout = useAuth((s) => s.logout);
   const setUser = useAuth((s) => s.setUser);
 
-  /* ================= LOAD PROFILE ================= */
 
   useEffect(() => {
     (async () => {
@@ -137,7 +124,6 @@ export default function MyAccount() {
     })();
   }, []);
 
-  /* ================= UNSAVED CHANGES ================= */
 
   useEffect(() => {
     if (!initialForm) return;
@@ -151,8 +137,6 @@ export default function MyAccount() {
   }, [form, initialForm]);
 
   const phoneChanged = phone !== originalPhone;
-
-  /* ================= LOCATION HANDLERS ================= */
 
   const onCountryChange = (code) => {
     const country = countries.find((c) => c.isoCode === code);
@@ -191,8 +175,6 @@ export default function MyAccount() {
     setCityName(name);
     setForm((f) => ({ ...f, city: name }));
   };
-
-  /* ================= PHONE OTP ================= */
 
   const sendOtp = async () => {
     if (!/^[0-9]{10}$/.test(phone)) {
@@ -240,7 +222,6 @@ export default function MyAccount() {
     }
   };
 
-  /* ================= SAVE ================= */
 
   const onSave = async () => {
     if (!form.name.trim()) return toast.error("Name is required");
@@ -279,28 +260,26 @@ export default function MyAccount() {
     }
   };
 
-  /* ================= DELETE ================= */
 
   const onDeleteAccount = async () => {
-  if (!confirm("This will permanently delete your account. Continue?"))
-    return;
+    if (!confirm("This will permanently delete your account. Continue?"))
+      return;
 
-  try {
-    setDeleting(true);
-    await api.delete("/auth/me");
-    toast.success("Account deleted successfully");
-    await logout();
-    navigate("/", { replace: true });
-  } catch (err) {
-    console.error(err);
-    toast.error(err?.response?.data?.message || "Failed to delete account");
-  } finally {
-    setDeleting(false);
-  }
-};
+    try {
+      setDeleting(true);
+      await api.delete("/auth/me");
+      toast.success("Account deleted successfully");
+      await logout();
+      navigate("/", { replace: true });
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Failed to delete account");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
 
-  /* ================= UI ================= */
 
   if (loading) {
     return (
@@ -391,6 +370,7 @@ export default function MyAccount() {
                   toYear={new Date().getFullYear()}
                   selected={form.dob}
                   onSelect={(d) => setForm(f => ({ ...f, dob: d }))}
+                  className="year-first-calendar"
                 />
               </PopoverContent>
             </Popover>
