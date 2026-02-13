@@ -429,7 +429,7 @@ export default function RoomsNew() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select discount type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="none">No Discount</SelectItem>
                     <SelectItem value="percent">Percentage (%)</SelectItem>
                     <SelectItem value="flat">Flat Amount (₹)</SelectItem>
