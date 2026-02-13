@@ -20,6 +20,7 @@ const STEPS = [
   { key: "amenities", label: "Amenities" },
   { key: "rules", label: "Rules" },
   { key: "reviews", label: "Reviews" },
+  { key: "submit", label: "Submit" },
 ];
 
 export default function RoomsNew() {

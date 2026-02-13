@@ -59,6 +59,9 @@ export const createRoom = async (req, res) => {
       amenities,
       houseRules,
       reviews,
+      discountType,
+      discountValue,
+      discountLabel,
     } = req.body || {};
 
     if (!name || pricePerNight === undefined || pricePerNight === null) {
@@ -83,6 +86,13 @@ export const createRoom = async (req, res) => {
 
       mealPriceNonVeg:
         mealMode === "price" ? Number(mealPriceNonVeg) || 0 : 0,
+
+      discountType: discountType || "none",
+      discountValue:
+        discountType !== "none"
+          ? Number(discountValue) || 0
+          : 0,
+      discountLabel: discountLabel || "",
 
       coverImage: coverImage || "",
       galleryImages: toArray(galleryImages),
@@ -132,6 +142,9 @@ export const updateRoom = async (req, res) => {
       amenities,
       houseRules,
       reviews,
+      discountType,
+      discountValue,
+      discountLabel,
     } = req.body || {};
 
     const update = {};
@@ -164,6 +177,20 @@ export const updateRoom = async (req, res) => {
     } else {
       update.mealPriceVeg = 0;
       update.mealPriceNonVeg = 0;
+    }
+
+    if (discountType !== undefined) {
+      update.discountType = discountType || "none";
+
+      if (discountType === "none") {
+        update.discountValue = 0;
+      } else if (discountValue !== undefined) {
+        update.discountValue = Number(discountValue) || 0;
+      }
+    }
+
+    if (discountLabel !== undefined) {
+      update.discountLabel = discountLabel || "";
     }
 
     if (coverImage !== undefined) {
