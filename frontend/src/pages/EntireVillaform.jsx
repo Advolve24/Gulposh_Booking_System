@@ -1,64 +1,32 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../api/http";
 import { toast } from "sonner";
-
-import { useAuth } from "../store/authStore";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-
-import {
-  MapPin,
-  Users,
-  User,
-  ConciergeBell,
-  ArrowLeft,
-} from "lucide-react";
-
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-
+import { MapPin, Users, User, ConciergeBell, ArrowLeft } from "lucide-react";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import CalendarRange from "../components/CalendarRange";
-
-import {
-  getAllCountries,
-  getStatesByCountry,
-  getCitiesByState,
-} from "../lib/location";
-
-import {
-  toDateOnlyFromAPI,
-  toDateOnlyFromAPIUTC,
-} from "../lib/date";
-
+import { getAllCountries, getStatesByCountry, getCitiesByState } from "../lib/location";
+import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { format } from "date-fns";
+import { signInWithPhoneNumber } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { getRecaptchaVerifier } from "@/lib/recaptcha";
 
-/* =====================================================
-   COMPONENT
-===================================================== */
 
 export default function EntireVilla() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { user, init, openAuth } = useAuth();
-
-  /* ================= PERSONAL INFO ================= */
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
   });
 
-  /* ================= ADDRESS ================= */
   const [address, setAddress] = useState({
     address: "",
     country: "",
@@ -67,20 +35,25 @@ export default function EntireVilla() {
     pincode: "",
   });
 
-  /* ================= BOOKING ================= */
   const [range, setRange] = useState({ from: null, to: null });
   const [guests, setGuests] = useState("1");
 
-  /* ================= BLOCKED DATES ================= */
   const [bookedAll, setBookedAll] = useState([]);
   const [blackoutRanges, setBlackoutRanges] = useState([]);
+
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [checkingUser, setCheckingUser] = useState(false);
+  const confirmationRef = useRef(null);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  const [firebaseToken, setFirebaseToken] = useState(null);
 
   const disabledAll = useMemo(
     () => [...bookedAll, ...blackoutRanges],
     [bookedAll, blackoutRanges]
   );
 
-  /* ================= LOCATION DATA ================= */
   const countries = getAllCountries();
   const states =
     address.country ? getStatesByCountry(address.country) : [];
@@ -89,50 +62,7 @@ export default function EntireVilla() {
       ? getCitiesByState(address.country, address.state)
       : [];
 
-  /* ================= INIT AUTH ================= */
-  useEffect(() => {
-    init();
-  }, [init]);
 
-  /* ================= AUTH GUARD ================= */
-  useEffect(() => {
-    if (!user) {
-      openAuth();
-      sessionStorage.setItem(
-        "postAuthRedirect",
-        JSON.stringify({ redirectTo: location.pathname })
-      );
-      return;
-    }
-
-    if (!user.profileComplete) {
-      navigate("/complete-profile", {
-        replace: true,
-        state: { redirectTo: location.pathname },
-      });
-    }
-  }, [user, navigate, openAuth, location.pathname]);
-
-  /* ================= AUTOFILL FROM PROFILE ================= */
-  useEffect(() => {
-    if (!user || !user.profileComplete) return;
-
-    setForm({
-      name: user.name || "",
-      email: user.email || "",
-      phone: user.phone || "",
-    });
-
-    setAddress({
-      address: user.address || "",
-      country: user.country || "",
-      state: user.state || "",
-      city: user.city || "",
-      pincode: user.pincode || "",
-    });
-  }, [user]);
-
-  /* ================= PREFILL FROM SEARCH ================= */
   useEffect(() => {
     const raw = sessionStorage.getItem("searchParams");
     if (!raw) return;
@@ -147,7 +77,6 @@ export default function EntireVilla() {
     } catch { }
   }, []);
 
-  /* ================= LOAD BLOCKED DATES ================= */
   useEffect(() => {
     api.get("/rooms/disabled/all").then(({ data }) =>
       setBookedAll(
@@ -168,21 +97,85 @@ export default function EntireVilla() {
     );
   }, []);
 
-  /* =====================================================
-     SUBMIT ENQUIRY → DATABASE (IMPORTANT CHANGE)
-  ===================================================== */
+
+  const sendOtp = async () => {
+    if (form.phone.length !== 10) {
+      toast.error("Enter valid mobile number");
+      return;
+    }
+    setCheckingUser(true);
+    try {
+      const verifier = getRecaptchaVerifier("villa-recaptcha");
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      confirmationRef.current = await signInWithPhoneNumber(
+        auth,
+        `+91${form.phone}`,
+        verifier
+      );
+      setOtpStep(true);
+      setSecondsLeft(60);
+      toast.success("OTP sent successfully");
+    } catch (err) {
+      console.error("OTP error:", err);
+      toast.error("Unable to send OTP. Refresh and try again.");
+    } finally {
+      setCheckingUser(false);
+    }
+  };
+
+
+  const verifyOtp = async () => {
+    if (!otp || otp.length !== 6) return;
+    try {
+      const result = await confirmationRef.current.confirm(otp);
+      const idToken = await result.user.getIdToken(true);
+      setFirebaseToken(idToken);
+      setOtpVerified(true);
+      const { data } = await api.post("/auth/check-user", {
+        phone: form.phone,
+      });
+      if (data.exists) {
+        setForm((f) => ({
+          ...f,
+          name: data.user.name || "",
+          email: data.user.email || "",
+        }));
+        setAddress({
+          address: data.user.address || "",
+          country: data.user.country || "",
+          state: data.user.state || "",
+          city: data.user.city || "",
+          pincode: data.user.pincode || "",
+        });
+      }
+      toast.success("Phone verified ✔");
+    } catch (err) {
+      console.error(err);
+      toast.error("Invalid OTP");
+      setOtp("");
+    }
+  };
+
+
 
   const submitEnquiry = async () => {
-    if (!user) {
-      openAuth();
+    if (!otpVerified || !firebaseToken) {
+      toast.error("Please verify your mobile number first");
+      return;
+    }
+    if (!form.name || form.name.length < 3) {
+      toast.error("Please enter your full name");
       return;
     }
 
+    if (!form.email || !form.email.includes("@")) {
+      toast.error("Please enter valid email");
+      return;
+    }
     if (!range.from || !range.to) {
       toast.error("Please select check-in and check-out dates");
       return;
     }
-
     if (
       !address.address ||
       !address.country ||
@@ -196,7 +189,7 @@ export default function EntireVilla() {
 
     try {
       const { data } = await api.post("/enquiries/entire-villa", {
-        type: "entire_villa_enquiry",
+        firebaseToken,
 
         name: form.name,
         email: form.email,
@@ -204,17 +197,9 @@ export default function EntireVilla() {
 
         startDate: range.from.toISOString().split("T")[0],
         endDate: range.to.toISOString().split("T")[0],
-
         guests: Number(guests),
 
-        addressInfo: {
-          address: address.address,
-          country: address.country,
-          state: address.state,
-          city: address.city,
-          pincode: address.pincode,
-        },
-
+        addressInfo: address,
         source: "frontend",
       });
 
@@ -231,221 +216,281 @@ export default function EntireVilla() {
           addressInfo: address,
         })
       );
-
       navigate("/enquiry-success", { replace: true });
-
-
-
     } catch (err) {
       console.error(err);
       toast.error("Failed to submit enquiry. Please try again.");
     }
   };
 
-
-  /* ================= UI ================= */
+  useEffect(() => {
+    if (!otpStep || secondsLeft <= 0) return;
+    const timer = setInterval(() => {
+      setSecondsLeft((s) => s - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpStep, secondsLeft]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* BACK */}
-      <div className="mb-4 flex items-center gap-2">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1 text-muted-foreground hover:text-black"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-
-        {/* ================= LEFT SUMMARY ================= */}
-        <aside className="hidden lg:block lg:col-span-4 px-4">
-          <div className="sticky top-[120px]">
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-
-              <img
-                src="/EntireVilla.webp"
-                alt="Entire Villa"
-                className="h-56 w-full object-cover"
-              />
-
-              <div className="p-5 space-y-4 text-sm">
-
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>Karjat, Maharashtra</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span>{guests} Guests</span>
-                </div>
-
-                <Separator />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#faf7f4] rounded-xl p-3">
-                    <div className="text-xs text-muted-foreground">CHECK-IN</div>
-                    <div className="font-medium">
-                      {range.from && format(range.from, "dd MMM yyyy")}
-                    </div>
-                  </div>
-
-                  <div className="bg-[#faf7f4] rounded-xl p-3">
-                    <div className="text-xs text-muted-foreground">CHECK-OUT</div>
-                    <div className="font-medium">
-                      {range.to && format(range.to, "dd MMM yyyy")}
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <p className="text-xs text-muted-foreground">
-                  This is an enquiry request. Our team will contact you
-                  to confirm availability and pricing.
-                </p>
-
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* ================= RIGHT FORM ================= */}
-        <section className="lg:col-span-6 space-y-6">
-
-          {/* PERSONAL INFO */}
-          <div className="rounded-2xl border bg-white p-5 sm:p-6">
-            <div className="flex items-start gap-3 mb-5">
-              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                <User className="h-5 w-5 text-red-700" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-base">
-                  Personal Information
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  As per your profile
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Full Name</Label>
-                <Input value={form.name} disabled />
-              </div>
-
-              <div>
-                <Label>Email</Label>
-                <Input value={form.email} disabled />
-              </div>
-
-              <div>
-                <Label>Phone</Label>
-                <Input value={form.phone} disabled />
-              </div>
-            </div>
-          </div>
-
-          {/* ADDRESS */}
-          <div className="rounded-2xl border bg-white p-5 sm:p-6">
-            <div className="flex items-start gap-3 mb-5">
-              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                <MapPin className="h-5 w-5 text-red-700" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-base">
-                  Address Details
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  From your profile
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="md:col-span-3">
-                <Label>Street Address</Label>
-                <Input value={address.address} disabled />
-              </div>
-
-              <div>
-                <Label>Country</Label>
-                <Input disabled value={address.country} />
-              </div>
-
-              <div>
-                <Label>State</Label>
-                <Input disabled value={address.state} />
-              </div>
-
-              <div>
-                <Label>City</Label>
-                <Input disabled value={address.city} />
-              </div>
-
-              <div>
-                <Label>Pincode</Label>
-                <Input disabled value={address.pincode} />
-              </div>
-            </div>
-          </div>
-
-          {/* BOOKING PREF */}
-          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-6">
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                <ConciergeBell className="h-5 w-5 text-red-700" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-base">
-                  Booking Preferences
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Select stay details
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <Label>Check-in / Check-out</Label>
-              <CalendarRange
-                value={range}
-                onChange={setRange}
-                disabledRanges={disabledAll}
-              />
-            </div>
-
-            <div>
-              <Label>Total Guests</Label>
-              <Select value={guests} onValueChange={setGuests}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[...Array(22)].map((_, i) => (
-                    <SelectItem key={i + 1} value={String(i + 1)}>
-                      {i + 1}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* CTA */}
-          <Button
-            className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
-            onClick={submitEnquiry}
+    <>
+      <div id="villa-recaptcha"></div>
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* BACK */}
+        <div className="mb-4 flex items-center gap-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1 text-muted-foreground hover:text-black"
           >
-            Submit Enquiry
-          </Button>
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        </div>
 
-        </section>
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+
+          {/* ================= LEFT SUMMARY ================= */}
+          <aside className="hidden lg:block lg:col-span-4 px-4">
+            <div className="sticky top-[120px]">
+              <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+
+                <img
+                  src="/EntireVilla.webp"
+                  alt="Entire Villa"
+                  className="h-56 w-full object-cover"
+                />
+
+                <div className="p-5 space-y-4 text-sm">
+
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    <span>Karjat, Maharashtra</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span>{guests} Guests</span>
+                  </div>
+
+                  <Separator />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-[#faf7f4] rounded-xl p-3">
+                      <div className="text-xs text-muted-foreground">CHECK-IN</div>
+                      <div className="font-medium">
+                        {range.from && format(range.from, "dd MMM yyyy")}
+                      </div>
+                    </div>
+
+                    <div className="bg-[#faf7f4] rounded-xl p-3">
+                      <div className="text-xs text-muted-foreground">CHECK-OUT</div>
+                      <div className="font-medium">
+                        {range.to && format(range.to, "dd MMM yyyy")}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <p className="text-xs text-muted-foreground">
+                    This is an enquiry request. Our team will contact you
+                    to confirm availability and pricing.
+                  </p>
+
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* ================= RIGHT FORM ================= */}
+          <section className="lg:col-span-6 space-y-6">
+
+            <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-4">
+              <h3 className="font-semibold text-base">Verify Mobile Number</h3>
+
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter 10 digit mobile number"
+                  value={form.phone}
+                  disabled={otpVerified}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                    })
+                  }
+                />
+
+                {!otpStep && (
+                  <Button onClick={sendOtp} disabled={checkingUser}>
+                    Send OTP
+                  </Button>
+                )}
+              </div>
+
+              {otpStep && !otpVerified && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter OTP"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    />
+                    <Button onClick={verifyOtp}>Verify</Button>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    {secondsLeft > 0 ? (
+                      <>Resend OTP in {secondsLeft}s</>
+                    ) : (
+                      <button
+                        className="underline text-red-700"
+                        onClick={sendOtp}
+                      >
+                        Resend OTP
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {otpVerified && (
+                <p className="text-green-600 text-sm">
+                  Mobile number verified successfully ✔
+                </p>
+              )}
+            </div>
+
+            {/* PERSONAL INFO */}
+            <div className="rounded-2xl border bg-white p-5 sm:p-6">
+              <div className="flex items-start gap-3 mb-5">
+                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <User className="h-5 w-5 text-red-700" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base">
+                    Personal Information
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    As per your profile
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Full Name</Label>
+                  <Input value={form.name} disabled={!otpVerified} />
+                </div>
+
+                <div>
+                  <Label>Email</Label>
+                  <Input value={form.email} disabled={!otpVerified} />
+                </div>
+
+                <div>
+                  <Label>Phone</Label>
+                  <Input value={form.phone} disabled={!otpVerified} />
+                </div>
+              </div>
+            </div>
+
+            {/* ADDRESS */}
+            <div className="rounded-2xl border bg-white p-5 sm:p-6">
+              <div className="flex items-start gap-3 mb-5">
+                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-red-700" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base">
+                    Address Details
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    From your profile
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="md:col-span-3">
+                  <Label>Street Address</Label>
+                  <Input value={address.address} disabled={!otpVerified} />
+                </div>
+
+                <div>
+                  <Label>Country</Label>
+                  <Input disabled={!otpVerified} value={address.country} />
+                </div>
+
+                <div>
+                  <Label>State</Label>
+                  <Input disabled={!otpVerified} value={address.state} />
+                </div>
+
+                <div>
+                  <Label>City</Label>
+                  <Input disabled={!otpVerified} value={address.city} />
+                </div>
+
+                <div>
+                  <Label>Pincode</Label>
+                  <Input disabled value={address.pincode} />
+                </div>
+              </div>
+            </div>
+
+            {/* BOOKING PREF */}
+            <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-6">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <ConciergeBell className="h-5 w-5 text-red-700" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base">
+                    Booking Preferences
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Select stay details
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label>Check-in / Check-out</Label>
+                <CalendarRange
+                  value={range}
+                  onChange={setRange}
+                  disabledRanges={disabledAll}
+                />
+              </div>
+
+              <div>
+                <Label>Total Guests</Label>
+                <Select value={guests} onValueChange={setGuests}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...Array(22)].map((_, i) => (
+                      <SelectItem key={i + 1} value={String(i + 1)}>
+                        {i + 1}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* CTA */}
+            <Button
+              className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
+              onClick={submitEnquiry}
+            >
+              Submit Enquiry
+            </Button>
+
+          </section>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

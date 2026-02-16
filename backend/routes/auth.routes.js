@@ -6,7 +6,8 @@ import {
   me,
   updateMe,
   refresh,
-  deleteMe
+  deleteMe,
+  checkUserByPhone 
 } from "../controllers/auth.controller.js";
 import { authRequired } from "../middleware/auth.js";
 
@@ -24,5 +25,6 @@ router.post("/logout", logout);
 router.delete("/me", authRequired, deleteMe);
 router.get("/me", authRequired, me);
 router.put("/me", authRequired, updateMe);
+router.post("/check-user", checkUserByPhone);
 
 export default router;

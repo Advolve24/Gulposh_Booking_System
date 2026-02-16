@@ -53,7 +53,7 @@ export const phoneLogin = async (req, res) => {
 
     let user = await User.findOne({ phone });
     if (user?.deleted) {
-      user = null; 
+      user = null;
     }
     let isNewUser = false;
 
@@ -61,6 +61,7 @@ export const phoneLogin = async (req, res) => {
       user = await User.create({
         phone,
         authProvider: "phone",
+        profileComplete: false
       });
       isNewUser = true;
 
@@ -310,5 +311,39 @@ export const refresh = async (req, res) => {
     res.json({ ok: true });
   } catch {
     res.status(401).json({ message: "RefreshExpired" });
+  }
+};
+
+
+
+export const checkUserByPhone = async (req, res) => {
+  try {
+    const phone = normalizePhone(req.body.phone);
+    if (!phone || phone.length < 10) {
+      return res.status(400).json({ message: "Invalid phone" });
+    }
+    const user = await User.findOne({ phone, deleted: { $ne: true } });
+    if (!user) {
+      return res.json({
+        exists: false
+      });
+    }
+    return res.json({
+      exists: true,
+      user: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        country: user.country,
+        state: user.state,
+        city: user.city,
+        pincode: user.pincode,
+        profileComplete: user.profileComplete
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
 };
