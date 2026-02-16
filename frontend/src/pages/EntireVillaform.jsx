@@ -49,6 +49,7 @@ export default function EntireVilla() {
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [firebaseToken, setFirebaseToken] = useState(null);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [profileLocked, setProfileLocked] = useState(false);
 
   const disabledAll = useMemo(
     () => [...bookedAll, ...blackoutRanges],
@@ -143,6 +144,7 @@ export default function EntireVilla() {
           name: data.user.name || "",
           email: data.user.email || "",
         }));
+
         setAddress({
           address: data.user.address || "",
           country: data.user.country || "",
@@ -150,6 +152,8 @@ export default function EntireVilla() {
           city: data.user.city || "",
           pincode: data.user.pincode || "",
         });
+
+        setProfileLocked(true);
       }
       toast.success("Phone verified ✔");
     } catch (err) {
@@ -163,10 +167,10 @@ export default function EntireVilla() {
 
 
   useEffect(() => {
-    if (otp.length === 6 && !otpVerified && !verifyingOtp) {
+    if (otp.length === 6 && !otpVerified && !verifyingOtp && confirmationRef.current) {
       verifyOtp();
     }
-  }, [otp]);
+  }, [otp, otpVerified, verifyingOtp]);
 
 
 
@@ -341,22 +345,34 @@ export default function EntireVilla() {
 
               {otpStep && !otpVerified && (
                 <div className="space-y-2">
-                  <div className="relative">
-                    <Input
-                      placeholder="Enter 6 digit OTP"
-                      value={otp}
-                      disabled={otpVerified || verifyingOtp}
-                      onChange={(e) =>
-                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
-                      className="pr-10 tracking-[0.35em] text-center text-lg"
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        placeholder="Enter 6 digit OTP"
+                        value={otp}
+                        disabled={otpVerified || verifyingOtp}
+                        onChange={(e) =>
+                          setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                        }
+                        className="tracking-[0.35em] text-center text-lg"
+                      />
+                    </div>
 
-                    {verifyingOtp && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <div className="w-4 h-4 border-2 border-red-700 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
+                    <Button
+                      disabled
+                      className={`w-[120px]
+      ${otpVerified
+                          ? "bg-green-600"
+                          : verifyingOtp
+                            ? "bg-amber-500"
+                            : "bg-gray-300 text-gray-600"}`}
+                    >
+                      {otpVerified
+                        ? "Verified"
+                        : verifyingOtp
+                          ? "Verifying..."
+                          : "Verify"}
+                    </Button>
                   </div>
 
                   <div className="text-xs text-muted-foreground">
@@ -404,12 +420,12 @@ export default function EntireVilla() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Full Name</Label>
-                  <Input value={form.name} disabled={!otpVerified} />
+                  <Input value={form.name} disabled={!otpVerified || profileLocked} />
                 </div>
 
                 <div>
                   <Label>Email</Label>
-                  <Input value={form.email} disabled={!otpVerified} />
+                  <Input value={form.email} disabled={!otpVerified || profileLocked} />
                 </div>
 
                 <div>
@@ -438,17 +454,17 @@ export default function EntireVilla() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="md:col-span-3">
                   <Label>Street Address</Label>
-                  <Input value={address.address} disabled={!otpVerified} />
+                  <Input value={address.address} disabled={!otpVerified || profileLocked} />
                 </div>
 
                 <div>
                   <Label>Country</Label>
-                  <Input disabled={!otpVerified} value={address.country} />
+                  <Input disabled={!otpVerified || profileLocked} value={address.country} />
                 </div>
 
                 <div>
                   <Label>State</Label>
-                  <Input disabled={!otpVerified} value={address.state} />
+                  <Input disabled={!otpVerified || profileLocked} value={address.state} />
                 </div>
 
                 <div>
@@ -458,7 +474,7 @@ export default function EntireVilla() {
 
                 <div>
                   <Label>Pincode</Label>
-                  <Input disabled value={address.pincode} />
+                  <Input disabled={!otpVerified || profileLocked} value={address.pincode} />
                 </div>
               </div>
             </div>
