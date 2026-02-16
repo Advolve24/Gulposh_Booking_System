@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/http";
 import { format, addMonths, subMonths } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverTrigger, PopoverContent} from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { toDateOnlyFromAPIUTC, todayDateOnly } from "../lib/date";
@@ -38,7 +38,7 @@ export default function CalendarRange({
 
   const [month, setMonth] = useState(new Date());
 
-  const [slideDir, setSlideDir] = useState(null); 
+  const [slideDir, setSlideDir] = useState(null);
 
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
@@ -82,38 +82,46 @@ export default function CalendarRange({
   };
 
   const handleSelect = (range) => {
-    const prevFrom = value?.from ? new Date(value.from) : null;
-    const prevTo = value?.to ? new Date(value.to) : null;
+  const clickedFrom = range?.from ? new Date(range.from) : null;
+  const clickedTo = range?.to ? new Date(range.to) : null;
 
-    const newFrom = range?.from ? new Date(range.from) : null;
-    const newTo = range?.to ? new Date(range.to) : null;
+  // nothing selected
+  if (!clickedFrom) {
+    onChange(undefined);
+    return;
+  }
 
-    if (
-      prevFrom &&
-      !prevTo &&
-      newFrom &&
-      !newTo &&
-      prevFrom.getTime() === newFrom.getTime()
-    ) {
-      onChange(undefined);
-      selectingRef.current = false;
-      setOpen(false);
-      return;
-    }
-
-    onChange(range);
+  // -------------------------
+  // FIRST CLICK (check-in)
+  // -------------------------
+  if (!value?.from || (value?.from && value?.to)) {
+    selectingRef.current = true;
+    onChange({ from: clickedFrom, to: undefined });
     setOpen(true);
+    return;
+  }
 
-    if (newFrom && (!newTo || newFrom.getTime() === newTo.getTime())) {
-      selectingRef.current = true;
+  // -------------------------
+  // SECOND CLICK (check-out)
+  // -------------------------
+  if (value?.from && !value?.to) {
+    const checkIn = new Date(value.from);
+    const attemptedCheckout = clickedTo || clickedFrom;
+
+    // ❌ user clicked a date BEFORE check-in
+    if (attemptedCheckout <= checkIn) {
+      // ignore click (Airbnb behaviour)
       return;
     }
 
-    if (newFrom && newTo) {
-      selectingRef.current = false;
-      setTimeout(() => setOpen(false), 120);
-    }
-  };
+    // ✅ valid checkout
+    selectingRef.current = false;
+    onChange({ from: checkIn, to: attemptedCheckout });
+
+    setTimeout(() => setOpen(false), 150);
+  }
+};
+
 
 
 
@@ -177,15 +185,19 @@ export default function CalendarRange({
     if (!open) selectingRef.current = false;
   }, [open]);
 
-  const disabled = useMemo(
-    () => [
+  const disabled = useMemo(() => {
+    const base = [
       { before: todayDateOnly() },
       ...globalRanges,
       ...roomRanges,
       ...(disabledRanges || []),
-    ],
-    [globalRanges, roomRanges, disabledRanges]
-  );
+    ];
+    if (value?.from && !value?.to) {
+      base.push({ before: toDateOnlyFromAPIUTC(value.from) });
+    }
+    return base;
+  }, [globalRanges, roomRanges, disabledRanges, value?.from, value?.to]);
+
 
 
   const calendarUI = (
@@ -296,26 +308,26 @@ export default function CalendarRange({
                   day_disabled: "opacity-40",
                 }}
               />
-              </div>
+            </div>
           ))}
 
-              {/* ✅ button after months (NOT sticky) */}
-              <div className="pt-2 pb-2">
-                <Button
-                  variant="outline"
-                  className="w-full rounded-xl"
-                  onClick={loadMoreMonths}
-                >
-                  Load more dates
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* ✅ button after months (NOT sticky) */}
+          <div className="pt-2 pb-2">
+            <Button
+              variant="outline"
+              className="w-full rounded-xl"
+              onClick={loadMoreMonths}
+            >
+              Load more dates
+            </Button>
+          </div>
         </div>
-      );
+      )}
+    </div>
+  );
 
-      /* INLINE MODE */
-      if (inline) {
+  /* INLINE MODE */
+  if (inline) {
     return (
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-3">
@@ -324,45 +336,45 @@ export default function CalendarRange({
         </div>
         <div className="border rounded-xl bg-card">{calendarUI}</div>
       </div>
-      );
+    );
   }
 
-      /* POPOVER MODE */
-      return (
-      <Popover
-        open={open}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen && selectingRef.current) return;
-          setOpen(nextOpen);
-        }}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full h-14 grid grid-cols-2 rounded-xl"
-          >
-            <DateBox label="Check in" value={value?.from} />
-            <DateBox label="Check out" value={value?.to} />
-          </Button>
-        </PopoverTrigger>
+  /* POPOVER MODE */
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && selectingRef.current) return;
+        setOpen(nextOpen);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full h-14 grid grid-cols-2 rounded-xl"
+        >
+          <DateBox label="Check in" value={value?.from} />
+          <DateBox label="Check out" value={value?.to} />
+        </Button>
+      </PopoverTrigger>
 
-        {/* ✅ DESKTOP width same, MOBILE becomes square fixed */}
-        <PopoverContent className="calendar-popover p-0 w-full md:w-[680px]">
-          {calendarUI}
-        </PopoverContent>
-      </Popover>
-      );
+      {/* ✅ DESKTOP width same, MOBILE becomes square fixed */}
+      <PopoverContent className="calendar-popover p-0 w-full md:w-[680px]">
+        {calendarUI}
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 
-      function DateBox({label, value}) {
+function DateBox({ label, value }) {
   return (
-      <div className="flex flex-col items-center">
-        <span className="text-[11px] uppercase">{label}</span>
-        <span className="flex items-center gap-2 text-sm">
-          <CalendarDays size={14} />
-          {value ? format(value, "dd MMM yyyy") : "Add date"}
-        </span>
-      </div>
-      );
+    <div className="flex flex-col items-center">
+      <span className="text-[11px] uppercase">{label}</span>
+      <span className="flex items-center gap-2 text-sm">
+        <CalendarDays size={14} />
+        {value ? format(value, "dd MMM yyyy") : "Add date"}
+      </span>
+    </div>
+  );
 }
