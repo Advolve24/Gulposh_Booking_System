@@ -89,7 +89,6 @@ function useOnceInView(margin = "-120px") {
   return { ref, inView };
 }
 
-/* ================= PAGE ================= */
 
 export default function Home() {
   const navigate = useNavigate();
@@ -103,6 +102,7 @@ export default function Home() {
   const totalGuests = adults + children;
   const hasValidRange = !!(range?.from && range?.to);
   const hasGuests = totalGuests > 0;
+  const [showVillaPopup, setShowVillaPopup] = useState(false);
 
   const heroRef = useRef(null);
 
@@ -112,7 +112,6 @@ export default function Home() {
   const cta = useOnceInView();
   const footer = useOnceInView("-40px");
 
-  /* ================= LOAD DATA ================= */
 
   useEffect(() => {
     api.get("/rooms").then(({ data }) => setRooms(data || []));
@@ -141,7 +140,6 @@ export default function Home() {
     })();
   }, []);
 
-  /* ================= FILTER LOGIC ================= */
 
   const filteredRooms = useMemo(() => {
     if (!hasValidRange || !hasGuests) return rooms;
@@ -159,30 +157,12 @@ export default function Home() {
     });
   }, [rooms, disabledAll, range, totalGuests, hasValidRange, hasGuests]);
 
-  useEffect(() => {
-    if (totalGuests > 10) {
-      // ✅ Save search params for autofill
-      sessionStorage.setItem(
-        "searchParams",
-        JSON.stringify({
-          range,
-          adults,
-          children,
-        })
-      );
-
-      // ✅ Redirect to Entire Villa flow
-      navigate("/entire-villa-form");
-    }
-  }, [totalGuests, range, adults, children, navigate]);
 
   const onSearch = () => {
     if (!hasValidRange || !hasGuests) {
       alert("Please select dates and guests");
       return;
     }
-
-    // ✅ 1. SAVE SEARCH DATA (THIS WAS MISSING)
     sessionStorage.setItem(
       "searchParams",
       JSON.stringify({
@@ -191,8 +171,6 @@ export default function Home() {
         children,
       })
     );
-
-    // ✅ 2. SHOW / SCROLL TO ROOMS SECTION
     document.getElementById("results")?.scrollIntoView({
       behavior: "smooth",
       block: "start",
@@ -216,6 +194,14 @@ export default function Home() {
     if (typeof parsed?.children === "number") setChildren(parsed.children);
   }, []);
 
+  useEffect(() => {
+    if (totalGuests > 10) {
+      setShowVillaPopup(true);
+    } else {
+      setShowVillaPopup(false);
+    }
+  }, [totalGuests]);
+
 
 
   /* ================= UI ================= */
@@ -229,44 +215,44 @@ export default function Home() {
           content="Villa booking in Karjat at Gulposh, a luxury private stay for families and groups. Entire villa with modern amenities and instant confirmation." />
         <link rel="canonical" href="https://gulposhbookingsystem.netlify.app" />
 
-<script type="application/ld+json">
-  {JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "LodgingBusiness",
-    "name": "Villa Booking in Karjat | Luxury Private Stays with Gulposh",
-    "url": "https://gulposhbookingsystem.netlify.app/",
-    "logo": "https://gulposhbookingsystem.netlify.app/assets/logo.png",
-    "description": "Villa booking in Karjat at Gulposh, a luxury private stay for families and groups. Entire villa with modern amenities and instant confirmation.",
-    "telephone": "+91 98200 74617",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Karjat",
-      "addressRegion": "MH",
-      "addressCountry": "IN"
-    },
-    "priceRange": "₹₹₹",
-    "sameAs": [
-      "https://www.instagram.com/villagulposh",
-      "https://www.facebook.com/villagulposh/",
-      "https://www.linkedin.com/company/villagulposh/"
-    ],
-    "potentialAction": {
-      "@type": "ReserveAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://gulposhbookingsystem.netlify.app/",
-        "inLanguage": "en-IN",
-        "actionPlatform": [
-          "https://schema.org/DesktopWebPlatform",
-          "https://schema.org/MobileWebPlatform"
-        ]
-      },
-      "result": {
-        "@type": "LodgingReservation"
-      }
-    }
-  })}
-</script>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "LodgingBusiness",
+            "name": "Villa Booking in Karjat | Luxury Private Stays with Gulposh",
+            "url": "https://gulposhbookingsystem.netlify.app/",
+            "logo": "https://gulposhbookingsystem.netlify.app/assets/logo.png",
+            "description": "Villa booking in Karjat at Gulposh, a luxury private stay for families and groups. Entire villa with modern amenities and instant confirmation.",
+            "telephone": "+91 98200 74617",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Karjat",
+              "addressRegion": "MH",
+              "addressCountry": "IN"
+            },
+            "priceRange": "₹₹₹",
+            "sameAs": [
+              "https://www.instagram.com/villagulposh",
+              "https://www.facebook.com/villagulposh/",
+              "https://www.linkedin.com/company/villagulposh/"
+            ],
+            "potentialAction": {
+              "@type": "ReserveAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://gulposhbookingsystem.netlify.app/",
+                "inLanguage": "en-IN",
+                "actionPlatform": [
+                  "https://schema.org/DesktopWebPlatform",
+                  "https://schema.org/MobileWebPlatform"
+                ]
+              },
+              "result": {
+                "@type": "LodgingReservation"
+              }
+            }
+          })}
+        </script>
 
       </Helmet>
 
@@ -821,6 +807,88 @@ export default function Home() {
         </section>
 
       </div>
+
+
+      {showVillaPopup && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
+
+          {/* BACKDROP */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowVillaPopup(false)}
+          />
+
+          {/* MODAL */}
+          <div className="relative z-10 w-full max-w-xl rounded-3xl overflow-hidden bg-white shadow-2xl animate-in fade-in zoom-in-95">
+
+            {/* IMAGE */}
+            <div className="relative h-60">
+              <img
+                src="/EntireVilla.webp"
+                alt="Entire Villa"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+              {/* CLOSE BUTTON */}
+              <button
+                onClick={() => setShowVillaPopup(false)}
+                className="absolute top-3 right-3 h-10 w-9 rounded-full bg-white/90 hover:bg-white text-black text-[20px] pb-1 font-semibold"
+              >
+                ×
+              </button>
+
+              <div className="absolute bottom-4 left-4 text-white">
+                <div className="text-xs uppercase tracking-widest opacity-80">
+                  Perfect For Large Groups
+                </div>
+                <h3 className="text-2xl font-semibold">
+                  Book the Entire Villa
+                </h3>
+              </div>
+            </div>
+
+            {/* CONTENT */}
+            <div className="p-6 text-left">
+              <p className="text-sm text-gray-600">
+                You selected a large group. For 10+ guests, we recommend reserving
+                the entire Gulposh Villa for complete privacy and a better
+                experience.
+              </p>
+
+              <div className="mt-5 space-y-2 text-sm text-gray-700">
+                <div>✔ Private access to all 3 rooms</div>
+                <div>✔ Full property exclusively for your group</div>
+                <div>✔ Dedicated support & custom arrangements</div>
+              </div>
+
+              <div className="mt-6 flex gap-3 justify-start">
+                <Button
+                  className="bg-[#a11d2e] hover:bg-[#8e1827] text-white rounded-full px-6"
+                  onClick={() => {
+                    sessionStorage.setItem(
+                      "searchParams",
+                      JSON.stringify({ range, adults, children })
+                    );
+                    navigate("/entire-villa-form");
+                  }}
+                >
+                  Enquire Now
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => setShowVillaPopup(false)}
+                >
+                  Continue Room Booking
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 }
