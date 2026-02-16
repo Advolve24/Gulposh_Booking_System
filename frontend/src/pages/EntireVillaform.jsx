@@ -360,14 +360,15 @@ export default function EntireVilla() {
 
                     <Button
                       onClick={(e) => e.preventDefault()}
-                      className={`w-[120px] flex items-center justify-center gap-2
-    ${otpVerified
-                          ? "bg-green-600 hover:bg-green-600 text-white"
+                      className={`w-[120px] flex items-center justify-center gap-2 transition-all duration-200 pointer-events-none
+
+  ${otpVerified
+                          ? "bg-green-600 text-white"
                           : verifyingOtp
-                            ? "bg-primary text-white"
-                            : "bg-primary text-white"
+                            ? "bg-primary text-white shadow-sm"
+                            : "bg-primary/30 text-primary border border-primary/40"
                         }
-    pointer-events-none`}
+  `}
                     >
                       {verifyingOtp && (
                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -376,7 +377,7 @@ export default function EntireVilla() {
                       {otpVerified
                         ? "Verified"
                         : verifyingOtp
-                          ? "Verifying"
+                          ? "Verifying..."
                           : "Verify"}
                     </Button>
 
