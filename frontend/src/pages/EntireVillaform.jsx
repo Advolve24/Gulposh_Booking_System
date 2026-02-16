@@ -359,20 +359,27 @@ export default function EntireVilla() {
                     </div>
 
                     <Button
-                      disabled
-                      className={`w-[120px]
-      ${otpVerified
-                          ? "bg-green-600"
+                      onClick={(e) => e.preventDefault()}
+                      className={`w-[120px] flex items-center justify-center gap-2
+    ${otpVerified
+                          ? "bg-green-600 hover:bg-green-600 text-white"
                           : verifyingOtp
-                            ? "bg-primary/80 text-white cursor-not-allowed"
-                            : "bg-primary/80 text-white"}`}
+                            ? "bg-primary text-white"
+                            : "bg-primary text-white"
+                        }
+    pointer-events-none`}
                     >
+                      {verifyingOtp && (
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      )}
+
                       {otpVerified
                         ? "Verified"
                         : verifyingOtp
-                          ? "Verifying..."
+                          ? "Verifying"
                           : "Verify"}
                     </Button>
+
                   </div>
 
                   <div className="text-xs text-muted-foreground">
