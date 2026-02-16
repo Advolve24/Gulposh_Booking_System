@@ -468,6 +468,32 @@ export default function Home() {
                           max={20 - adults}
                           onChange={setChildren}
                         />
+
+                        <div className="my-4 h-px bg-border" />
+
+                        <div className="rounded-xl border border-[#eadfd8] bg-[#fff8f5] p-3">
+                          <div className="text-[12px] text-[#5c4b42] leading-snug">
+                            Planning a stay for more than <strong>10 guests</strong>?
+                            <br />
+                            For large groups, we recommend reserving the <strong>Entire Gulposh Villa</strong>
+                            for better comfort and privacy.
+                          </div>
+
+                          <Button
+                            size="sm"
+                            className="mt-3 w-full rounded-full bg-[#a11d2e] hover:bg-[#8e1827] text-white text-[12px] h-9"
+                            onClick={() => {
+                              sessionStorage.setItem(
+                                "searchParams",
+                                JSON.stringify({ range, adults, children })
+                              );
+                              navigate("/entire-villa-form");
+                            }}
+                          >
+                            Enquire Entire Villa
+                          </Button>
+                        </div>
+
                       </PopoverContent>
                     </Popover>
                   </div>
