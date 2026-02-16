@@ -48,6 +48,7 @@ export default function EntireVilla() {
   const confirmationRef = useRef(null);
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [firebaseToken, setFirebaseToken] = useState(null);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   const disabledAll = useMemo(
     () => [...bookedAll, ...blackoutRanges],
@@ -125,12 +126,14 @@ export default function EntireVilla() {
 
 
   const verifyOtp = async () => {
-    if (!otp || otp.length !== 6) return;
+    if (verifyingOtp || otpVerified || otp.length !== 6) return;
+    setVerifyingOtp(true);
     try {
       const result = await confirmationRef.current.confirm(otp);
       const idToken = await result.user.getIdToken(true);
       setFirebaseToken(idToken);
       setOtpVerified(true);
+
       const { data } = await api.post("/auth/check-user", {
         phone: form.phone,
       });
@@ -153,8 +156,17 @@ export default function EntireVilla() {
       console.error(err);
       toast.error("Invalid OTP");
       setOtp("");
+    } finally {
+      setVerifyingOtp(false);
     }
   };
+
+
+  useEffect(() => {
+    if (otp.length === 6 && !otpVerified && !verifyingOtp) {
+      verifyOtp();
+    }
+  }, [otp]);
 
 
 
@@ -329,13 +341,22 @@ export default function EntireVilla() {
 
               {otpStep && !otpVerified && (
                 <div className="space-y-2">
-                  <div className="flex gap-2">
+                  <div className="relative">
                     <Input
-                      placeholder="Enter OTP"
+                      placeholder="Enter 6 digit OTP"
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      disabled={otpVerified || verifyingOtp}
+                      onChange={(e) =>
+                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
+                      className="pr-10 tracking-[0.35em] text-center text-lg"
                     />
-                    <Button onClick={verifyOtp}>Verify</Button>
+
+                    {verifyingOtp && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="w-4 h-4 border-2 border-red-700 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-xs text-muted-foreground">
@@ -344,7 +365,11 @@ export default function EntireVilla() {
                     ) : (
                       <button
                         className="underline text-red-700"
-                        onClick={sendOtp}
+                        onClick={() => {
+                          setOtp("");
+                          setOtpVerified(false);
+                          sendOtp();
+                        }}
                       >
                         Resend OTP
                       </button>
