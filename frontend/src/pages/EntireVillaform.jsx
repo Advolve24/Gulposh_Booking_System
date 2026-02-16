@@ -53,6 +53,8 @@ export default function EntireVilla() {
   const [profileLocked, setProfileLocked] = useState(false);
   const phoneLoginWithToken = useAuth((s) => s.phoneLoginWithToken);
   const refreshUser = useAuth((s) => s.refreshUser);
+  const user = useAuth((s) => s.user);
+  const initialized = useAuth((s) => s.initialized);
 
   const disabledAll = useMemo(
     () => [...bookedAll, ...blackoutRanges],
@@ -66,6 +68,28 @@ export default function EntireVilla() {
     address.country && address.state
       ? getCitiesByState(address.country, address.state)
       : [];
+
+
+  useEffect(() => {
+    if (!initialized) return;
+    if (user) {
+      setOtpVerified(true);
+      setProfileLocked(true);
+      setForm({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+      });
+      setAddress({
+        address: user.address || "",
+        country: user.country || "",
+        state: user.state || "",
+        city: user.city || "",
+        pincode: user.pincode || "",
+      });
+    }
+  }, [user, initialized]);
+
 
 
   useEffect(() => {
@@ -179,7 +203,7 @@ export default function EntireVilla() {
 
 
   const submitEnquiry = async () => {
-    if (!otpVerified || !firebaseToken) {
+    if (!user && (!otpVerified || !firebaseToken)) {
       toast.error("Please verify your mobile number first");
       return;
     }
@@ -325,94 +349,96 @@ export default function EntireVilla() {
           {/* ================= RIGHT FORM ================= */}
           <section className="lg:col-span-6 space-y-6">
 
-            <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-4">
-              <h3 className="font-semibold text-base">Verify Mobile Number</h3>
+            {!user && (
+              <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-4">
+                <h3 className="font-semibold text-base">Verify Mobile Number</h3>
 
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter 10 digit mobile number"
-                  value={form.phone}
-                  disabled={otpVerified}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                    })
-                  }
-                />
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter 10 digit mobile number"
+                    value={form.phone}
+                    disabled={otpVerified}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                      })
+                    }
+                  />
 
-                {!otpStep && (
-                  <Button onClick={sendOtp} disabled={checkingUser}>
-                    Send OTP
-                  </Button>
-                )}
-              </div>
+                  {!otpStep && (
+                    <Button onClick={sendOtp} disabled={checkingUser}>
+                      Send OTP
+                    </Button>
+                  )}
+                </div>
 
-              {otpStep && !otpVerified && (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        placeholder="Enter 6 digit OTP"
-                        value={otp}
-                        disabled={otpVerified || verifyingOtp}
-                        onChange={(e) =>
-                          setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                        }
-                        className="tracking-[0.35em] text-center text-lg"
-                      />
-                    </div>
+                {otpStep && !otpVerified && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          placeholder="Enter 6 digit OTP"
+                          value={otp}
+                          disabled={otpVerified || verifyingOtp}
+                          onChange={(e) =>
+                            setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                          }
+                          className="tracking-[0.35em] text-center text-lg"
+                        />
+                      </div>
 
-                    <Button
-                      onClick={(e) => e.preventDefault()}
-                      className={`w-[120px] flex items-center justify-center gap-2 transition-all duration-200 pointer-events-none
+                      <Button
+                        onClick={(e) => e.preventDefault()}
+                        className={`w-[120px] flex items-center justify-center gap-2 transition-all duration-200 pointer-events-none
 
   ${otpVerified
-                          ? "bg-green-600 text-white"
-                          : verifyingOtp
-                            ? "bg-primary text-white shadow-sm"
-                            : "bg-primary/30 text-primary border border-primary/40"
-                        }
+                            ? "bg-green-600 text-white"
+                            : verifyingOtp
+                              ? "bg-primary text-white shadow-sm"
+                              : "bg-primary/30 text-primary border border-primary/40"
+                          }
   `}
-                    >
-                      {verifyingOtp && (
-                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      )}
-
-                      {otpVerified
-                        ? "Verified"
-                        : verifyingOtp
-                          ? "Verifying..."
-                          : "Verify"}
-                    </Button>
-
-                  </div>
-
-                  <div className="text-xs text-muted-foreground">
-                    {secondsLeft > 0 ? (
-                      <>Resend OTP in {secondsLeft}s</>
-                    ) : (
-                      <button
-                        className="underline text-red-700"
-                        onClick={() => {
-                          setOtp("");
-                          setOtpVerified(false);
-                          sendOtp();
-                        }}
                       >
-                        Resend OTP
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+                        {verifyingOtp && (
+                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        )}
 
-              {otpVerified && (
-                <p className="text-green-600 text-sm">
-                  Mobile number verified successfully ✔
-                </p>
-              )}
-            </div>
+                        {otpVerified
+                          ? "Verified"
+                          : verifyingOtp
+                            ? "Verifying..."
+                            : "Verify"}
+                      </Button>
+
+                    </div>
+
+                    <div className="text-xs text-muted-foreground">
+                      {secondsLeft > 0 ? (
+                        <>Resend OTP in {secondsLeft}s</>
+                      ) : (
+                        <button
+                          className="underline text-red-700"
+                          onClick={() => {
+                            setOtp("");
+                            setOtpVerified(false);
+                            sendOtp();
+                          }}
+                        >
+                          Resend OTP
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {otpVerified && (
+                  <p className="text-green-600 text-sm">
+                    Mobile number verified successfully ✔
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* PERSONAL INFO */}
             <div className="rounded-2xl border bg-white p-5 sm:p-6">
