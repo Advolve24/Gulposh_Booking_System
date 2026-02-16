@@ -364,8 +364,8 @@ export default function EntireVilla() {
       ${otpVerified
                           ? "bg-green-600"
                           : verifyingOtp
-                            ? "bg-amber-500"
-                            : "bg-gray-300 text-gray-600"}`}
+                            ? "bg-primary/80 text-white cursor-not-allowed"
+                            : "bg-primary/80 text-white"}`}
                     >
                       {otpVerified
                         ? "Verified"
@@ -430,7 +430,7 @@ export default function EntireVilla() {
 
                 <div>
                   <Label>Phone</Label>
-                  <Input value={form.phone} disabled={!otpVerified} />
+                  <Input value={form.phone} disabled={!otpVerified || profileLocked} />
                 </div>
               </div>
             </div>
