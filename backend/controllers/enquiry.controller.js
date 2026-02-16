@@ -5,9 +5,9 @@ import User from "../models/User.js";
 import { setSessionCookie } from "../utils/session.js";
 import jwt from "jsonwebtoken";
 
+
 export const createEntireVillaEnquiry = async (req, res) => {
   try {
-
     const {
       firebaseToken,
       name,

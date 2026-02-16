@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
+import { useAuth } from "@/store/authStore";
 
 
 export default function EntireVilla() {
@@ -50,6 +51,8 @@ export default function EntireVilla() {
   const [firebaseToken, setFirebaseToken] = useState(null);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [profileLocked, setProfileLocked] = useState(false);
+  const phoneLoginWithToken = useAuth((s) => s.phoneLoginWithToken);
+  const refreshUser = useAuth((s) => s.refreshUser);
 
   const disabledAll = useMemo(
     () => [...bookedAll, ...blackoutRanges],
@@ -133,6 +136,7 @@ export default function EntireVilla() {
       const result = await confirmationRef.current.confirm(otp);
       const idToken = await result.user.getIdToken(true);
       setFirebaseToken(idToken);
+      await phoneLoginWithToken(idToken);
       setOtpVerified(true);
 
       const { data } = await api.post("/auth/check-user", {
@@ -220,6 +224,7 @@ export default function EntireVilla() {
       });
 
       toast.success("Enquiry submitted successfully ✨");
+      await refreshUser();
       sessionStorage.setItem(
         "enquirySuccessData",
         JSON.stringify({
