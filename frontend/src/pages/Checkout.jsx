@@ -106,6 +106,12 @@ export default function Checkout() {
 
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
+  const hasRoomCoupon =
+    room &&
+    room.discountType &&
+    room.discountType !== "none" &&
+    room.discountCode &&
+    room.discountCode.trim() !== "";
 
   const disabledAll = useMemo(
     () => mergeRanges([...blackoutRanges, ...bookedAll]),
@@ -258,23 +264,20 @@ export default function Checkout() {
   }, [roomTotal, mealTotal]);
 
   const discountAmount = useMemo(() => {
-    if (!room || !couponApplied) return 0;
-    if (
-      room.discountCode &&
-      couponCode.trim().toUpperCase() !==
-      room.discountCode
-    )
-      return 0;
+    if (!hasRoomCoupon) return 0;
+    if (!couponApplied) return 0;
+    if (couponCode !== room.discountCode) return 0;
+
     if (room.discountType === "percent") {
-      return Math.round(
-        (subTotal * (room.discountValue || 0)) / 100
-      );
+      return Math.round((subTotal * room.discountValue) / 100);
     }
+
     if (room.discountType === "flat") {
       return room.discountValue || 0;
     }
+
     return 0;
-  }, [room, subTotal, couponApplied, couponCode]);
+  }, [hasRoomCoupon, couponApplied, couponCode, room, subTotal]);
 
   const discountedSubtotal = useMemo(() => {
     return Math.max(0, subTotal - discountAmount);
@@ -343,6 +346,7 @@ export default function Checkout() {
       contactName: form.name,
       contactEmail: form.email,
       contactPhone: form.phone,
+      couponCode,
     });
 
     const rzp = new window.Razorpay({
@@ -1083,35 +1087,42 @@ export default function Checkout() {
 
               <Separator />
 
-              <div className="space-y-2">
-                <Label>Discount Code</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={couponCode}
-                    onChange={(e) =>
-                      setCouponCode(e.target.value.toUpperCase())
-                    }
-                    placeholder="Enter code"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      if (
-                        room.discountCode &&
-                        couponCode === room.discountCode
-                      ) {
-                        setCouponApplied(true);
-                        toast.success("Coupon applied!");
-                      } else {
-                        setCouponApplied(false);
-                        toast.error("Invalid coupon");
+              {hasRoomCoupon && (
+                <div className="space-y-2">
+                  <Label>Promo Code</Label>
+
+                  <div className="flex gap-2">
+                    <Input
+                      value={couponCode}
+                      onChange={(e) =>
+                        setCouponCode(e.target.value.toUpperCase())
                       }
-                    }}
-                  >
-                    Apply
-                  </Button>
+                      placeholder="Enter promo code"
+                    />
+
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (couponCode === room.discountCode) {
+                          setCouponApplied(true);
+                          toast.success(`${room.discountLabel || "Offer"} applied!`);
+                        } else {
+                          setCouponApplied(false);
+                          toast.error("Invalid code for this room");
+                        }
+                      }}
+                    >
+                      Apply
+                    </Button>
+                  </div>
+
+                  {room.discountLabel && (
+                    <p className="text-xs text-muted-foreground">
+                      Available Offer: <strong>{room.discountLabel}</strong>
+                    </p>
+                  )}
                 </div>
-              </div>
+              )}
 
               <div className="flex justify-between font-semibold">
                 <span className="text-[16px]">Total Payable</span>
