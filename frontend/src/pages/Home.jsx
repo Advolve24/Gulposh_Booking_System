@@ -793,8 +793,9 @@ export default function Home() {
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] tracking-widest uppercase text-white/90 ring-1 ring-white/15 backdrop-blur">
                     Exclusive Experience
                   </div>
-
-                  <h3 className="mt-5 text-3xl md:text-4xl leading-tight font-semibold">
+                  
+                  <h4 className="mt-5">For Groups of <span className="font-bold text-[18px]">10+ Guests</span></h4>
+                  <h3 className="mt-2 text-3xl md:text-4xl leading-tight font-semibold">
                     Book the Entire Villa
                   </h3>
 
