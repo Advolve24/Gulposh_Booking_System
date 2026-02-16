@@ -194,6 +194,22 @@ export default function Home() {
     if (typeof parsed?.children === "number") setChildren(parsed.children);
   }, []);
 
+
+  useEffect(() => {
+    if (!range?.from || !range?.to) return;
+    if (adults === 0 && children === 0) return;
+
+    sessionStorage.setItem(
+      "searchParams",
+      JSON.stringify({
+        range,
+        adults,
+        children,
+      })
+    );
+  }, [range, adults, children]);
+
+
   useEffect(() => {
     if (totalGuests > 10) {
       setShowVillaPopup(true);
@@ -432,7 +448,7 @@ export default function Home() {
                         </Button>
                       </PopoverTrigger>
 
-                      <PopoverContent className="w-72 p-4 rounded-2xl">
+                      <PopoverContent className="w-[390px] p-4 rounded-2xl">
                         <GuestCounter
                           label="Adults"
                           description="Ages 13 or above"
@@ -540,9 +556,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ======================================================
-          ROOMS (backend cards)
-      ====================================================== */}
+
         <section className="mx-auto max-w-7xl px-4 py-14 md:py-20" id="results" ref={roomsSec.ref}>
           <motion.div
             initial="hidden"
@@ -571,7 +585,6 @@ export default function Home() {
             className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           >
             {filteredRooms.map((r) => (
-              // <RoomCard key={r._id} room={r} range={range} guests={totalGuests} />
               <RoomCard key={r._id}
                 room={r}
                 range={range}
@@ -586,11 +599,8 @@ export default function Home() {
           </motion.div>
         </section>
 
-        {/* ======================================================
-          WHY CHOOSE US (exact 8 cards + icons)
-      ====================================================== */}
+
         <section className="relative overflow-hidden">
-          {/* ================= BACKGROUND SHAPES ================= */}
           <div className="absolute inset-0 -z-10">
             <div className="h-full w-full bg-[#fffaf7]" />
 
