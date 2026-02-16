@@ -77,13 +77,22 @@ export default function VillaInvoice() {
 
   const subTotal = roomTotal + mealTotal;
 
+  const discountAmount = Number(
+    booking.discountMeta?.discountAmount || 0
+  );
+
+  const discountedSubtotal = Math.max(
+    0,
+    subTotal - discountAmount
+  );
+
   const cgstAmount = booking.taxBreakup?.cgstAmount || 0;
   const sgstAmount = booking.taxBreakup?.sgstAmount || 0;
   const taxAmount = cgstAmount + sgstAmount;
 
   const taxPercent =
-    subTotal > 0
-      ? ((taxAmount / subTotal) * 100).toFixed(0)
+    discountedSubtotal > 0
+      ? ((taxAmount / discountedSubtotal) * 100).toFixed(0)
       : 0;
 
   const vegTotal =
@@ -515,7 +524,7 @@ export default function VillaInvoice() {
                 </p>
 
                 {/* Subtotal */}
-                <div className="flex justify-between py-1 pb-3">
+                <div className="flex justify-between py-1">
                   <span className="text-gray-600">
                     Subtotal (Taxable Value)
                   </span>
@@ -523,6 +532,28 @@ export default function VillaInvoice() {
                     ₹{subTotal.toLocaleString("en-IN")}
                   </span>
                 </div>
+
+                {/* Discount */}
+                {discountAmount > 0 && (
+                  <div className="flex justify-between py-1 text-green-600">
+                    <span>Discount</span>
+                    <span className="font-bold">
+                      -₹{discountAmount.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                )}
+
+                {/* After Discount */}
+                {discountAmount > 0 && (
+                  <div className="flex justify-between py-1 pb-3 border-b border-dashed border-gray-300">
+                    <span className="text-gray-600">
+                      After Discount
+                    </span>
+                    <span className="font-bold">
+                      ₹{discountedSubtotal.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                )}
 
                 {/* CGST */}
                 <div className="flex border-t border-dashed border-gray-300 border-b items-center justify-between">

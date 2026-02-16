@@ -123,6 +123,15 @@ export default function BookingSuccess() {
 
     const subtotal = roomTotal + mealTotal;
 
+    const discountAmount = Number(
+        booking.discountMeta?.discountAmount || 0
+    );
+
+    const discountedSubtotal = Math.max(
+        0,
+        subtotal - discountAmount
+    );
+
     const cgstAmount = Number(
         booking.taxBreakup?.cgstAmount ??
         (booking.totalTax ? booking.totalTax / 2 : 0)
@@ -191,7 +200,7 @@ export default function BookingSuccess() {
                     <img
                         src={roomImage}
                         alt={room.name}
-                        className="h-[430px] w-full object-cover"
+                        className="h-[460px] w-full object-cover"
                     />
 
                     <div className="p-6 space-y-2">
@@ -283,6 +292,22 @@ export default function BookingSuccess() {
                                 <span>Subtotal</span>
                                 <span>₹{subtotal.toLocaleString("en-IN")}</span>
                             </div>
+
+                            {/* DISCOUNT */}
+                            {discountAmount > 0 && (
+                                <div className="flex justify-between text-green-700">
+                                    <span>Discount</span>
+                                    <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
+                                </div>
+                            )}
+
+                            {/* DISCOUNTED SUBTOTAL */}
+                            {discountAmount > 0 && (
+                                <div className="flex justify-between">
+                                    <span>After Discount</span>
+                                    <span>₹{discountedSubtotal.toLocaleString("en-IN")}</span>
+                                </div>
+                            )}
 
                             {/* GST */}
                             <div className="flex flex-col justify-between text-muted-foreground">

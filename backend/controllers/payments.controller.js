@@ -250,6 +250,21 @@ export const verifyPayment = async (req, res) => {
 
     const subTotal = roomTotal + mealTotal;
 
+    let discountAmount = 0;
+
+    if (room.discountType === "percent") {
+      discountAmount = Math.round(
+        (subTotal * room.discountValue) / 100
+      );
+    }
+    if (room.discountType === "flat") {
+      discountAmount = room.discountValue;
+    }
+    const discountedSubtotal = Math.max(
+      0,
+      subTotal - discountAmount
+    );
+
     const taxSetting = await TaxSetting.findOne();
     if (!taxSetting) {
       return res.status(500).json({ message: "Tax configuration missing" });
@@ -258,14 +273,18 @@ export const verifyPayment = async (req, res) => {
     const cgstPercent = taxSetting.taxPercent / 2;
     const sgstPercent = taxSetting.taxPercent / 2;
 
-    const cgstAmount = Math.round((subTotal * cgstPercent) / 100);
-    const sgstAmount = Math.round((subTotal * sgstPercent) / 100);
+    const cgstAmount = Math.round(
+      (discountedSubtotal * cgstPercent) / 100
+    );
+
+    const sgstAmount = Math.round(
+      (discountedSubtotal * sgstPercent) / 100
+    );
 
     const totalTax = cgstAmount + sgstAmount;
 
-    const grandTotal = subTotal + totalTax;
+    const grandTotal = discountedSubtotal + totalTax;
 
-    /* ---------------- Create Booking ---------------- */
     const booking = await Booking.create({
       user: userId,
       userSnapshot: {
@@ -293,12 +312,15 @@ export const verifyPayment = async (req, res) => {
         sgstAmount,
         totalTax,
       },
-      discountMeta: {
-        discountType: room.discountType,
-        discountValue: room.discountValue,
-        discountAmount,
-      },
-      subTotal,
+      discountMeta:
+        discountAmount > 0
+          ? {
+            discountType: room.discountType,
+            discountValue: room.discountValue,
+            discountAmount,
+          }
+          : null,
+      subTotal: discountedSubtotal,
       amount: grandTotal,
       currency: "INR",
       contactName,
@@ -312,16 +334,20 @@ export const verifyPayment = async (req, res) => {
       addressInfo: { address, country, state, city, pincode },
     });
 
-    /* 🔔 NOTIFY ADMIN — BOOKING CONFIRMED */
-    await notifyAdmin("BOOKING_CREATED", {
-      bookingId: booking._id,
-      room: room.name,
-      guest: contactName,
-      guests,
-      amount: grandTotal,
-      dates: `${startDate} → ${endDate}`,
-      paymentProvider: "razorpay",
-    });
+    try {
+      await notifyAdmin("BOOKING_CREATED", {
+        bookingId: booking._id,
+        room: room.name,
+        guest: contactName,
+        guests,
+        amount: grandTotal,
+        dates: `${startDate} → ${endDate}`,
+        paymentProvider: "razorpay",
+      });
+    } catch (err) {
+      console.error("❌ notifyAdmin failed:", err.message);
+    }
+
 
     /* ---------------- Send Confirmation Mail ---------------- */
     const emailToSend = contactEmail || req.user?.email;

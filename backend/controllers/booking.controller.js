@@ -113,8 +113,10 @@ export const getBooking = async (req, res) => {
       paymentId: booking.paymentId,
 
       roomTotal,
-      mealTotal, address: booking.addressInfo,
+      mealTotal,
       subtotal,
+
+      discountMeta: booking.discountMeta || null, // ✅ ADD THIS
 
       taxBreakup: {
         cgstPercent: booking.taxBreakup?.cgstPercent || 0,
@@ -204,15 +206,18 @@ export const cancelMyBooking = async (req, res) => {
 
     await booking.save();
 
-    // Notify admin about cancellation
-    await notifyAdmin("BOOKING_CANCELLED", {
-      bookingId: booking._id,
-      room: booking.room?.name,
-      guest: booking.user?.name,
-      refundAmount,
-      refundPercentage,
-      cancelledBy: "user",
-    });
+    try {
+      await notifyAdmin("BOOKING_CANCELLED", {
+        bookingId: booking._id,
+        room: booking.room,
+        guest: booking.userSnapshot?.name,
+        refundAmount,
+        refundPercentage,
+        cancelledBy: "user",
+      });
+    } catch (err) {
+      console.error("Admin notification failed:", err);
+    }
 
 
     res.json({

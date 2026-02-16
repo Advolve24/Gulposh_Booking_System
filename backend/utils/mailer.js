@@ -41,6 +41,15 @@ export const sendBookingConfirmationMail = async ({
   const roomTotal = Number(booking.roomTotal || 0);
   const subtotal = roomTotal + mealTotal;
 
+  const discountAmount = Number(
+    booking.discountMeta?.discountAmount || 0
+  );
+
+  const discountedSubtotal = Math.max(
+    0,
+    subtotal - discountAmount
+  );
+
   const cgstAmount = Number(
     booking.taxBreakup?.cgstAmount ??
     (booking.totalTax ? booking.totalTax / 2 : 0)
@@ -55,11 +64,15 @@ export const sendBookingConfirmationMail = async ({
 
   const cgstPercent =
     booking.taxBreakup?.cgstPercent ??
-    (subtotal > 0 ? Math.round((cgstAmount / subtotal) * 100) : 0);
+    (discountedSubtotal > 0
+      ? Math.round((cgstAmount / discountedSubtotal) * 100)
+      : 0);
 
   const sgstPercent =
     booking.taxBreakup?.sgstPercent ??
-    (subtotal > 0 ? Math.round((sgstAmount / subtotal) * 100) : 0);
+    (discountedSubtotal > 0
+      ? Math.round((sgstAmount / discountedSubtotal) * 100)
+      : 0);
 
   const grandTotal = Number(booking.amount || 0);
 
@@ -389,6 +402,28 @@ border-radius:12px;
           ₹${subtotal.toLocaleString("en-IN")}
         </td>
       </tr>
+
+
+      ${discountAmount > 0 ? `
+<tr>
+  <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#16a34a;">
+    Discount
+  </td>
+  <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#16a34a;font-weight:700;">
+    -₹${discountAmount.toLocaleString("en-IN")}
+  </td>
+</tr>
+
+<tr>
+  <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">
+    After Discount
+  </td>
+  <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#111827;">
+    ₹${discountedSubtotal.toLocaleString("en-IN")}
+  </td>
+</tr>
+` : ""}
+
 
      <!-- CGST -->
 <tr>

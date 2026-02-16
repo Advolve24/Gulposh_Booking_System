@@ -81,6 +81,15 @@ export default function ViewBookingDialog({
     0;
   const subTotal = roomTotal + mealTotal;
 
+  const discountAmount = Number(
+    booking?.discountMeta?.discountAmount || 0
+  );
+
+  const discountedSubtotal = Math.max(
+    0,
+    subTotal - discountAmount
+  );
+
   const cgstAmount = Number(
     booking?.taxBreakup?.cgstAmount ??
     (booking?.totalTax ? booking.totalTax / 2 : 0)
@@ -93,14 +102,14 @@ export default function ViewBookingDialog({
 
   const cgstPercent =
     booking?.taxBreakup?.cgstPercent ??
-    (subTotal > 0
-      ? ((cgstAmount / subTotal) * 100).toFixed(0)
+    (discountedSubtotal > 0
+      ? ((cgstAmount / discountedSubtotal) * 100).toFixed(0)
       : 0);
 
   const sgstPercent =
     booking?.taxBreakup?.sgstPercent ??
-    (subTotal > 0
-      ? ((sgstAmount / subTotal) * 100).toFixed(0)
+    (discountedSubtotal > 0
+      ? ((sgstAmount / discountedSubtotal) * 100).toFixed(0)
       : 0);
 
   const taxAmount = cgstAmount + sgstAmount;
@@ -252,8 +261,22 @@ export default function ViewBookingDialog({
                   Billing Details
                 </p>
 
+
                 <Row label="Room Total" value={roomTotal} />
                 <Row label="Food Total" value={mealTotal} />
+                {discountAmount > 0 && (
+                  <Row
+                    label="Discount"
+                    value={-discountAmount}
+                  />
+                )}
+
+                {discountAmount > 0 && (
+                  <Row
+                    label="After Discount"
+                    value={discountedSubtotal}
+                  />
+                )}
                 <Row
                   label={`CGST (${cgstPercent}%)`}
                   value={cgstAmount}
@@ -296,10 +319,24 @@ const InfoCard = ({ icon, title, main, sub }) => (
   </div>
 );
 
-const Row = ({ label, value }) => (
-  <div className="flex justify-between text-sm">
-    <span>{label}</span>
-    <span>₹{value.toLocaleString("en-IN")}</span>
-  </div>
-);
+const Row = ({ label, value }) => {
+  const isNegative = value < 0;
+
+  return (
+    <div className="flex justify-between text-sm">
+      <span>{label}</span>
+      <span
+        className={
+          isNegative
+            ? "text-green-600 font-medium"
+            : ""
+        }
+      >
+        {isNegative ? "-" : ""}₹
+        {Math.abs(value).toLocaleString("en-IN")}
+      </span>
+    </div>
+  );
+};
+
 
