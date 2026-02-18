@@ -229,15 +229,15 @@ export default function Home() {
         <meta
           name="description"
           content="Villa booking in Karjat at Gulposh, a luxury private stay for families and groups. Entire villa with modern amenities and instant confirmation." />
-        <link rel="canonical" href="https://gulposhbookingsystem.netlify.app" />
+        <link rel="canonical" href="https://booking.villagulposh.com/" />
 
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "LodgingBusiness",
             "name": "Villa Booking in Karjat | Luxury Private Stays with Gulposh",
-            "url": "https://gulposhbookingsystem.netlify.app/",
-            "logo": "https://gulposhbookingsystem.netlify.app/assets/logo.png",
+            "url": "https://booking.villagulposh.com/",
+            "logo": "https://booking.villagulposh.com/assets/logo.png",
             "description": "Villa booking in Karjat at Gulposh, a luxury private stay for families and groups. Entire villa with modern amenities and instant confirmation.",
             "telephone": "+91 98200 74617",
             "address": {
@@ -256,7 +256,7 @@ export default function Home() {
               "@type": "ReserveAction",
               "target": {
                 "@type": "EntryPoint",
-                "urlTemplate": "https://gulposhbookingsystem.netlify.app/",
+                "urlTemplate": "https://booking.villagulposh.com/",
                 "inLanguage": "en-IN",
                 "actionPlatform": [
                   "https://schema.org/DesktopWebPlatform",
