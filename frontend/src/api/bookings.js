@@ -21,6 +21,6 @@ export const getBlackouts = async () => {
 };
 
 export const getMyEnquiries = async () => {
-  const { data } = await api.get("/enquiry/my");
+  const { data } = await api.get("/enquiries/my");
   return data;
 };
