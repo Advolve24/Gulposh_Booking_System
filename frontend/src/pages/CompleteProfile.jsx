@@ -31,8 +31,8 @@ export default function CompleteProfile() {
   const [countryCode, setCountryCode] = useState("IN");
   const [stateCode, setStateCode] = useState("");
   const [cityName, setCityName] = useState("");
+  const [toastShown, setToastShown] = useState(false);
 
-  /* ================= FORM ================= */
 
   const [form, setForm] = useState({
     name: "",
@@ -47,21 +47,27 @@ export default function CompleteProfile() {
     pincode: "",
   });
 
-  /* 🚫 BLOCK IF ALREADY COMPLETE */
   useEffect(() => {
     if (user?.profileComplete) {
       navigate("/", { replace: true });
     }
   }, [user, navigate]);
 
-  /* ================= LOAD COUNTRIES ================= */
+  useEffect(() => {
+    if (!user) return;
+    if (user.profileComplete) return;
+    if (toastShown) return;
+
+    toast.info("Please complete your profile to continue booking.");
+    setToastShown(true);
+  }, [user, toastShown]);
+
 
   useEffect(() => {
     const all = Country.getAllCountries();
     setCountries(all);
   }, []);
 
-  /* ================= PREFILL USER ================= */
 
   useEffect(() => {
     if (!user || !countries.length) return;
