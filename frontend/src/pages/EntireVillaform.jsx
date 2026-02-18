@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Country, State, City } from "country-state-city";
 import { api } from "../api/http";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { MapPin, Users, User, ConciergeBell, ArrowLeft } from "lucide-react";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import CalendarRange from "../components/CalendarRange";
-import { getAllCountries, getStatesByCountry, getCitiesByState } from "../lib/location";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { format } from "date-fns";
 import { signInWithPhoneNumber } from "firebase/auth";
@@ -56,18 +56,18 @@ export default function EntireVilla() {
   const initialized = useAuth((s) => s.initialized);
   const [profileLocked, setProfileLocked] = useState(false);
 
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+
+  const [countryCode, setCountryCode] = useState("IN");
+  const [stateCode, setStateCode] = useState("");
+  const [cityName, setCityName] = useState("");
+
   const disabledAll = useMemo(
     () => [...bookedAll, ...blackoutRanges],
     [bookedAll, blackoutRanges]
   );
-
-  const countries = getAllCountries();
-  const states =
-    address.country ? getStatesByCountry(address.country) : [];
-  const cities =
-    address.country && address.state
-      ? getCitiesByState(address.country, address.state)
-      : [];
 
 
   useEffect(() => {
@@ -94,6 +94,67 @@ export default function EntireVilla() {
     setProfileLocked(user.profileComplete === true);
   }, [user, initialized]);
 
+
+  useEffect(() => {
+    const allCountries = Country.getAllCountries();
+    setCountries(allCountries);
+
+    const india = allCountries.find((c) => c.isoCode === "IN");
+    if (!india) return;
+
+    setAddress((a) => ({ ...a, country: india.name }));
+
+    const stateList = State.getStatesOfCountry("IN");
+    setStates(stateList);
+  }, []);
+
+
+
+  const onCountryChange = (code) => {
+    const country = countries.find((c) => c.isoCode === code);
+
+    setCountryCode(code);
+    setStateCode("");
+    setCityName("");
+
+    const stateList = State.getStatesOfCountry(code);
+    setStates(stateList);
+    setCities([]);
+
+    setAddress((a) => ({
+      ...a,
+      country: country?.name || "",
+      state: "",
+      city: "",
+    }));
+  };
+
+
+  const onStateChange = (code) => {
+    const state = states.find((s) => s.isoCode === code);
+
+    setStateCode(code);
+    setCityName("");
+
+    const cityList = City.getCitiesOfState(countryCode, code);
+    setCities(cityList);
+
+    setAddress((a) => ({
+      ...a,
+      state: state?.name || "",
+      city: "",
+    }));
+  };
+
+
+  const onCityChange = (name) => {
+    setCityName(name);
+
+    setAddress((a) => ({
+      ...a,
+      city: name,
+    }));
+  };
 
 
   useEffect(() => {
@@ -517,35 +578,58 @@ export default function EntireVilla() {
 
                 <div>
                   <Label>Country</Label>
-                  <Input
-                    value={address.country}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
-                    onChange={(e) =>
-                      setAddress((a) => ({ ...a, country: e.target.value }))
-                    }
-                  />
+                  <Select value={countryCode} onValueChange={onCountryChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((c) => (
+                        <SelectItem key={c.isoCode} value={c.isoCode}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
                   <Label>State</Label>
-                  <Input
-                    value={address.state}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
-                    onChange={(e) =>
-                      setAddress((a) => ({ ...a, state: e.target.value }))
-                    }
-                  />
+                  <Select
+                    value={stateCode}
+                    disabled={!states.length}
+                    onValueChange={onStateChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select State" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {states.map((s) => (
+                        <SelectItem key={s.isoCode} value={s.isoCode}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
                   <Label>City</Label>
-                  <Input
-                    value={address.city}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
-                    onChange={(e) =>
-                      setAddress((a) => ({ ...a, city: e.target.value }))
-                    }
-                  />
+                  <Select
+                    value={cityName}
+                    disabled={!cities.length}
+                    onValueChange={onCityChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select City" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map((c, i) => (
+                        <SelectItem key={i} value={c.name}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
