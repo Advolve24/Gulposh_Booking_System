@@ -134,8 +134,12 @@ export default function AuthModal() {
     toast.loading("Sending OTP...", { id: "otp" });
 
     try {
-      const verifier =
-        window.recaptchaVerifier || getRecaptchaVerifier();
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+
+      const verifier = getRecaptchaVerifier("auth-recaptcha");
       window.recaptchaVerifier = verifier;
 
       confirmationRef.current = await signInWithPhoneNumber(
@@ -355,6 +359,8 @@ export default function AuthModal() {
             Secure & OTP protected login
           </div>
         </div>
+
+        <div id="auth-recaptcha" className="hidden" />
       </DialogContent>
     </Dialog>
   );
