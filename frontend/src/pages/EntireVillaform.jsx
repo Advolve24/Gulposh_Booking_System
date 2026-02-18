@@ -50,7 +50,6 @@ export default function EntireVilla() {
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [firebaseToken, setFirebaseToken] = useState(null);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [profileLocked, setProfileLocked] = useState(false);
   const phoneLoginWithToken = useAuth((s) => s.phoneLoginWithToken);
   const refreshUser = useAuth((s) => s.refreshUser);
   const user = useAuth((s) => s.user);
@@ -88,8 +87,6 @@ export default function EntireVilla() {
       city: user.city || "",
       pincode: user.pincode || "",
     });
-
-    setProfileLocked(!!user.profileComplete);
 
   }, [user]);
 
@@ -175,10 +172,8 @@ export default function EntireVilla() {
       setOtpVerified(true);
       setOtpStep(false);
       if (authUser.profileComplete) {
-        setProfileLocked(true);
         toast.success("Welcome back! Your details are auto-filled ✔");
       } else {
-        setProfileLocked(false);
         toast.info("New user detected. Please fill your details.");
       }
     } catch (err) {
@@ -460,7 +455,7 @@ export default function EntireVilla() {
                   <Label>Full Name</Label>
                   <Input
                     value={form.name}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={isExistingUser}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, name: e.target.value }))
                     }
@@ -471,7 +466,7 @@ export default function EntireVilla() {
                   <Label>Email</Label>
                   <Input
                     value={form.email}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={isExistingUser}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, email: e.target.value }))
                     }
@@ -509,7 +504,7 @@ export default function EntireVilla() {
                   <Label>Street Address</Label>
                   <Input
                     value={address.address}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={isExistingUser}
                     onChange={(e) =>
                       setAddress((a) => ({ ...a, address: e.target.value }))
                     }
@@ -520,7 +515,7 @@ export default function EntireVilla() {
                   <Label>Country</Label>
                   <Input
                     value={address.country}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={isExistingUser}
                     onChange={(e) =>
                       setAddress((a) => ({ ...a, country: e.target.value }))
                     }
@@ -531,7 +526,7 @@ export default function EntireVilla() {
                   <Label>State</Label>
                   <Input
                     value={address.state}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={isExistingUser}
                     onChange={(e) =>
                       setAddress((a) => ({ ...a, state: e.target.value }))
                     }
@@ -542,7 +537,7 @@ export default function EntireVilla() {
                   <Label>City</Label>
                   <Input
                     value={address.city}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={isExistingUser}
                     onChange={(e) =>
                       setAddress((a) => ({ ...a, city: e.target.value }))
                     }
@@ -553,7 +548,7 @@ export default function EntireVilla() {
                   <Label>Pincode</Label>
                   <Input
                     value={address.pincode}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={isExistingUser}
                     onChange={(e) =>
                       setAddress((a) => ({ ...a, pincode: e.target.value }))
                     }
