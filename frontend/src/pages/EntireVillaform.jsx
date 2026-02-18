@@ -71,32 +71,28 @@ export default function EntireVilla() {
 
 
   useEffect(() => {
-    if (!initialized || !user) return;
-    setOtpVerified(true);
-    if (user.profileComplete) {
-      setProfileLocked(true);
-      setForm({
-        name: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-      });
+    if (!user) return;
 
-      setAddress({
-        address: user.address || "",
-        country: user.country || "",
-        state: user.state || "",
-        city: user.city || "",
-        pincode: user.pincode || "",
-      });
-    }
-    else {
-      setProfileLocked(false);
-      setForm((f) => ({
-        ...f,
-        phone: user.phone || f.phone,
-      }));
-    }
-  }, [user, initialized]);
+    setOtpVerified(true);
+
+    setForm({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+    });
+
+    setAddress({
+      address: user.address || "",
+      country: user.country || "",
+      state: user.state || "",
+      city: user.city || "",
+      pincode: user.pincode || "",
+    });
+
+    setProfileLocked(!!user.profileComplete);
+
+  }, [user]);
+
 
 
 
@@ -165,36 +161,26 @@ export default function EntireVilla() {
   const verifyOtp = async () => {
     if (verifyingOtp || otpVerified || otp.length !== 6) return;
     setVerifyingOtp(true);
-
     try {
       const result = await confirmationRef.current.confirm(otp);
       const idToken = await result.user.getIdToken(true);
       setFirebaseToken(idToken);
       await phoneLoginWithToken(idToken);
-
-      let retries = 0;
-      while (!useAuth.getState().user && retries < 10) {
-        await new Promise((r) => setTimeout(r, 200));
-        retries++;
-      }
-
+      await refreshUser();
       const authUser = useAuth.getState().user;
       if (!authUser) {
         toast.error("Login sync failed. Please try again.");
         return;
       }
-
       setOtpVerified(true);
       setOtpStep(false);
-
       if (authUser.profileComplete) {
         setProfileLocked(true);
-        toast.success("Welcome back! Details loaded ✔");
+        toast.success("Welcome back! Your details are auto-filled ✔");
       } else {
         setProfileLocked(false);
         toast.info("New user detected. Please fill your details.");
       }
-
     } catch (err) {
       console.error(err);
       toast.error("Invalid OTP");
@@ -203,6 +189,7 @@ export default function EntireVilla() {
       setVerifyingOtp(false);
     }
   };
+
 
 
 
@@ -495,7 +482,7 @@ export default function EntireVilla() {
                   <Label>Phone</Label>
                   <Input
                     value={form.phone}
-                    disabled={otpVerified}
+                    disabled={otpVerified || !!user}
                   />
                 </div>
               </div>
