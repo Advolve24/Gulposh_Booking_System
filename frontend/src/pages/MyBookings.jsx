@@ -3,19 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { getMyBookings } from "../api/bookings";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
 import {
   Calendar,
   Clock,
   Users,
   Eye,
 } from "lucide-react";
-
 import ViewBookingDialog from "@/components/ViewBookingDialog";
 import CancelBookingFlow from "@/components/CancelBookingFlow";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { getMyEnquiries } from "../api/bookings";
 
-/* ---------------- HELPERS ---------------- */
 
 const fmt = (d) =>
   new Date(d).toLocaleDateString("en-GB", {
@@ -32,7 +30,6 @@ const calcNights = (start, end) => {
   return Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)));
 };
 
-/* ---------------- PAGE ---------------- */
 
 export default function MyBookings() {
   const navigate = useNavigate();
@@ -42,26 +39,32 @@ export default function MyBookings() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("upcoming");
 
-  /* VIEW BOOKING */
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState(null);
 
-  /* CANCEL FLOW */
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelBookingId, setCancelBookingId] = useState(null);
+  const [enquiries, setEnquiries] = useState([]);
 
-  /* ---------------- LOAD BOOKINGS ---------------- */
 
   const reload = async () => {
     setLoading(true);
     try {
-      setItems(await getMyBookings());
+      const [bookingsData, enquiriesData] = await Promise.all([
+        getMyBookings(),
+        getMyEnquiries(),
+      ]);
+
+      setItems(bookingsData);
+      setEnquiries(enquiriesData);
+
     } catch {
-      toast.error("Failed to load bookings");
+      toast.error("Failed to load data");
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     reload();
@@ -84,14 +87,16 @@ export default function MyBookings() {
     [items]
   );
 
+  const enquiryList = useMemo(() => enquiries, [enquiries]);
+
   const list =
     tab === "upcoming"
       ? upcoming
       : tab === "past"
         ? past
-        : cancelled;
-
-  /* ---------------- ACTIONS ---------------- */
+        : tab === "cancelled"
+          ? cancelled
+          : enquiryList;
 
   const openView = (id) => {
     setSelectedBookingId(id);
@@ -125,6 +130,7 @@ export default function MyBookings() {
             ["upcoming", "Upcoming"],
             ["past", "Past"],
             ["cancelled", "Cancelled"],
+            ["enquiries", "Enquiries"],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -158,6 +164,7 @@ export default function MyBookings() {
               {tab === "upcoming" && "No Upcoming Trips"}
               {tab === "past" && "No Past Trips"}
               {tab === "cancelled" && "No Cancelled Bookings"}
+              {tab === "enquiries" && "No Enquiries Made"}
             </h2>
 
             {/* DESCRIPTION */}
@@ -168,6 +175,9 @@ export default function MyBookings() {
                 "You haven’t completed any stays yet. Your past trips will appear here."}
               {tab === "cancelled" &&
                 "You don’t have any cancelled bookings at the moment."}
+              {tab === "enquiries" &&
+                "You haven’t made any enquiries yet. If you have questions about our villas or services, feel free to reach out!"}
+
             </p>
 
             {/* CTA (ONLY FOR UPCOMING) */}
@@ -183,12 +193,15 @@ export default function MyBookings() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {list.map((b) => {
+              const isEnquiry = tab === "enquiries";
               const nights = calcNights(b.startDate, b.endDate);
 
               return (
                 <div
                   key={b._id}
-                  onClick={() => openView(b._id)}
+                  onClick={() => {
+                    if (!isEnquiry) openView(b._id);
+                  }}
                   className="
             group
             bg-white
@@ -204,8 +217,8 @@ export default function MyBookings() {
                   {/* IMAGE */}
                   <div className="h-40 overflow-hidden">
                     <img
-                      src={b.room?.coverImage || "/placeholder.jpg"}
-                      alt={b.room?.name}
+                      src={isEnquiry ? "/EntireVilla.webp" : (b.room?.coverImage || "/placeholder.jpg")}
+                      alt={isEnquiry ? "Enquiry" : b.room?.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
@@ -213,7 +226,7 @@ export default function MyBookings() {
                   {/* CONTENT */}
                   <div className="p-4 space-y-3">
                     <h3 className="font-serif text-lg">
-                      {b.room?.name}
+                      {isEnquiry ? "Entire Villa Enquiry" : b.room?.name}
                     </h3>
 
                     <div className="text-sm text-muted-foreground">
@@ -223,30 +236,33 @@ export default function MyBookings() {
                     <div className="flex gap-4 text-sm text-muted-foreground">
                       <span>{nights} Nights</span>
                       <span>{b.guests} Guests</span>
+                      {isEnquiry && (
+                        <span className="text-amber-600 font-medium">Pending Approval</span>
+                      )}
                     </div>
 
                     <div className="flex justify-between items-center pt-3 border-t">
                       <div>
                         <div className="text-xs">Total</div>
                         <div className="text-lg font-semibold">
-                          ₹{b.amount}
+                          {isEnquiry ? "Quotation Pending" : `₹${b.amount}`}
                         </div>
                       </div>
 
-                      <span
-                        className={`text-xs px-3 py-1 rounded-full font-medium
-                  ${b.status === "cancelled"
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium
+  ${isEnquiry
+                          ? "bg-amber-100 text-amber-700"
+                          : b.status === "cancelled"
                             ? "bg-red-100 text-red-600"
                             : "bg-green-100 text-green-600"
-                          }
-                `}
-                      >
-                        {b.status}
+                        }
+`}>
+                        {isEnquiry ? "Enquiry Sent" : b.status}
                       </span>
                     </div>
 
                     {/* CANCEL BUTTON (UPCOMING ONLY) */}
-                    {tab === "upcoming" && b.status === "confirmed" && (
+                    {tab === "upcoming" && b.status === "confirmed" && !isEnquiry && (
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();

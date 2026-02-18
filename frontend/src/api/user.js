@@ -5,3 +5,4 @@ export const getMyProfile = () =>
 
 export const updateMyProfile = (payload) =>
   api.put("/auth/me", payload).then((r) => r.data);
+

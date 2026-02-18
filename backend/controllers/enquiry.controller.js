@@ -113,3 +113,18 @@ export const createEntireVillaEnquiry = async (req, res) => {
     res.status(500).json({ message: "Failed to submit enquiry" });
   }
 };
+
+
+
+export const getMyEnquiries = async (req, res) => {
+  try {
+    const enquiries = await Enquiry.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(enquiries);
+  } catch (err) {
+    console.error("Fetch enquiries error:", err);
+    res.status(500).json({ message: "Failed to load enquiries" });
+  }
+};
