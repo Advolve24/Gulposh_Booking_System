@@ -23,7 +23,6 @@ export default function Enquiries() {
   return (
     <AppLayout>
     <div className="space-y-6 mt-4">
-      <h1 className="text-2xl font-bold">Enquiries</h1>
 
       <div className="bg-white rounded-xl border overflow-x-auto">
         <table className="w-full text-sm">
