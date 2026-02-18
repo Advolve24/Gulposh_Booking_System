@@ -118,7 +118,7 @@ export const createEntireVillaEnquiry = async (req, res) => {
 
 export const getMyEnquiries = async (req, res) => {
   try {
-    const enquiries = await Enquiry.find({ userId: req.user.id })
+    const enquiries = await Enquiry.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
       .lean();
 
