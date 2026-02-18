@@ -6,6 +6,12 @@ import { Eye, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+
+const getBookingTitle = (b) => {
+  if (!b.room) return "Entire Villa";
+  return b.room?.name || "Entire Villa";
+};
+
 export default function Invoices() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +103,7 @@ export default function Invoices() {
                         #{shortId}
                       </div>
                       <div className="text-sm font-semibold leading-tight">
-                        {b.isVilla ? "Entire Villa" : b.room?.name || "—"}
+                        {getBookingTitle(b)}
                       </div>
                     </div>
 
@@ -181,7 +187,7 @@ export default function Invoices() {
                   </div>
 
                   <div>
-                    {b.isVilla ? "Entire Villa" : b.room?.name || "—"}
+                    {getBookingTitle(b)}
                   </div>
 
                   <div className="text-muted-foreground">
