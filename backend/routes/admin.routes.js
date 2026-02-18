@@ -7,13 +7,9 @@ import { listUsersAdmin, getUserAdmin, listUserBookingsAdmin, listBookingsAdmin,
   updateBookingAdmin,  getBookingAdmin, checkUserByPhoneAdmin, cancelBookingAdmin } from "../controllers/admin.user.controller.js";
 import { createVillaOrder, verifyVillaPayment } from "../controllers/admin.villa.controller.js";
 import { adminGlobalSearch } from "../controllers/admin.search.controller.js";
-import {
-  adminActionBooking,
-} from "../controllers/admin.booking.controller.js";
-import {
-  getActiveTax,
-  updateTax,
-} from "../controllers/taxSetting.controller.js";
+import { adminActionBooking} from "../controllers/admin.booking.controller.js";
+import { getActiveTax, updateTax} from "../controllers/taxSetting.controller.js";
+import { listEnquiriesAdmin } from "../controllers/admin.enquiry.controller.js";
 
 
 
@@ -21,7 +17,6 @@ const router = express.Router();
 
 router.use(requireAdminSession);
 
-/* ================= FCM ================= */
 
 
 router.post("/fcm-token", async (req, res) => {
@@ -84,6 +79,7 @@ router.post("/villa-order", createVillaOrder);
 router.post("/villa-verify", verifyVillaPayment);
 router.get("/search", adminGlobalSearch);
 router.post("/bookings/:id/cancel", cancelBookingAdmin);
+router.get("/enquiries", listEnquiriesAdmin);
 /* ================= TAX SETTINGS ================= */
 
 // Get current tax (admin panel)

@@ -218,9 +218,6 @@ export const verifyAdminPayment = async (req, res) => {
   }
 };
 
-/* ======================================================
-   ADMIN CANCEL / RESCHEDULE (NEW)
-===================================================== */
 
 export const adminActionBooking = async (req, res) => {
 

@@ -19,6 +19,7 @@ import AdminInvoiceTemplate from "./components/AdminBookingPrint";
 import ProtectedRoute from "./components/ProtectedRoute";
 import BlockDates from "./pages/BlockDates";
 import Settings from "./pages/Settings";
+import Enquiries from "./pages/Enquiries";
 
 import { getAdminNotifications } from "@/api/admin";
 
@@ -80,6 +81,7 @@ export default function App() {
           <Route path="/invoice/:bookingId" element={<ProtectedRoute><AdminInvoiceTemplate /></ProtectedRoute>} />
           <Route path="/block-dates" element={<ProtectedRoute><BlockDates /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/enquiries" element={<ProtectedRoute><Enquiries /></ProtectedRoute>} />
 
           <Route
             path="*"

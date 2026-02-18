@@ -9,6 +9,7 @@ import {
   Settings,
   X,
   Home,
+  Mail,
 } from "lucide-react";
 
 export default function Sidebar({
@@ -23,7 +24,8 @@ export default function Sidebar({
     { to: "/bookings", label: "Bookings", icon: ClipboardList },
     { to: "/block-dates", label: "Calendar", icon: CalendarDays },
     { to: "/users", label: "Users", icon: Users },
-    { to: "/villa-booking" , label: "Book Entire Villa", icon: Home}
+    { to: "/villa-booking" , label: "Book Entire Villa", icon: Home},
+    { to: "/enquiries", label: "Enquiries", icon: Mail },
     
   ];
 

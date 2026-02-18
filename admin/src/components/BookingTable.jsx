@@ -54,8 +54,8 @@ const guestLabel = (b) => {
   const total = adults + children;
 
   return {
-    main: `${adults} Adults, ${children} Children`,
-    sub: `Total: ${total} Guests`,
+    main: `${adults} A, ${children} C`,
+    sub: `Total: ${total}`,
   };
 };
 
@@ -91,7 +91,7 @@ export default function BookingTable({
             <th className="px-4 py-3 text-left">Check out</th>
             <th className="px-4 py-3 text-center">Nights</th>
             <th className="px-4 py-3 text-left">Guests</th>
-            <th className="px-4 py-3 text-right">Amount</th>
+            <th className="px-4 py-3 text-right">Amount(₹)</th>
             <th className="px-4 py-3 text-center">Payment</th>
             <th />
           </tr>
@@ -153,7 +153,7 @@ export default function BookingTable({
 
                 {/* Amount */}
                 <td className="px-4 py-4 text-right font-medium">
-                  ₹{b.amount?.toLocaleString("en-IN")}
+                  {b.amount?.toLocaleString("en-IN")}
                 </td>
 
                 {/* Payment */}
