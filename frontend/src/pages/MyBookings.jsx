@@ -131,8 +131,8 @@ export default function MyBookings() {
         </div>
 
         {/* TABS */}
-        <div className="w-full overflow-x-auto">
-          <div className="flex gap-2 bg-[#faf6f2] p-2 rounded-xl min-w-max">
+        <div className="w-full md:w-fit md:mx-0 overflow-x-auto">
+          <div className="flex gap-2 bg-[#faf6f2] p-2 rounded-xl min-w-max md:min-w-0">
             {[
               ["upcoming", "Upcoming"],
               ["past", "Past"],
@@ -155,62 +155,62 @@ export default function MyBookings() {
           </div>
         </div>
 
-          {/* CONTENT */}
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <p className="text-muted-foreground">Loading…</p>
+        {/* CONTENT */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <p className="text-muted-foreground">Loading…</p>
+          </div>
+        ) : list.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center px-4 py-16 sm:py-24">
+            {/* ICON */}
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+              <Calendar className="h-6 w-6 text-muted-foreground" />
             </div>
-          ) : list.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-center px-4 py-16 sm:py-24">
-              {/* ICON */}
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-                <Calendar className="h-6 w-6 text-muted-foreground" />
-              </div>
 
-              {/* TITLE */}
-              <h2 className="font-serif text-xl sm:text-2xl font-semibold">
-                {tab === "upcoming" && "No Upcoming Trips"}
-                {tab === "past" && "No Past Trips"}
-                {tab === "cancelled" && "No Cancelled Bookings"}
-                {tab === "enquiries" && "No Enquiries Made"}
-              </h2>
+            {/* TITLE */}
+            <h2 className="font-serif text-xl sm:text-2xl font-semibold">
+              {tab === "upcoming" && "No Upcoming Trips"}
+              {tab === "past" && "No Past Trips"}
+              {tab === "cancelled" && "No Cancelled Bookings"}
+              {tab === "enquiries" && "No Enquiries Made"}
+            </h2>
 
-              {/* DESCRIPTION */}
-              <p className="mt-2 max-w-md text-sm sm:text-base text-muted-foreground">
-                {tab === "upcoming" &&
-                  "You don’t have any upcoming reservations. Ready to plan your next getaway?"}
-                {tab === "past" &&
-                  "You haven’t completed any stays yet. Your past trips will appear here."}
-                {tab === "cancelled" &&
-                  "You don’t have any cancelled bookings at the moment."}
-                {tab === "enquiries" &&
-                  "You haven’t made any enquiries yet. If you have questions about our villas or services, feel free to reach out!"}
+            {/* DESCRIPTION */}
+            <p className="mt-2 max-w-md text-sm sm:text-base text-muted-foreground">
+              {tab === "upcoming" &&
+                "You don’t have any upcoming reservations. Ready to plan your next getaway?"}
+              {tab === "past" &&
+                "You haven’t completed any stays yet. Your past trips will appear here."}
+              {tab === "cancelled" &&
+                "You don’t have any cancelled bookings at the moment."}
+              {tab === "enquiries" &&
+                "You haven’t made any enquiries yet. If you have questions about our villas or services, feel free to reach out!"}
 
-              </p>
+            </p>
 
-              {/* CTA (ONLY FOR UPCOMING) */}
-              {tab === "upcoming" && (
-                <Button
-                  className="mt-6 rounded-xl px-6 py-5"
-                  onClick={() => navigate("/")}
-                >
-                  Explore Rooms
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {list.map((b) => {
-                const isEnquiry = tab === "enquiries";
-                const nights = calcNights(b.startDate, b.endDate);
+            {/* CTA (ONLY FOR UPCOMING) */}
+            {tab === "upcoming" && (
+              <Button
+                className="mt-6 rounded-xl px-6 py-5"
+                onClick={() => navigate("/")}
+              >
+                Explore Rooms
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {list.map((b) => {
+              const isEnquiry = tab === "enquiries";
+              const nights = calcNights(b.startDate, b.endDate);
 
-                return (
-                  <div
-                    key={b._id}
-                    onClick={() => {
-                      if (!isEnquiry) openView(b._id);
-                    }}
-                    className="
+              return (
+                <div
+                  key={b._id}
+                  onClick={() => {
+                    if (!isEnquiry) openView(b._id);
+                  }}
+                  className="
             group
             bg-white
             rounded-2xl
@@ -221,119 +221,119 @@ export default function MyBookings() {
             hover:shadow-lg
             transition
           "
-                  >
-                    {/* IMAGE */}
-                    <div className="h-40 overflow-hidden">
-                      <img
-                        src={getBookingImage(b, isEnquiry)}
-                        alt={isEnquiry ? "Entire Villa Enquiry" : (b.room?.name || "Entire Villa")}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
+                >
+                  {/* IMAGE */}
+                  <div className="h-40 overflow-hidden">
+                    <img
+                      src={getBookingImage(b, isEnquiry)}
+                      alt={isEnquiry ? "Entire Villa Enquiry" : (b.room?.name || "Entire Villa")}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+
+                  {/* CONTENT */}
+                  <div className="p-4 space-y-3">
+                    <h3 className="font-serif text-lg">
+                      {isEnquiry
+                        ? "Entire Villa Enquiry"
+                        : b.room
+                          ? b.room.name
+                          : "Entire Villa Stay"}
+                    </h3>
+                    <div className="text-sm text-muted-foreground">
+                      {fmt(b.startDate)} → {fmt(b.endDate)}
                     </div>
 
-                    {/* CONTENT */}
-                    <div className="p-4 space-y-3">
-                      <h3 className="font-serif text-lg">
-                        {isEnquiry
-                          ? "Entire Villa Enquiry"
-                          : b.room
-                            ? b.room.name
-                            : "Entire Villa Stay"}
-                      </h3>
-                      <div className="text-sm text-muted-foreground">
-                        {fmt(b.startDate)} → {fmt(b.endDate)}
-                      </div>
-
-                      <div className="flex gap-4 text-sm text-muted-foreground">
-                        <span>{nights} Nights</span>
-                        <span>{b.guests} Guests</span>
-                        {isEnquiry && (
-                          <span
-                            className={`text-xs px-3 py-1 rounded-full font-medium
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                      <span>{nights} Nights</span>
+                      <span>{b.guests} Guests</span>
+                      {isEnquiry && (
+                        <span
+                          className={`text-xs px-3 py-1 rounded-full font-medium
     ${isEnquiry
-                                ? b.status === "booked"
-                                  ? "bg-green-100 text-green-700"
-                                  : b.status === "accepted"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : b.status === "rejected"
-                                      ? "bg-red-100 text-red-600"
-                                      : "bg-amber-100 text-amber-700"
-                                : b.status === "cancelled"
-                                  ? "bg-red-100 text-red-600"
-                                  : "bg-green-100 text-green-600"
-                              }
-  `}
-                          >
-                            {isEnquiry
-                              ? b.status === "enquiry"
-                                ? "Pending Approval"
+                              ? b.status === "booked"
+                                ? "bg-green-100 text-green-700"
                                 : b.status === "accepted"
-                                  ? "Approved"
-                                  : b.status === "booked"
-                                    ? "Accepted & Booked"
-                                    : "Rejected"
-                              : b.status}
-                          </span>
-
-                        )}
-                      </div>
-
-                      <div className="flex justify-between items-center pt-3 border-t">
-                        <div>
-                          <div className="text-xs">Total</div>
-                          <div className="text-lg font-semibold">
-                            {isEnquiry ? "Quotation Pending" : `₹${b.amount}`}
-                          </div>
-                        </div>
-
-                        <span className={`text-xs px-3 py-1 rounded-full font-medium
-  ${isEnquiry
-                            ? "bg-amber-100 text-amber-700"
-                            : b.status === "cancelled"
-                              ? "bg-red-100 text-red-600"
-                              : "bg-green-100 text-green-600"
-                          }
-`}>
-                          {isEnquiry ? "Enquiry Sent" : b.status}
-                        </span>
-                      </div>
-
-                      {/* CANCEL BUTTON (UPCOMING ONLY) */}
-                      {tab === "upcoming" && b.status === "confirmed" && !isEnquiry && (
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openCancel(b._id);
-                          }}
-                          className="w-full mt-3 rounded-xl"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : b.status === "rejected"
+                                    ? "bg-red-100 text-red-600"
+                                    : "bg-amber-100 text-amber-700"
+                              : b.status === "cancelled"
+                                ? "bg-red-100 text-red-600"
+                                : "bg-green-100 text-green-600"
+                            }
+  `}
                         >
-                          Cancel Booking
-                        </Button>
+                          {isEnquiry
+                            ? b.status === "enquiry"
+                              ? "Pending Approval"
+                              : b.status === "accepted"
+                                ? "Approved"
+                                : b.status === "booked"
+                                  ? "Accepted & Booked"
+                                  : "Rejected"
+                            : b.status}
+                        </span>
+
                       )}
                     </div>
+
+                    <div className="flex justify-between items-center pt-3 border-t">
+                      <div>
+                        <div className="text-xs">Total</div>
+                        <div className="text-lg font-semibold">
+                          {isEnquiry ? "Quotation Pending" : `₹${b.amount}`}
+                        </div>
+                      </div>
+
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium
+  ${isEnquiry
+                          ? "bg-amber-100 text-amber-700"
+                          : b.status === "cancelled"
+                            ? "bg-red-100 text-red-600"
+                            : "bg-green-100 text-green-600"
+                        }
+`}>
+                        {isEnquiry ? "Enquiry Sent" : b.status}
+                      </span>
+                    </div>
+
+                    {/* CANCEL BUTTON (UPCOMING ONLY) */}
+                    {tab === "upcoming" && b.status === "confirmed" && !isEnquiry && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCancel(b._id);
+                        }}
+                        className="w-full mt-3 rounded-xl"
+                      >
+                        Cancel Booking
+                      </Button>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-        </div>
+      </div>
 
-        {/* VIEW BOOKING (RESPONSIVE) */}
-        <ViewBookingDialog
-          open={viewOpen}
-          onOpenChange={setViewOpen}
-          bookingId={selectedBookingId}
-          variant={isDesktop ? "dialog" : "drawer"}
-        />
+      {/* VIEW BOOKING (RESPONSIVE) */}
+      <ViewBookingDialog
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        bookingId={selectedBookingId}
+        variant={isDesktop ? "dialog" : "drawer"}
+      />
 
-        {/* CANCEL FLOW */}
-        <CancelBookingFlow
-          bookingId={cancelBookingId}
-          open={cancelOpen}
-          onOpenChange={setCancelOpen}
-          onSuccess={reload}
-        />
-      </>
-      );
+      {/* CANCEL FLOW */}
+      <CancelBookingFlow
+        bookingId={cancelBookingId}
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        onSuccess={reload}
+      />
+    </>
+  );
 }
