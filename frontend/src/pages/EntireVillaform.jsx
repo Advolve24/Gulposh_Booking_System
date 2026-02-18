@@ -54,6 +54,7 @@ export default function EntireVilla() {
   const refreshUser = useAuth((s) => s.refreshUser);
   const user = useAuth((s) => s.user);
   const initialized = useAuth((s) => s.initialized);
+  const isExistingUser = !!user;
 
   const disabledAll = useMemo(
     () => [...bookedAll, ...blackoutRanges],
@@ -197,7 +198,7 @@ export default function EntireVilla() {
 
 
   const submitEnquiry = async () => {
-    if (!otpVerified || !firebaseToken) {
+    if (!user && (!otpVerified || !firebaseToken)) {
       toast.error("Please verify your mobile number first");
       return;
     }
@@ -227,7 +228,7 @@ export default function EntireVilla() {
 
     try {
       const { data } = await api.post("/enquiries/entire-villa", {
-        firebaseToken,
+        firebaseToken: user ? undefined : firebaseToken,
 
         name: form.name,
         email: form.email,
