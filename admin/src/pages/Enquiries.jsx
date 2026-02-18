@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "@/api/http";
 import { format } from "date-fns";
 import AppLayout from "@/components/layout/AppLayout";
 import App from "@/App";
 
 export default function Enquiries() {
+    const navigate = useNavigate();
     const [enquiries, setEnquiries] = useState([]);
 
     useEffect(() => {
