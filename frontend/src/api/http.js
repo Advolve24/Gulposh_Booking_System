@@ -17,7 +17,6 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message;
     const url = original?.url || "";
-
     if (
       original &&
       status === 401 &&
@@ -30,13 +29,15 @@ api.interceptors.response.use(
         await api.post("/auth/refresh");
         return api(original);
       } catch {
+        const { logout } = useAuth.getState();
+        await logout();
+        return Promise.reject(error);
       }
     }
-
-    if (
-      status === 401 &&
-      (url.includes("/auth/me") || url.includes("/auth/refresh"))
-    ) {
+    if (status === 401 && url.includes("/auth/me")) {
+      return Promise.reject(error);
+    }
+    if (status === 401 && url.includes("/auth/refresh")) {
       return Promise.reject(error);
     }
     if (status === 403 && message === "This account has been deleted") {
@@ -47,11 +48,7 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (status === 401) {
-      const { logout } = useAuth.getState();
-      await logout();
-      window.location.replace("/");
-    }
     return Promise.reject(error);
   }
 );
+

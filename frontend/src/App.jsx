@@ -199,18 +199,16 @@ function AppRoutes() {
   );
 }
 
-/* =====================================================
-   🚀 ROOT APP
-===================================================== */
+
 export default function App() {
   const { init, initialized } = useAuth();
 
 useEffect(() => {
-  init();
+  if (!initialized) init();
 }, []);
 
 if (!initialized) {
-  return null; // or splash loader
+  return null;
 }
 
   return (
