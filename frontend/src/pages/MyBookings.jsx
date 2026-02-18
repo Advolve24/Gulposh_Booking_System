@@ -108,9 +108,6 @@ export default function MyBookings() {
     setCancelOpen(true);
   };
 
-  {b.status === "booked"
-  ? "bg-green-100 text-green-700"
-  : "bg-amber-100 text-amber-700"}
 
   /* ---------------- UI ---------------- */
 
@@ -241,12 +238,33 @@ export default function MyBookings() {
                       <span>{nights} Nights</span>
                       <span>{b.guests} Guests</span>
                       {isEnquiry && (
-                        <span className="font-medium">
-                          {b.status === "enquiry" && "Pending Approval"}
-                          {b.status === "accepted" && "Approved"}
-                          {b.status === "booked" && "Accepted & Booked"}
-                          {b.status === "rejected" && "Rejected"}
+                        <span
+                          className={`text-xs px-3 py-1 rounded-full font-medium
+    ${isEnquiry
+                              ? b.status === "booked"
+                                ? "bg-green-100 text-green-700"
+                                : b.status === "accepted"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : b.status === "rejected"
+                                    ? "bg-red-100 text-red-600"
+                                    : "bg-amber-100 text-amber-700"
+                              : b.status === "cancelled"
+                                ? "bg-red-100 text-red-600"
+                                : "bg-green-100 text-green-600"
+                            }
+  `}
+                        >
+                          {isEnquiry
+                            ? b.status === "enquiry"
+                              ? "Pending Approval"
+                              : b.status === "accepted"
+                                ? "Approved"
+                                : b.status === "booked"
+                                  ? "Accepted & Booked"
+                                  : "Rejected"
+                            : b.status}
                         </span>
+
                       )}
                     </div>
 
