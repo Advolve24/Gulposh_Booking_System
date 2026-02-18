@@ -30,6 +30,11 @@ const calcNights = (start, end) => {
   return Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)));
 };
 
+const getBookingImage = (b, isEnquiry) => {
+  if (isEnquiry) return "/EntireVilla.webp";
+  if (!b.room) return "/EntireVilla.webp";
+  return b.room?.coverImage || "/placeholder.jpg";
+};
 
 export default function MyBookings() {
   const navigate = useNavigate();
@@ -218,8 +223,8 @@ export default function MyBookings() {
                   {/* IMAGE */}
                   <div className="h-40 overflow-hidden">
                     <img
-                      src={isEnquiry ? "/EntireVilla.webp" : (b.room?.coverImage || "/placeholder.jpg")}
-                      alt={isEnquiry ? "Enquiry" : b.room?.name}
+                      src={getBookingImage(b, isEnquiry)}
+                      alt={isEnquiry ? "Entire Villa Enquiry" : (b.room?.name || "Entire Villa")}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
@@ -227,9 +232,12 @@ export default function MyBookings() {
                   {/* CONTENT */}
                   <div className="p-4 space-y-3">
                     <h3 className="font-serif text-lg">
-                      {isEnquiry ? "Entire Villa Enquiry" : b.room?.name}
+                      {isEnquiry
+                        ? "Entire Villa Enquiry"
+                        : b.room
+                          ? b.room.name
+                          : "Entire Villa Stay"}
                     </h3>
-
                     <div className="text-sm text-muted-foreground">
                       {fmt(b.startDate)} → {fmt(b.endDate)}
                     </div>

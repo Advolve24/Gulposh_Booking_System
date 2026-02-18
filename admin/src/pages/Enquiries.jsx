@@ -64,7 +64,21 @@ export default function Enquiries() {
                                                 Book Villa
                                             </button>
                                         )}
+
+                                        {e.status === "booked" && e.bookingId && (
+                                            <button
+                                                className="bg-green-600 text-white px-3 py-1 rounded-lg"
+                                                onClick={() => navigate(`/bookings/${e.bookingId}`)}
+                                            >
+                                                View Booking
+                                            </button>
+                                        )}
+
+                                        {e.status === "rejected" && (
+                                            <span className="text-sm text-gray-500">Closed</span>
+                                        )}
                                     </td>
+
                                 </tr>
                             ))}
                         </tbody>
