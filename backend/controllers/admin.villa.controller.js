@@ -4,6 +4,7 @@ import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
+import Enquiry from "../models/Enquiry.js";
 
 const rp = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -297,6 +298,16 @@ export const verifyVillaPayment = async (req, res) => {
           paymentMode: "Cash",
         },
       });
+
+      if (req.body.enquiryId) {
+        await Enquiry.findByIdAndUpdate(
+          req.body.enquiryId,
+          {
+            status: "booked",
+            bookingId: booking._id,
+          }
+        );
+      }
 
       return res.json({ ok: true, booking });
     }

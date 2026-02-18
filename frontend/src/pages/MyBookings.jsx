@@ -108,6 +108,10 @@ export default function MyBookings() {
     setCancelOpen(true);
   };
 
+  {b.status === "booked"
+  ? "bg-green-100 text-green-700"
+  : "bg-amber-100 text-amber-700"}
+
   /* ---------------- UI ---------------- */
 
   return (
@@ -237,7 +241,12 @@ export default function MyBookings() {
                       <span>{nights} Nights</span>
                       <span>{b.guests} Guests</span>
                       {isEnquiry && (
-                        <span className="text-amber-600 font-medium">Pending Approval</span>
+                        <span className="font-medium">
+                          {b.status === "enquiry" && "Pending Approval"}
+                          {b.status === "accepted" && "Approved"}
+                          {b.status === "booked" && "Accepted & Booked"}
+                          {b.status === "rejected" && "Rejected"}
+                        </span>
                       )}
                     </div>
 

@@ -4,6 +4,7 @@ import admin from "../config/firebaseAdmin.js";
 import User from "../models/User.js";
 import { setSessionCookie } from "../utils/session.js";
 import jwt from "jsonwebtoken";
+import Booking from "../models/Booking.js";
 
 
 export const createEntireVillaEnquiry = async (req, res) => {
@@ -70,11 +71,38 @@ export const createEntireVillaEnquiry = async (req, res) => {
 
 export const getMyEnquiries = async (req, res) => {
   try {
-    const enquiries = await Enquiry.find({ userId: req.user.id })
-      .sort({ createdAt: -1 })
-      .lean();
 
-    res.json(enquiries);
+    const enquiries = await Enquiry.find({ userId: req.user.id })
+      .populate({
+        path: "bookingId",
+        select: "startDate endDate status amount createdAt",
+      })
+      .sort({ createdAt: -1 });
+
+    for (const e of enquiries) {
+      if (e.bookingId && e.status !== "booked") {
+        e.status = "booked";
+        await e.save();
+      }
+    }
+
+    const response = enquiries.map((e) => ({
+      _id: e._id,
+      name: e.name,
+      email: e.email,
+      phone: e.phone,
+      guests: e.guests,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      status: e.status,
+      isConverted: !!e.bookingId,
+      booking: e.bookingId || null,
+
+      createdAt: e.createdAt,
+    }));
+
+    res.json(response);
+
   } catch (err) {
     console.error("Fetch enquiries error:", err);
     res.status(500).json({ message: "Failed to load enquiries" });

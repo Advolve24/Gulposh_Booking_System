@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../api/http";
 import { listBookingsAdmin, listBlackouts } from "@/api/admin";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ export default function VillaBookingForm() {
   const totalGuests = adults + children;
   const [vegGuests, setVegGuests] = useState(0);
   const [nonVegGuests, setNonVegGuests] = useState(0);
+  const [params] = useSearchParams();
+  const enquiryId = params.get("enquiryId");
 
   const isBooked = (date) => bookedDates.has(toDateKey(date));
 
@@ -163,6 +166,34 @@ export default function VillaBookingForm() {
     if (!countries.length) return;
     onCountryChange(countryCode);
   }, [countries]);
+
+
+  useEffect(() => {
+    if (!enquiryId) return;
+
+    (async () => {
+      const { data } = await api.get(`/admin/enquiries/${enquiryId}`);
+
+      setUserId(data.userId);
+
+      setRange({
+        from: new Date(data.startDate),
+        to: new Date(data.endDate),
+      });
+
+      setAdults(data.guests);
+      setChildren(0);
+      setVegGuests(data.guests);
+      setNonVegGuests(0);
+
+      setForm(f => ({
+        ...f,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+      }));
+    })();
+  }, [enquiryId]);
 
 
   const checkUserByPhone = async () => {
@@ -312,6 +343,7 @@ export default function VillaBookingForm() {
       /* ===== CASH BOOKING ===== */
       if (form.paymentMode === "Cash") {
         await api.post("/admin/villa-verify", {
+          enquiryId,
           userId: uid,
           startDate: start,
           endDate: end,

@@ -46,7 +46,7 @@ const StatusBadge = ({ status }) => {
 const guestLabel = (b) => {
   const adults = Number(b.adults ?? b.guests ?? 0);
   const children = Number(b.children ?? 0);
-  return `${adults} Adults, ${children} Children`;
+  return `${adults}, ${children}`;
 };
 
 
