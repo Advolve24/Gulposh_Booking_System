@@ -495,7 +495,8 @@ export default function EntireVilla() {
                   <Label>Phone</Label>
                   <Input
                     value={form.phone}
-                    disabled={!otpVerified || profileLocked} />
+                    disabled={otpVerified}
+                  />
                 </div>
               </div>
             </div>
