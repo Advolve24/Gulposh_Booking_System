@@ -47,9 +47,7 @@ function ScrollToTop() {
   return null;
 }
 
-/* =====================================================
-   🔐 ROUTE GUARD
-===================================================== */
+
 function RequireAuth({ children }) {
   const { user, openAuth } = useAuth();
   const location = useLocation();
@@ -204,11 +202,11 @@ export default function App() {
   const { init, initialized } = useAuth();
 
 useEffect(() => {
-  if (!initialized) init();
+  init();
 }, []);
 
 if (!initialized) {
-  return null;
+  return null; 
 }
 
   return (
