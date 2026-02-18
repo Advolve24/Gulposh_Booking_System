@@ -71,15 +71,16 @@ export default function EntireVilla() {
 
 
   useEffect(() => {
-    if (!initialized) return;
-    if (user) {
-      setOtpVerified(true);
+    if (!initialized || !user) return;
+    setOtpVerified(true);
+    if (user.profileComplete) {
       setProfileLocked(true);
       setForm({
         name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
       });
+
       setAddress({
         address: user.address || "",
         country: user.country || "",
@@ -88,7 +89,15 @@ export default function EntireVilla() {
         pincode: user.pincode || "",
       });
     }
+    else {
+      setProfileLocked(false);
+      setForm((f) => ({
+        ...f,
+        phone: user.phone || f.phone,
+      }));
+    }
   }, [user, initialized]);
+
 
 
 
@@ -156,34 +165,36 @@ export default function EntireVilla() {
   const verifyOtp = async () => {
     if (verifyingOtp || otpVerified || otp.length !== 6) return;
     setVerifyingOtp(true);
+
     try {
       const result = await confirmationRef.current.confirm(otp);
       const idToken = await result.user.getIdToken(true);
       setFirebaseToken(idToken);
       await phoneLoginWithToken(idToken);
-      setOtpVerified(true);
 
-      const { data } = await api.post("/auth/check-user", {
-        phone: form.phone,
-      });
-      if (data.exists) {
-        setForm((f) => ({
-          ...f,
-          name: data.user.name || "",
-          email: data.user.email || "",
-        }));
-
-        setAddress({
-          address: data.user.address || "",
-          country: data.user.country || "",
-          state: data.user.state || "",
-          city: data.user.city || "",
-          pincode: data.user.pincode || "",
-        });
-
-        setProfileLocked(true);
+      let retries = 0;
+      while (!useAuth.getState().user && retries < 10) {
+        await new Promise((r) => setTimeout(r, 200));
+        retries++;
       }
-      toast.success("Phone verified ✔");
+
+      const authUser = useAuth.getState().user;
+      if (!authUser) {
+        toast.error("Login sync failed. Please try again.");
+        return;
+      }
+
+      setOtpVerified(true);
+      setOtpStep(false);
+
+      if (authUser.profileComplete) {
+        setProfileLocked(true);
+        toast.success("Welcome back! Details loaded ✔");
+      } else {
+        setProfileLocked(false);
+        toast.info("New user detected. Please fill your details.");
+      }
+
     } catch (err) {
       console.error(err);
       toast.error("Invalid OTP");
@@ -192,6 +203,7 @@ export default function EntireVilla() {
       setVerifyingOtp(false);
     }
   };
+
 
 
   useEffect(() => {
@@ -203,7 +215,7 @@ export default function EntireVilla() {
 
 
   const submitEnquiry = async () => {
-    if (!user && (!otpVerified || !firebaseToken)) {
+    if (!otpVerified || !firebaseToken) {
       toast.error("Please verify your mobile number first");
       return;
     }
@@ -459,17 +471,31 @@ export default function EntireVilla() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Full Name</Label>
-                  <Input value={form.name} disabled={!otpVerified || profileLocked} />
+                  <Input
+                    value={form.name}
+                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, name: e.target.value }))
+                    }
+                  />
                 </div>
 
                 <div>
                   <Label>Email</Label>
-                  <Input value={form.email} disabled={!otpVerified || profileLocked} />
+                  <Input
+                    value={form.email}
+                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, email: e.target.value }))
+                    }
+                  />
                 </div>
 
                 <div>
                   <Label>Phone</Label>
-                  <Input value={form.phone} disabled={!otpVerified || profileLocked} />
+                  <Input
+                    value={form.phone}
+                    disabled={!otpVerified || profileLocked} />
                 </div>
               </div>
             </div>
@@ -493,27 +519,57 @@ export default function EntireVilla() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="md:col-span-3">
                   <Label>Street Address</Label>
-                  <Input value={address.address} disabled={!otpVerified || profileLocked} />
+                  <Input
+                    value={address.address}
+                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    onChange={(e) =>
+                      setAddress((a) => ({ ...a, address: e.target.value }))
+                    }
+                  />
                 </div>
 
                 <div>
                   <Label>Country</Label>
-                  <Input disabled={!otpVerified || profileLocked} value={address.country} />
+                  <Input
+                    value={address.country}
+                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    onChange={(e) =>
+                      setAddress((a) => ({ ...a, country: e.target.value }))
+                    }
+                  />
                 </div>
 
                 <div>
                   <Label>State</Label>
-                  <Input disabled={!otpVerified || profileLocked} value={address.state} />
+                  <Input
+                    value={address.state}
+                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    onChange={(e) =>
+                      setAddress((a) => ({ ...a, state: e.target.value }))
+                    }
+                  />
                 </div>
 
                 <div>
                   <Label>City</Label>
-                  <Input disabled={!otpVerified} value={address.city} />
+                  <Input
+                    value={address.city}
+                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    onChange={(e) =>
+                      setAddress((a) => ({ ...a, city: e.target.value }))
+                    }
+                  />
                 </div>
 
                 <div>
                   <Label>Pincode</Label>
-                  <Input disabled={!otpVerified || profileLocked} value={address.pincode} />
+                  <Input
+                    value={address.pincode}
+                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    onChange={(e) =>
+                      setAddress((a) => ({ ...a, pincode: e.target.value }))
+                    }
+                  />
                 </div>
               </div>
             </div>
