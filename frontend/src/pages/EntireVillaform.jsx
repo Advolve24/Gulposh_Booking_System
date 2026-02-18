@@ -54,6 +54,7 @@ export default function EntireVilla() {
   const refreshUser = useAuth((s) => s.refreshUser);
   const user = useAuth((s) => s.user);
   const initialized = useAuth((s) => s.initialized);
+  const [profileLocked, setProfileLocked] = useState(false);
 
   const disabledAll = useMemo(
     () => [...bookedAll, ...blackoutRanges],
@@ -70,9 +71,11 @@ export default function EntireVilla() {
 
 
   useEffect(() => {
+    if (!initialized) return;
     if (!user) return;
 
     setOtpVerified(true);
+    setOtpStep(false);
 
     setForm({
       name: user.name || "",
@@ -88,11 +91,8 @@ export default function EntireVilla() {
       pincode: user.pincode || "",
     });
 
-    setProfileLocked(!!user.profileComplete);
-
-  }, [user]);
-
-
+    setProfileLocked(user.profileComplete === true);
+  }, [user, initialized]);
 
 
 
@@ -347,7 +347,7 @@ export default function EntireVilla() {
           {/* ================= RIGHT FORM ================= */}
           <section className="lg:col-span-6 space-y-6">
 
-            {!user && (
+            {initialized && !user && (
               <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-4">
                 <h3 className="font-semibold text-base">Verify Mobile Number</h3>
 
