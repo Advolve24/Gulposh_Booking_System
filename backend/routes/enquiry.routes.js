@@ -5,7 +5,7 @@ import { createEntireVillaEnquiry, getMyEnquiries } from "../controllers/enquiry
 const router = express.Router();
 
 
-router.post("/entire-villa", createEntireVillaEnquiry);
+router.post("/entire-villa", authRequired, createEntireVillaEnquiry);
 router.get("/my", authRequired, getMyEnquiries);
 
 export default router;
