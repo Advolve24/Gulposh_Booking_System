@@ -93,56 +93,35 @@ export default function CalendarRange({
     return date > range.from && date < range.to;
   };
 
-  const handleSelect = (range) => {
-    const clicked = range?.from ? new Date(range.from) : null;
-
-    if (!clicked) {
-      onChange(undefined);
-      return;
-    }
-
-    if (value?.from && isSameDay(clicked, value.from)) {
+  const handleSelect = (nextRange) => {
+    if (!nextRange?.from) {
       selectingRef.current = false;
       onChange(undefined);
       return;
     }
 
-    if (value?.to && isSameDay(clicked, value.to)) {
-      selectingRef.current = false;
-      onChange(undefined);
-      return;
-    }
-
-    if (isInsideRange(clicked, value)) {
-      selectingRef.current = false;
-      onChange(undefined);
-      return;
-    }
-
-
-    if (!value?.from || (value?.from && value?.to)) {
+    if (nextRange.from && !nextRange.to) {
       selectingRef.current = true;
-      onChange({ from: clicked, to: undefined });
+      onChange({ from: nextRange.from, to: undefined });
       setOpen(true);
       return;
     }
 
-    if (value?.from && !value?.to) {
-      const checkIn = new Date(value.from);
+    if (nextRange.from && nextRange.to) {
+      const checkIn = new Date(nextRange.from);
+      const checkOut = new Date(nextRange.to);
 
-      if (clicked <= checkIn) {
-        onChange({ from: clicked, to: undefined });
+      if (checkOut <= checkIn) {
+        onChange({ from: checkOut, to: undefined });
         return;
       }
 
       selectingRef.current = false;
-      onChange({ from: checkIn, to: clicked });
+      onChange(nextRange);
 
-      setTimeout(() => setOpen(false), 150);
+      setTimeout(() => setOpen(false), 120);
     }
   };
-
-
 
 
 
@@ -207,17 +186,19 @@ export default function CalendarRange({
   }, [open]);
 
   const disabled = useMemo(() => {
-    const base = [
-      { before: todayDateOnly() },
+    return [
+      {
+        before: new Date(
+          new Date().getFullYear(),
+          new Date().getMonth(),
+          new Date().getDate()
+        ),
+      },
       ...globalRanges,
       ...roomRanges,
       ...(disabledRanges || []),
     ];
-    if (value?.from && !value?.to) {
-      base.push({ before: todayDateOnly() });
-    }
-    return base;
-  }, [globalRanges, roomRanges, disabledRanges, value?.from, value?.to]);
+  }, [globalRanges, roomRanges, disabledRanges]);
 
 
 

@@ -409,6 +409,7 @@ export default function Home() {
                     <div className="mt-2">
                       <CalendarRange
                         value={range}
+                        initialFocus
                         onChange={setRange}
                         disabledRanges={disabledAll}
                       />
