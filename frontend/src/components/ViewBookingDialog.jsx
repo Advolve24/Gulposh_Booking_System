@@ -238,21 +238,10 @@ export default function ViewBookingDialog({
                     {/* CALL */}
                     <a
                       href={`tel:${hostPhoneRaw}`}
-                      className="flex items-center gap-2 text-red-600 font-medium hover:underline"
+                      className="flex items-center text-[14px] gap-2 text-red-600 font-medium hover:underline"
                     >
                       <Phone className="w-4 h-4" />
                       {hostPhoneDisplay}
-                    </a>
-
-                    {/* WHATSAPP */}
-                    <a
-                      href={`https://wa.me/${hostPhoneRaw.replace("+", "")}?text=Hi%20I%20have%20a%20booking%20at%20Gulposh%20Villa`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-green-600 font-medium hover:underline"
-                    >
-                      <Mail className="w-4 h-4" />
-                      Chat on WhatsApp
                     </a>
 
                   </div>
@@ -292,8 +281,8 @@ export default function ViewBookingDialog({
                     <div className="text-left">Food</div>
                     <div className="text-left">Discount</div>
                     <div className="text-left">After Disc</div>
-                    <div className="text-left">CGST{cgstPercent}%</div>
-                    <div className="text-left">SGST{sgstPercent}%</div>
+                    <div className="text-left">CGST {cgstPercent}%</div>
+                    <div className="text-left">SGST {sgstPercent}%</div>
                   </div>
 
                   {/* VALUES */}
@@ -314,9 +303,6 @@ export default function ViewBookingDialog({
 
                     <div>
                       ₹{Math.round(sgstAmount).toLocaleString("en-IN")}
-                      <span className="block text-[10px] text-muted-foreground">
-                        {sgstPercent}%
-                      </span>
                     </div>
                   </div>
 
