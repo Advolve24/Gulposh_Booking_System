@@ -14,6 +14,10 @@ const convertNumberToWords = (num) => {
 };
 
 
+const getShortId = (id = "") => id.slice(-6).toUpperCase();
+const formatBookingId = (id = "") => `BK-${getShortId(id)}`;
+const formatInvoiceNo = (id = "") => `VG-INV-${getShortId(id)}`;
+
 export default function VillaInvoice() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -266,7 +270,7 @@ export default function VillaInvoice() {
 
                   <span className="text-gray-600 text-sm">Invoice No</span>
                   <span className="font-bold text-gray-900 text-right text-[12px]">
-                    VG-INV-{booking._id.slice(-6)}
+                    {formatInvoiceNo(booking._id)}
                   </span>
 
                   <span className="text-gray-600 text-sm">Invoice Date</span>
@@ -276,12 +280,7 @@ export default function VillaInvoice() {
 
                   <span className="text-gray-600 text-sm">Booking ID</span>
                   <span className="font-bold text-gray-900 text-right text-[12px]">
-                    BK-{booking._id.slice(-6)}
-                  </span>
-
-                  <span className="text-gray-600 text-sm">Place of Supply</span>
-                  <span className="font-bold text-gray-900 text-right text-[12px]">
-                    Maharashtra
+                    {formatBookingId(booking._id)}
                   </span>
 
                 </div>
@@ -291,9 +290,6 @@ export default function VillaInvoice() {
             {/* ================= SELLER + BILL ================= */}
             <div className="grid grid-cols-2 gap-3 mt-3">
               <div className="border rounded-xl p-4">
-                <p className="font-bold text-sm mb-2">
-                  SELLER (REGISTERED)
-                </p>
 
                 <p className="font-bold">
                   Vidyasagar Properties Private Limited<br></br>
