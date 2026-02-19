@@ -81,46 +81,67 @@ export default function CalendarRange({
     });
   };
 
+  const isSameDay = (a, b) =>
+    a &&
+    b &&
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const isInsideRange = (date, range) => {
+    if (!range?.from || !range?.to) return false;
+    return date > range.from && date < range.to;
+  };
+
   const handleSelect = (range) => {
-  const clickedFrom = range?.from ? new Date(range.from) : null;
-  const clickedTo = range?.to ? new Date(range.to) : null;
+    const clicked = range?.from ? new Date(range.from) : null;
 
-  // nothing selected
-  if (!clickedFrom) {
-    onChange(undefined);
-    return;
-  }
-
-  // -------------------------
-  // FIRST CLICK (check-in)
-  // -------------------------
-  if (!value?.from || (value?.from && value?.to)) {
-    selectingRef.current = true;
-    onChange({ from: clickedFrom, to: undefined });
-    setOpen(true);
-    return;
-  }
-
-  // -------------------------
-  // SECOND CLICK (check-out)
-  // -------------------------
-  if (value?.from && !value?.to) {
-    const checkIn = new Date(value.from);
-    const attemptedCheckout = clickedTo || clickedFrom;
-
-    // ❌ user clicked a date BEFORE check-in
-    if (attemptedCheckout <= checkIn) {
-      // ignore click (Airbnb behaviour)
+    if (!clicked) {
+      onChange(undefined);
       return;
     }
 
-    // ✅ valid checkout
-    selectingRef.current = false;
-    onChange({ from: checkIn, to: attemptedCheckout });
+    if (value?.from && isSameDay(clicked, value.from)) {
+      selectingRef.current = false;
+      onChange(undefined);
+      return;
+    }
 
-    setTimeout(() => setOpen(false), 150);
-  }
-};
+    if (value?.to && isSameDay(clicked, value.to)) {
+      selectingRef.current = false;
+      onChange(undefined);
+      return;
+    }
+
+    if (isInsideRange(clicked, value)) {
+      selectingRef.current = false;
+      onChange(undefined);
+      return;
+    }
+
+
+    if (!value?.from || (value?.from && value?.to)) {
+      selectingRef.current = true;
+      onChange({ from: clicked, to: undefined });
+      setOpen(true);
+      return;
+    }
+
+    if (value?.from && !value?.to) {
+      const checkIn = new Date(value.from);
+
+      if (clicked <= checkIn) {
+        onChange({ from: clicked, to: undefined });
+        return;
+      }
+
+      selectingRef.current = false;
+      onChange({ from: checkIn, to: clicked });
+
+      setTimeout(() => setOpen(false), 150);
+    }
+  };
+
 
 
 
@@ -193,7 +214,7 @@ export default function CalendarRange({
       ...(disabledRanges || []),
     ];
     if (value?.from && !value?.to) {
-      base.push({ before: toDateOnlyFromAPIUTC(value.from) });
+      base.push({ before: todayDateOnly() });
     }
     return base;
   }, [globalRanges, roomRanges, disabledRanges, value?.from, value?.to]);
