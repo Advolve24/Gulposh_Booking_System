@@ -551,27 +551,28 @@ export default function VillaInvoice() {
                   </div>
                 )}
 
-                {/* CGST */}
-                <div className="flex border-t border-dashed border-gray-300 border-b items-center justify-between">
-                  <div className="flex justify-between py-1 mt-1 pb-3">
+                <div className="border-t border-dashed border-gray-300 mt-2 pt-2">
+
+                  <div className="flex justify-between py-1">
                     <span className="text-gray-600">
-                      CGST @ 9% :
+                      CGST @ 9%
                     </span>
                     <span className="font-bold">
                       ₹{cgstAmount.toLocaleString("en-IN")}
                     </span>
                   </div>
 
-                  {/* SGST */}
-                  <div className="flex justify-between py-1 mt-1 pb-3">
+                  <div className="flex justify-between py-1 pb-2 border-b border-dashed border-gray-300">
                     <span className="text-gray-600">
-                      SGST @ 9% :
+                      SGST @ 9%
                     </span>
                     <span className="font-bold">
                       ₹{sgstAmount.toLocaleString("en-IN")}
                     </span>
                   </div>
+
                 </div>
+
 
                 {/* TOTAL */}
                 <div className="flex justify-between mt-3">
