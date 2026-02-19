@@ -300,15 +300,33 @@ export default function MyBookings() {
 
                     {/* CANCEL BUTTON (UPCOMING ONLY) */}
                     {tab === "upcoming" && b.status === "confirmed" && !isEnquiry && (
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openCancel(b._id);
-                        }}
-                        className="w-full mt-3 rounded-xl"
-                      >
-                        Cancel Booking
-                      </Button>
+                      <div className="flex gap-3 mt-3">
+
+                        {/* VIEW STAY */}
+                        <Button
+                          variant="outline"
+                          className="flex-1 rounded-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openView(b._id);
+                          }}
+                        >
+                          View Stay
+                        </Button>
+
+                        {/* CANCEL */}
+                        <Button
+                          variant="destructive"
+                          className="flex-1 rounded-xl"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCancel(b._id);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+
+                      </div>
                     )}
                   </div>
                 </div>

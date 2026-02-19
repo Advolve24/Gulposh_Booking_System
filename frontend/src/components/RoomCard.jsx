@@ -2,15 +2,10 @@ import { Link } from "react-router-dom";
 import { Users, ArrowRight } from "lucide-react";
 
 export default function RoomCard({ room, range, guests }) {
-  /* -------------------------------------------------
-     READ SEARCH DATA (SOURCE OF TRUTH)
-  ------------------------------------------------- */
+
   const savedSearch = sessionStorage.getItem("searchParams");
   const searchState = savedSearch ? JSON.parse(savedSearch) : null;
 
-  /* -------------------------------------------------
-     KEEP QUERY PARAMS (OPTIONAL – SEO / SHARE)
-  ------------------------------------------------- */
   const params = new URLSearchParams();
 
   if (searchState?.range?.from && searchState?.range?.to) {
@@ -29,9 +24,7 @@ export default function RoomCard({ room, range, guests }) {
 
   const search = params.toString() ? `?${params.toString()}` : "";
 
-  /* -------------------------------------------------
-     MAX GUESTS (UNCHANGED)
-  ------------------------------------------------- */
+
   const maxGuestsCap = (() => {
     if (typeof room.maxGuests === "number" && room.maxGuests > 0)
       return room.maxGuests;
@@ -45,9 +38,7 @@ export default function RoomCard({ room, range, guests }) {
     return nums.length ? nums.reduce((a, b) => a + b, 0) : 1;
   })();
 
-  /* -------------------------------------------------
-     UI (UNCHANGED)
-  ------------------------------------------------- */
+ 
   return (
     <div
       className="
