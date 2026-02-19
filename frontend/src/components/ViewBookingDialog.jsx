@@ -127,6 +127,9 @@ export default function ViewBookingDialog({
     }
   };
 
+  const hostPhoneRaw = "+919820074617";
+  const hostPhoneDisplay = "+91 98200 74617";
+
   if (!open) return null;
 
   return (
@@ -230,9 +233,29 @@ export default function ViewBookingDialog({
                     Sneha Shinde
                   </p>
 
-                  <p className="text-sm text-red-600 mt-1">
-                    +91 98200 74617
-                  </p>
+                  <div className="mt-2 flex flex-col gap-2">
+
+                    {/* CALL */}
+                    <a
+                      href={`tel:${hostPhoneRaw}`}
+                      className="flex items-center gap-2 text-red-600 font-medium hover:underline"
+                    >
+                      <Phone className="w-4 h-4" />
+                      {hostPhoneDisplay}
+                    </a>
+
+                    {/* WHATSAPP */}
+                    <a
+                      href={`https://wa.me/${hostPhoneRaw.replace("+", "")}?text=Hi%20I%20have%20a%20booking%20at%20Gulposh%20Villa`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-green-600 font-medium hover:underline"
+                    >
+                      <Mail className="w-4 h-4" />
+                      Chat on WhatsApp
+                    </a>
+
+                  </div>
                 </div>
 
                 {/* LOCATION */}
@@ -269,8 +292,8 @@ export default function ViewBookingDialog({
                     <div className="text-left">Food</div>
                     <div className="text-left">Discount</div>
                     <div className="text-left">After Disc</div>
-                    <div className="text-left">CGST</div>
-                    <div className="text-left">SGST</div>
+                    <div className="text-left">CGST{cgstPercent}%</div>
+                    <div className="text-left">SGST{sgstPercent}%</div>
                   </div>
 
                   {/* VALUES */}
@@ -287,9 +310,6 @@ export default function ViewBookingDialog({
 
                     <div>
                       ₹{Math.round(cgstAmount).toLocaleString("en-IN")}
-                      <span className="block text-[10px] text-muted-foreground">
-                        {cgstPercent}%
-                      </span>
                     </div>
 
                     <div>
