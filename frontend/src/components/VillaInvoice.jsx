@@ -348,69 +348,67 @@ export default function VillaInvoice() {
 
             {/* ================= STAY DETAILS ================= */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 mt-3 text-[14px]">
-
-              <p className="font-bold text-gray-800 mb-2 uppercase tracking-wide">
+              <p className="font-bold text-gray-800 mb-4 uppercase tracking-wide">
                 Stay Details
               </p>
 
-              {/* Row 1 */}
-              <div className="grid grid-cols-2 gap-6 py-2 pb-4 border-b border-dashed border-gray-300">
+              <div className="grid grid-cols-2 gap-10">
 
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Property</span>
-                  <span className="font-bold text-gray-900">
-                    {booking.room?.name}
-                  </span>
+                {/* LEFT COLUMN */}
+                <div className="space-y-4">
+
+                  <div className="flex justify-between border-b border-dashed border-gray-300 pb-2">
+                    <span className="text-gray-600">Property</span>
+                    <span className="font-bold text-gray-900">
+                      {booking.room?.name}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between border-b border-dashed border-gray-300 pb-2">
+                    <span className="text-gray-600">Check-in</span>
+                    <span className="font-bold text-gray-900">
+                      {format(new Date(booking.startDate), "dd MMM yyyy • hh:mm a")}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Check-out</span>
+                    <span className="font-bold text-gray-900">
+                      {format(new Date(booking.endDate), "dd MMM yyyy • hh:mm a")}
+                    </span>
+                  </div>
+
                 </div>
 
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Nights</span>
-                  <span className="font-bold text-gray-900">
-                    {nights}
-                  </span>
+                {/* RIGHT COLUMN */}
+                <div className="space-y-4">
+
+                  <div className="flex justify-between border-b border-dashed border-gray-300 pb-2">
+                    <span className="text-gray-600">Nights</span>
+                    <span className="font-bold text-gray-900">
+                      {nights}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between border-b border-dashed border-gray-300 pb-2">
+                    <span className="text-gray-600">Guests</span>
+                    <span className="font-bold text-gray-900">
+                      Adults {booking.adults}, Children {booking.children}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">SAC</span>
+                    <span className="font-bold text-gray-900">
+                      996311 (Accommodation Services)
+                    </span>
+                  </div>
+
                 </div>
 
               </div>
-
-              {/* Row 2 */}
-              <div className="grid grid-cols-2 gap-6 py-2 pb-4 border-b border-dashed border-gray-300">
-
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Check-in</span>
-                  <span className="font-bold text-gray-900">
-                    {format(new Date(booking.startDate), "dd MMM yyyy • hh:mm a")}
-                  </span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Guests</span>
-                  <span className="font-bold text-gray-900">
-                    Adults {booking.adults}, Children {booking.children}
-                  </span>
-                </div>
-
-              </div>
-
-              {/* Row 3 */}
-              <div className="grid grid-cols-2 gap-6 py-2">
-
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Check-out</span>
-                  <span className="font-bold text-gray-900">
-                    {format(new Date(booking.endDate), "dd MMM yyyy • hh:mm a")}
-                  </span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-600">SAC</span>
-                  <span className="font-bold text-gray-900">
-                    996311 (Accommodation Services)
-                  </span>
-                </div>
-
-              </div>
-
             </div>
+
 
             {/* ================= ITEMS TABLE ================= */}
             <div className="mt-3 border border-gray-200 rounded-2xl overflow-hidden">
@@ -551,7 +549,7 @@ export default function VillaInvoice() {
                   </div>
                 )}
 
-                <div className="border-t border-dashed border-gray-300 mt-2 pt-2">
+                <div className="mt-2 pt-2">
 
                   <div className="flex justify-between py-1">
                     <span className="text-gray-600">
