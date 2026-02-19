@@ -82,46 +82,54 @@ export default function CalendarRange({
   };
 
   const handleSelect = (range) => {
-  const clickedFrom = range?.from ? new Date(range.from) : null;
-  const clickedTo = range?.to ? new Date(range.to) : null;
-
-  // nothing selected
-  if (!clickedFrom) {
-    onChange(undefined);
-    return;
-  }
-
-  // -------------------------
-  // FIRST CLICK (check-in)
-  // -------------------------
-  if (!value?.from || (value?.from && value?.to)) {
-    selectingRef.current = true;
-    onChange({ from: clickedFrom, to: undefined });
-    setOpen(true);
-    return;
-  }
-
-  // -------------------------
-  // SECOND CLICK (check-out)
-  // -------------------------
-  if (value?.from && !value?.to) {
-    const checkIn = new Date(value.from);
-    const attemptedCheckout = clickedTo || clickedFrom;
-
-    // ❌ user clicked a date BEFORE check-in
-    if (attemptedCheckout <= checkIn) {
-      // ignore click (Airbnb behaviour)
+    const clickedFrom = range?.from ? new Date(range.from) : null;
+    const clickedTo = range?.to ? new Date(range.to) : null;
+    if (!clickedFrom) {
+      onChange(undefined);
       return;
     }
+    if (!value?.from || (value?.from && value?.to)) {
+      selectingRef.current = true;
+      onChange({ from: clickedFrom, to: undefined });
+      setOpen(true);
+      return;
+    }
+    if (value?.from && !value?.to) {
+      const checkIn = new Date(value.from);
+      const attemptedCheckout = clickedTo || clickedFrom;
 
-    // ✅ valid checkout
-    selectingRef.current = false;
-    onChange({ from: checkIn, to: attemptedCheckout });
+      if (attemptedCheckout <= checkIn) {
+        return;
+      }
 
-    setTimeout(() => setOpen(false), 150);
-  }
-};
+      selectingRef.current = false;
+      onChange({ from: checkIn, to: attemptedCheckout });
 
+      setTimeout(() => setOpen(false), 150);
+    }
+  };
+
+
+
+  const handleDayClick = (day) => {
+    if (!value?.from) return;
+    const clicked = new Date(day);
+    if (value?.from &&
+      clicked.toDateString() === new Date(value.from).toDateString()) {
+      onChange(undefined);
+      return;
+    }
+    if (value?.to &&
+      clicked.toDateString() === new Date(value.to).toDateString()) {
+      onChange(undefined);
+      return;
+    }
+    if (value?.from && value?.to) {
+      if (clicked > value.from && clicked < value.to) {
+        onChange(undefined);
+      }
+    }
+  };
 
 
 
@@ -248,6 +256,7 @@ export default function CalendarRange({
             numberOfMonths={2}
             selected={value}
             onSelect={handleSelect}
+            onDayClick={handleDayClick}
             disabled={disabled}
             showOutsideDays={false}
             className="airbnb-calendar p-4"
@@ -288,6 +297,7 @@ export default function CalendarRange({
                 numberOfMonths={1}
                 selected={value}
                 onSelect={handleSelect}
+                onDayClick={handleDayClick}
                 disabled={disabled}
                 showOutsideDays={false}
                 className="airbnb-calendar mobile-airbnb"
