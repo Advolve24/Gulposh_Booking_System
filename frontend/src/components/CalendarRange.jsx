@@ -81,47 +81,47 @@ export default function CalendarRange({
     });
   };
 
-  const isSameDay = (a, b) =>
-    a &&
-    b &&
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
+  const handleSelect = (range) => {
+  const clickedFrom = range?.from ? new Date(range.from) : null;
+  const clickedTo = range?.to ? new Date(range.to) : null;
 
-  const isInsideRange = (date, range) => {
-    if (!range?.from || !range?.to) return false;
-    return date > range.from && date < range.to;
-  };
+  // nothing selected
+  if (!clickedFrom) {
+    onChange(undefined);
+    return;
+  }
 
-  const handleSelect = (nextRange) => {
-    if (!nextRange?.from) {
-      selectingRef.current = false;
-      onChange(undefined);
+  // -------------------------
+  // FIRST CLICK (check-in)
+  // -------------------------
+  if (!value?.from || (value?.from && value?.to)) {
+    selectingRef.current = true;
+    onChange({ from: clickedFrom, to: undefined });
+    setOpen(true);
+    return;
+  }
+
+  // -------------------------
+  // SECOND CLICK (check-out)
+  // -------------------------
+  if (value?.from && !value?.to) {
+    const checkIn = new Date(value.from);
+    const attemptedCheckout = clickedTo || clickedFrom;
+
+    // ❌ user clicked a date BEFORE check-in
+    if (attemptedCheckout <= checkIn) {
+      // ignore click (Airbnb behaviour)
       return;
     }
 
-    if (nextRange.from && !nextRange.to) {
-      selectingRef.current = true;
-      onChange({ from: nextRange.from, to: undefined });
-      setOpen(true);
-      return;
-    }
+    // ✅ valid checkout
+    selectingRef.current = false;
+    onChange({ from: checkIn, to: attemptedCheckout });
 
-    if (nextRange.from && nextRange.to) {
-      const checkIn = new Date(nextRange.from);
-      const checkOut = new Date(nextRange.to);
+    setTimeout(() => setOpen(false), 150);
+  }
+};
 
-      if (checkOut <= checkIn) {
-        onChange({ from: checkOut, to: undefined });
-        return;
-      }
-
-      selectingRef.current = false;
-      onChange(nextRange);
-
-      setTimeout(() => setOpen(false), 120);
-    }
-  };
 
 
 
@@ -186,19 +186,17 @@ export default function CalendarRange({
   }, [open]);
 
   const disabled = useMemo(() => {
-    return [
-      {
-        before: new Date(
-          new Date().getFullYear(),
-          new Date().getMonth(),
-          new Date().getDate()
-        ),
-      },
+    const base = [
+      { before: todayDateOnly() },
       ...globalRanges,
       ...roomRanges,
       ...(disabledRanges || []),
     ];
-  }, [globalRanges, roomRanges, disabledRanges]);
+    if (value?.from && !value?.to) {
+      base.push({ before: toDateOnlyFromAPIUTC(value.from) });
+    }
+    return base;
+  }, [globalRanges, roomRanges, disabledRanges, value?.from, value?.to]);
 
 
 

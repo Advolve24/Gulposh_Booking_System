@@ -133,7 +133,6 @@ function BookingCard({
             CHECK IN / CHECK OUT
           </label>
           <CalendarRange
-            initialFocus
             value={range}
             onChange={setRange}
             disabledRanges={disabledAll}
@@ -683,7 +682,6 @@ export default function RoomPage() {
               </label>
 
               <CalendarRange
-                initialFocus
                 value={range}
                 onChange={setRange}
                 disabledRanges={disabledAll} // ✅ global blocked+booked+blackouts
