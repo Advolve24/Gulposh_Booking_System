@@ -147,7 +147,7 @@ export default function ViewBookingDialog({
 
           <>
             {/* ================= HEADER ================= */}
-            <div className="bg-primary text-white p-5 rounded-t-xl relative">
+            <div className="bg-primary text-white p-5 rounded-t-lg relative">
 
 
               <h2 className="text-2xl font-serif font-semibold">
