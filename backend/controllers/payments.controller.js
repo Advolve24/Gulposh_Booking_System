@@ -285,6 +285,19 @@ export const verifyPayment = async (req, res) => {
 
     const grandTotal = discountedSubtotal + totalTax;
 
+    const overlap = await Booking.findOne({
+      room: room._id,
+      status: { $ne: "cancelled" },
+      startDate: { $lt: eDate },
+      endDate: { $gt: sDate },
+    });
+
+    if (overlap) {
+      return res.status(409).json({
+        message: "Room just got booked by another guest. Payment will be refunded.",
+      });
+    }
+
     const booking = await Booking.create({
       user: userId,
       userSnapshot: {

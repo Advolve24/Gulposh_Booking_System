@@ -236,3 +236,30 @@ export const cancelMyBooking = async (req, res) => {
     res.status(500).json({ message: "Failed to cancel booking" });
   }
 };
+
+
+
+export const checkAvailability = async (req, res) => {
+  try {
+    const { roomId, startDate, endDate } = req.body;
+
+    if (!roomId || !startDate || !endDate) {
+      return res.status(400).json({ available: false });
+    }
+
+    const sDate = new Date(startDate);
+    const eDate = new Date(endDate);
+
+    const conflict = await Booking.findOne({
+      room: roomId,
+      status: { $ne: "cancelled" },
+      startDate: { $lt: eDate },
+      endDate: { $gt: sDate },
+    });
+
+    res.json({ available: !conflict });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ available: false });
+  }
+};
