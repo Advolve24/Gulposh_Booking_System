@@ -1,11 +1,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../store/authStore";
-import {
-  Dialog,
-  DialogContent,
-  DialogOverlay,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +10,6 @@ import { useNavigate } from "react-router-dom";
 import { X, ShieldCheck, Phone } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
@@ -45,6 +40,10 @@ export default function AuthModal() {
   const confirmationRef = useRef(null);
   const sendingRef = useRef(false);
   const verifyingRef = useRef(false);
+
+  const [phoneError, setPhoneError] = useState("");
+  const [otpSentTo, setOtpSentTo] = useState("");
+  const otpInputsRef = useRef([]);
 
 
   const handleGoogleLogin = async () => {
@@ -149,6 +148,8 @@ export default function AuthModal() {
       );
 
       toast.success("OTP sent", { id: "otp" });
+      setTimeout(() => otpInputsRef.current[0]?.focus(), 200);
+      setOtpSentTo(form.phone);
       setStep("otp");
       setSecondsLeft(OTP_TIMER);
     } catch {
@@ -236,7 +237,7 @@ export default function AuthModal() {
         }
       }}
     >
-      <DialogOverlay className="bg-black/10" />
+      <DialogOverlay className="bg-black/40 backdrop-blur-sm" />
 
       <DialogContent className="p-0 w-[92vw] max-w-[420px] rounded-3xl overflow-hidden bg-white border-0 shadow-2xl">
         <VisuallyHidden>
@@ -295,20 +296,30 @@ export default function AuthModal() {
             <>
               <Label>Mobile Number</Label>
               <Input
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Enter 10-digit mobile number"
                 value={form.phone}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    phone: e.target.value.replace(/\D/g, "").slice(0, 10),
-                  })
-                }
+                className="h-12 text-base"
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+
+                  if (value.length > 10) return;
+
+                  setForm({ ...form, phone: value });
+
+                  if (value.length === 10) setPhoneError("");
+                  else setPhoneError("Enter a valid 10-digit number");
+                }}
               />
 
+              {phoneError && (
+                <p className="text-xs text-red-500 mt-1">{phoneError}</p>
+              )}
               <Button
-                className="w-full h-11 rounded-xl"
+                className="w-full h-12 rounded-xl text-base"
                 onClick={sendOtp}
-                disabled={loading}
+                disabled={loading || form.phone.length !== 10}
               >
                 Send OTP
               </Button>
@@ -317,21 +328,54 @@ export default function AuthModal() {
 
           {step === "otp" && (
             <>
-              <Label>Enter OTP</Label>
-              <Input
-                placeholder="6-digit OTP"
-                value={form.otp}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    otp: e.target.value.replace(/\D/g, "").slice(0, 6),
-                  })
-                }
-              />
+              <div className="text-center space-y-1">
+                <p className="text-sm font-medium">Enter verification code</p>
+                <p className="text-xs text-muted-foreground">
+                  OTP sent to +91 {otpSentTo}
+                </p>
+              </div>
+              <div className="flex justify-center gap-2 mt-2">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <input
+                    key={i}
+                    ref={(el) => (otpInputsRef.current[i] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    className="
+        w-11 h-12
+        border rounded-lg
+        text-center text-lg font-semibold
+        focus:outline-none focus:ring-2 focus:ring-primary
+      "
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+
+                      if (!value) return;
+
+                      const otpArray = form.otp.split("");
+                      otpArray[i] = value;
+                      const newOtp = otpArray.join("").slice(0, 6);
+
+                      setForm((prev) => ({ ...prev, otp: newOtp }));
+
+                      if (i < 5) otpInputsRef.current[i + 1]?.focus();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Backspace") {
+                        const otpArray = form.otp.split("");
+                        otpArray[i] = "";
+                        setForm((prev) => ({ ...prev, otp: otpArray.join("") }));
+                        if (i > 0) otpInputsRef.current[i - 1]?.focus();
+                      }
+                    }}
+                  />
+                ))}
+              </div>
 
               <Button
-                className="w-full h-11 rounded-xl"
-                disabled={loading || verifyingRef.current}
+                className="w-full h-12 rounded-xl text-base"
+                disabled={form.otp.length !== 6 || loading || verifyingRef.current}
                 onClick={verifyOtp}
               >
                 Verify & Continue
