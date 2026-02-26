@@ -23,6 +23,13 @@ function useIsDesktop() {
 }
 
 
+const minusOneDay = (d) => {
+  const t = new Date(d);
+  t.setDate(t.getDate() - 1);
+  return t;
+};
+
+
 export default function CalendarRange({
   roomId,
   value,
@@ -161,7 +168,7 @@ export default function CalendarRange({
         const toRange = (arr) =>
           (arr || []).map((b) => ({
             from: toDateOnlyFromAPIUTC(b.startDate),
-            to: toDateOnlyFromAPIUTC(b.endDate),
+            to: minusOneDay(toDateOnlyFromAPIUTC(b.endDate)),
           }));
 
         setRoomRanges([...toRange(blocked.data), ...toRange(bookings.data)]);
@@ -254,7 +261,7 @@ export default function CalendarRange({
               setMonth(newMonth);
             }}
             numberOfMonths={2}
-            selected={value}
+            selected={value || undefined}
             onSelect={handleSelect}
             onDayClick={handleDayClick}
             disabled={disabled}

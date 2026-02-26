@@ -7,6 +7,7 @@ import GuestCounter from "@/components/GuestCounter";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet-async";
+import { toast } from "sonner";
 
 
 import {
@@ -40,25 +41,22 @@ import {
 
 /* ================= HELPERS ================= */
 
+function minusOneDay(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - 1);
+  return d;
+}
+
 function mergeRanges(ranges) {
   if (!ranges || !ranges.length) return [];
-
   const sorted = ranges
     .map((r) => ({ from: new Date(r.from), to: new Date(r.to) }))
     .sort((a, b) => a.from - b.from);
-
   const out = [sorted[0]];
   for (let i = 1; i < sorted.length; i++) {
     const last = out[out.length - 1];
     const cur = sorted[i];
-
-    const dayAfterLast = new Date(
-      last.to.getFullYear(),
-      last.to.getMonth(),
-      last.to.getDate() + 1
-    );
-
-    if (cur.from <= dayAfterLast) {
+    if (cur.from <= last.to) {
       if (cur.to > last.to) last.to = cur.to;
     } else {
       out.push(cur);
@@ -89,6 +87,17 @@ function useOnceInView(margin = "-120px") {
   return { ref, inView };
 }
 
+function rangeHasConflict(selected, blockedRanges) {
+  if (!selected?.from || !selected?.to) return false;
+  const start = toDateOnly(selected.from);
+  const end = toDateOnly(selected.to);
+  return blockedRanges.some((b) => {
+    const bStart = toDateOnly(b.from);
+    const bEnd = toDateOnly(b.to);
+    return start < bEnd && end > bStart;
+  });
+}
+
 
 export default function Home() {
   const navigate = useNavigate();
@@ -103,6 +112,7 @@ export default function Home() {
   const hasValidRange = !!(range?.from && range?.to);
   const hasGuests = totalGuests > 0;
   const [showVillaPopup, setShowVillaPopup] = useState(false);
+  const [isRangeInvalid, setIsRangeInvalid] = useState(false);
 
   const heroRef = useRef(null);
 
@@ -125,7 +135,7 @@ export default function Home() {
 
         const bookings = (bookingsRes.data || []).map((b) => ({
           from: toDateOnlyFromAPIUTC(b.from || b.startDate),
-          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
+          to: minusOneDay(toDateOnlyFromAPIUTC(b.to || b.endDate)),
         }));
 
         const blackouts = (blackoutsRes.data || []).map((b) => ({
@@ -141,26 +151,51 @@ export default function Home() {
   }, []);
 
 
-  const filteredRooms = useMemo(() => {
-    if (!hasValidRange || !hasGuests) return rooms;
+  const resetFilters = () => {
+    setRange(undefined);
+    setAdults(0);
+    setChildren(0);
+    setIsRangeInvalid(false);
+    sessionStorage.removeItem("searchParams");
+    heroRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    toast.success("Filters cleared");
+  };
 
+  useEffect(() => {
+    if (!range) setIsRangeInvalid(false);
+  }, [range]);
+
+  const filteredRooms = useMemo(() => {
+    if (!hasValidRange || !hasGuests) {
+      return rooms;
+    }
+    if (isRangeInvalid) {
+      return rooms;
+    }
     const s = toDateOnly(range.from);
     const e = toDateOnly(range.to);
     const g = Number(totalGuests);
-
     return rooms.filter((r) => {
       const cap = Number(r.maxGuests || 1);
       if (g > cap) return false;
-
-      const conflict = disabledAll.some((b) => !(e < b.from || s > b.to));
+      const conflict = disabledAll.some(
+        (b) => s < b.to && e > b.from
+      );
       return !conflict;
     });
-  }, [rooms, disabledAll, range, totalGuests, hasValidRange, hasGuests]);
 
+  }, [rooms, disabledAll, range, totalGuests, hasValidRange, hasGuests, isRangeInvalid]);
 
   const onSearch = () => {
     if (!hasValidRange || !hasGuests) {
-      alert("Please select dates and guests");
+      toast.error("Please select dates and guests");
+      return;
+    }
+    if (isRangeInvalid) {
+      toast.error("Your selected stay includes unavailable dates. Please adjust the dates.");
       return;
     }
     sessionStorage.setItem(
@@ -219,8 +254,23 @@ export default function Home() {
   }, [totalGuests]);
 
 
+  const handleRangeSelect = (newRange) => {
+    setRange(newRange);
+    if (!newRange?.from || !newRange?.to) {
+      setIsRangeInvalid(false);
+      return;
+    }
+    const conflict = rangeHasConflict(newRange, disabledAll);
+    if (conflict) {
+      if (!isRangeInvalid) {
+        toast.error("Some selected dates are already booked. Please adjust your stay.");
+      }
+      setIsRangeInvalid(true);
+    } else {
+      setIsRangeInvalid(false);
+    }
+  };
 
-  /* ================= UI ================= */
 
   return (
     <>
@@ -277,9 +327,6 @@ export default function Home() {
 
 
       <div className="min-h-screen bg-[#fffaf7] text-[#2A201B]">
-        {/* ======================================================
-          HERO 
-      ====================================================== */}
         <section
           ref={heroRef}
           className="
@@ -288,8 +335,6 @@ export default function Home() {
     items-center pt-10 pb-10 sm:pt-24 sm:pb-24"
         >
 
-
-          {/* ================= BACKGROUND ================= */}
           <div className="absolute inset-0 -z-10 " >
             <motion.img
               src="/EntireVilla.webp"
@@ -298,17 +343,14 @@ export default function Home() {
               animate={{ scale: 1 }}
               transition={{
                 duration: 1.9,
-                ease: [0.16, 1, 0.3, 1], // luxury smooth easing
+                ease: [0.16, 1, 0.3, 1],
               }}
               className="absolute inset-0 h-full w-full object-cover"
             />
-            {/* dark overlay */}
             <div className="absolute inset-0 bg-black/50" />
-            {/* warm fade to page */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-[#8a807948]" />
           </div>
 
-          {/* ================= CONTENT ================= */}
           <div className="mx-auto max-w-7xl px-4 text-center">
 
 
@@ -339,7 +381,6 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* ================= TITLE ================= */}
             <motion.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
@@ -368,8 +409,6 @@ export default function Home() {
               </p>
             </motion.div>
 
-
-            {/* ================= SEARCH CARD ================= */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
@@ -396,8 +435,8 @@ export default function Home() {
                 <div
                   className="
         grid grid-cols-1
-        gap-4
-        md:grid-cols-[1.3fr_1fr_auto]
+        gap-2
+        md:grid-cols-[1.3fr_1fr_auto_auto]
         md:items-end
       "
                 >
@@ -409,7 +448,7 @@ export default function Home() {
                     <div className="mt-2">
                       <CalendarRange
                         value={range}
-                        onChange={setRange}
+                        onChange={(newRange) => handleRangeSelect(newRange)}
                         disabledRanges={disabledAll}
                       />
                       {/* <BookingCalendar
@@ -448,7 +487,18 @@ export default function Home() {
                         </Button>
                       </PopoverTrigger>
 
-                      <PopoverContent className="w-[390px] p-4 rounded-2xl">
+                      <PopoverContent
+                        className="w-[350px] p-4 rounded-2xl"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                        onInteractOutside={(e) => {
+                          const target = e.target;
+                          if (target.closest("[data-guest-popover]")) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
+                        <div data-guest-popover>
                         <GuestCounter
                           label="Adults"
                           description="Ages 13 or above"
@@ -493,7 +543,7 @@ export default function Home() {
                             Enquire Entire Villa
                           </Button>
                         </div>
-
+                        </div>
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -515,6 +565,22 @@ export default function Home() {
                   >
                     Check Availability
                     <Search className="h-4 w-4" />
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={resetFilters}
+                    className="
+    h-14
+    w-full md:w-auto
+    rounded-2xl
+    border-white/60
+    text-black
+    hover:bg-white hover:text-black
+    backdrop-blur-sm
+  "
+                  >
+                    Reset
                   </Button>
                 </div>
               </div>
@@ -600,7 +666,9 @@ export default function Home() {
             </div>
 
             <div className="text-sm text-[#7b6a61]">
-              {filteredRooms.length} of {rooms.length} shown
+              {hasValidRange && hasGuests
+                ? `${filteredRooms.length} of ${rooms.length} shown`
+                : `${rooms.length} rooms available`}
             </div>
           </motion.div>
 
@@ -793,7 +861,7 @@ export default function Home() {
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] tracking-widest uppercase text-white/90 ring-1 ring-white/15 backdrop-blur">
                     Exclusive Experience
                   </div>
-                  
+
                   <h4 className="mt-5">For Groups of <span className="font-bold text-[18px]">10+ Guests</span></h4>
                   <h3 className="mt-2 text-3xl md:text-4xl leading-tight font-semibold">
                     Book the Entire Villa

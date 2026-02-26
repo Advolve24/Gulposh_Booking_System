@@ -1,53 +1,18 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../store/authStore";
-
 import { api } from "../api/http";
 import CalendarRange from "../components/CalendarRange";
 import GuestCounter from "../components/GuestCounter";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerClose,
-} from "@/components/ui/drawer";
-
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import { X } from "lucide-react";
-
 import {
-  Wifi,
-  BedDouble,
-  ShieldCheck,
-  Refrigerator,
-  Tv,
-  Coffee,
-  Music,
-  Car,
-  Utensils,
-  Shirt,
-  Clock,
-  Ban,
-  Users,
-  IdCard,
-  MapPin,
-  Star,
-  ChevronDown,
+  Wifi, BedDouble, ShieldCheck, Refrigerator, Tv, Coffee, Music, Car, Utensils, Shirt, Clock, Ban,
+  Users, IdCard, MapPin, Star, ChevronDown
 } from "lucide-react";
-
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 
-/* ---------------------------------------------------------------- */
-/* HELPERS */
-/* ---------------------------------------------------------------- */
 
 const humanize = (v = "") =>
   v.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -82,23 +47,28 @@ const ruleIcon = (text = "") => {
   return ShieldCheck;
 };
 
+function minusOneDay(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - 1);
+  return d;
+}
+
 function mergeRanges(ranges) {
   if (!ranges?.length) return [];
   const sorted = ranges
     .map((r) => ({ from: new Date(r.from), to: new Date(r.to) }))
     .sort((a, b) => a.from - b.from);
-
   const out = [sorted[0]];
   for (let i = 1; i < sorted.length; i++) {
     const last = out[out.length - 1];
     const cur = sorted[i];
-    const nextDay = new Date(last.to);
-    nextDay.setDate(nextDay.getDate() + 1);
-
-    if (cur.from <= nextDay) {
+    if (cur.from <= last.to) {
       if (cur.to > last.to) last.to = cur.to;
-    } else out.push(cur);
+    } else {
+      out.push(cur);
+    }
   }
+
   return out;
 }
 
@@ -133,6 +103,7 @@ function BookingCard({
             CHECK IN / CHECK OUT
           </label>
           <CalendarRange
+            roomId={room._id}
             value={range}
             onChange={setRange}
             disabledRanges={disabledAll}
@@ -200,9 +171,7 @@ function BookingCard({
 }
 
 
-/* ---------------------------------------------------------------- */
-/* PAGE */
-/* ---------------------------------------------------------------- */
+
 
 export default function RoomPage() {
   const location = useLocation();
@@ -214,7 +183,6 @@ export default function RoomPage() {
   const savedSearch = sessionStorage.getItem("searchParams");
   const fallbackState = savedSearch ? JSON.parse(savedSearch) : null;
 
-  // ✅ priority: navigation state → session storage
   const initialSearch = navState || fallbackState;
 
   const [room, setRoom] = useState(null);
@@ -234,7 +202,6 @@ export default function RoomPage() {
 
   const totalGuests = adults + children;
 
-  // SAME GLOBAL DISABLED DATA AS HOMEPAGE (bookings + blackouts)
   const [bookedAll, setBookedAll] = useState([]);
   const [blackoutRanges, setBlackoutRanges] = useState([]);
 
@@ -286,21 +253,18 @@ export default function RoomPage() {
   }, []);
 
 
-  /* LOAD DATA */
   useEffect(() => {
     api.get(`/rooms/${id}`).then(({ data }) => setRoom(data));
 
-    // bookings/blocked (global)
     api.get("/rooms/disabled/all").then(({ data }) =>
       setBookedAll(
         (data || []).map((b) => ({
           from: toDateOnlyFromAPIUTC(b.from || b.startDate),
-          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
+          to: minusOneDay(toDateOnlyFromAPIUTC(b.to || b.endDate)),
         }))
       )
     );
 
-    // blackouts (global)
     api.get("/blackouts").then(({ data }) =>
       setBlackoutRanges(
         (data || []).map((b) => ({
@@ -732,8 +696,8 @@ export default function RoomPage() {
             >
               Book Now
             </Button>
-             
-             <div className="border rounded-[12px]">
+
+            <div className="border rounded-[12px]">
               <p className="text-[16px] font-[600] text-green-600 p-3 flex items-center justify-center">
                 <ShieldCheck className="inline w-5 h-5 mr-1 " />
                 100% safe and secure payments.
@@ -745,8 +709,8 @@ export default function RoomPage() {
                 <img src="/Rupay.png" alt="Rupay" className="w-full h-8 object-contain p-2" />
                 <img src="/Upi.png" alt="UPI" className="w-full h-8 object-contain p-2" />
               </div>
-             </div>
-           
+            </div>
+
           </div>
         </div>
       </div>

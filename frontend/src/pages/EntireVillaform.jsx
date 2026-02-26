@@ -17,6 +17,31 @@ import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 import { useAuth } from "@/store/authStore";
 
+function minusOneDay(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - 1);
+  return d;
+}
+
+
+function mergeRanges(ranges) {
+  if (!ranges?.length) return [];
+  const sorted = ranges
+    .map(r => ({ from: new Date(r.from), to: new Date(r.to) }))
+    .sort((a, b) => a.from - b.from);
+
+  const out = [sorted[0]];
+  for (let i = 1; i < sorted.length; i++) {
+    const last = out[out.length - 1];
+    const cur = sorted[i];
+    if (cur.from <= last.to) {
+      if (cur.to > last.to) last.to = cur.to;
+    } else {
+      out.push(cur);
+    }
+  }
+  return out;
+}
 
 export default function EntireVilla() {
   const navigate = useNavigate();
@@ -65,7 +90,7 @@ export default function EntireVilla() {
   const [cityName, setCityName] = useState("");
 
   const disabledAll = useMemo(
-    () => [...bookedAll, ...blackoutRanges],
+    () => mergeRanges([...bookedAll, ...blackoutRanges]),
     [bookedAll, blackoutRanges]
   );
 
@@ -176,7 +201,7 @@ export default function EntireVilla() {
       setBookedAll(
         (data || []).map((b) => ({
           from: toDateOnlyFromAPIUTC(b.from || b.startDate),
-          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
+          to: minusOneDay(toDateOnlyFromAPIUTC(b.to || b.endDate)),
         }))
       )
     );
@@ -664,6 +689,7 @@ export default function EntireVilla() {
               <div>
                 <Label>Check-in / Check-out</Label>
                 <CalendarRange
+                  roomId="entire-villa"
                   value={range}
                   onChange={setRange}
                   disabledRanges={disabledAll}

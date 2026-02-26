@@ -3,56 +3,30 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/http";
 import { useAuth } from "../store/authStore";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import {
-  ArrowLeft,
-  MapPin,
-  Users,
-  Utensils,
-  Check,
-  User,
-  ConciergeBell,
-  Mail,
-  Phone,
-  Home,
-  CalendarIcon,
-} from "lucide-react";
-
-import {
-  toDateOnly,
-  toDateOnlyFromAPI,
-  toDateOnlyFromAPIUTC,
-} from "../lib/date";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-
+import { ArrowLeft, MapPin, Users, Utensils, Check, User, ConciergeBell, Mail, Phone, Home, CalendarIcon } from "lucide-react";
+import { toDateOnly, toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { toast } from "sonner";
-
 import CalendarRange from "../components/CalendarRange";
 import { loadRazorpayScript } from "../lib/loadRazorpay";
-
-import {
-  getAllCountries,
-  getStatesByCountry,
-  getCitiesByState,
-} from "../lib/location";
-
+import { getAllCountries, getStatesByCountry, getCitiesByState } from "../lib/location";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
+
+
+function minusOneDay(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - 1);
+  return d;
+}
 
 
 export default function Checkout() {
@@ -120,21 +94,24 @@ export default function Checkout() {
 
   function mergeRanges(ranges) {
     if (!ranges?.length) return [];
+
     const sorted = ranges
       .map((r) => ({ from: new Date(r.from), to: new Date(r.to) }))
       .sort((a, b) => a.from - b.from);
 
     const out = [sorted[0]];
+
     for (let i = 1; i < sorted.length; i++) {
       const last = out[out.length - 1];
       const cur = sorted[i];
-      const nextDay = new Date(last.to);
-      nextDay.setDate(nextDay.getDate() + 1);
 
-      if (cur.from <= nextDay) {
+      if (cur.from <= last.to) {
         if (cur.to > last.to) last.to = cur.to;
-      } else out.push(cur);
+      } else {
+        out.push(cur);
+      }
     }
+
     return out;
   }
 
@@ -158,7 +135,7 @@ export default function Checkout() {
       setBookedAll(
         (data || []).map((b) => ({
           from: toDateOnlyFromAPIUTC(b.from || b.startDate),
-          to: toDateOnlyFromAPIUTC(b.to || b.endDate),
+          to: minusOneDay(toDateOnlyFromAPIUTC(b.to || b.endDate)),
         }))
       )
     );
@@ -324,6 +301,17 @@ export default function Checkout() {
 
     if (!form.email || !form.email.trim()) {
       toast.error("Email is required for booking confirmation");
+      return;
+    }
+
+    const { data: availability } = await api.post("/bookings/check-availability", {
+      roomId,
+      startDate: toYMD(range.from),
+      endDate: toYMD(range.to),
+    });
+
+    if (!availability.available) {
+      toast.error("Sorry, these dates were just booked by another guest.");
       return;
     }
 
@@ -917,6 +905,7 @@ export default function Checkout() {
               <Label>Check-in / Check-out</Label>
 
               <CalendarRange
+                roomId={roomId}
                 value={range}
                 onChange={setRange}
                 disabledRanges={disabledAll}

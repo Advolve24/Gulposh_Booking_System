@@ -245,30 +245,30 @@ export default function Dashboard() {
 
 
   const downloadInvoiceDirect = async (bookingId) => {
-  const toastId = toast.loading("PDF is generating...");
+    const toastId = toast.loading("PDF is generating...");
 
-  try {
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/invoice/admin/${bookingId}/download`,
-      { credentials: "include" }
-    );
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/invoice/admin/${bookingId}/download`,
+        { credentials: "include" }
+      );
 
-    if (!res.ok) throw new Error("Failed");
+      if (!res.ok) throw new Error("Failed");
 
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Invoice-${bookingId}.pdf`;
-    a.click();
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Invoice-${bookingId}.pdf`;
+      a.click();
 
-    window.URL.revokeObjectURL(url);
-    toast.success("Invoice downloaded", { id: toastId });
-  } catch {
-    toast.error("Invoice download failed", { id: toastId });
-  }
-};
+      window.URL.revokeObjectURL(url);
+      toast.success("Invoice downloaded", { id: toastId });
+    } catch {
+      toast.error("Invoice download failed", { id: toastId });
+    }
+  };
 
 
 
@@ -276,13 +276,18 @@ export default function Dashboard() {
   const isSameDay = (a, b) =>
     a && b && toDateKey(a) === toDateKey(b);
 
-  const getBookingCountForDate = (date) => {
-    const key = toDateKey(date);
+  const lastNight = (endDate) => {
+    const d = toDateOnly(endDate);
+    d.setDate(d.getDate() - 1);
+    return d;
+  };
 
+  const getBookingCountForDate = (date) => {
+    const day = toDateOnly(date);
     return bookings.some((b) => {
-      const start = toDateKey(new Date(b.startDate));
-      const end = toDateKey(new Date(b.endDate));
-      return key >= start && key <= end;
+      const start = toDateOnly(b.startDate);
+      const endNight = lastNight(b.endDate);
+      return day >= start && day <= endNight;
     });
   };
 
@@ -419,7 +424,6 @@ export default function Dashboard() {
 
   const rangeHasBooking = (start, end) => {
     const days = eachDayOfInterval({ start, end });
-
     return days.some((d) => getBookingCountForDate(d) > 0);
   };
 
@@ -511,37 +515,37 @@ export default function Dashboard() {
   }, [bookings]);
 
 
- const recentBookings = useMemo(() => {
-  const today = toDateOnly(new Date());
+  const recentBookings = useMemo(() => {
+    const today = toDateOnly(new Date());
 
-  const isOngoing = (b) =>
-    toDateOnly(b.startDate) <= today &&
-    toDateOnly(b.endDate) >= today;
+    const isOngoing = (b) =>
+      toDateOnly(b.startDate) <= today &&
+      toDateOnly(b.endDate) >= today;
 
-  const isUpcoming = (b) =>
-    toDateOnly(b.startDate) > today;
+    const isUpcoming = (b) =>
+      toDateOnly(b.startDate) > today;
 
-  const isPast = (b) =>
-    toDateOnly(b.endDate) < today;
+    const isPast = (b) =>
+      toDateOnly(b.endDate) < today;
 
-  return [...bookings]
-    .filter(b => b.status !== "cancelled")
-    .sort((a, b) => {
-      const aStart = toDateOnly(a.startDate);
-      const bStart = toDateOnly(b.startDate);
-      if (isOngoing(a) && !isOngoing(b)) return -1;
-      if (!isOngoing(a) && isOngoing(b)) return 1;
-      if (isUpcoming(a) && isUpcoming(b))
-        return aStart - bStart;
-      if (isUpcoming(a) && !isUpcoming(b)) return -1;
-      if (!isUpcoming(a) && isUpcoming(b)) return 1;
-      if (isPast(a) && isPast(b))
-        return bStart - aStart;
+    return [...bookings]
+      .filter(b => b.status !== "cancelled")
+      .sort((a, b) => {
+        const aStart = toDateOnly(a.startDate);
+        const bStart = toDateOnly(b.startDate);
+        if (isOngoing(a) && !isOngoing(b)) return -1;
+        if (!isOngoing(a) && isOngoing(b)) return 1;
+        if (isUpcoming(a) && isUpcoming(b))
+          return aStart - bStart;
+        if (isUpcoming(a) && !isUpcoming(b)) return -1;
+        if (!isUpcoming(a) && isUpcoming(b)) return 1;
+        if (isPast(a) && isPast(b))
+          return bStart - aStart;
 
-      return 0;
-    })
-    .slice(0, 5);
-}, [bookings]);
+        return 0;
+      })
+      .slice(0, 5);
+  }, [bookings]);
 
 
   const upcomingBooking = useMemo(() => {

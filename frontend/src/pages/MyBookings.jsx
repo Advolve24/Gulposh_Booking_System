@@ -3,12 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getMyBookings } from "../api/bookings";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import {
-  Calendar,
-  Clock,
-  Users,
-  Eye,
-} from "lucide-react";
+import { Calendar, Clock, Users, Eye} from "lucide-react";
 import ViewBookingDialog from "@/components/ViewBookingDialog";
 import CancelBookingFlow from "@/components/CancelBookingFlow";
 import { useMediaQuery } from "@/hooks/use-media-query";

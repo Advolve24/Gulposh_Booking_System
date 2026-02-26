@@ -15,6 +15,10 @@ const toDateKey = (date) => format(date, "yyyy-MM-dd");
 
 const fromDateKey = (key) => new Date(`${key}T12:00:00`);
 
+const lastNightKey = (endDate) => {
+  return toDateKey(addDays(new Date(endDate), -1));
+};
+
 
 export default function BlockDates() {
   const today = startOfToday();
@@ -24,8 +28,8 @@ export default function BlockDates() {
   const [bookedDates, setBookedDates] = useState(new Set());
 
   const [range, setRange] = useState({
-    from: null, 
-    to: null,   
+    from: null,
+    to: null,
   });
 
 
@@ -40,18 +44,23 @@ export default function BlockDates() {
     ]);
 
     setBlackouts(
-      (blk || []).map((b) => ({
-        ...b,
-        fromKey: toDateKey(new Date(b.from)),
-        toKey: toDateKey(new Date(b.to)),
-      }))
+      (blk || []).map((b) => {
+        const from = new Date(b.from);
+        const to = new Date(b.to);
+        const displayTo = addDays(to, 1);
+        return {
+          ...b,
+          fromKey: toDateKey(from),
+          toKey: toDateKey(displayTo),
+        };
+      })
     );
 
     const booked = new Set();
 
     bookings?.forEach((b) => {
       let d = toDateKey(new Date(b.startDate));
-      const end = toDateKey(new Date(b.endDate));
+      const end = lastNightKey(b.endDate);
 
       while (d <= end) {
         booked.add(d);
@@ -73,9 +82,11 @@ export default function BlockDates() {
     );
   };
 
+
   const isRangeValid = (fromKey, toKey) => {
     let d = fromKey;
-    while (d <= toKey) {
+    const lastNight = toDateKey(addDays(new Date(toKey), -1));
+    while (d <= lastNight) {
       if (bookedDates.has(d)) return false;
       d = toDateKey(addDays(new Date(d), 1));
     }
@@ -88,8 +99,8 @@ export default function BlockDates() {
 
     try {
       await createBlackout({
-        from: range.from, 
-        to: range.to,    
+        from: range.from,
+        to: toDateKey(addDays(new Date(range.to), -1)),
       });
 
       toast.success("Dates blocked successfully");
@@ -117,11 +128,11 @@ export default function BlockDates() {
             selected={
               range.from
                 ? {
-                    from: fromDateKey(range.from),
-                    to: range.to
-                      ? fromDateKey(range.to)
-                      : undefined,
-                  }
+                  from: fromDateKey(range.from),
+                  to: range.to
+                    ? fromDateKey(range.to)
+                    : undefined,
+                }
                 : undefined
             }
             onSelect={(r) => {
