@@ -36,6 +36,7 @@ export default function AuthModal() {
   const [form, setForm] = useState({ phone: "", otp: "" });
   const [loading, setLoading] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(OTP_TIMER);
+  const [recaptchaKey, setRecaptchaKey] = useState(0);
 
   const confirmationRef = useRef(null);
   const sendingRef = useRef(false);
@@ -123,8 +124,9 @@ export default function AuthModal() {
 
   const sendOtp = async () => {
     if (sendingRef.current) return;
+
     if (!isValidPhone(form.phone)) {
-      toast.error("Enter valid 10-digit mobile number");
+      setPhoneError("Please enter a valid 10 digit mobile number");
       return;
     }
 
@@ -133,10 +135,17 @@ export default function AuthModal() {
     toast.loading("Sending OTP...", { id: "otp" });
 
     try {
+      // VERY IMPORTANT — destroy previous verifier
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
         window.recaptchaVerifier = null;
       }
+
+      // Force recreate DOM
+      setRecaptchaKey((k) => k + 1);
+
+      // Wait DOM rebuild
+      await new Promise((r) => setTimeout(r, 400));
 
       const verifier = getRecaptchaVerifier("auth-recaptcha");
       window.recaptchaVerifier = verifier;
@@ -147,13 +156,21 @@ export default function AuthModal() {
         verifier
       );
 
-      toast.success("OTP sent", { id: "otp" });
-      setTimeout(() => otpInputsRef.current[0]?.focus(), 200);
       setOtpSentTo(form.phone);
       setStep("otp");
       setSecondsLeft(OTP_TIMER);
-    } catch {
-      toast.error("Failed to send OTP", { id: "otp" });
+
+      toast.success("OTP sent successfully", { id: "otp" });
+
+      setTimeout(() => otpInputsRef.current[0]?.focus(), 200);
+
+    } catch (err) {
+      console.error("OTP ERROR:", err);
+
+      toast.error(
+        "We couldn't send OTP. Please wait a few seconds and try again.",
+        { id: "otp" }
+      );
     } finally {
       sendingRef.current = false;
       setLoading(false);
@@ -432,7 +449,11 @@ export default function AuthModal() {
           </div>
         </div>
 
-        <div id="auth-recaptcha" className="hidden" />
+        <div
+          id="auth-recaptcha"
+          key={recaptchaKey}
+          className="hidden"
+        />
       </DialogContent>
     </Dialog>
   );
