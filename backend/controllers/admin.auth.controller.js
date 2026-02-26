@@ -33,7 +33,7 @@ if (!user.passwordHash)
     const token = jwt.sign(
       { id: user._id, email: user.email, isAdmin: true },
       process.env.JWT_SECRET,
-      { expiresIn: "60m" }
+      { expiresIn: "8h" }
     );
 
     res.cookie("admin_token", token, {
@@ -41,7 +41,7 @@ if (!user.passwordHash)
   secure: process.env.NODE_ENV === "production",
   sameSite: "none",
   domain: ".villagulposh.com", 
-  maxAge: 60 * 60 * 1000,
+  maxAge: 8 * 60 * 60 * 1000,
 });
 
 

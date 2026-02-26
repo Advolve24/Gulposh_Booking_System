@@ -53,9 +53,10 @@ export default function VillaBookingForm() {
 
   const isRangeValid = (from, to) => {
     let d = toDateKey(from);
-    const end = toDateKey(to);
-
-    while (d <= end) {
+    const lastNight = toDateKey(
+      addDays(new Date(to), -1)
+    );
+    while (d <= lastNight) {
       if (bookedDates.has(d)) return false;
       if (
         blockedRanges.some(
@@ -134,9 +135,12 @@ export default function VillaBookingForm() {
 
         (bookings || []).forEach((b) => {
           let d = toDateKey(new Date(b.startDate));
-          const end = toDateKey(new Date(b.endDate));
 
-          while (d <= end) {
+          const lastNight = toDateKey(
+            addDays(new Date(b.endDate), -1)
+          );
+
+          while (d <= lastNight) {
             bookedSet.add(d);
             d = toDateKey(addDays(new Date(d), 1));
           }
