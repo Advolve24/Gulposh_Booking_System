@@ -205,7 +205,7 @@ export default function Dashboard() {
         const [statsRes, bookingsRes, blackoutsRes] = await Promise.all([
           getStats(),
           listBookingsAdmin({ limit: 200 }),
-          listBlackouts(), // ✅ NO custom headers
+          listBlackouts(),
         ]);
 
         setStats({
@@ -213,8 +213,6 @@ export default function Dashboard() {
           upcomingBookings: statsRes.upcoming ?? 0,
           cancelledBookings: statsRes.cancelled ?? 0,
           totalRevenue: statsRes.revenue ?? 0,
-
-          // Optional – until backend supports it
           lastMonth: {
             totalBookings: 0,
             cancelledBookings: 0,
@@ -282,13 +280,13 @@ export default function Dashboard() {
     return d;
   };
 
-  const getBookingCountForDate = (date) => {
+  const isDateBooked = (date) => {
     const day = toDateOnly(date);
     return bookings.some((b) => {
       if (b.status === "cancelled") return false;
       const start = toDateOnly(b.startDate);
-      const endNight = lastNight(b.endDate);
-      return day >= start && day <= endNight;
+      const end = toDateOnly(b.endDate);
+      return day >= start && day <= end;
     });
   };
 
@@ -332,7 +330,7 @@ export default function Dashboard() {
       return {
         date,
         isBlocked: blocked,
-        count: blocked ? 0 : getBookingCountForDate(date),
+        count: blocked ? 0 : isDateBooked(date),
       };
     });
   }, [bookings, blackouts]);
@@ -350,7 +348,7 @@ export default function Dashboard() {
     blockSelection.some((d) => isSameDay(d, date));
 
   const onCalendarDateClick = async (date) => {
-    const bookingCount = getBookingCountForDate(date);
+    const bookingCount = isDateBooked(date);
     const blackout = getBlackoutForDate(date);
 
     if (isPastDate(date)) {
@@ -699,7 +697,7 @@ export default function Dashboard() {
                 {calendarDays.map((date) => {
                   const past = isPastDate(date);
                   const isBlocked = !past && isDateBlocked(date);
-                  const hasBooking = !past && getBookingCountForDate(date);
+                  const hasBooking = !past && isDateBooked(date);
 
                   return (
                     <div
