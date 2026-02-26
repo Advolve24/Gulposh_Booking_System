@@ -297,7 +297,7 @@ export default function AuthModal() {
               <div className="space-y-1">
                 <Label>Mobile Number</Label>
 
-                <div className="flex items-stretch rounded-xl border overflow-hidden focus-within:ring-2 focus-within:ring-primary">
+                <div className="flex items-stretch rounded-xl border overflow-hidden focus-within:ring-1 focus-within:ring-primary">
 
                   {/* COUNTRY CODE */}
                   <div className="
