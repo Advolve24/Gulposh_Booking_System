@@ -116,7 +116,7 @@ export default function Checkout() {
   }
 
   const [taxPercent, setTaxPercent] = useState(0);
-
+  const [processingPayment, setProcessingPayment] = useState(false);
   const [otpStep, setOtpStep] = useState("idle");
   const [otp, setOtp] = useState("");
   const pendingProceedRef = useRef(false);
@@ -282,6 +282,8 @@ export default function Checkout() {
   }, [discountedSubtotal, totalTax]);
 
   const proceedPayment = async () => {
+    if (processingPayment) return;
+    setProcessingPayment(true);
     const g = totalGuests;
 
     if (room.mealMode === "price" && withMeal) {
@@ -289,6 +291,7 @@ export default function Checkout() {
 
       if (mealGuests < 1) {
         toast.error("Please select at least 1 guest for meals");
+        setProcessingPayment(false);
         return;
       }
 
@@ -312,15 +315,16 @@ export default function Checkout() {
 
     if (!availability.available) {
       toast.error("Sorry, these dates were just booked by another guest.");
+      setProcessingPayment(false);
       return;
     }
 
     const ok = await loadRazorpayScript();
     if (!ok) {
       toast.error("Failed to load payment gateway");
+      setProcessingPayment(false);
       return;
     }
-
     const { data } = await api.post("/payments/create-order", {
       roomId,
       startDate: toYMD(range.from),
@@ -438,6 +442,7 @@ export default function Checkout() {
     });
 
     rzp.open();
+    setProcessingPayment(false);
   };
 
 
@@ -1128,19 +1133,46 @@ export default function Checkout() {
 
           {/* ================= CTA ================= */}
           <Button
-            className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
+            disabled={processingPayment}
+            className="w-full h-12 text-base bg-red-700 hover:bg-red-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             onClick={proceed}
           >
-            Proceed to Payment
+            {processingPayment ? (
+              <>
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4l3-3-3-3v4A10 10 0 002 12h2z"
+                  />
+                </svg>
+                Processing...
+              </>
+            ) : (
+              "Proceed to Payment"
+            )}
           </Button>
 
           {/* ================= MOBILE FIXED CTA ================= */}
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-3">
             <Button
-              className="w-full h-12 text-base bg-red-700 hover:bg-red-800"
+              disabled={processingPayment}
+              className="w-full h-12 text-base bg-red-700 hover:bg-red-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               onClick={proceed}
             >
-              Proceed to Payment
+              {processingPayment ? "Processing..." : "Proceed to Payment"}
             </Button>
           </div>
 
