@@ -285,6 +285,7 @@ export default function Dashboard() {
   const getBookingCountForDate = (date) => {
     const day = toDateOnly(date);
     return bookings.some((b) => {
+      if (b.status === "cancelled") return false;
       const start = toDateOnly(b.startDate);
       const endNight = lastNight(b.endDate);
       return day >= start && day <= endNight;
