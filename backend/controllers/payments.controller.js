@@ -41,6 +41,7 @@ export const createOrder = async (req, res) => {
       withMeal,
       vegGuests = 0,
       nonVegGuests = 0,
+      couponCode,
     } = req.body;
 
     if (!guests || !adults || adults < 1) {
@@ -70,7 +71,6 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
-    // ✅ after nights calculation
     const roomTotal = nights * room.pricePerNight;
 
     const mealTotal = withMeal
@@ -83,20 +83,26 @@ export const createOrder = async (req, res) => {
 
     let discountAmount = 0;
 
-    if (room.discountType === "percent") {
-      discountAmount = Math.round(
-        (subTotal * room.discountValue) / 100
-      );
-    }
-    if (room.discountType === "flat") {
-      discountAmount = room.discountValue;
+    const validCoupon =
+      couponCode &&
+      room.discountCode &&
+      couponCode.trim().toUpperCase() ===
+      room.discountCode.trim().toUpperCase();
+
+    if (validCoupon) {
+      if (room.discountType === "percent") {
+        discountAmount = Math.round(
+          (subTotal * room.discountValue) / 100
+        );
+      } else if (room.discountType === "flat") {
+        discountAmount = room.discountValue;
+      }
     }
     const discountedSubtotal = Math.max(
       0,
       subTotal - discountAmount
     );
 
-    /* ---------------- SINGLE TAX ---------------- */
     const taxSetting = await TaxSetting.findOne();
     if (!taxSetting) {
       return res.status(500).json({ message: "Tax configuration missing" });
@@ -151,7 +157,7 @@ export const createOrder = async (req, res) => {
   }
 };
 
-/* ============================= VERIFY PAYMENT ============================= */
+
 export const verifyPayment = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -181,6 +187,7 @@ export const verifyPayment = async (req, res) => {
       state,
       city,
       pincode,
+      couponCode
     } = req.body || {};
 
 
@@ -202,7 +209,6 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid payment payload" });
     }
 
-    /* ---------------- Verify Razorpay Signature ---------------- */
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -212,7 +218,6 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "Signature mismatch" });
     }
 
-    /* ---------------- Prevent Duplicate Booking ---------------- */
     const existing = await Booking.findOne({
       paymentId: razorpay_payment_id,
     });
@@ -252,14 +257,22 @@ export const verifyPayment = async (req, res) => {
 
     let discountAmount = 0;
 
-    if (room.discountType === "percent") {
-      discountAmount = Math.round(
-        (subTotal * room.discountValue) / 100
-      );
+    const validCoupon =
+      couponCode &&
+      room.discountCode &&
+      couponCode.trim().toUpperCase() ===
+      room.discountCode.trim().toUpperCase();
+
+    if (validCoupon) {
+      if (room.discountType === "percent") {
+        discountAmount = Math.round(
+          (subTotal * room.discountValue) / 100
+        );
+      } else if (room.discountType === "flat") {
+        discountAmount = room.discountValue;
+      }
     }
-    if (room.discountType === "flat") {
-      discountAmount = room.discountValue;
-    }
+
     const discountedSubtotal = Math.max(
       0,
       subTotal - discountAmount
