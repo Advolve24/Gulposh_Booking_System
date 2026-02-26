@@ -294,30 +294,58 @@ export default function AuthModal() {
 
           {step === "phone" && (
             <>
-              <Label>Mobile Number</Label>
-              <Input
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="Enter 10-digit mobile number"
-                value={form.phone}
-                className="h-12 text-base"
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, "");
+              <div className="space-y-1">
+                <Label>Mobile Number</Label>
 
-                  if (value.length > 10) return;
+                <div className="flex items-stretch rounded-xl border overflow-hidden focus-within:ring-2 focus-within:ring-primary">
 
-                  setForm({ ...form, phone: value });
+                  {/* COUNTRY CODE */}
+                  <div className="
+      flex items-center justify-center
+      px-3 bg-muted text-sm font-medium
+      border-r min-w-[64px]
+    ">
+                    +91
+                  </div>
 
-                  if (value.length === 10) setPhoneError("");
-                  else setPhoneError("Enter a valid 10-digit number");
-                }}
-              />
+                  {/* PHONE INPUT */}
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="Enter mobile number"
+                    value={form.phone}
+                    className="
+        flex-1
+        h-12
+        px-3
+        text-base
+        outline-none
+        bg-white
+      "
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, "");
 
-              {phoneError && (
-                <p className="text-xs text-red-500 mt-1">{phoneError}</p>
-              )}
+                      // Prevent more than 10 digits
+                      if (value.length > 10) value = value.slice(0, 10);
+
+                      setForm({ ...form, phone: value });
+
+                      if (value.length === 10) setPhoneError("");
+                      else setPhoneError("Enter a valid 10-digit number");
+                    }}
+                  />
+                </div>
+
+                {phoneError && (
+                  <p className="text-xs text-red-500 mt-1">{phoneError}</p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  We will send a verification code to this number
+                </p>
+              </div>
               <Button
-                className="w-full h-12 rounded-xl text-base"
+                className="w-full h-12 rounded-xl text-base mt-2"
                 onClick={sendOtp}
                 disabled={loading || form.phone.length !== 10}
               >
