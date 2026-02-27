@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { MapPin, Users, User, ConciergeBell, ArrowLeft } from "lucide-react";
+import { MapPin, Users, User, ConciergeBell, ArrowUpLeft } from "lucide-react";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import CalendarRange from "../components/CalendarRange";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
@@ -370,7 +370,7 @@ export default function EntireVilla() {
             onClick={() => navigate(-1)}
             className="text-l hover:opacity-100 bg-black/10 p-2 rounded-[8px] pr-4 w-fit flex gap-1 ml-5"
           >
-            <ArrowLeft className="text-black/60" />Back
+            <ArrowUpLeft className="text-black/60" />Back
           </button>
         </div>
 

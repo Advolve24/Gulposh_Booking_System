@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, MapPin, Users, Utensils, Check, User, ConciergeBell, Mail, Phone, Home, CalendarIcon } from "lucide-react";
+import { ArrowUpLeft, MapPin, Users, Utensils, Check, User, ConciergeBell, Mail, Phone, Home, CalendarIcon } from "lucide-react";
 import { toDateOnly, toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -627,7 +627,7 @@ export default function Checkout() {
           onClick={() => navigate(-1)}
           className="text-l hover:opacity-100 bg-black/10 p-2 rounded-[8px] pr-4 w-fit flex gap-1 ml-5"
         >
-          <ArrowLeft className="text-black/60" />Back
+          <ArrowUpLeft className="text-black/60" />Back
         </button>
       </div>
 
