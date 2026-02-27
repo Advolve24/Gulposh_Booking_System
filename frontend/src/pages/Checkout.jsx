@@ -28,6 +28,11 @@ function minusOneDay(date) {
   return d;
 }
 
+const INR = (num) =>
+  `₹${Number(num || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
 export default function Checkout() {
   const { state } = useLocation();
