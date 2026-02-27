@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../api/http";
 import RoomCard from "../components/RoomCard";
 import CalendarRange from "../components/CalendarRange";
@@ -107,6 +107,7 @@ export default function Home() {
   const [range, setRange] = useState();
   const [adults, setAdults] = useState(0);
   const [children, setChildren] = useState(0);
+  const location = useLocation();
 
   const totalGuests = adults + children;
   const hasValidRange = !!(range?.from && range?.to);
@@ -149,6 +150,17 @@ export default function Home() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+  if (location.state?.scrollToResults) {
+    setTimeout(() => {
+      document.getElementById("results")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 200);
+  }
+}, [location.state]);
 
 
   const resetFilters = () => {
@@ -474,7 +486,7 @@ export default function Home() {
                           className="
                 mt-2 h-14 w-full
                 justify-between
-                rounded-2xl
+                rounded-xl
                 bg-white
                 border-[#eadfd8]
                 hover:bg-[#fffaf7]
@@ -531,7 +543,7 @@ export default function Home() {
 
                           <Button
                             size="sm"
-                            className="mt-3 w-full rounded-full bg-[#a11d2e] hover:bg-[#8e1827] text-white text-[12px] h-9"
+                            className="mt-3 w-full rounded-[8px] bg-[#a11d2e] hover:bg-[#8e1827] text-white text-[12px] h-9"
                             onClick={() => {
                               sessionStorage.setItem(
                                 "searchParams",
@@ -554,7 +566,7 @@ export default function Home() {
                     className="
           h-14
           w-full md:w-auto
-          rounded-2xl
+          rounded-xl
           bg-[#941b2b]
           hover:bg-[#8e1827]
           text-white
@@ -573,7 +585,7 @@ export default function Home() {
                     className="
     h-14
     w-full md:w-auto
-    rounded-2xl
+    rounded-xl
     border-white/60
     text-black
     hover:bg-white hover:text-black
@@ -889,7 +901,7 @@ export default function Home() {
 
                   <div className="mt-7 mb-4 flex flex-wrap gap-3">
                     <Button
-                      className="rounded-full bg-white text-black hover:bg-white"
+                      className="rounded-[8px] px-4 py-4 bg-white text-black hover:bg-white"
                       onClick={() => navigate("/entire-villa-form")}
                     >
                       Enquire Now <ArrowRight className="ml-2 h-4 w-4" />
@@ -897,7 +909,7 @@ export default function Home() {
 
                     <Button
                       variant="outline"
-                      className="rounded-full border-white/25 bg-white/10 text-white hover:bg-white/20"
+                      className="rounded-[8px] px-4 py-4 border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
                       onClick={() =>
                         document.getElementById("results")?.scrollIntoView({ behavior: "smooth" })
                       }
@@ -969,7 +981,7 @@ export default function Home() {
 
               <div className="mt-6 flex gap-3 justify-start">
                 <Button
-                  className="bg-[#a11d2e] hover:bg-[#8e1827] text-white rounded-full px-6"
+                  className="bg-[#a11d2e] hover:bg-[#8e1827] text-white rounded-[8px] px-4 py-4"
                   onClick={() => {
                     sessionStorage.setItem(
                       "searchParams",
@@ -983,7 +995,7 @@ export default function Home() {
 
                 <Button
                   variant="outline"
-                  className="rounded-full"
+                  className="rounded-[8px] px-4 py-4"
                   onClick={() => setShowVillaPopup(false)}
                 >
                   Continue Room Booking
