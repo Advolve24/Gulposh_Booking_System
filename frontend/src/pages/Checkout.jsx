@@ -264,21 +264,24 @@ export default function Checkout() {
   const sgstPercent = taxPercent / 2;
 
   const cgstAmount = useMemo(() => {
-    return Math.round(
-      (discountedSubtotal * cgstPercent) / 100
+    return Number(
+      ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
     );
   }, [discountedSubtotal, cgstPercent]);
 
   const sgstAmount = useMemo(() => {
-    return Math.round(
-      (discountedSubtotal * sgstPercent) / 100
+    return Number(
+      ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
     );
   }, [discountedSubtotal, sgstPercent]);
 
-  const totalTax = cgstAmount + sgstAmount;
+
+  const totalTax = useMemo(() => {
+    return Number((cgstAmount + sgstAmount).toFixed(2));
+  }, [cgstAmount, sgstAmount]);
 
   const grandTotal = useMemo(() => {
-    return discountedSubtotal + totalTax;
+    return Number((discountedSubtotal + totalTax).toFixed(2));
   }, [discountedSubtotal, totalTax]);
 
   const proceedPayment = async () => {
@@ -728,21 +731,21 @@ export default function Checkout() {
                       Room ({nights} nights × ₹{room?.pricePerNight})
                     </span>
                     <span>
-                      ₹{roomTotal.toLocaleString("en-IN")}
+                      {INR(roomTotal)}
                     </span>
                   </div>
 
                   {room.mealMode === "price" && withMeal && (
                     <div className="flex justify-between">
                       <span>Meals</span>
-                      <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                      <span>{INR(mealTotal)}</span>
                     </div>
                   )}
 
                   {discountAmount > 0 && (
                     <div className="flex justify-between text-green-700">
                       <span>Discount</span>
-                      <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
+                      <span>-{INR(discountAmount)}</span>
                     </div>
                   )}
 
@@ -756,12 +759,12 @@ export default function Checkout() {
                   <div className="flex flex-col justify-between text-muted-foreground">
                     <div className="flex justify-between">
                       <span>CGST ({cgstPercent}%)</span>
-                      <span>₹{cgstAmount.toLocaleString("en-IN")}</span>
+                      <span>{INR(cgstAmount)}</span>
                     </div>
 
                     <div className="flex justify-between">
                       <span>SGST ({sgstPercent}%)</span>
-                      <span>₹{sgstAmount.toLocaleString("en-IN")}</span>
+                      <span>{INR(sgstAmount)}</span>
                     </div>
                   </div>
                 </div>
@@ -778,7 +781,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="text-xl font-semibold text-red-600">
-                    ₹{grandTotal.toLocaleString("en-IN")}
+                    {INR(grandTotal)}
                   </div>
                 </div>
 
@@ -1058,7 +1061,7 @@ export default function Checkout() {
               <div className="flex justify-between">
                 <span>Room Charges</span>
                 <span>
-                  <span>₹{roomTotal.toLocaleString("en-IN")}</span>
+                  <span>{INR(roomTotal)}</span>
                 </span>
               </div>
 
@@ -1066,7 +1069,7 @@ export default function Checkout() {
                 <div className="flex justify-between">
                   <span>Meals</span>
                   <span>
-                    <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                    <span>{INR(mealTotal)}</span>
                   </span>
                 </div>
               )}
@@ -1074,7 +1077,7 @@ export default function Checkout() {
               <div className="flex justify-between">
                 <span>GST</span>
                 <span>
-                  <span>₹{totalTax.toLocaleString("en-IN")}</span>
+                  <span>{INR(totalTax)}</span>
                 </span>
               </div>
 
@@ -1120,7 +1123,7 @@ export default function Checkout() {
               <div className="flex justify-between font-semibold">
                 <span className="text-[16px]">Total Payable</span>
                 <span className="text-red-700 text-[18px]">
-                  ₹{grandTotal.toLocaleString("en-IN")}
+                  {INR(grandTotal)}
                 </span>
               </div>
             </div>

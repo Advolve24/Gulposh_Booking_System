@@ -111,11 +111,12 @@ export const createOrder = async (req, res) => {
     const cgstPercent = taxSetting.taxPercent / 2;
     const sgstPercent = taxSetting.taxPercent / 2;
 
-    const cgstAmount = Math.round(
-      (discountedSubtotal * cgstPercent) / 100
+    const cgstAmount = Number(
+      ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
     );
-    const sgstAmount = Math.round(
-      (discountedSubtotal * sgstPercent) / 100
+
+    const sgstAmount = Number(
+      ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
     );
 
     const totalTax = cgstAmount + sgstAmount;
@@ -286,17 +287,16 @@ export const verifyPayment = async (req, res) => {
     const cgstPercent = taxSetting.taxPercent / 2;
     const sgstPercent = taxSetting.taxPercent / 2;
 
-    const cgstAmount = Math.round(
-      (discountedSubtotal * cgstPercent) / 100
+    const cgstAmount = Number(
+      ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
     );
 
-    const sgstAmount = Math.round(
-      (discountedSubtotal * sgstPercent) / 100
+    const sgstAmount = Number(
+      ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
     );
 
-    const totalTax = cgstAmount + sgstAmount;
-
-    const grandTotal = discountedSubtotal + totalTax;
+    const totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
+    const grandTotal = Number((discountedSubtotal + totalTax).toFixed(2));
 
     const overlap = await Booking.findOne({
       room: room._id,
