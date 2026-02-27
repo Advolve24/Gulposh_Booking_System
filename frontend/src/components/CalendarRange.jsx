@@ -61,6 +61,22 @@ export default function CalendarRange({
     );
   });
 
+  const blockedNights = useMemo(() => {
+  const ranges = [...globalRanges, ...roomRanges, ...(disabledRanges || [])];
+  const nights = new Set();
+  ranges.forEach(r => {
+    let d = new Date(r.from);
+    const end = new Date(r.to);
+    while (d <= end) {
+      nights.add(d.toDateString());
+      d.setDate(d.getDate() + 1);
+    }
+  });
+  return nights;
+}, [globalRanges, roomRanges, disabledRanges]);
+
+
+
   const loadMoreMonths = () => {
     setMobileMonths((prev) => {
       const lastMonth = prev[prev.length - 1];
@@ -200,18 +216,32 @@ export default function CalendarRange({
     if (!open) selectingRef.current = false;
   }, [open]);
 
+
+
   const disabled = useMemo(() => {
-    const base = [
-      { before: todayDateOnly() },
-      ...globalRanges,
-      ...roomRanges,
-      ...(disabledRanges || []),
-    ];
-    if (value?.from && !value?.to) {
-      base.push({ before: toDateOnlyFromAPIUTC(value.from) });
+    const today = todayDateOnly();
+    if (!value?.from) {
+      return [
+        { before: today },
+        (date) => blockedNights.has(date.toDateString())
+      ];
     }
-    return base;
-  }, [globalRanges, roomRanges, disabledRanges, value?.from, value?.to]);
+    const checkIn = new Date(value.from);
+    return [
+      { before: today },
+      { before: checkIn },
+      (date) => {
+        if (date <= checkIn) return false;
+        let d = new Date(checkIn);
+        d.setDate(d.getDate() + 1);
+        while (d < date) {
+          if (blockedNights.has(d.toDateString())) return true;
+          d.setDate(d.getDate() + 1);
+        }
+        return false;
+      }
+    ];
+  }, [blockedNights, value?.from]);
 
 
 

@@ -50,8 +50,7 @@ export default function Header() {
 
         {/* LOGO */}
         <Link to="/" className="flex items-center gap-2">
-          <img src="/logo1.png" className="h-10" alt="logo" />
-          <img src="/logo2.png" className="h-7" alt="brand" />
+          <img src="/Gulposh-Logo2.png" className="md:w-[180px] w-[150px]" alt="logo" />
         </Link>
 
         {/* RIGHT */}

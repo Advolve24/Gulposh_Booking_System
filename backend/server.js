@@ -6,7 +6,6 @@ import cors from "cors";
 import path from "node:path";
 import fs from "node:fs";
 import http from "http";
-
 import authRoutes from "./routes/auth.routes.js";
 import roomRoutes from "./routes/room.routes.js";
 import paymentsRoutes from "./routes/payments.routes.js";
@@ -26,10 +25,8 @@ import { initSocket } from "./lib/socket.js";
 
 const app = express();
 
-/* ================== TRUST PROXY ================== */
 app.set("trust proxy", 1);
 
-/* ================== ALLOWED ORIGINS ================== */
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:5174",
@@ -40,11 +37,9 @@ const ALLOWED_ORIGINS = [
   "https://admin.villagulposh.com",
 ];
 
-/* ================== CORS (FIXED) ================== */
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow server-to-server / health checks
       if (!origin) return callback(null, true);
 
       if (ALLOWED_ORIGINS.includes(origin)) {
@@ -52,7 +47,7 @@ app.use(
       }
 
       console.error("❌ Blocked by CORS:", origin);
-      return callback(null, false); // IMPORTANT: do NOT throw error
+      return callback(null, false); 
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -60,21 +55,17 @@ app.use(
   })
 );
 
-/* ================== MIDDLEWARE ================== */
 app.use(express.json());
 app.use(cookieParser());
 
-/* ================== STATIC UPLOADS ================== */
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 app.use("/uploads", express.static(UPLOAD_DIR));
 
-/* ================== HEALTH CHECK ================== */
 app.get("/", (_req, res) => {
   res.send("✅ API is up");
 });
 
-/* ================== ROUTES ================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/payments", paymentsRoutes);
@@ -91,7 +82,6 @@ app.use("/api/invoice", invoiceRoutes);
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/tax", taxRoutes);
 
-/* ================== GLOBAL ERROR HANDLER ================== */
 app.use((err, req, res, next) => {
   console.error("🔥 Server Error:", err);
   res.status(500).json({
@@ -100,7 +90,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-/* ================== DB + SERVER ================== */
 mongoose
   .connect(process.env.MONGO_URL)
   .then(() => {
