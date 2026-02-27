@@ -9,7 +9,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@
 import { X } from "lucide-react";
 import {
   Wifi, BedDouble, ShieldCheck, Refrigerator, Tv, Coffee, Music, Car, Utensils, Shirt, Clock, Ban,
-  Users, IdCard, MapPin, Star, ChevronDown
+  Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft
 } from "lucide-react";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 
@@ -307,7 +307,6 @@ export default function RoomPage() {
       children,
     };
 
-    // 🔐 NOT LOGGED IN → OPEN OTP MODAL
     if (!user) {
       sessionStorage.setItem(
         "postAuthRedirect",
@@ -317,11 +316,10 @@ export default function RoomPage() {
         })
       );
 
-      openAuth(); // ✅ ONLY THIS
+      openAuth(); 
       return;
     }
 
-    // 🚨 PROFILE INCOMPLETE
     if (!user.profileComplete) {
       navigate("/complete-profile", {
         state: {
@@ -332,7 +330,6 @@ export default function RoomPage() {
       return;
     }
 
-    // ✅ ALL GOOD
     navigate("/checkout", { state: bookingState });
   };
 
@@ -371,10 +368,10 @@ export default function RoomPage() {
 
   return (
     <>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-8 pb-28 md:pb-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-3 pb-28 md:pb-8">
         {/* BACK */}
-        <Link to="/" className="text-sm opacity-70 hover:opacity-100">
-          ← Back
+        <Link to="/" className="text-l hover:opacity-100 bg-black/10 p-2 rounded w-fit flex gap-1 ">
+          <ArrowUpLeft className="text-black/60" /> Back
         </Link>
 
         {/* IMAGE SLIDER WITH THUMBNAILS */}
@@ -397,9 +394,9 @@ export default function RoomPage() {
                       p === 0 ? allImages.length - 1 : p - 1
                     )
                   }
-                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-9 h-9 flex items-center justify-center shadow"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center shadow"
                 >
-                  ‹
+                  <ChevronLeft />
                 </button>
 
                 <button
@@ -409,9 +406,9 @@ export default function RoomPage() {
                       p === allImages.length - 1 ? 0 : p + 1
                     )
                   }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-9 h-9 flex items-center justify-center shadow"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center shadow"
                 >
-                  ›
+                  <ChevronRight />
                 </button>
               </>
             )}
@@ -438,7 +435,7 @@ export default function RoomPage() {
 
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
-          <div>
+          <div className="mt-4">
             <h1 className="text-xl sm:text-2xl font-bold">{room.name}</h1>
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
               Upto {room.maxGuests} guests

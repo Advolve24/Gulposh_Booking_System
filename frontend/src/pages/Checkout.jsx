@@ -625,10 +625,9 @@ export default function Checkout() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1 text-md text-muted-foreground hover:text-black"
+          className="text-l hover:opacity-100 bg-black/10 p-2 rounded w-fit flex gap-1"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back
+          <ArrowLeft className="text-black/60" />Back
         </button>
       </div>
 

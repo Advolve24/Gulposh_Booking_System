@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function ImageSlider({ images = [], className = "" }) {
   const list = useMemo(() => images.filter(Boolean), [images]);
@@ -67,14 +68,14 @@ export default function ImageSlider({ images = [], className = "" }) {
             className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 text-white w-9 h-9 grid place-items-center"
             aria-label="Previous"
           >
-            ‹
+           <ChevronLeft />
           </button>
           <button
             onClick={next}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 text-white w-9 h-9 grid place-items-center"
             aria-label="Next"
           >
-            ›
+            <ChevronRight />
           </button>
         </>
       )}
