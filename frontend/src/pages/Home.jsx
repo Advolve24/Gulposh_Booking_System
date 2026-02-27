@@ -375,7 +375,7 @@ export default function Home() {
                 <span>Luxurious Villa in Karjat</span>
                 <span className="opacity-50">•</span>
                 <span className="flex items-center gap-1">
-                  <Star className="h-3.5 w-3.5 text-[#E3B26A]" />
+                  <Star className="h-3.5 w-3.5 text-white" />
                   <span>4.9</span>
                 </span>
               </div>
@@ -398,7 +398,7 @@ export default function Home() {
     "
               >
                 Experience Luxury
-                <span className="block text-[#E3B26A] mt-2">
+                <span className="block text-white mt-2">
                   Amidst Nature
                 </span>
               </h1>
@@ -874,22 +874,22 @@ export default function Home() {
 
                   <ul className="mt-6 grid gap-2 text-sm text-white/80 font-sans">
                     <li className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#E3B26A]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
                       All 3 rooms included
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#E3B26A]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
                       Private access for your group
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#E3B26A]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
                       24/7 concierge service
                     </li>
                   </ul>
 
                   <div className="mt-7 mb-4 flex flex-wrap gap-3">
                     <Button
-                      className="rounded-full bg-[#E3B26A] text-black hover:bg-[#d4a255]"
+                      className="rounded-full bg-white text-black hover:bg-white"
                       onClick={() => navigate("/entire-villa-form")}
                     >
                       Enquire Now <ArrowRight className="ml-2 h-4 w-4" />
