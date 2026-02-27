@@ -368,7 +368,7 @@ export default function EntireVilla() {
         <div className="mb-4 flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
-            className="text-l hover:opacity-100 bg-black/10 p-2 rounded w-fit flex gap-1 ml-4"
+            className="text-l hover:opacity-100 bg-black/10 p-2 rounded-[8px] pr-4 w-fit flex gap-1 ml-5"
           >
             <ArrowLeft className="text-black/60" />Back
           </button>

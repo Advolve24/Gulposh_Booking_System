@@ -370,7 +370,7 @@ export default function RoomPage() {
     <>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-6 space-y-3 pb-28 md:pb-8">
         {/* BACK */}
-        <Link to="/" className="text-l hover:opacity-100 bg-black/10 p-2 rounded w-fit flex gap-1 ">
+        <Link to="/" className="text-l hover:opacity-100 bg-black/10 p-2 rounded-[8px] pr-4 w-fit flex gap-1 ">
           <ArrowUpLeft className="text-black/60" /> Back
         </Link>
 
