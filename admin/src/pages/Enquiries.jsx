@@ -23,7 +23,7 @@ export default function Enquiries() {
 
   return (
     <AppLayout>
-      <div className="md:space-y-6 md:mt-4 space-y-3 mt-0 w-[100%]">
+      <div className="md:space-y-6 md:mt-1 space-y-3 mt-0 w-[100%]">
 
         {/* ================= DESKTOP TABLE ================= */}
         <div className="hidden md:block bg-white rounded-xl border overflow-x-auto">
