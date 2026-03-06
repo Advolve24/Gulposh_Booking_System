@@ -27,6 +27,12 @@ const roomSchema = new mongoose.Schema(
     mealPriceVeg: { type: Number, default: 0 },
     mealPriceNonVeg: { type: Number, default: 0 },
 
+    taxMode: {
+      type: String,
+      enum: ["included", "excluded"],
+      default: "excluded",
+    },
+
     discountType: {
       type: String,
       enum: ["none", "percent", "flat"],

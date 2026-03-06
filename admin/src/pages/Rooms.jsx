@@ -73,9 +73,7 @@ export default function Rooms() {
     }
   };
 
-  /* ================= FILTERING ================= */
   const filteredRooms = rooms.filter((room) => {
-    // ❌ REMOVE ENTIRE VILLA FROM ROOMS PAGE
     if (room.isVilla) return false;
 
     const matchesSearch = room.name
@@ -83,7 +81,8 @@ export default function Rooms() {
       .includes(search.toLowerCase());
 
     const matchesStatus =
-      statusFilter === "all" || statusFilter === "available";
+      statusFilter === "all" ||
+      (statusFilter === "villa" && room.isVilla);
 
     return matchesSearch && matchesStatus;
   });
@@ -327,10 +326,16 @@ function RoomCard({ room, view, onDelete }) {
           <span className="font-semibold text-primary tabular-nums">
             ₹ {room.pricePerNight ?? "—"}
           </span>
+
+          {room.taxMode === "excluded" && (
+            <span className="text-xs text-muted-foreground ml-1">
+              + GST
+            </span>
+          )}
           <span className="text-muted-foreground"> / night</span>
         </p>
 
-        {/* MEALS */}
+        {/* MEALS + TAX */}
         <div className="flex flex-wrap gap-2 pt-1">
 
           {room.mealMode === "only" && (
@@ -343,15 +348,29 @@ function RoomCard({ room, view, onDelete }) {
             <>
               {room.mealPriceVeg > 0 && (
                 <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                  Veg: ₹{room.mealPriceVeg}
+                  Veg ₹{room.mealPriceVeg}
                 </span>
               )}
+
               {room.mealPriceNonVeg > 0 && (
                 <span className="px-2 py-1 rounded-full bg-muted text-xs">
-                  Non-Veg: ₹{room.mealPriceNonVeg}
+                  Non-Veg ₹{room.mealPriceNonVeg}
                 </span>
               )}
             </>
+          )}
+
+          {/* TAX MODE */}
+          {room.taxMode === "included" && (
+            <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs">
+              GST Included
+            </span>
+          )}
+
+          {room.taxMode === "excluded" && (
+            <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs">
+              GST Extra
+            </span>
           )}
 
         </div>

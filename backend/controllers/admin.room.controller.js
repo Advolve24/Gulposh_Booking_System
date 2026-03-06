@@ -51,6 +51,7 @@ export const createRoom = async (req, res) => {
       pricePerNight,
       maxGuests,
       mealMode,
+      taxMode,
       mealPriceVeg,
       mealPriceNonVeg,
       coverImage,
@@ -81,6 +82,8 @@ export const createRoom = async (req, res) => {
           : 1,
 
       mealMode: mealMode || "",
+
+      taxMode: taxMode || "excluded",
 
       mealPriceVeg:
         mealMode === "price" ? Number(mealPriceVeg) || 0 : 0,
@@ -136,6 +139,7 @@ export const updateRoom = async (req, res) => {
       pricePerNight,
       maxGuests,
       mealMode,
+      taxMode,
       mealPriceVeg,
       mealPriceNonVeg,
       coverImage,
@@ -180,6 +184,10 @@ export const updateRoom = async (req, res) => {
     } else {
       update.mealPriceVeg = 0;
       update.mealPriceNonVeg = 0;
+    }
+
+    if (taxMode !== undefined) {
+      update.taxMode = taxMode || "excluded";
     }
 
     if (discountType !== undefined) {

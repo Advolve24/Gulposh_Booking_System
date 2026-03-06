@@ -37,6 +37,7 @@ export default function RoomsNew() {
   const [name, setName] = useState("");
   const [pricePerNight, setPricePerNight] = useState("");
   const [mealMode, setMealMode] = useState("");
+  const [taxMode, setTaxMode] = useState("excluded");
   const [mealPriceVeg, setMealPriceVeg] = useState("");
   const [mealPriceNonVeg, setMealPriceNonVeg] = useState("");
   const [mealPriceCombo, setMealPriceCombo] = useState("");
@@ -93,6 +94,7 @@ export default function RoomsNew() {
         setPricePerNight(String(r.pricePerNight ?? ""));
         setMaxGuests(String(r.maxGuests ?? ""));
         setMealMode(r.mealMode || "");
+        setTaxMode(r.taxMode || "excluded");
         setMealPriceVeg(String(r.mealPriceVeg ?? ""));
         setMealPriceNonVeg(String(r.mealPriceNonVeg ?? ""));
         setDescription(r.description || "");
@@ -216,6 +218,7 @@ export default function RoomsNew() {
         pricePerNight: Number(pricePerNight),
         maxGuests: Number(maxGuests),
         mealMode,
+        taxMode,
         mealPriceVeg: mealMode === "price" ? Number(mealPriceVeg) : 0,
         mealPriceNonVeg: mealMode === "price" ? Number(mealPriceNonVeg) : 0,
         description,
@@ -422,6 +425,76 @@ export default function RoomsNew() {
                   onChange={(e) => setDescription(e.target.value)}
                   className="text-sm"
                 />
+              </Field>
+
+              <Field label="Tax Configuration">
+
+                <div className="space-y-3">
+
+                  {/* TAX INCLUDED */}
+                  <div
+                    onClick={() => setTaxMode("included")}
+                    className={`
+        flex items-center justify-between
+        border rounded-xl p-4 cursor-pointer
+        ${taxMode === "included"
+                        ? "border-primary bg-primary/5"
+                        : "hover:bg-muted"}
+      `}
+                  >
+                    <div>
+                      <div className="font-medium text-sm">
+                        Tax Included
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Room price already includes GST
+                      </div>
+                    </div>
+
+                    <div className={`h-5 w-5 rounded-full border flex items-center justify-center
+        ${taxMode === "included"
+                        ? "border-primary bg-primary"
+                        : "border-muted-foreground"}
+      `}>
+                      {taxMode === "included" && (
+                        <div className="h-2.5 w-2.5 rounded-full bg-white" />
+                      )}
+                    </div>
+                  </div>
+
+
+                  {/* TAX NOT INCLUDED */}
+                  <div
+                    onClick={() => setTaxMode("excluded")}
+                    className={`
+        flex items-center justify-between
+        border rounded-xl p-4 cursor-pointer
+        ${taxMode === "excluded"
+                        ? "border-primary bg-primary/5"
+                        : "hover:bg-muted"}
+      `}
+                  >
+                    <div>
+                      <div className="font-medium text-sm">
+                        Tax Not Included
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        GST will be added on checkout
+                      </div>
+                    </div>
+
+                    <div className={`h-5 w-5 rounded-full border flex items-center justify-center
+        ${taxMode === "excluded"
+                        ? "border-primary bg-primary"
+                        : "border-muted-foreground"}
+      `}>
+                      {taxMode === "excluded" && (
+                        <div className="h-2.5 w-2.5 rounded-full bg-white" />
+                      )}
+                    </div>
+                  </div>
+
+                </div>
               </Field>
 
               <Field label="Room Discount">

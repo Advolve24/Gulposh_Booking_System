@@ -292,6 +292,11 @@ export default function AdminRoomView() {
                   ) : (
                     <span className="font-bold">
                       ₹{room.pricePerNight.toLocaleString("en-IN")} / night
+                      {room.taxMode === "excluded" && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          + GST
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>
@@ -425,11 +430,42 @@ export default function AdminRoomView() {
                       </span>
                     </div>
                   ) : (
-                    `₹${room.pricePerNight.toLocaleString("en-IN")}`
+                    <div className="text-2xl font-semibold text-primary">
+                      ₹{room.pricePerNight.toLocaleString("en-IN")}
+
+                      {room.taxMode === "excluded" && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          + GST
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 
               </div>
+
+              {/* TAX MODE */}
+              {room.taxMode === "included" && (
+                <div className="flex items-center justify-between border border-blue-200 bg-blue-50 rounded-lg px-3 py-2">
+                  <span className="font-medium text-blue-700">
+                    GST Included
+                  </span>
+                  <span className="text-blue-700 text-xs">
+                    Price includes tax
+                  </span>
+                </div>
+              )}
+
+              {room.taxMode === "excluded" && (
+                <div className="flex items-center justify-between border border-amber-200 bg-amber-50 rounded-lg px-3 py-2">
+                  <span className="font-medium text-amber-700">
+                    GST Extra
+                  </span>
+                  <span className="text-amber-700 text-xs">
+                    Tax added at checkout
+                  </span>
+                </div>
+              )}
 
               <div className="text-sm space-y-2">
 

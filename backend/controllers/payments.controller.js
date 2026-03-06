@@ -111,17 +111,27 @@ export const createOrder = async (req, res) => {
     const cgstPercent = taxSetting.taxPercent / 2;
     const sgstPercent = taxSetting.taxPercent / 2;
 
+    let taxableAmount = discountedSubtotal;
+
+    if (room.taxMode === "included") {
+      const taxMultiplier = 1 + taxSetting.taxPercent / 100;
+      taxableAmount = discountedSubtotal / taxMultiplier;
+    }
+
     const cgstAmount = Number(
-      ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
+      ((taxableAmount * cgstPercent) / 100).toFixed(2)
     );
 
     const sgstAmount = Number(
-      ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
+      ((taxableAmount * sgstPercent) / 100).toFixed(2)
     );
 
-    const totalTax = cgstAmount + sgstAmount;
+    const totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
 
-    const grandTotal = discountedSubtotal + totalTax;
+    const grandTotal =
+      room.taxMode === "included"
+        ? discountedSubtotal
+        : Number((discountedSubtotal + totalTax).toFixed(2));
 
     const amountPaise = Math.round(grandTotal * 100);
     if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
@@ -287,16 +297,27 @@ export const verifyPayment = async (req, res) => {
     const cgstPercent = taxSetting.taxPercent / 2;
     const sgstPercent = taxSetting.taxPercent / 2;
 
+    let taxableAmount = discountedSubtotal;
+
+    if (room.taxMode === "included") {
+      const taxMultiplier = 1 + taxSetting.taxPercent / 100;
+      taxableAmount = discountedSubtotal / taxMultiplier;
+    }
+
     const cgstAmount = Number(
-      ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
+      ((taxableAmount * cgstPercent) / 100).toFixed(2)
     );
 
     const sgstAmount = Number(
-      ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
+      ((taxableAmount * sgstPercent) / 100).toFixed(2)
     );
 
     const totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
-    const grandTotal = Number((discountedSubtotal + totalTax).toFixed(2));
+
+    const grandTotal =
+      room.taxMode === "included"
+        ? discountedSubtotal
+        : Number((discountedSubtotal + totalTax).toFixed(2));
 
     const overlap = await Booking.findOne({
       room: room._id,

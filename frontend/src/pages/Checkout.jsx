@@ -268,26 +268,36 @@ export default function Checkout() {
   const cgstPercent = taxPercent / 2;
   const sgstPercent = taxPercent / 2;
 
+  const taxableAmount = useMemo(() => {
+    if (!room) return discountedSubtotal;
+
+    if (room.taxMode === "included") {
+      const taxMultiplier = 1 + taxPercent / 100;
+      return discountedSubtotal / taxMultiplier;
+    }
+
+    return discountedSubtotal;
+  }, [discountedSubtotal, taxPercent, room]);
+
   const cgstAmount = useMemo(() => {
-    return Number(
-      ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
-    );
-  }, [discountedSubtotal, cgstPercent]);
+    return Number(((taxableAmount * cgstPercent) / 100).toFixed(2));
+  }, [taxableAmount, cgstPercent]);
 
   const sgstAmount = useMemo(() => {
-    return Number(
-      ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
-    );
-  }, [discountedSubtotal, sgstPercent]);
-
+    return Number(((taxableAmount * sgstPercent) / 100).toFixed(2));
+  }, [taxableAmount, sgstPercent]);
 
   const totalTax = useMemo(() => {
     return Number((cgstAmount + sgstAmount).toFixed(2));
   }, [cgstAmount, sgstAmount]);
 
   const grandTotal = useMemo(() => {
-    return Number((discountedSubtotal + totalTax).toFixed(2));
-  }, [discountedSubtotal, totalTax]);
+    if (!room) return 0;
+
+    return room.taxMode === "included"
+      ? discountedSubtotal
+      : Number((discountedSubtotal + totalTax).toFixed(2));
+  }, [discountedSubtotal, totalTax, room]);
 
   const proceedPayment = async () => {
     if (processingPayment) return;
@@ -761,17 +771,19 @@ export default function Checkout() {
                     </div>
                   )}
 
-                  <div className="flex flex-col justify-between text-muted-foreground">
-                    <div className="flex justify-between">
-                      <span>CGST ({cgstPercent}%)</span>
-                      <span>{INR(cgstAmount)}</span>
-                    </div>
+                  {room.taxMode === "excluded" && (
+                    <div className="flex flex-col justify-between text-muted-foreground">
+                      <div className="flex justify-between">
+                        <span>CGST ({cgstPercent}%)</span>
+                        <span>{INR(cgstAmount)}</span>
+                      </div>
 
-                    <div className="flex justify-between">
-                      <span>SGST ({sgstPercent}%)</span>
-                      <span>{INR(sgstAmount)}</span>
+                      <div className="flex justify-between">
+                        <span>SGST ({sgstPercent}%)</span>
+                        <span>{INR(sgstAmount)}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <Separator />
