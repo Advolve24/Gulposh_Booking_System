@@ -224,16 +224,6 @@ export default function Checkout() {
     return Math.max(0, Math.round(diff));
   }, [range]);
 
-  const roomTotal = useMemo(() => {
-    if (!room) return 0;
-
-    if (room.taxMode === "included") {
-      return taxableAmount;
-    }
-
-    return nights * room.pricePerNight;
-  }, [nights, room, taxableAmount]);
-
   const mealTotal = useMemo(() => {
     if (!room) return 0;
     if (room.mealMode === "only") return 0;
@@ -284,6 +274,17 @@ export default function Checkout() {
 
     return discountedSubtotal;
   }, [discountedSubtotal, taxPercent, room]);
+
+
+   const roomTotal = useMemo(() => {
+    if (!room) return 0;
+
+    if (room.taxMode === "included") {
+      return taxableAmount;
+    }
+
+    return nights * room.pricePerNight;
+  }, [nights, room, taxableAmount]);
 
   const baseRoomPrice = useMemo(() => {
     if (!room) return 0;
