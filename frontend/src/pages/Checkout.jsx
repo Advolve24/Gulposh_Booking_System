@@ -225,39 +225,16 @@ export default function Checkout() {
   }, [range]);
 
 
-  const discountAmount = useMemo(() => {
-    if (!hasRoomCoupon) return 0;
-    if (!couponApplied) return 0;
-    if (couponCode !== room.discountCode) return 0;
-
-    if (room.discountType === "percent") {
-      return Math.round((subTotal * room.discountValue) / 100);
-    }
-
-    if (room.discountType === "flat") {
-      return room.discountValue || 0;
-    }
-
-    return 0;
-  }, [hasRoomCoupon, couponApplied, couponCode, room, subTotal]);
-
-  const discountedSubtotal = useMemo(() => {
-    return Math.max(0, subTotal - discountAmount);
-  }, [subTotal, discountAmount]);
-
-  const cgstPercent = taxPercent / 2;
-  const sgstPercent = taxPercent / 2;
-
-  const taxableAmount = useMemo(() => {
-    if (!room) return discountedSubtotal;
+  const baseRoomPrice = useMemo(() => {
+    if (!room) return 0;
 
     if (room.taxMode === "included") {
       const taxMultiplier = 1 + taxPercent / 100;
-      return discountedSubtotal / taxMultiplier;
+      return room.pricePerNight / taxMultiplier;
     }
 
-    return discountedSubtotal;
-  }, [discountedSubtotal, taxPercent, room]);
+    return room.pricePerNight;
+  }, [room, taxPercent]);
 
 
   const roomTotal = useMemo(() => {
@@ -287,16 +264,39 @@ export default function Checkout() {
     return roomTotal + mealTotal;
   }, [roomTotal, mealTotal]);
 
-  const baseRoomPrice = useMemo(() => {
-    if (!room) return 0;
+  const discountAmount = useMemo(() => {
+    if (!hasRoomCoupon) return 0;
+    if (!couponApplied) return 0;
+    if (couponCode !== room.discountCode) return 0;
+
+    if (room.discountType === "percent") {
+      return Math.round((subTotal * room.discountValue) / 100);
+    }
+
+    if (room.discountType === "flat") {
+      return room.discountValue || 0;
+    }
+
+    return 0;
+  }, [hasRoomCoupon, couponApplied, couponCode, room, subTotal]);
+
+  const discountedSubtotal = useMemo(() => {
+    return Math.max(0, subTotal - discountAmount);
+  }, [subTotal, discountAmount]);
+
+  const taxableAmount = useMemo(() => {
+    if (!room) return discountedSubtotal;
 
     if (room.taxMode === "included") {
       const taxMultiplier = 1 + taxPercent / 100;
-      return room.pricePerNight / taxMultiplier;
+      return discountedSubtotal / taxMultiplier;
     }
 
-    return room.pricePerNight;
-  }, [room, taxPercent]);
+    return discountedSubtotal;
+  }, [discountedSubtotal, taxPercent, room]);
+
+  const cgstPercent = taxPercent / 2;
+  const sgstPercent = taxPercent / 2;
 
   const cgstAmount = useMemo(() => {
     return Number(((taxableAmount * cgstPercent) / 100).toFixed(2));
@@ -317,6 +317,7 @@ export default function Checkout() {
       ? discountedSubtotal
       : Number((discountedSubtotal + totalTax).toFixed(2));
   }, [discountedSubtotal, totalTax, room]);
+
 
   const proceedPayment = async () => {
     if (processingPayment) return;
