@@ -236,16 +236,9 @@ export default function Checkout() {
     return room.pricePerNight;
   }, [room, taxPercent]);
 
-
   const roomTotal = useMemo(() => {
-    if (!room) return 0;
-
-    if (room.taxMode === "included") {
-      return taxableAmount;
-    }
-
-    return nights * room.pricePerNight;
-  }, [nights, room, taxableAmount]);
+    return nights * baseRoomPrice;
+  }, [nights, baseRoomPrice]);
 
   const mealTotal = useMemo(() => {
     if (!room) return 0;
