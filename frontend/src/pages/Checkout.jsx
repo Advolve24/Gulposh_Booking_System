@@ -229,10 +229,9 @@ export default function Checkout() {
     if (!room) return 0;
 
     if (room.taxMode === "included") {
-      const gstPortion =
-        (discountedSubtotal * taxPercent) / (100 + taxPercent);
-
-      return discountedSubtotal - gstPortion;
+      const taxMultiplier = 1 + taxPercent / 100;
+      const base = room.pricePerNight / taxMultiplier;
+      return Math.round(base);
     }
     return room.pricePerNight;
   }, [room, taxPercent]);
@@ -280,12 +279,12 @@ export default function Checkout() {
 
   const taxableAmount = useMemo(() => {
     if (!room) return discountedSubtotal;
-
     if (room.taxMode === "included") {
-      const taxMultiplier = 1 + taxPercent / 100;
-      return discountedSubtotal / taxMultiplier;
-    }
+      const gstPortion =
+        (discountedSubtotal * taxPercent) / (100 + taxPercent);
 
+      return discountedSubtotal - gstPortion;
+    }
     return discountedSubtotal;
   }, [discountedSubtotal, taxPercent, room]);
 
