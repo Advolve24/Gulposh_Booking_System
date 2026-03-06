@@ -225,8 +225,14 @@ export default function Checkout() {
   }, [range]);
 
   const roomTotal = useMemo(() => {
-    return nights * (room?.pricePerNight || 0);
-  }, [nights, room]);
+    if (!room) return 0;
+
+    if (room.taxMode === "included") {
+      return taxableAmount;
+    }
+
+    return nights * room.pricePerNight;
+  }, [nights, room, taxableAmount]);
 
   const mealTotal = useMemo(() => {
     if (!room) return 0;
@@ -278,6 +284,17 @@ export default function Checkout() {
 
     return discountedSubtotal;
   }, [discountedSubtotal, taxPercent, room]);
+
+  const baseRoomPrice = useMemo(() => {
+    if (!room) return 0;
+
+    if (room.taxMode === "included") {
+      const taxMultiplier = 1 + taxPercent / 100;
+      return room.pricePerNight / taxMultiplier;
+    }
+
+    return room.pricePerNight;
+  }, [room, taxPercent]);
 
   const cgstAmount = useMemo(() => {
     return Number(((taxableAmount * cgstPercent) / 100).toFixed(2));
@@ -743,7 +760,10 @@ export default function Checkout() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>
-                      Room ({nights} nights × ₹{room?.pricePerNight})
+                      Room ({nights} nights × ₹
+                      {room?.taxMode === "included"
+                        ? baseRoomPrice.toFixed(2)
+                        : room?.pricePerNight})
                     </span>
                     <span>
                       {INR(roomTotal)}
@@ -771,7 +791,6 @@ export default function Checkout() {
                     </div>
                   )}
 
-                  {room.taxMode === "excluded" && (
                     <div className="flex flex-col justify-between text-muted-foreground">
                       <div className="flex justify-between">
                         <span>CGST ({cgstPercent}%)</span>
@@ -783,7 +802,6 @@ export default function Checkout() {
                         <span>{INR(sgstAmount)}</span>
                       </div>
                     </div>
-                  )}
                 </div>
 
                 <Separator />
