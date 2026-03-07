@@ -8,7 +8,7 @@ import {
   isWithinInterval, isSameMonth, addMonths, subMonths, isAfter
 } from "date-fns";
 import { CalendarDays, CalendarCheck2, XCircle, Wallet, Plus, Home, Ban, Calendar, Moon, Users } from "lucide-react";
-import { getStats, listBookingsAdmin, listBlackouts, createBlackout, deleteBlackout } from "../api/admin";
+import { getStats, listBookingsAdmin, listBlackouts, createBlackout, deleteBlackout, getBirthdayGuests } from "../api/admin";
 import MobileBookingCard from "@/components/MobileBookingCard";
 import BookingTable from "@/components/BookingTable";
 import BookingViewPopup from "@/components/BookingViewPopup";
@@ -186,6 +186,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [editBooking, setEditBooking] = useState(null);
+  const [birthdayGuests, setBirthdayGuests] = useState([]);
 
 
   useEffect(() => {
@@ -202,10 +203,11 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const [statsRes, bookingsRes, blackoutsRes] = await Promise.all([
+        const [statsRes, bookingsRes, blackoutsRes, birthdays] = await Promise.all([
           getStats(),
           listBookingsAdmin({ limit: 200 }),
           listBlackouts(),
+          getBirthdayGuests()
         ]);
 
         setStats({
@@ -230,6 +232,8 @@ export default function Dashboard() {
             to: new Date(b.to),
           }))
         );
+
+        setBirthdayGuests(birthdays || []);
 
 
       } catch (err) {
@@ -749,6 +753,34 @@ export default function Dashboard() {
         </div>
 
       </div>
+
+      {birthdayGuests.length > 0 && (
+        <div className="bg-card border border-border rounded-xl mt-6 p-4 sm:p-6">
+          <h2 className="text-md font-semibold mb-4">
+            🎂 Birthdays this month
+          </h2>
+
+          <div className="space-y-3">
+            {birthdayGuests.map((g) => (
+              <div
+                key={g._id}
+                className="flex items-center justify-between border rounded-lg p-3"
+              >
+                <div>
+                  <p className="font-medium">{g.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(g.birthday), "dd MMM")} • {g.stays} stays
+                  </p>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  Last stay: {g.lastStay ? format(new Date(g.lastStay), "dd MMM yyyy") : "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-card border border-border rounded-xl mt-6 p-4 sm:p-6">
         {/* HEADER */}

@@ -611,3 +611,63 @@ export const cancelBookingAdmin = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+
+
+export const getBirthdayGuests = async (req, res) => {
+  try {
+
+    const now = new Date()
+    const currentMonth = now.getMonth() + 1
+
+    const users = await User.find({
+      dob: { $ne: null }
+    })
+      .select("name phone email dob")
+      .lean()
+
+    const birthdayUsers = users.filter(u => {
+      const dob = new Date(u.dob)
+      return dob.getMonth() + 1 === currentMonth
+    })
+
+    const bookings = await Booking.aggregate([
+      {
+        $match: { user: { $in: birthdayUsers.map(u => u._id) } }
+      },
+      {
+        $group: {
+          _id: "$user",
+          stays: { $sum: 1 },
+          lastStay: { $max: "$createdAt" }
+        }
+      }
+    ])
+
+    const map = new Map(bookings.map(b => [String(b._id), b]))
+
+    const result = birthdayUsers.map(u => {
+
+      const extra = map.get(String(u._id)) || {}
+
+      return {
+        _id: u._id,
+        name: u.name,
+        phone: u.phone,
+        email: u.email,
+        birthday: u.dob,
+        stays: extra.stays || 0,
+        lastStay: extra.lastStay || null
+      }
+
+    })
+
+    result.sort((a, b) => new Date(a.birthday) - new Date(b.birthday))
+
+    res.json(result)
+
+  } catch (err) {
+    console.error("birthday report error:", err)
+    res.status(500).json({ message: "Failed to load birthdays" })
+  }
+}

@@ -121,3 +121,8 @@ export const getTopGuests = async () => {
   const { data } = await api.get("/reports/top-guests");
   return data;
 };
+
+export const getBirthdayGuests = async () => {
+  const { data } = await api.get("/admin/users/birthdays")
+  return data
+}
