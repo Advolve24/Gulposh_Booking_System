@@ -13,6 +13,18 @@ import { ChevronDown, Download } from "lucide-react";
 
 const COLORS = ["#6B2737", "#3B82F6", "#10B981", "#F59E0B", "#EF4444"];
 
+const SOURCE_COLORS = {
+    "Direct": "#6B2737",
+    "Enquiry": "#2f8f6b",
+    "Repeat Guest": "#3b82f6"
+}
+
+const PAYMENT_COLORS = {
+    "Paid": "#2f8f6b",
+    "Cancelled": "#dc2626",
+    "Pending": "#f59e0b"
+}
+
 
 function ReportControls() {
     const [range, setRange] = useState("Last 6 Months");
@@ -414,10 +426,11 @@ export default function Reports() {
                                     nameKey="_id"
                                     outerRadius={70}
                                     paddingAngle={2}
+                                    cursor="pointer"
                                 >
 
                                     {sources.map((entry, index) => (
-                                        <Cell key={index} fill={COLORS[index]} />
+                                        <Cell key={index} fill={SOURCE_COLORS[entry._id]} />
                                     ))}
 
                                 </Pie>
@@ -430,11 +443,11 @@ export default function Reports() {
 
                             {/* LEGEND */}
 
-                            <div className="flex gap-6 mt-2 text-[13px]">
+                            <div className="flex justify-center gap-6 mt-4 text-[13px]">
 
                                 {sources.map((s, i) => {
 
-                                    const total = sources.reduce((a, b) => a + b.count, 0)
+                                    const total = sources.reduce((a, b) => a + b.count, 0) || 1
                                     const percent = Math.round((s.count / total) * 100)
 
                                     return (
@@ -443,7 +456,7 @@ export default function Reports() {
 
                                             <span
                                                 className="w-3 h-3 rounded-full"
-                                                style={{ background: COLORS[i] }}
+                                                style={{ background: SOURCE_COLORS[s._id] }}
                                             />
 
                                             <span className="text-[#374151]">
@@ -483,15 +496,7 @@ export default function Reports() {
                                 >
 
                                     {payment.map((entry, index) => (
-                                        <Cell key={index}
-                                            fill={
-                                                entry._id === "confirmed"
-                                                    ? "#2f8f6b"
-                                                    : entry._id === "cancelled"
-                                                        ? "#dc2626"
-                                                        : "#f59e0b"
-                                            }
-                                        />
+                                        <Cell key={index} fill={PAYMENT_COLORS[entry._id]} />
                                     ))}
 
                                 </Pie>
@@ -513,12 +518,7 @@ export default function Reports() {
                                         <span
                                             className="w-3 h-3 rounded-full"
                                             style={{
-                                                background:
-                                                    p._id === "confirmed"
-                                                        ? "#2f8f6b"
-                                                        : p._id === "cancelled"
-                                                            ? "#dc2626"
-                                                            : "#f59e0b"
+                                                background: PAYMENT_COLORS[p._id]
                                             }}
                                         />
 

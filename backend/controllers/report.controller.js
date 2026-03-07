@@ -108,55 +108,89 @@ export const getRevenueByRoom = async (req, res) => {
 };
 
 
-/* ======================================================
-   PAYMENT STATUS
-====================================================== */
 
 export const getPaymentStatus = async (req, res) => {
   try {
+
     const data = await Booking.aggregate([
       {
         $group: {
           _id: "$status",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+          count: { $sum: 1 }
+        }
+      }
+    ])
 
-    res.json(data);
+    const result = {
+      Paid: 0,
+      Cancelled: 0,
+      Pending: 0
+    }
+
+    data.forEach(d => {
+
+      if (d._id === "confirmed") result.Paid += d.count
+      if (d._id === "cancelled") result.Cancelled += d.count
+      if (d._id === "pending") result.Pending += d.count
+
+    })
+
+    const formatted = Object.entries(result).map(([name,count]) => ({
+      _id: name,
+      count
+    }))
+
+    res.json(formatted)
+
   } catch (err) {
-    console.error("Payment Status Error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Payment Status Error:", err)
+    res.status(500).json({ message: "Server error" })
   }
-};
+}
 
 
-/* ======================================================
-   BOOKING SOURCES
-====================================================== */
+
 
 export const getBookingSources = async (req, res) => {
   try {
-    const enquiries = await Enquiry.aggregate([
+
+    const data = await Enquiry.aggregate([
       {
         $group: {
           _id: "$source",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+          count: { $sum: 1 }
+        }
+      }
+    ])
 
-    res.json(enquiries);
+    const result = {
+      Direct: 0,
+      Enquiry: 0,
+      "Repeat Guest": 0
+    }
+
+    data.forEach(d => {
+
+      if (d._id === "frontend") result.Direct += d.count
+      if (d._id === "enquiry") result.Enquiry += d.count
+      if (d._id === "repeat") result["Repeat Guest"] += d.count
+
+    })
+
+    const formatted = Object.entries(result).map(([name,count]) => ({
+      _id: name,
+      count
+    }))
+
+    res.json(formatted)
+
   } catch (err) {
-    console.error("Booking Sources Error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Booking Sources Error:", err)
+    res.status(500).json({ message: "Server error" })
   }
-};
+}
 
 
-/* ======================================================
-   MEAL REVENUE BREAKDOWN
-====================================================== */
 
 export const getMealRevenue = async (req, res) => {
   try {
