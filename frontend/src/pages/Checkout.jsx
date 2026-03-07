@@ -317,10 +317,12 @@ export default function Checkout() {
 
   const grandTotal = useMemo(() => {
     if (!room) return 0;
-    return room.taxMode === "included"
-      ? nights * room.pricePerNight
-      : roomTotal + totalTax;
-  }, [room, nights, roomTotal, totalTax]);
+
+    if (room.taxMode === "included") {
+      return discountedSubtotal;
+    }
+    return discountedSubtotal + totalTax;
+  }, [room, discountedSubtotal, totalTax]);
 
 
   const proceedPayment = async () => {
