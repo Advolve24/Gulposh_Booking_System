@@ -111,22 +111,29 @@ export const createOrder = async (req, res) => {
     const cgstPercent = taxSetting.taxPercent / 2;
     const sgstPercent = taxSetting.taxPercent / 2;
 
+    let cgstAmount = 0;
+    let sgstAmount = 0;
+    let totalTax = 0;
     let taxableAmount = discountedSubtotal;
 
     if (room.taxMode === "included") {
-      const taxMultiplier = 1 + taxSetting.taxPercent / 100;
-      taxableAmount = discountedSubtotal / taxMultiplier;
+      totalTax = (discountedSubtotal * taxSetting.taxPercent) / 100;
+
+      cgstAmount = Number((totalTax / 2).toFixed(2));
+      sgstAmount = Number((totalTax / 2).toFixed(2));
+
+      taxableAmount = discountedSubtotal - totalTax;
+    } else {
+      cgstAmount = Number(
+        ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
+      );
+
+      sgstAmount = Number(
+        ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
+      );
+
+      totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
     }
-
-    const cgstAmount = Number(
-      ((taxableAmount * cgstPercent) / 100).toFixed(2)
-    );
-
-    const sgstAmount = Number(
-      ((taxableAmount * sgstPercent) / 100).toFixed(2)
-    );
-
-    const totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
 
     const grandTotal =
       room.taxMode === "included"
@@ -297,22 +304,29 @@ export const verifyPayment = async (req, res) => {
     const cgstPercent = taxSetting.taxPercent / 2;
     const sgstPercent = taxSetting.taxPercent / 2;
 
+    let cgstAmount = 0;
+    let sgstAmount = 0;
+    let totalTax = 0;
     let taxableAmount = discountedSubtotal;
 
     if (room.taxMode === "included") {
-      const taxMultiplier = 1 + taxSetting.taxPercent / 100;
-      taxableAmount = discountedSubtotal / taxMultiplier;
+      totalTax = (discountedSubtotal * taxSetting.taxPercent) / 100;
+
+      cgstAmount = Number((totalTax / 2).toFixed(2));
+      sgstAmount = Number((totalTax / 2).toFixed(2));
+
+      taxableAmount = discountedSubtotal - totalTax;
+    } else {
+      cgstAmount = Number(
+        ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
+      );
+
+      sgstAmount = Number(
+        ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
+      );
+
+      totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
     }
-
-    const cgstAmount = Number(
-      ((taxableAmount * cgstPercent) / 100).toFixed(2)
-    );
-
-    const sgstAmount = Number(
-      ((taxableAmount * sgstPercent) / 100).toFixed(2)
-    );
-
-    const totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
 
     const grandTotal =
       room.taxMode === "included"
