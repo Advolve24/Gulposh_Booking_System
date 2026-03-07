@@ -211,33 +211,51 @@ export const getBookingSources = async (req, res) => {
 
 export const getMealRevenue = async (req, res) => {
   try {
+
     const data = await Booking.aggregate([
-      { $match: { status: "confirmed", withMeal: true } },
+
+      {
+        $match: { status: "confirmed", withMeal: true }
+      },
 
       {
         $group: {
-          _id: null,
-          vegRevenue: {
-            $sum: {
-              $multiply: ["$vegGuests", "$mealMeta.vegPrice"],
-            },
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" }
           },
 
-          nonVegRevenue: {
+          veg: {
             $sum: {
-              $multiply: ["$nonVegGuests", "$mealMeta.nonVegPrice"],
-            },
+              $multiply: ["$vegGuests", "$mealMeta.vegPrice"]
+            }
           },
-        },
+
+          nonVeg: {
+            $sum: {
+              $multiply: ["$nonVegGuests", "$mealMeta.nonVegPrice"]
+            }
+          }
+
+        }
       },
-    ]);
 
-    res.json(data[0] || { vegRevenue: 0, nonVegRevenue: 0 });
+      {
+        $sort: {
+          "_id.year": 1,
+          "_id.month": 1
+        }
+      }
+
+    ])
+
+    res.json(data)
+
   } catch (err) {
-    console.error("Meal Revenue Error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Meal Revenue Error:", err)
+    res.status(500).json({ message: "Server error" })
   }
-};
+}
 
 
 export const getTopGuests = async (req, res) => {

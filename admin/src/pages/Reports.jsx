@@ -551,32 +551,77 @@ export default function Reports() {
 
                     <div className="bg-white p-6 border rounded-xl">
 
-                        <h3 className="font-semibold mb-4">
+                        <h3 className="text-[18px] font-semibold text-[#1f2937] mb-4">
                             Meal Revenue Breakdown
                         </h3>
 
-                        <BarChart
-                            width={500}
-                            height={250}
-                            data={[
-                                {
-                                    veg: meal.vegRevenue || 0,
-                                    nonVeg: meal.nonVegRevenue || 0
-                                }
-                            ]}
-                        >
+                        <ResponsiveContainer width="100%" height={260}>
 
-                            <XAxis dataKey="name" />
+                            <BarChart data={meal} barSize={26}>
 
-                            <YAxis />
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    vertical={false}
+                                    stroke="#e5e7eb"
+                                />
 
-                            <Tooltip />
+                                <XAxis
+                                    dataKey="_id.month"
+                                    tickFormatter={(m) => {
+                                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+                                        return months[m - 1]
+                                    }}
+                                    axisLine={{ stroke: "#9ca3af" }}
+                                    tickLine={false}
+                                    tick={{ fontSize: 12, fill: "#6b7280" }}
+                                />
 
-                            <Bar dataKey="veg" fill="#10B981" />
+                                <YAxis
+                                    tickFormatter={(v) => `₹${Math.round(v / 1000)}K`}
+                                    axisLine={{ stroke: "#9ca3af" }}
+                                    tickLine={false}
+                                    tick={{ fontSize: 12, fill: "#6b7280" }}
+                                />
 
-                            <Bar dataKey="nonVeg" fill="#F59E0B" />
+                                <Tooltip
+                                    formatter={(v) => `₹${v.toLocaleString()}`}
+                                    contentStyle={{
+                                        borderRadius: "8px",
+                                        border: "1px solid #e5e7eb"
+                                    }}
+                                />
 
-                        </BarChart>
+                                <Bar
+                                    dataKey="veg"
+                                    fill="#2f8f6b"
+                                    radius={[6, 6, 0, 0]}
+                                />
+
+                                <Bar
+                                    dataKey="nonVeg"
+                                    fill="#f59e0b"
+                                    radius={[6, 6, 0, 0]}
+                                />
+
+                            </BarChart>
+
+                        </ResponsiveContainer>
+
+                        {/* legend */}
+
+                        <div className="flex justify-center gap-6 mt-3 text-[14px]">
+
+                            <div className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-sm bg-[#2f8f6b]" />
+                                <span className="text-[#374151]">Veg</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-sm bg-[#f59e0b]" />
+                                <span className="text-[#374151]">Non-Veg</span>
+                            </div>
+
+                        </div>
 
                     </div>
 
@@ -614,18 +659,28 @@ export default function Reports() {
 
                                 {guests.map((g, i) => (
 
-                                    <tr key={i} className="border-b">
+                                    <tr key={i} className="border-b last:border-0">
 
-                                        <td className="py-2">
-                                            {g.guest}
+                                        <td className="py-3 flex items-center gap-3">
+
+                                            <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-sm font-medium">
+                                                {i + 1}
+                                            </span>
+
+                                            <span>{g.guest}</span>
+
                                         </td>
 
-                                        <td>
+                                        <td className="text-center">
                                             {g.bookings}
                                         </td>
 
-                                        <td>
-                                            ₹{g.totalSpent}
+                                        <td className="text-gray-500">
+                                            {g._id}
+                                        </td>
+
+                                        <td className="text-right font-medium">
+                                            ₹{g.totalSpent.toLocaleString()}
                                         </td>
 
                                     </tr>
