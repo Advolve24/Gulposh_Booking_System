@@ -123,6 +123,6 @@ export const getTopGuests = async () => {
 };
 
 export const getBirthdayGuests = async () => {
-  const { data } = await api.get("/users/birthdays")
+  const { data } = await api.get("/admin/users/birthdays")
   return data
 }
