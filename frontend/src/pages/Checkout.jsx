@@ -306,12 +306,12 @@ export default function Checkout() {
   const sgstPercent = taxPercent / 2;
 
   const cgstAmount = useMemo(() => {
-    return nights * priceBreakup.cgst;
-  }, [nights, priceBreakup]);
+    return (discountedSubtotal * cgstPercent) / 100;
+  }, [discountedSubtotal, cgstPercent]);
 
   const sgstAmount = useMemo(() => {
-    return nights * priceBreakup.sgst;
-  }, [nights, priceBreakup]);
+    return (discountedSubtotal * sgstPercent) / 100;
+  }, [discountedSubtotal, sgstPercent]);
 
   const totalTax = useMemo(() => cgstAmount + sgstAmount, [cgstAmount, sgstAmount]);
 
