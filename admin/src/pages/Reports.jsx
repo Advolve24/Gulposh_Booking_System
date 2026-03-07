@@ -455,7 +455,7 @@ export default function Reports() {
                                         <div key={i} className="flex items-center gap-2">
 
                                             <span
-                                                className="w-[15px] h-[10px] rounded-full"
+                                                className="w-[10px] h-[10px] rounded-full"
                                                 style={{ background: SOURCE_COLORS[s._id] }}
                                             />
 
@@ -516,7 +516,7 @@ export default function Reports() {
                                     <div key={i} className="flex items-center gap-2">
 
                                         <span
-                                            className="w-[12px] h-[10px] rounded-full"
+                                            className="w-[10px] h-[10px] rounded-full"
                                             style={{
                                                 background: PAYMENT_COLORS[p._id]
                                             }}
