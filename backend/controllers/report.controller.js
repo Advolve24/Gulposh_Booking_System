@@ -30,10 +30,31 @@ export const getOverviewReport = async (req, res) => {
 export const getMonthlyRevenue = async (req, res) => {
   try {
 
+    // 🔹 ADD THIS BLOCK HERE
+    const range = req.query.range;
+
+    let startDate = new Date();
+
+    if (range === "Last 30 Days") {
+      startDate.setDate(startDate.getDate() - 30);
+    }
+    else if (range === "Last 3 Months") {
+      startDate.setMonth(startDate.getMonth() - 3);
+    }
+    else if (range === "Last 6 Months") {
+      startDate.setMonth(startDate.getMonth() - 6);
+    }
+    else if (range === "Last Year") {
+      startDate.setFullYear(startDate.getFullYear() - 1);
+    }
+
     const revenue = await Booking.aggregate([
 
       {
-        $match: { status: "confirmed" }
+        $match: {
+          status: "confirmed",
+          createdAt: { $gte: startDate }   // 🔹 ADD THIS
+        }
       },
 
       {
@@ -42,11 +63,8 @@ export const getMonthlyRevenue = async (req, res) => {
             year: { $year: "$createdAt" },
             month: { $month: "$createdAt" }
           },
-
           totalRevenue: { $sum: "$amount" },
-
           bookings: { $sum: 1 }
-
         }
       },
 
@@ -57,30 +75,30 @@ export const getMonthlyRevenue = async (req, res) => {
         }
       }
 
-    ])
+    ]);
 
-    const MAX_ROOMS = 5
-    const DAYS_IN_MONTH = 30
+    const MAX_ROOMS = 5;
+    const DAYS_IN_MONTH = 30;
 
     const result = revenue.map(r => {
 
       const occupancy =
-        (r.bookings / (MAX_ROOMS * DAYS_IN_MONTH)) * 100
+        (r.bookings / (MAX_ROOMS * DAYS_IN_MONTH)) * 100;
 
       return {
         ...r,
         occupancy: Math.round(occupancy)
-      }
+      };
 
-    })
+    });
 
-    res.json(result)
+    res.json(result);
 
   } catch (err) {
-    console.error("Monthly Revenue Error:", err)
-    res.status(500).json({ message: "Server error" })
+    console.error("Monthly Revenue Error:", err);
+    res.status(500).json({ message: "Server error" });
   }
-}
+};
 
 
 

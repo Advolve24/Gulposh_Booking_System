@@ -26,16 +26,15 @@ const PAYMENT_COLORS = {
 }
 
 
-function ReportControls() {
-    const [range, setRange] = useState("Last 6 Months");
-    const [open, setOpen] = useState(false);
+function ReportControls({ range, setRange }) {
+    const [open, setOpen] = useState(false)
 
     const options = [
         "Last 30 Days",
         "Last 3 Months",
         "Last 6 Months",
         "Last Year",
-    ];
+    ]
 
     return (
         <div className="flex items-start justify-between">
@@ -56,36 +55,37 @@ function ReportControls() {
 
                 {open && (
                     <div className="absolute right-[92px] top-[52px] z-20 w-[164px] overflow-hidden rounded-[10px] border border-[#e5e7eb] bg-white shadow-lg">
+
                         {options.map((o) => {
-                            const active = range === o;
+                            const active = range === o
 
                             return (
                                 <button
                                     key={o}
                                     onClick={() => {
-                                        setRange(o);
-                                        setOpen(false);
+                                        setRange(o)
+                                        setOpen(false)
                                     }}
                                     className={`flex w-full items-center px-4 py-3 text-left text-[15px] ${active
                                         ? "bg-[#2f9e75] text-white"
                                         : "bg-white text-[#374151] hover:bg-[#f9fafb]"
                                         }`}
                                 >
-                                    {active && <span className="mr-2 text-base">✓</span>}
-                                    <span>{o}</span>
+                                    {active && <span className="mr-2">✓</span>}
+                                    {o}
                                 </button>
-                            );
+                            )
                         })}
                     </div>
                 )}
 
                 <button className="flex h-11 items-center gap-2 rounded-[10px] border border-[#ded8d3] bg-white px-4 text-[15px] font-medium text-[#111827] shadow-sm">
                     <Download size={16} />
-                    <span>Export</span>
+                    Export
                 </button>
             </div>
         </div>
-    );
+    )
 }
 
 
@@ -97,23 +97,24 @@ export default function Reports() {
     const [payment, setPayment] = useState([]);
     const [sources, setSources] = useState([]);
     const [meal, setMeal] = useState([]);
+    const [range, setRange] = useState("Last 6 Months")
     const [guests, setGuests] = useState([]);
 
     useEffect(() => {
         loadReports();
-    }, []);
+    }, [range]);
 
     const loadReports = async () => {
 
-        const o = await getOverview();
+        const o = await getOverview(range);
         setOverview(o);
 
-        setMonthly(await getMonthlyRevenue());
-        setRooms(await getRevenueByRoom());
-        setPayment(await getPaymentStatus());
-        setSources(await getBookingSources());
-        setMeal(await getMealRevenue());
-        setGuests(await getTopGuests());
+        setMonthly(await getMonthlyRevenue(range));
+        setRooms(await getRevenueByRoom(range));
+        setPayment(await getPaymentStatus(range));
+        setSources(await getBookingSources(range));
+        setMeal(await getMealRevenue(range));
+        setGuests(await getTopGuests(range));
 
     };
 
@@ -127,7 +128,7 @@ export default function Reports() {
                 {/* HEADER */}
 
                 <div className="space-y-6">
-                    <ReportControls />
+                    <ReportControls range={range} setRange={setRange} />
                 </div>
 
                 {/* STAT CARDS */}

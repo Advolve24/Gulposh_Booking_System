@@ -90,8 +90,10 @@ export const getOverview = async () => {
   return data;
 };
 
-export const getMonthlyRevenue = async () => {
-  const { data } = await api.get("/reports/monthly-revenue");
+export const getMonthlyRevenue = async (range) => {
+  const { data } = await api.get("/reports/monthly-revenue", {
+    params: { range }
+  });
   return data;
 };
 
