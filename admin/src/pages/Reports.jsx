@@ -26,7 +26,7 @@ const PAYMENT_COLORS = {
 }
 
 
-function ReportControls({ range, setRange }) {
+function ReportControls({ range, setRange, exportCSV }) {
     const [open, setOpen] = useState(false)
 
     const options = [
@@ -35,39 +35,6 @@ function ReportControls({ range, setRange }) {
         "Last 6 Months",
         "Last Year",
     ]
-
-    const exportCSV = () => {
-
-        const rows = [
-            ["Month", "Revenue", "Bookings", "Occupancy"]
-        ];
-
-        monthly.forEach((m) => {
-
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-            rows.push([
-                months[m._id.month - 1],
-                m.totalRevenue,
-                m.bookings,
-                m.occupancy + "%"
-            ]);
-
-        });
-
-        const csvContent =
-            "data:text/csv;charset=utf-8," +
-            rows.map(e => e.join(",")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "revenue-report.csv");
-
-        document.body.appendChild(link);
-        link.click();
-    };
 
     return (
         <div className="flex items-start justify-between">
@@ -154,6 +121,39 @@ export default function Reports() {
 
     };
 
+    const exportCSV = () => {
+
+        const rows = [
+            ["Month", "Revenue", "Bookings", "Occupancy"]
+        ];
+
+        monthly.forEach((m) => {
+
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+            rows.push([
+                months[m._id.month - 1],
+                m.totalRevenue,
+                m.bookings,
+                m.occupancy + "%"
+            ]);
+
+        });
+
+        const csvContent =
+            "data:text/csv;charset=utf-8," +
+            rows.map(e => e.join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+
+        const link = document.createElement("a");
+        link.href = encodedUri;
+        link.download = "revenue-report.csv";
+
+        document.body.appendChild(link);
+        link.click();
+    };
+
     if (!overview) return <div className="p-10">Loading...</div>;
 
     return (
@@ -164,7 +164,11 @@ export default function Reports() {
                 {/* HEADER */}
 
                 <div className="space-y-6">
-                    <ReportControls range={range} setRange={setRange} />
+                    <ReportControls
+                        range={range}
+                        setRange={setRange}
+                        exportCSV={exportCSV}
+                    />
                 </div>
 
                 {/* STAT CARDS */}
