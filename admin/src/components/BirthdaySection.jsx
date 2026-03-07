@@ -64,7 +64,7 @@ export default function BirthdaySection({ guests = [] }) {
               {/* ================= TOP ================= */}
 
               {/* DATE BADGE */}
-               <div className="flex items-start justify-end">
+               <div className="flex items-start justify-end -mb-[16px]">
                 <span className="text-xs bg-[#6B2737] text-white px-2 py-1 rounded-full flex items-center gap-1">
                   <Cake size={12} />
                   {format(birthday, "dd MMM")}
