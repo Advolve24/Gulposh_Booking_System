@@ -14,6 +14,7 @@ import BookingTable from "@/components/BookingTable";
 import BookingViewPopup from "@/components/BookingViewPopup";
 import EditBookingDialog from "@/components/EditBookingDialog";
 import { getBookingAdmin } from "../api/admin";
+import BirthdaySection from "@/components/BirthdaySection";
 
 
 const toDateKey = (d) => format(d, "yyyy-MM-dd");
@@ -754,33 +755,7 @@ export default function Dashboard() {
 
       </div>
 
-      {birthdayGuests.length > 0 && (
-        <div className="bg-card border border-border rounded-xl mt-6 p-4 sm:p-6">
-          <h2 className="text-md font-semibold mb-4">
-            🎂 Birthdays this month
-          </h2>
-
-          <div className="space-y-3">
-            {birthdayGuests.map((g) => (
-              <div
-                key={g._id}
-                className="flex items-center justify-between border rounded-lg p-3"
-              >
-                <div>
-                  <p className="font-medium">{g.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(g.birthday), "dd MMM")} • {g.stays} stays
-                  </p>
-                </div>
-
-                <div className="text-sm text-muted-foreground">
-                  Last stay: {g.lastStay ? format(new Date(g.lastStay), "dd MMM yyyy") : "—"}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+     <BirthdaySection guests={birthdayGuests} />
 
       <div className="bg-card border border-border rounded-xl mt-6 p-4 sm:p-6">
         {/* HEADER */}
