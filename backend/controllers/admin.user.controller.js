@@ -662,7 +662,12 @@ export const getBirthdayGuests = async (req, res) => {
 
     })
 
-    result.sort((a, b) => new Date(a.birthday) - new Date(b.birthday))
+    result.sort((a, b) => {
+      const da = new Date(a.birthday)
+      const db = new Date(b.birthday)
+
+      return da.getDate() - db.getDate()
+    })
 
     res.json(result)
 
