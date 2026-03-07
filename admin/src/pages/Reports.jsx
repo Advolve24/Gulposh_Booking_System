@@ -197,7 +197,7 @@ export default function Reports() {
 
                     <div className="bg-white p-6 border rounded-xl">
 
-                        <h3 className="text-[18px] font-semibold text-[#1f2937] mb-6">
+                        <h3 className="text-[18px] font-semibold text-[#1f2937] mb-0">
                             Revenue by Room
                         </h3>
 
@@ -230,7 +230,7 @@ export default function Reports() {
 
                             {/* LEGEND */}
 
-                            <div className="w-full mt-4 space-y-3">
+                            <div className="w-full mt-0 space-y-2">
 
                                 {rooms.map((room, index) => (
 
