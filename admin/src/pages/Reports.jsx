@@ -194,20 +194,17 @@ export default function Reports() {
                         {/* CHART */}
 
                         <ResponsiveContainer width="100%" height={300}>
-
-                            <LineChart data={monthly}>
+                            <LineChart data={monthly} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
 
                                 {/* GRADIENT */}
-
                                 <defs>
                                     <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6B2737" stopOpacity={0.35} />
-                                        <stop offset="95%" stopColor="#6B2737" stopOpacity={0} />
+                                        <stop offset="0%" stopColor="#6B2737" stopOpacity={0.25} />
+                                        <stop offset="100%" stopColor="#6B2737" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
 
                                 {/* GRID */}
-
                                 <CartesianGrid
                                     strokeDasharray="3 3"
                                     vertical={false}
@@ -215,34 +212,31 @@ export default function Reports() {
                                 />
 
                                 {/* X AXIS */}
-
                                 <XAxis
                                     dataKey="_id.month"
                                     tickFormatter={(m) => {
                                         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                                         return months[m - 1];
                                     }}
-                                    tick={{ fontSize: 12, fill: "#6b7280" }}
-                                    axisLine={false}
+                                    axisLine={{ stroke: "#9ca3af" }}
                                     tickLine={false}
+                                    tick={{ fontSize: 12, fill: "#6b7280" }}
                                 />
 
                                 {/* Y AXIS */}
-
                                 <YAxis
                                     tickFormatter={(v) => `₹${Math.round(v / 1000)}K`}
-                                    tick={{ fontSize: 12, fill: "#6b7280" }}
-                                    axisLine={false}
+                                    axisLine={{ stroke: "#9ca3af" }}
                                     tickLine={false}
+                                    tick={{ fontSize: 12, fill: "#6b7280" }}
                                 />
 
                                 {/* TOOLTIP */}
-
                                 <Tooltip
-                                    formatter={(v) => `rate : ${v}%`}
+                                    formatter={(v) => `₹${v.toLocaleString()}`}
                                     labelFormatter={(label) => {
                                         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                                        return months[label - 1]
+                                        return months[label - 1];
                                     }}
                                     contentStyle={{
                                         borderRadius: "8px",
@@ -250,8 +244,7 @@ export default function Reports() {
                                     }}
                                 />
 
-                                {/* AREA FILL */}
-
+                                {/* AREA GRADIENT */}
                                 <Area
                                     type="monotone"
                                     dataKey="totalRevenue"
@@ -260,7 +253,6 @@ export default function Reports() {
                                 />
 
                                 {/* LINE */}
-
                                 <Line
                                     type="monotone"
                                     dataKey="totalRevenue"
@@ -271,7 +263,6 @@ export default function Reports() {
                                 />
 
                             </LineChart>
-
                         </ResponsiveContainer>
 
                     </div>
