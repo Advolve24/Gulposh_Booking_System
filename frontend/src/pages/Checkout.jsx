@@ -215,7 +215,7 @@ export default function Checkout() {
 
 
   const nights = useMemo(() => {
-    if (!range.from || !range.to) return 0;
+    if (!range?.from || !range?.to) return 0;
 
     const diff =
       (toDateOnly(range.to) - toDateOnly(range.from)) /
@@ -741,7 +741,7 @@ export default function Checkout() {
                       CHECK-IN
                     </div>
                     <div className="font-medium">
-                      {range.from && format(range.from, "dd MMM yyyy")}
+                      {range?.from && format(range.from, "dd MMM yyyy")}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
                       Saturday, 2:00 PM
@@ -753,7 +753,7 @@ export default function Checkout() {
                       CHECK-OUT
                     </div>
                     <div className="font-medium">
-                      {range.to && format(range.to, "dd MMM yyyy")}
+                      {range?.to && format(range.to, "dd MMM yyyy")}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
                       Wednesday, 11:00 AM
@@ -956,7 +956,12 @@ export default function Checkout() {
               <CalendarRange
                 roomId={roomId}
                 value={range}
-                onChange={setRange}
+                onChange={(r) => {
+                  setRange({
+                    from: r?.from || null,
+                    to: r?.to || null,
+                  });
+                }}
                 disabledRanges={disabledAll}
               />
 
