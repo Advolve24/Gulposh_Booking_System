@@ -225,20 +225,34 @@ export default function Checkout() {
   }, [range]);
 
 
-  const baseRoomPrice = useMemo(() => {
-    if (!room) return 0;
+  const priceBreakup = useMemo(() => {
+    if (!room) return { base: 0, gst: 0, cgst: 0, sgst: 0 };
 
     if (room.taxMode === "included") {
-      const taxMultiplier = 1 + taxPercent / 100;
-      const base = room.pricePerNight / taxMultiplier;
-      return Math.round(base);
+      const gst = (room.pricePerNight * taxPercent) / 100;
+      const cgst = gst / 2;
+      const sgst = gst / 2;
+      const base = room.pricePerNight - gst;
+      return {
+        base: Number(base.toFixed(2)),
+        gst: Number(gst.toFixed(2)),
+        cgst: Number(cgst.toFixed(2)),
+        sgst: Number(sgst.toFixed(2)),
+      };
     }
-    return room.pricePerNight;
+    const gst = (room.pricePerNight * taxPercent) / 100;
+    return {
+      base: room.pricePerNight,
+      gst,
+      cgst: gst / 2,
+      sgst: gst / 2,
+    };
   }, [room, taxPercent]);
 
   const roomTotal = useMemo(() => {
-    return nights * baseRoomPrice;
-  }, [nights, baseRoomPrice]);
+    if (!room) return 0;
+    return nights * priceBreakup.base;
+  }, [room, nights, priceBreakup]);
 
   const mealTotal = useMemo(() => {
     if (!room) return 0;
@@ -292,24 +306,21 @@ export default function Checkout() {
   const sgstPercent = taxPercent / 2;
 
   const cgstAmount = useMemo(() => {
-    return Number(((taxableAmount * cgstPercent) / 100).toFixed(2));
-  }, [taxableAmount, cgstPercent]);
+    return nights * priceBreakup.cgst;
+  }, [nights, priceBreakup]);
 
   const sgstAmount = useMemo(() => {
-    return Number(((taxableAmount * sgstPercent) / 100).toFixed(2));
-  }, [taxableAmount, sgstPercent]);
+    return nights * priceBreakup.sgst;
+  }, [nights, priceBreakup]);
 
-  const totalTax = useMemo(() => {
-    return Number((cgstAmount + sgstAmount).toFixed(2));
-  }, [cgstAmount, sgstAmount]);
+  const totalTax = useMemo(() => cgstAmount + sgstAmount, [cgstAmount, sgstAmount]);
 
   const grandTotal = useMemo(() => {
     if (!room) return 0;
-
     return room.taxMode === "included"
-      ? discountedSubtotal
-      : Number((discountedSubtotal + totalTax).toFixed(2));
-  }, [discountedSubtotal, totalTax, room]);
+      ? nights * room.pricePerNight
+      : roomTotal + totalTax;
+  }, [room, nights, roomTotal, totalTax]);
 
 
   const proceedPayment = async () => {
@@ -758,7 +769,7 @@ export default function Checkout() {
                     <span>
                       Room ({nights} nights × ₹
                       {room?.taxMode === "included"
-                        ? baseRoomPrice.toFixed(2)
+                        ? priceBreakup.base.toFixed(2)
                         : room?.pricePerNight})
                     </span>
                     <span>
