@@ -343,19 +343,52 @@ export default function Reports() {
 
                     <div className="bg-white p-6 border rounded-xl">
 
-                        <h3 className="mb-4 font-semibold">
+                        <h3 className="text-[18px] font-semibold text-[#1f2937] mb-4">
                             Occupancy Rate
                         </h3>
 
-                        <ResponsiveContainer width="100%" height={200}>
+                        <ResponsiveContainer width="100%" height={220}>
 
-                            <BarChart data={monthly}>
+                            <BarChart data={monthly} barSize={36}>
 
-                                <XAxis dataKey="_id.month" />
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    vertical={false}
+                                    stroke="#e5e7eb"
+                                />
 
-                                <YAxis />
+                                <XAxis
+                                    dataKey="_id.month"
+                                    tickFormatter={(m) => {
+                                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                        return months[m - 1];
+                                    }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 12, fill: "#6b7280" }}
+                                />
 
-                                <Bar dataKey="totalRevenue" fill="#10B981" />
+                                <YAxis
+                                    domain={[0, 100]}
+                                    tickFormatter={(v) => `${v}%`}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 12, fill: "#6b7280" }}
+                                />
+
+                                <Tooltip
+                                    formatter={(v) => `${v}%`}
+                                    contentStyle={{
+                                        borderRadius: "8px",
+                                        border: "1px solid #e5e7eb"
+                                    }}
+                                />
+
+                                <Bar
+                                    dataKey="occupancy"
+                                    fill="#2f8f6b"
+                                    radius={[6, 6, 0, 0]}
+                                />
 
                             </BarChart>
 
@@ -367,29 +400,65 @@ export default function Reports() {
 
                     <div className="bg-white p-6 border rounded-xl">
 
-                        <h3 className="font-semibold mb-4">
+                        <h3 className="text-[18px] font-semibold text-[#1f2937] mb-4">
                             Booking Sources
                         </h3>
 
-                        <PieChart width={250} height={200}>
+                        <div className="flex flex-col items-center">
 
-                            <Pie
-                                data={sources}
-                                dataKey="count"
-                                nameKey="_id"
-                                outerRadius={80}
-                            >
+                            <PieChart width={220} height={180}>
 
-                                {sources.map((entry, index) => (
-                                    <Cell
-                                        key={index}
-                                        fill={COLORS[index % COLORS.length]}
-                                    />
-                                ))}
+                                <Pie
+                                    data={sources}
+                                    dataKey="count"
+                                    nameKey="_id"
+                                    outerRadius={70}
+                                    paddingAngle={2}
+                                >
 
-                            </Pie>
+                                    {sources.map((entry, index) => (
+                                        <Cell key={index} fill={COLORS[index]} />
+                                    ))}
 
-                        </PieChart>
+                                </Pie>
+
+                                <Tooltip
+                                    formatter={(v, name) => `${name} : ${v}`}
+                                />
+
+                            </PieChart>
+
+                            {/* LEGEND */}
+
+                            <div className="flex gap-6 mt-2 text-[13px]">
+
+                                {sources.map((s, i) => {
+
+                                    const total = sources.reduce((a, b) => a + b.count, 0)
+                                    const percent = Math.round((s.count / total) * 100)
+
+                                    return (
+
+                                        <div key={i} className="flex items-center gap-2">
+
+                                            <span
+                                                className="w-3 h-3 rounded-full"
+                                                style={{ background: COLORS[i] }}
+                                            />
+
+                                            <span className="text-[#374151]">
+                                                {s._id} ({percent}%)
+                                            </span>
+
+                                        </div>
+
+                                    )
+
+                                })}
+
+                            </div>
+
+                        </div>
 
                     </div>
 
@@ -397,29 +466,73 @@ export default function Reports() {
 
                     <div className="bg-white p-6 border rounded-xl">
 
-                        <h3 className="font-semibold mb-4">
+                        <h3 className="text-[18px] font-semibold text-[#1f2937] mb-4">
                             Payment Status
                         </h3>
 
-                        <PieChart width={250} height={200}>
+                        <div className="flex flex-col items-center">
 
-                            <Pie
-                                data={payment}
-                                dataKey="count"
-                                nameKey="_id"
-                                outerRadius={80}
-                            >
+                            <PieChart width={220} height={180}>
 
-                                {payment.map((entry, index) => (
-                                    <Cell
-                                        key={index}
-                                        fill={COLORS[index % COLORS.length]}
-                                    />
+                                <Pie
+                                    data={payment}
+                                    dataKey="count"
+                                    nameKey="_id"
+                                    outerRadius={70}
+                                    paddingAngle={2}
+                                >
+
+                                    {payment.map((entry, index) => (
+                                        <Cell key={index}
+                                            fill={
+                                                entry._id === "confirmed"
+                                                    ? "#2f8f6b"
+                                                    : entry._id === "cancelled"
+                                                        ? "#dc2626"
+                                                        : "#f59e0b"
+                                            }
+                                        />
+                                    ))}
+
+                                </Pie>
+
+                                <Tooltip
+                                    formatter={(v, name) => `${name} : ${v}`}
+                                />
+
+                            </PieChart>
+
+                            {/* LEGEND */}
+
+                            <div className="flex gap-6 mt-2 text-[13px]">
+
+                                {payment.map((p, i) => (
+
+                                    <div key={i} className="flex items-center gap-2">
+
+                                        <span
+                                            className="w-3 h-3 rounded-full"
+                                            style={{
+                                                background:
+                                                    p._id === "confirmed"
+                                                        ? "#2f8f6b"
+                                                        : p._id === "cancelled"
+                                                            ? "#dc2626"
+                                                            : "#f59e0b"
+                                            }}
+                                        />
+
+                                        <span className="text-[#374151]">
+                                            {p._id} ({p.count})
+                                        </span>
+
+                                    </div>
+
                                 ))}
 
-                            </Pie>
+                            </div>
 
-                        </PieChart>
+                        </div>
 
                     </div>
 
