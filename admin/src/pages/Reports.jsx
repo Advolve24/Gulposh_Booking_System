@@ -459,7 +459,7 @@ export default function Reports() {
                                                 style={{ background: SOURCE_COLORS[s._id] }}
                                             />
 
-                                            <span className="text-[#374151] text-[10px]">
+                                            <span className="text-[#374151] text-[11px]">
                                                 {s._id} ({percent}%)
                                             </span>
 
@@ -522,7 +522,7 @@ export default function Reports() {
                                             }}
                                         />
 
-                                        <span className="text-[#374151] text-[10px]">
+                                        <span className="text-[#374151] text-[11px]">
                                             {p._id} ({p.count})
                                         </span>
 
