@@ -19,7 +19,7 @@ import adminUploadRoutes from "./routes/admin.upload.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js";
 import enquiryRoutes from "./routes/enquiry.routes.js";
 import taxRoutes from "./routes/tax.routes.js";
-
+import reportRoutes from "./routes/report.routes.js";
 import { verifySMTP } from "./utils/mailer.js";
 import { initSocket } from "./lib/socket.js";
 
@@ -81,6 +81,7 @@ app.use("/api/blackouts", blackoutRoutes);
 app.use("/api/invoice", invoiceRoutes);
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/tax", taxRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.use((err, req, res, next) => {
   console.error("🔥 Server Error:", err);

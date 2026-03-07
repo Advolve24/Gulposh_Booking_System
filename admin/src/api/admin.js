@@ -78,9 +78,44 @@ export const saveAdminFcmToken = (token) => {
   return api.post("/admin/fcm-token", { token }).then(r => r.data);
 };
 
-
 export const getAdminTax = () =>
   api.get("/admin/tax").then(r => r.data);
 
 export const updateAdminTax = (taxPercent) =>
   api.put("/admin/tax", { taxPercent }).then(r => r.data);
+
+
+export const getOverview = async () => {
+  const { data } = await api.get("/reports/overview");
+  return data;
+};
+
+export const getMonthlyRevenue = async () => {
+  const { data } = await api.get("/reports/monthly-revenue");
+  return data;
+};
+
+export const getRevenueByRoom = async () => {
+  const { data } = await api.get("/reports/revenue-by-room");
+  return data;
+};
+
+export const getPaymentStatus = async () => {
+  const { data } = await api.get("/reports/payment-status");
+  return data;
+};
+
+export const getBookingSources = async () => {
+  const { data } = await api.get("/reports/booking-sources");
+  return data;
+};
+
+export const getMealRevenue = async () => {
+  const { data } = await api.get("/reports/meal-revenue");
+  return data;
+};
+
+export const getTopGuests = async () => {
+  const { data } = await api.get("/reports/top-guests");
+  return data;
+};

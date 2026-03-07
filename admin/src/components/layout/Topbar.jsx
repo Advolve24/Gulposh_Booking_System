@@ -77,6 +77,7 @@ export default function Topbar({ onMenuClick }) {
     if (pathname.startsWith("/villa-booking")) return "Book Entire Villa";
     if (pathname.startsWith("/settings")) return "Settings";
     if (pathname.startsWith("/enquiries")) return "Enquiries";
+    if (pathname.startsWith("/reports")) return "Reports";
     return "Dashboard";
   };
 

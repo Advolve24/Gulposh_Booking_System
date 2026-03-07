@@ -10,6 +10,7 @@ import {
   X,
   Home,
   Mail,
+  ChartColumn
 } from "lucide-react";
 
 export default function Sidebar({
@@ -26,6 +27,7 @@ export default function Sidebar({
     { to: "/users", label: "Users", icon: Users },
     { to: "/villa-booking" , label: "Book Entire Villa", icon: Home},
     { to: "/enquiries", label: "Enquiries", icon: Mail },
+    { to: "/reports", label: "Reports", icon: ChartColumn }
     
   ];
 
