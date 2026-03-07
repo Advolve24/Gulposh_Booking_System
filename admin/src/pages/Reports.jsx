@@ -211,8 +211,8 @@ export default function Reports() {
                                     data={rooms}
                                     dataKey="revenue"
                                     nameKey="roomName"
-                                    innerRadius={60}
-                                    outerRadius={85}
+                                    innerRadius={50}
+                                    outerRadius={70}
                                     paddingAngle={2}
                                     stroke="none"
                                 >
