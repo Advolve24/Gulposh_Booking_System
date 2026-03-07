@@ -36,6 +36,39 @@ function ReportControls({ range, setRange }) {
         "Last Year",
     ]
 
+    const exportCSV = () => {
+
+        const rows = [
+            ["Month", "Revenue", "Bookings", "Occupancy"]
+        ];
+
+        monthly.forEach((m) => {
+
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+            rows.push([
+                months[m._id.month - 1],
+                m.totalRevenue,
+                m.bookings,
+                m.occupancy + "%"
+            ]);
+
+        });
+
+        const csvContent =
+            "data:text/csv;charset=utf-8," +
+            rows.map(e => e.join(",")).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "revenue-report.csv");
+
+        document.body.appendChild(link);
+        link.click();
+    };
+
     return (
         <div className="flex items-start justify-between">
             <div>
@@ -119,39 +152,6 @@ export default function Reports() {
         setMeal(await getMealRevenue(range));
         setGuests(await getTopGuests(range));
 
-    };
-
-    const exportCSV = () => {
-
-        const rows = [
-            ["Month", "Revenue", "Bookings", "Occupancy"]
-        ];
-
-        monthly.forEach((m) => {
-
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-            rows.push([
-                months[m._id.month - 1],
-                m.totalRevenue,
-                m.bookings,
-                m.occupancy + "%"
-            ]);
-
-        });
-
-        const csvContent =
-            "data:text/csv;charset=utf-8," +
-            rows.map(e => e.join(",")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "revenue-report.csv");
-
-        document.body.appendChild(link);
-        link.click();
     };
 
     if (!overview) return <div className="p-10">Loading...</div>;
