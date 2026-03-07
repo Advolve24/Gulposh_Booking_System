@@ -6,7 +6,7 @@ export default function BirthdaySection({ guests = [] }) {
   const month = format(new Date(), "MMMM");
 
   return (
-    <div className="bg-card bg-[#faf9f8] border border-border rounded-xl p-6 mt-6">
+    <div className="bg-[#faf9f8] border border-border rounded-xl p-6 mt-6">
 
       {/* ================= HEADER ================= */}
 
