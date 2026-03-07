@@ -106,15 +106,11 @@ export default function Reports() {
     return (
         <AppLayout>
 
-            <div className="p-6 space-y-6">
+            <div className="p-0 space-y-6">
 
                 {/* HEADER */}
 
                 <div className="space-y-6">
-                    <h1 className="text-[36px] font-semibold leading-none text-[#111827]">
-                        Reports
-                    </h1>
-
                     <ReportControls />
                 </div>
 
