@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
     LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart,
-    Pie, Cell, BarChart, Bar, CartesianGrid
+    Pie, Cell, BarChart, Bar, CartesianGrid, Area
 } from "recharts";
 import {
     getOverview, getMonthlyRevenue, getRevenueByRoom, getPaymentStatus, getBookingSources,
@@ -189,8 +189,8 @@ export default function Reports() {
 
                                 <defs>
                                     <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="#6B2737" stopOpacity={0.35} />
-                                        <stop offset="100%" stopColor="#6B2737" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#6B2737" stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor="#6B2737" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
 
@@ -236,13 +236,22 @@ export default function Reports() {
 
                                 {/* AREA FILL */}
 
+                                <Area
+                                    type="monotone"
+                                    dataKey="totalRevenue"
+                                    stroke="none"
+                                    fill="url(#revenueGradient)"
+                                />
+
+                                {/* LINE */}
+
                                 <Line
                                     type="monotone"
                                     dataKey="totalRevenue"
                                     stroke="#6B2737"
                                     strokeWidth={3}
-                                    dot={false}
-                                    fill="url(#revenueGradient)"
+                                    dot={{ r: 4, fill: "#6B2737" }}
+                                    activeDot={{ r: 6 }}
                                 />
 
                             </LineChart>
