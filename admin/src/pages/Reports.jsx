@@ -96,7 +96,7 @@ export default function Reports() {
     const [rooms, setRooms] = useState([]);
     const [payment, setPayment] = useState([]);
     const [sources, setSources] = useState([]);
-    const [meal, setMeal] = useState({});
+    const [meal, setMeal] = useState([]);
     const [guests, setGuests] = useState([]);
 
     useEffect(() => {
@@ -635,24 +635,13 @@ export default function Reports() {
 
                         <table className="w-full text-sm">
 
-                            <thead className="border-b">
-
+                            <thead className="border-b text-[#6b7280] text-[13px]">
                                 <tr>
-
-                                    <th className="text-left py-2">
-                                        Guest
-                                    </th>
-
-                                    <th>
-                                        Bookings
-                                    </th>
-
-                                    <th>
-                                        Spent
-                                    </th>
-
+                                    <th className="text-left py-2">Guest</th>
+                                    <th className="text-center">Bookings</th>
+                                    <th className="text-left">Phone</th>
+                                    <th className="text-right">Total Spent</th>
                                 </tr>
-
                             </thead>
 
                             <tbody>
