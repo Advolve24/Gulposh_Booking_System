@@ -379,7 +379,7 @@ export default function Reports() {
                                         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                                         return months[m - 1];
                                     }}
-                                    axisLine={false}
+                                    axisLine={{ stroke: "#9ca3af" }}
                                     tickLine={false}
                                     tick={{ fontSize: 12, fill: "#6b7280" }}
                                 />
@@ -387,7 +387,7 @@ export default function Reports() {
                                 <YAxis
                                     domain={[0, 100]}
                                     tickFormatter={(v) => `${v}%`}
-                                    axisLine={false}
+                                    axisLine={{ stroke: "#9ca3af", strokeWidth: 1 }}
                                     tickLine={false}
                                     tick={{ fontSize: 12, fill: "#6b7280" }}
                                 />
