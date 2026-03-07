@@ -62,10 +62,10 @@ router.get("/rooms/:id", getRoomAdmin);
 router.put("/rooms/:id", updateRoom);
 router.get("/users", listUsersAdmin);
 router.post("/users", createUserAdmin);
+router.get("/users/birthdays", getBirthdayGuests);
 router.get("/users/:id", getUserAdmin);
 router.get("/users/check-phone/:phone", checkUserByPhoneAdmin);
 router.get("/users/:id/bookings", listUserBookingsAdmin);
-router.get("/users/birthdays", getBirthdayGuests)
 
 router.get("/bookings", listBookingsAdmin);          
 router.get("/bookings/:id", getBookingAdmin);        
