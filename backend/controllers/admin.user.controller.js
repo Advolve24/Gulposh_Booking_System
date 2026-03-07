@@ -631,6 +631,11 @@ export const getBirthdayGuests = async (req, res) => {
       return dob.getMonth() + 1 === currentMonth
     })
 
+    // 🔴 IMPORTANT FIX
+    if (birthdayUsers.length === 0) {
+      return res.json([])
+    }
+
     const bookings = await Booking.aggregate([
       {
         $match: { user: { $in: birthdayUsers.map(u => u._id) } }
