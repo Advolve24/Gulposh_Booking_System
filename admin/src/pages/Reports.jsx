@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
     LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart,
-    Pie, Cell, BarChart, Bar
+    Pie, Cell, BarChart, Bar, CartesianGrid
 } from "recharts";
 import {
     getOverview, getMonthlyRevenue, getRevenueByRoom, getPaymentStatus, getBookingSources,
@@ -165,24 +165,84 @@ export default function Reports() {
 
                     <div className="col-span-2 bg-white p-6 border rounded-xl">
 
-                        <h3 className="font-semibold mb-4">
-                            Monthly Revenue
-                        </h3>
+                        {/* HEADER */}
 
-                        <ResponsiveContainer width="100%" height={280}>
+                        <div className="flex items-center justify-between mb-4">
+
+                            <h3 className="text-[18px] font-semibold text-[#1f2937]">
+                                Monthly Revenue
+                            </h3>
+
+                            <div className="text-[12px] bg-[#f3f4f6] px-3 py-1 rounded-full font-medium text-[#374151]">
+                                ₹ INR
+                            </div>
+
+                        </div>
+
+                        {/* CHART */}
+
+                        <ResponsiveContainer width="100%" height={300}>
 
                             <LineChart data={monthly}>
 
-                                <XAxis dataKey="_id.month" />
+                                {/* GRADIENT */}
 
-                                <YAxis />
+                                <defs>
+                                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#6B2737" stopOpacity={0.35} />
+                                        <stop offset="100%" stopColor="#6B2737" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
 
-                                <Tooltip />
+                                {/* GRID */}
+
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    vertical={false}
+                                    stroke="#e5e7eb"
+                                />
+
+                                {/* X AXIS */}
+
+                                <XAxis
+                                    dataKey="_id.month"
+                                    tickFormatter={(m) => {
+                                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                        return months[m - 1];
+                                    }}
+                                    tick={{ fontSize: 12, fill: "#6b7280" }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+
+                                {/* Y AXIS */}
+
+                                <YAxis
+                                    tickFormatter={(v) => `₹${Math.round(v / 1000)}K`}
+                                    tick={{ fontSize: 12, fill: "#6b7280" }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+
+                                {/* TOOLTIP */}
+
+                                <Tooltip
+                                    formatter={(v) => `₹${v.toLocaleString()}`}
+                                    contentStyle={{
+                                        borderRadius: "8px",
+                                        border: "1px solid #e5e7eb"
+                                    }}
+                                />
+
+                                {/* AREA FILL */}
 
                                 <Line
+                                    type="monotone"
                                     dataKey="totalRevenue"
                                     stroke="#6B2737"
                                     strokeWidth={3}
+                                    dot={false}
+                                    fill="url(#revenueGradient)"
                                 />
 
                             </LineChart>
@@ -190,8 +250,6 @@ export default function Reports() {
                         </ResponsiveContainer>
 
                     </div>
-
-                    {/* ROOM REVENUE */}
 
                     {/* ROOM REVENUE */}
 
@@ -230,7 +288,7 @@ export default function Reports() {
 
                             {/* LEGEND */}
 
-                            <div className="w-full mt-0 space-y-2">
+                            <div className="w-full mt-0 space-y-1">
 
                                 {rooms.map((room, index) => (
 
