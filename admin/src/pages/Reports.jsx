@@ -239,7 +239,11 @@ export default function Reports() {
                                 {/* TOOLTIP */}
 
                                 <Tooltip
-                                    formatter={(v) => `₹${v.toLocaleString()}`}
+                                    formatter={(v) => `rate : ${v}%`}
+                                    labelFormatter={(label) => {
+                                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                        return months[label - 1]
+                                    }}
                                     contentStyle={{
                                         borderRadius: "8px",
                                         border: "1px solid #e5e7eb"
@@ -400,6 +404,7 @@ export default function Reports() {
                                     dataKey="occupancy"
                                     fill="#2f8f6b"
                                     radius={[6, 6, 0, 0]}
+                                    activeBar={{ fill: "#1f7f5f" }}
                                 />
 
                             </BarChart>

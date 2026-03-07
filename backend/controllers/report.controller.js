@@ -2,9 +2,7 @@ import Booking from "../models/Booking.js";
 import Enquiry from "../models/Enquiry.js";
 import mongoose from "mongoose";
 
-/* ======================================================
-   REPORT OVERVIEW
-====================================================== */
+
 export const getOverviewReport = async (req, res) => {
   try {
     const bookings = await Booking.find({ status: "confirmed" }).populate("room");
@@ -28,44 +26,63 @@ export const getOverviewReport = async (req, res) => {
 };
 
 
-/* ======================================================
-   MONTHLY REVENUE
-====================================================== */
 
 export const getMonthlyRevenue = async (req, res) => {
   try {
+
     const revenue = await Booking.aggregate([
-      { $match: { status: "confirmed" } },
+
+      {
+        $match: { status: "confirmed" }
+      },
 
       {
         $group: {
           _id: {
             year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" },
+            month: { $month: "$createdAt" }
           },
+
           totalRevenue: { $sum: "$amount" },
-        },
+
+          bookings: { $sum: 1 }
+
+        }
       },
 
       {
         $sort: {
           "_id.year": 1,
-          "_id.month": 1,
-        },
-      },
-    ]);
+          "_id.month": 1
+        }
+      }
 
-    res.json(revenue);
+    ])
+
+    const MAX_ROOMS = 5
+    const DAYS_IN_MONTH = 30
+
+    const result = revenue.map(r => {
+
+      const occupancy =
+        (r.bookings / (MAX_ROOMS * DAYS_IN_MONTH)) * 100
+
+      return {
+        ...r,
+        occupancy: Math.round(occupancy)
+      }
+
+    })
+
+    res.json(result)
+
   } catch (err) {
-    console.error("Monthly Revenue Error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Monthly Revenue Error:", err)
+    res.status(500).json({ message: "Server error" })
   }
-};
+}
 
 
-/* ======================================================
-   REVENUE BY ROOM
-====================================================== */
 
 export const getRevenueByRoom = async (req, res) => {
   try {
@@ -222,10 +239,6 @@ export const getMealRevenue = async (req, res) => {
   }
 };
 
-
-/* ======================================================
-   TOP GUESTS
-====================================================== */
 
 export const getTopGuests = async (req, res) => {
   try {
