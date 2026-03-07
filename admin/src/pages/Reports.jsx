@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart,
-         Pie, Cell, BarChart, Bar} from "recharts";
-import { getOverview, getMonthlyRevenue, getRevenueByRoom, getPaymentStatus, getBookingSources,
-         getMealRevenue, getTopGuests} from "@/api/admin";
+import {
+    LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart,
+    Pie, Cell, BarChart, Bar
+} from "recharts";
+import {
+    getOverview, getMonthlyRevenue, getRevenueByRoom, getPaymentStatus, getBookingSources,
+    getMealRevenue, getTopGuests
+} from "@/api/admin";
 import StatCard from "@/components/StatCard";
 import AppLayout from "@/components/layout/AppLayout";
 import { ChevronDown, Download } from "lucide-react";
@@ -51,8 +55,8 @@ function ReportControls() {
                                         setOpen(false);
                                     }}
                                     className={`flex w-full items-center px-4 py-3 text-left text-[15px] ${active
-                                            ? "bg-[#2f9e75] text-white"
-                                            : "bg-white text-[#374151] hover:bg-[#f9fafb]"
+                                        ? "bg-[#2f9e75] text-white"
+                                        : "bg-white text-[#374151] hover:bg-[#f9fafb]"
                                         }`}
                                 >
                                     {active && <span className="mr-2 text-base">✓</span>}
@@ -189,31 +193,76 @@ export default function Reports() {
 
                     {/* ROOM REVENUE */}
 
+                    {/* ROOM REVENUE */}
+
                     <div className="bg-white p-6 border rounded-xl">
 
-                        <h3 className="font-semibold mb-4">
+                        <h3 className="text-[18px] font-semibold text-[#1f2937] mb-6">
                             Revenue by Room
                         </h3>
 
-                        <PieChart width={260} height={260}>
+                        <div className="flex flex-col items-center">
 
-                            <Pie
-                                data={rooms}
-                                dataKey="revenue"
-                                nameKey="roomName"
-                                outerRadius={90}
-                            >
+                            {/* DONUT CHART */}
 
-                                {rooms.map((entry, index) => (
-                                    <Cell
+                            <PieChart width={240} height={220}>
+
+                                <Pie
+                                    data={rooms}
+                                    dataKey="revenue"
+                                    nameKey="roomName"
+                                    innerRadius={60}
+                                    outerRadius={85}
+                                    paddingAngle={2}
+                                    stroke="none"
+                                >
+
+                                    {rooms.map((entry, index) => (
+                                        <Cell
+                                            key={index}
+                                            fill={COLORS[index % COLORS.length]}
+                                        />
+                                    ))}
+
+                                </Pie>
+
+                            </PieChart>
+
+                            {/* LEGEND */}
+
+                            <div className="w-full mt-4 space-y-3">
+
+                                {rooms.map((room, index) => (
+
+                                    <div
                                         key={index}
-                                        fill={COLORS[index % COLORS.length]}
-                                    />
+                                        className="flex items-center justify-between text-[14px]"
+                                    >
+
+                                        <div className="flex items-center gap-3">
+
+                                            <span
+                                                className="w-3 h-3 rounded-full"
+                                                style={{ background: COLORS[index % COLORS.length] }}
+                                            />
+
+                                            <span className="text-[#374151]">
+                                                {room.roomName}
+                                            </span>
+
+                                        </div>
+
+                                        <span className="font-medium text-[#111827]">
+                                            ₹{room.revenue.toLocaleString()}
+                                        </span>
+
+                                    </div>
+
                                 ))}
 
-                            </Pie>
+                            </div>
 
-                        </PieChart>
+                        </div>
 
                     </div>
 
