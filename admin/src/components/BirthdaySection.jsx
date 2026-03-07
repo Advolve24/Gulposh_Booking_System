@@ -63,6 +63,14 @@ export default function BirthdaySection({ guests = [] }) {
 
               {/* ================= TOP ================= */}
 
+              {/* DATE BADGE */}
+               <div className="flex items-start justify-end">
+                <span className="text-xs bg-[#6B2737] text-white px-2 py-1 rounded-full flex items-center gap-1">
+                  <Cake size={12} />
+                  {format(birthday, "dd MMM")}
+                </span>
+                </div>
+
               <div className="flex items-start justify-between">
 
                 <div className="flex gap-3">
@@ -86,14 +94,6 @@ export default function BirthdaySection({ guests = [] }) {
                   </div>
 
                 </div>
-
-                {/* DATE BADGE */}
-                <span className="text-xs bg-[#6B2737] text-white px-2 py-1 rounded-full flex items-center gap-1">
-
-                  <Cake size={12} />
-                  {format(birthday, "dd MMM")}
-
-                </span>
 
               </div>
 
