@@ -321,8 +321,9 @@ export default function Checkout() {
     if (!room) return 0;
 
     if (room.taxMode === "included") {
-      return discountedSubtotal;
+      return discountedSubtotal + totalTax;
     }
+
     return discountedSubtotal + totalTax;
   }, [room, discountedSubtotal, totalTax]);
 
