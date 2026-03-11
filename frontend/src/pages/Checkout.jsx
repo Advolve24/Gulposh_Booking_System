@@ -320,11 +320,8 @@ export default function Checkout() {
   const grandTotal = useMemo(() => {
     if (!room) return 0;
 
-    if (room.taxMode === "included") {
-      return discountedSubtotal + totalTax;
-    }
+    return Number((discountedSubtotal + totalTax).toFixed(2));
 
-    return discountedSubtotal + totalTax;
   }, [room, discountedSubtotal, totalTax]);
 
 
