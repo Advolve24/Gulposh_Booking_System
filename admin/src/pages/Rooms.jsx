@@ -369,7 +369,7 @@ function RoomCard({ room, view, onDelete }) {
 
           {room.taxMode === "excluded" && (
             <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs">
-              GST Extra
+              GST Excluded
             </span>
           )}
 

@@ -1169,12 +1169,6 @@ export default function Checkout() {
                       Apply
                     </Button>
                   </div>
-
-                  {room.discountLabel && (
-                    <p className="text-xs text-muted-foreground">
-                      Available Offer: <strong>{room.discountLabel}</strong>
-                    </p>
-                  )}
                 </div>
               )}
 
