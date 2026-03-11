@@ -229,10 +229,12 @@ export default function Checkout() {
     if (!room) return { base: 0, gst: 0, cgst: 0, sgst: 0 };
 
     if (room.taxMode === "included") {
-      const gst = (room.pricePerNight * taxPercent) / 100;
+      const base = room.pricePerNight / (1 + taxPercent / 100);
+      const gst = room.pricePerNight - base;
+
       const cgst = gst / 2;
       const sgst = gst / 2;
-      const base = room.pricePerNight - gst;
+
       return {
         base: Number(base.toFixed(2)),
         gst: Number(gst.toFixed(2)),

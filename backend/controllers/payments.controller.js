@@ -117,7 +117,8 @@ export const createOrder = async (req, res) => {
     let taxableAmount = discountedSubtotal;
 
     if (room.taxMode === "included") {
-      totalTax = (discountedSubtotal * taxSetting.taxPercent) / 100;
+      const base = discountedSubtotal / (1 + taxSetting.taxPercent / 100);
+      totalTax = discountedSubtotal - base;
 
       cgstAmount = Number((totalTax / 2).toFixed(2));
       sgstAmount = Number((totalTax / 2).toFixed(2));
