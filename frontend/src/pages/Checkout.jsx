@@ -308,12 +308,21 @@ export default function Checkout() {
   const sgstPercent = taxPercent / 2;
 
   const cgstAmount = useMemo(() => {
-    return (discountedSubtotal * cgstPercent) / 100;
-  }, [discountedSubtotal, cgstPercent]);
+    if (!room) return 0;
+    if (room.taxMode === "included") {
+      return Number((nights * priceBreakup.cgst).toFixed(2));
+    }
+    return Number(((discountedSubtotal * cgstPercent) / 100).toFixed(2));
+  }, [room, nights, priceBreakup, discountedSubtotal, cgstPercent]);
+
 
   const sgstAmount = useMemo(() => {
-    return (discountedSubtotal * sgstPercent) / 100;
-  }, [discountedSubtotal, sgstPercent]);
+    if (!room) return 0;
+    if (room.taxMode === "included") {
+      return Number((nights * priceBreakup.sgst).toFixed(2));
+    }
+    return Number(((discountedSubtotal * sgstPercent) / 100).toFixed(2));
+  }, [room, nights, priceBreakup, discountedSubtotal, sgstPercent]);
 
   const totalTax = useMemo(() => cgstAmount + sgstAmount, [cgstAmount, sgstAmount]);
 
