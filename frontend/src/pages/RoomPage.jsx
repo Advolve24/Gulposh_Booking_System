@@ -4,11 +4,12 @@ import { useAuth } from "../store/authStore";
 import { api } from "../api/http";
 import CalendarRange from "../components/CalendarRange";
 import GuestCounter from "../components/GuestCounter";
+import amenityCategories from "../data/aminities";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import { X } from "lucide-react";
 import {
-  Wifi, BedDouble, ShieldCheck, Refrigerator, Tv, Coffee, Music, Car, Utensils, Shirt, Clock, Ban,
+  ShieldCheck, Clock, Ban, Music,
   Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft
 } from "lucide-react";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
@@ -17,25 +18,12 @@ import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 const humanize = (v = "") =>
   v.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-const AMENITY_ICONS = {
-  wifi: Wifi,
-  highspeed_wifi: Wifi,
-  comfy_mattress: BedDouble,
-  fresh_linen: BedDouble,
-  toiletries: ShieldCheck,
-  refrigerator: Refrigerator,
-  smart_tv: Tv,
-  ott_apps: Tv,
-  tea_coffee: Coffee,
-  music_system: Music,
-  dining_table: Utensils,
-  wardrobe: Shirt,
-  free_parking: Car,
-  ac: ShieldCheck,
-  security: ShieldCheck,
-  breakfast: Utensils,
-  parking: Car
-};
+const AMENITY_ICONS = amenityCategories.reduce((icons, category) => {
+  category.items.forEach((item) => {
+    icons[item.id] = item.icon;
+  });
+  return icons;
+}, {});
 
 const ruleIcon = (text = "") => {
   const t = text.toLowerCase();
