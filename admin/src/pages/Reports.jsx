@@ -254,6 +254,33 @@ export default function Reports() {
                                 <Tooltip
                                     formatter={(value) => formatCurrency(value)}
                                     labelFormatter={(label) => MONTHS[label - 1]}
+                                    // The chart draws both an Area and a Line for the same metric.
+                                    // Filter duplicate payload entries so the tooltip shows revenue once.
+                                    content={({ active, payload, label }) => {
+                                        if (!active || !payload?.length) {
+                                            return null;
+                                        }
+
+                                        const uniquePayload = payload.filter(
+                                            (entry, index, items) =>
+                                                items.findIndex((candidate) => candidate.dataKey === entry.dataKey) === index
+                                        );
+
+                                        return (
+                                            <div
+                                                className="rounded-[8px] border border-[#e5e7eb] bg-white px-3 py-2 shadow-sm"
+                                            >
+                                                <p className="mb-1 text-sm font-medium text-[#1f2937]">
+                                                    {MONTHS[label - 1]}
+                                                </p>
+                                                {uniquePayload.map((entry) => (
+                                                    <p key={entry.dataKey} className="text-sm text-[#6B2737]">
+                                                        {entry.dataKey}: {formatCurrency(entry.value)}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        );
+                                    }}
                                     contentStyle={{
                                         borderRadius: "8px",
                                         border: "1px solid #e5e7eb",
