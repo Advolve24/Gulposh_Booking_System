@@ -4,7 +4,7 @@ import { useAuth } from "../store/authStore";
 import { api } from "../api/http";
 import CalendarRange from "../components/CalendarRange";
 import GuestCounter from "../components/GuestCounter";
-import amenityCategories from "../data/aminities";
+import { amenityCategories } from "../data/aminities";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import { X } from "lucide-react";

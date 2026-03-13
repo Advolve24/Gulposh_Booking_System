@@ -1,4 +1,3 @@
-// src/data/amenities.js
 import {
   Wifi,
   PlugZap,
