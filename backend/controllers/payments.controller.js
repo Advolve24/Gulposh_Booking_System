@@ -436,20 +436,19 @@ export const verifyPayment = async (req, res) => {
       console.warn("⚠️ No email found to send booking confirmation");
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminEmail = process.env.ADMIN_EMAIL?.trim();
     if (adminEmail) {
-      sendAdminBookingNotificationMail({
-        to: adminEmail,
-        booking,
-        room,
-        customerName: contactName || user?.name || "Guest",
-      })
-        .then(() => {
-          console.log("Admin booking mail queued:", adminEmail);
-        })
-        .catch((err) => {
-          console.error("Admin booking mail error:", err.message);
+      try {
+        await sendAdminBookingNotificationMail({
+          to: adminEmail,
+          booking,
+          room,
+          customerName: contactName || user?.name || "Guest",
         });
+        console.log("Admin booking mail sent:", adminEmail);
+      } catch (err) {
+        console.error("Admin booking mail error:", err.message);
+      }
     } else {
       console.warn("ADMIN_EMAIL not configured; admin booking mail skipped");
     }

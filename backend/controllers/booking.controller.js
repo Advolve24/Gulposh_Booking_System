@@ -220,17 +220,20 @@ export const cancelMyBooking = async (req, res) => {
       console.error("Admin notification failed:", err);
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminEmail = process.env.ADMIN_EMAIL?.trim();
     if (adminEmail) {
-      sendBookingCancellationMail({
-        to: adminEmail,
-        booking,
-        room: booking.room,
-        recipientName: "Admin",
-        isAdmin: true,
-      }).catch((err) => {
+      try {
+        await sendBookingCancellationMail({
+          to: adminEmail,
+          booking,
+          room: booking.room,
+          recipientName: "Admin",
+          isAdmin: true,
+        });
+        console.log("Admin cancellation mail sent:", adminEmail);
+      } catch (err) {
         console.error("Admin cancellation mail error:", err.message);
-      });
+      }
     }
 
 
