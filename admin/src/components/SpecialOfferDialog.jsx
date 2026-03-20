@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Gift, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
-import { createSpecialOffer } from "@/api/admin";
+import { createSpecialOffer, getSpecialOfferByUser } from "@/api/admin";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -23,14 +23,49 @@ export default function SpecialOfferDialog({
   const [discountPercent, setDiscountPercent] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadingOffer, setLoadingOffer] = useState(false);
 
   useEffect(() => {
     if (!open || !guest) return;
 
-    setDiscountPercent("");
-    setMessage(
-      `Hello ${guest.name || "Guest"}, we would like to share a special offer with you from Villa Gulposh.`
-    );
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setLoadingOffer(true);
+        const existingOffer = await getSpecialOfferByUser(guest._id);
+
+        if (cancelled) return;
+
+        if (existingOffer) {
+          setDiscountPercent(String(existingOffer.discountPercent || ""));
+          setMessage(
+            existingOffer.message ||
+              `Hello ${guest.name || "Guest"}, we would like to share a special offer with you from Villa Gulposh.`
+          );
+        } else {
+          setDiscountPercent("");
+          setMessage(
+            `Hello ${guest.name || "Guest"}, we would like to share a special offer with you from Villa Gulposh.`
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setDiscountPercent("");
+          setMessage(
+            `Hello ${guest.name || "Guest"}, we would like to share a special offer with you from Villa Gulposh.`
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingOffer(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [open, guest]);
 
   const whatsappUrl = useMemo(() => {
@@ -99,6 +134,7 @@ export default function SpecialOfferDialog({
                 max={100}
                 placeholder="Enter discount %"
                 value={discountPercent}
+                disabled={loadingOffer}
                 onChange={(e) => setDiscountPercent(e.target.value)}
               />
             </div>
@@ -108,20 +144,21 @@ export default function SpecialOfferDialog({
               <textarea
                 rows={4}
                 value={message}
+                disabled={loadingOffer}
                 onChange={(e) => setMessage(e.target.value)}
                 className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button onClick={applyOffer} disabled={saving}>
+              <Button onClick={applyOffer} disabled={saving || loadingOffer}>
                 <Gift size={14} className="mr-2" />
                 {saving ? "Applying..." : "Apply"}
               </Button>
 
               <Button
                 variant="outline"
-                disabled={!whatsappUrl}
+                disabled={!whatsappUrl || loadingOffer}
                 onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")}
               >
                 <MessageCircle size={14} className="mr-2" />

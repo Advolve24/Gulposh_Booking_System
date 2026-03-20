@@ -142,3 +142,8 @@ export const createSpecialOffer = async (payload) => {
   const { data } = await api.post("/admin/offers", payload);
   return data;
 }
+
+export const getSpecialOfferByUser = async (userId) => {
+  const { data } = await api.get(`/admin/offers/${userId}`);
+  return data;
+}

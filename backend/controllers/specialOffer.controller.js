@@ -92,3 +92,35 @@ export const getMySpecialOffer = async (req, res) => {
     res.status(500).json({ message: "Failed to load special offer" });
   }
 };
+
+export const getSpecialOfferByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const offer = await SpecialOffer.findOne({
+      user: userId,
+      isActive: true,
+    }).sort({ createdAt: -1 });
+
+    if (!offer) {
+      return res.json(null);
+    }
+
+    return res.json({
+      _id: offer._id,
+      user: offer.user,
+      name: offer.name,
+      email: offer.email,
+      phone: offer.phone,
+      occasionType: offer.occasionType,
+      occasionDate: offer.occasionDate,
+      discountPercent: offer.discountPercent,
+      message: offer.message,
+      isActive: offer.isActive,
+      createdAt: offer.createdAt,
+    });
+  } catch (err) {
+    console.error("getSpecialOfferByUser error:", err);
+    res.status(500).json({ message: "Failed to load special offer" });
+  }
+};
