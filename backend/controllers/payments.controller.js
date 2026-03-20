@@ -104,13 +104,37 @@ const getDiscountBreakup = ({
   };
 };
 
-const getEligibleSpecialOffer = async (user) => {
-  if (!user) return null;
+const getOfferBoundaryDate = (value, endOfDay = false) => {
+  if (!value) return null;
+  const date = toDateOnly(value);
+  if (endOfDay) {
+    date.setHours(23, 59, 59, 999);
+  } else {
+    date.setHours(0, 0, 0, 0);
+  }
+  return date;
+};
+
+const doesOfferOverlapStay = (offer, startDate, endDate) => {
+  if (!offer || !startDate || !endDate) return false;
+
+  const stayStart = getOfferBoundaryDate(startDate, false);
+  const stayEnd = getOfferBoundaryDate(endDate, true);
+  const offerStart = getOfferBoundaryDate(offer.validFrom, false);
+  const offerEnd = getOfferBoundaryDate(offer.validTo, true);
+
+  if (!stayStart || !stayEnd || !offerStart || !offerEnd) return false;
+
+  return offerStart <= stayEnd && offerEnd >= stayStart;
+};
+
+const getEligibleSpecialOffer = async (user, startDate, endDate) => {
+  if (!user || !startDate || !endDate) return null;
 
   const normalizedEmail = String(user.email || "").trim().toLowerCase();
   const normalizedPhone = String(user.phone || "").replace(/\D/g, "").slice(-10);
 
-  return SpecialOffer.findOne({
+  const offer = await SpecialOffer.findOne({
     isActive: true,
     $or: [
       { user: user._id },
@@ -118,6 +142,8 @@ const getEligibleSpecialOffer = async (user) => {
       ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
     ],
   }).sort({ createdAt: -1 });
+
+  return doesOfferOverlapStay(offer, startDate, endDate) ? offer : null;
 };
 
 /* ============================= CREATE ORDER ============================= */
@@ -184,7 +210,7 @@ export const createOrder = async (req, res) => {
     }
 
     const currentUser = await User.findById(userId).select("email phone");
-    const specialOffer = await getEligibleSpecialOffer(currentUser);
+    const specialOffer = await getEligibleSpecialOffer(currentUser, sDate, eDate);
 
     const refreshedDiscountBreakup = getDiscountBreakup({
       subTotal,
@@ -374,7 +400,7 @@ export const verifyPayment = async (req, res) => {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
-    const specialOffer = await getEligibleSpecialOffer(user);
+    const specialOffer = await getEligibleSpecialOffer(user, sDate, eDate);
 
     const discountBreakup = getDiscountBreakup({
       subTotal,

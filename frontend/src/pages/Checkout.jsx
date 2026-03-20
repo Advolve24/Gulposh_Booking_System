@@ -46,6 +46,33 @@ function getSuggestedSundayCheckout(fromDate) {
   return suggested;
 }
 
+function normalizeDateStart(dateLike) {
+  if (!dateLike) return null;
+  const date = new Date(dateLike);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function normalizeDateEnd(dateLike) {
+  if (!dateLike) return null;
+  const date = new Date(dateLike);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
+function doesOfferOverlapSelectedStay(offer, range) {
+  if (!offer?.validFrom || !offer?.validTo || !range?.from || !range?.to) {
+    return false;
+  }
+
+  const stayStart = normalizeDateStart(range.from);
+  const stayEnd = normalizeDateEnd(range.to);
+  const offerStart = normalizeDateStart(offer.validFrom);
+  const offerEnd = normalizeDateEnd(offer.validTo);
+
+  return offerStart <= stayEnd && offerEnd >= stayStart;
+}
+
 const INR = (num) =>
   `₹${Number(num || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -357,6 +384,7 @@ export default function Checkout() {
 
   const specialOfferAmount = useMemo(() => {
     if (!specialOffer?.discountPercent) return 0;
+    if (!doesOfferOverlapSelectedStay(specialOffer, range)) return 0;
     const subtotalAfterOtherDiscounts = Math.max(
       0,
       subTotal - couponDiscountAmount - weekendDiscountAmount
@@ -364,7 +392,7 @@ export default function Checkout() {
     return Math.round(
       (subtotalAfterOtherDiscounts * Number(specialOffer.discountPercent || 0)) / 100
     );
-  }, [couponDiscountAmount, specialOffer, subTotal, weekendDiscountAmount]);
+  }, [couponDiscountAmount, range, specialOffer, subTotal, weekendDiscountAmount]);
 
   const discountAmount = useMemo(() => {
     return couponDiscountAmount + weekendDiscountAmount + specialOfferAmount;

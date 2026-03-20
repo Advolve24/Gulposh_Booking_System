@@ -86,11 +86,8 @@ export const getMySpecialOffer = async (req, res) => {
     const normalizedPhone = normalizePhone(user.phone || "");
     const normalizedEmail = String(user.email || "").trim().toLowerCase();
 
-    const now = new Date();
     const offer = await SpecialOffer.findOne({
       isActive: true,
-      validFrom: { $lte: now },
-      validTo: { $gte: now },
       $or: [
         { user: user._id },
         ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
