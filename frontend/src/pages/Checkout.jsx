@@ -52,6 +52,30 @@ function addDays(dateLike, days) {
   return date;
 }
 
+function getWeekendEligibleNights(range) {
+  if (!range?.from || !range?.to) return 0;
+  if (!isFriday(range.from)) return 0;
+
+  const suggestedCheckout = getSuggestedSundayCheckout(range.from);
+  if (!suggestedCheckout || new Date(range.to) < suggestedCheckout) return 0;
+
+  const totalNights = Math.max(
+    0,
+    Math.round(
+      (normalizeDateStart(range.to) - normalizeDateStart(range.from)) /
+        (1000 * 60 * 60 * 24)
+    )
+  );
+
+  return Math.min(3, totalNights);
+}
+
+function addDays(dateLike, days) {
+  const date = new Date(dateLike);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
 function normalizeDateStart(dateLike) {
   if (!dateLike) return null;
   const date = new Date(dateLike);
@@ -404,25 +428,45 @@ export default function Checkout() {
 
   const weekendDiscountAmount = useMemo(() => {
     if (!weekendOffer?.eligible) return 0;
+    const eligibleWeekendNights = getWeekendEligibleNights(range);
+    if (eligibleWeekendNights <= 0 || nights <= 0) return 0;
     const subtotalAfterCoupon = Math.max(0, subTotal - couponDiscountAmount);
-    return Math.round((subtotalAfterCoupon * weekendOffer.percent) / 100);
-  }, [couponDiscountAmount, subTotal, weekendOffer]);
+    const eligibleWeekendSubtotal =
+      (subtotalAfterCoupon * eligibleWeekendNights) / nights;
+    return Math.round((eligibleWeekendSubtotal * weekendOffer.percent) / 100);
+  }, [couponDiscountAmount, nights, range, subTotal, weekendOffer]);
+
+  const weekendEligibleNights = useMemo(
+    () => getWeekendEligibleNights(range),
+    [range]
+  );
+
+  const specialOfferEligibleNights = useMemo(
+    () => getOfferEligibleNights(specialOffer, range),
+    [range, specialOffer]
+  );
 
   const specialOfferAmount = useMemo(() => {
     if (!specialOffer?.discountPercent) return 0;
     if (!doesOfferOverlapSelectedStay(specialOffer, range)) return 0;
-    const eligibleOfferNights = getOfferEligibleNights(specialOffer, range);
-    if (eligibleOfferNights <= 0 || nights <= 0) return 0;
+    if (specialOfferEligibleNights <= 0 || nights <= 0) return 0;
     const subtotalAfterOtherDiscounts = Math.max(
       0,
       subTotal - couponDiscountAmount - weekendDiscountAmount
     );
     const eligibleOfferSubtotal =
-      (subtotalAfterOtherDiscounts * eligibleOfferNights) / nights;
+      (subtotalAfterOtherDiscounts * specialOfferEligibleNights) / nights;
     return Math.round(
       (eligibleOfferSubtotal * Number(specialOffer.discountPercent || 0)) / 100
     );
-  }, [couponDiscountAmount, nights, range, specialOffer, subTotal, weekendDiscountAmount]);
+  }, [
+    couponDiscountAmount,
+    nights,
+    specialOffer,
+    specialOfferEligibleNights,
+    subTotal,
+    weekendDiscountAmount,
+  ]);
 
   const discountAmount = useMemo(() => {
     return couponDiscountAmount + weekendDiscountAmount + specialOfferAmount;
@@ -969,16 +1013,26 @@ export default function Checkout() {
 
                   {weekendDiscountAmount > 0 && (
                     <div className="flex justify-between text-green-700">
-                      <span>Weekend Discount</span>
+                      <span>
+                        Weekend Discount ({weekendEligibleNights} night{weekendEligibleNights === 1 ? "" : "s"} @ {weekendOffer?.percent || 0}%)
+                      </span>
                       <span>-{INR(weekendDiscountAmount)}</span>
                     </div>
                   )}
 
                   {specialOfferAmount > 0 && (
                     <div className="flex justify-between text-green-700">
-                      <span>Special Offer</span>
+                      <span>
+                        Special Offer ({specialOfferEligibleNights} night{specialOfferEligibleNights === 1 ? "" : "s"} @ {Number(specialOffer?.discountPercent || 0)}%)
+                      </span>
                       <span>-{INR(specialOfferAmount)}</span>
                     </div>
+                  )}
+
+                  {(weekendDiscountAmount > 0 || specialOfferAmount > 0) && (
+                    <p className="text-xs text-muted-foreground">
+                      Discounts are calculated only on eligible nights within the selected stay.
+                    </p>
                   )}
 
                   {room.mealMode === "only" && (
@@ -1188,7 +1242,8 @@ export default function Checkout() {
 
               {weekendOffer?.eligible && (
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-                  Weekend discount of {weekendOffer.percent}% has been applied.
+                  Weekend discount of {weekendOffer.percent}% has been applied for{" "}
+                  {weekendEligibleNights} eligible night{weekendEligibleNights === 1 ? "" : "s"} only.
                 </div>
               )}
             </div>
@@ -1320,14 +1375,18 @@ export default function Checkout() {
 
             {weekendDiscountAmount > 0 && (
               <div className="flex justify-between text-green-700">
-                <span>Weekend Discount</span>
+                <span>
+                  Weekend Discount ({weekendEligibleNights} night{weekendEligibleNights === 1 ? "" : "s"} @ {weekendOffer?.percent || 0}%)
+                </span>
                 <span>-₹{weekendDiscountAmount.toLocaleString("en-IN")}</span>
               </div>
             )}
 
             {specialOfferAmount > 0 && (
               <div className="flex justify-between text-green-700">
-                <span>Special Offer</span>
+                <span>
+                  Special Offer ({specialOfferEligibleNights} night{specialOfferEligibleNights === 1 ? "" : "s"} @ {Number(specialOffer?.discountPercent || 0)}%)
+                </span>
                 <span>-₹{specialOfferAmount.toLocaleString("en-IN")}</span>
               </div>
             )}
@@ -1365,14 +1424,18 @@ export default function Checkout() {
 
               {weekendDiscountAmount > 0 && (
                 <div className="flex justify-between text-green-700">
-                  <span>Weekend Discount Added</span>
+                  <span>
+                    Weekend Discount Added ({weekendEligibleNights} night{weekendEligibleNights === 1 ? "" : "s"} @ {weekendOffer?.percent || 0}%)
+                  </span>
                   <span>-{INR(weekendDiscountAmount)}</span>
                 </div>
               )}
 
               {specialOfferAmount > 0 && (
                 <div className="flex justify-between text-green-700">
-                  <span>Special Offer Added</span>
+                  <span>
+                    Special Offer Added ({specialOfferEligibleNights} night{specialOfferEligibleNights === 1 ? "" : "s"} @ {Number(specialOffer?.discountPercent || 0)}%)
+                  </span>
                   <span>-{INR(specialOfferAmount)}</span>
                 </div>
               )}

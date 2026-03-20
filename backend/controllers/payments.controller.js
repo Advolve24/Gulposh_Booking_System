@@ -47,6 +47,11 @@ const isFridayStartWithSundayAdded = (start, end) => {
   return endDate >= mondayCheckout;
 };
 
+const getWeekendEligibleNights = (start, end) => {
+  if (!isFridayStartWithSundayAdded(start, end)) return 0;
+  return Math.min(3, nightsBetween(start, end));
+};
+
 const getDiscountBreakup = ({
   subTotal,
   couponCode,
@@ -74,14 +79,21 @@ const getDiscountBreakup = ({
 
   const weekendDiscountEnabled = Boolean(discountSettings?.weekendDiscountEnabled);
   const weekendDiscountPercent = Number(discountSettings?.weekendDiscountPercent || 0);
+  const weekendEligibleNights = getWeekendEligibleNights(startDate, endDate);
   const weekendEligible =
     weekendDiscountEnabled &&
     weekendDiscountPercent > 0 &&
-    isFridayStartWithSundayAdded(startDate, endDate);
+    weekendEligibleNights > 0;
 
   const postCouponSubtotal = Math.max(0, subTotal - couponDiscountAmount);
+  const weekendEligibleSubtotal =
+    totalNights > 0
+      ? Number(
+          ((postCouponSubtotal * weekendEligibleNights) / totalNights).toFixed(2)
+        )
+      : 0;
   const weekendDiscountAmount = weekendEligible
-    ? Math.round((postCouponSubtotal * weekendDiscountPercent) / 100)
+    ? Math.round((weekendEligibleSubtotal * weekendDiscountPercent) / 100)
     : 0;
 
   const postWeekendSubtotal = Math.max(
@@ -110,6 +122,7 @@ const getDiscountBreakup = ({
     weekendDiscountAmount,
     weekendDiscountEnabled,
     weekendDiscountPercent: weekendEligible ? weekendDiscountPercent : 0,
+    weekendDiscountEligibleNights: weekendEligibleNights,
     weekendEligible,
     specialOfferId: specialOffer?._id || null,
     specialOfferPercent,
@@ -318,6 +331,8 @@ export const createOrder = async (req, res) => {
       weekendDiscountEnabled: refreshedDiscountBreakup.weekendEligible,
       weekendDiscountPercent: refreshedDiscountBreakup.weekendDiscountPercent,
       weekendDiscountAmount: refreshedDiscountBreakup.weekendDiscountAmount,
+      weekendDiscountEligibleNights:
+        refreshedDiscountBreakup.weekendDiscountEligibleNights,
       couponDiscountAmount: refreshedDiscountBreakup.couponDiscountAmount,
       specialOfferId: refreshedDiscountBreakup.specialOfferId,
       specialOfferPercent: refreshedDiscountBreakup.specialOfferPercent,
@@ -533,6 +548,8 @@ export const verifyPayment = async (req, res) => {
               weekendDiscountEnabled: discountBreakup.weekendEligible,
               weekendDiscountPercent: discountBreakup.weekendDiscountPercent,
               weekendDiscountAmount: discountBreakup.weekendDiscountAmount,
+              weekendDiscountEligibleNights:
+                discountBreakup.weekendDiscountEligibleNights,
               specialOfferId: discountBreakup.specialOfferId,
               specialOfferPercent: discountBreakup.specialOfferPercent,
               specialOfferAmount: discountBreakup.specialOfferAmount,
