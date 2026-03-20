@@ -1281,12 +1281,12 @@ export default function Checkout() {
           </div>
 
           <Dialog open={policyDialogOpen} onOpenChange={setPolicyDialogOpen}>
-            <DialogContent className="max-w-md rounded-2xl border-0 bg-[#660810] p-0 text-white">
+            <DialogContent className="max-w-md rounded-2xl border border-border bg-white p-0 text-foreground">
               <DialogHeader className="px-6 pt-6 text-left">
-                <DialogTitle className="text-3xl font-semibold text-white">
+                <DialogTitle className="text-3xl font-semibold text-foreground">
                   Policies
                 </DialogTitle>
-                <DialogDescription className="text-sm text-white/75">
+                <DialogDescription className="text-sm text-muted-foreground">
                   Review the policies below before continuing to payment.
                 </DialogDescription>
               </DialogHeader>
@@ -1299,25 +1299,25 @@ export default function Checkout() {
                       to={policy.to}
                       target="_blank"
                       rel="noreferrer"
-                      className="block text-lg text-white transition-opacity hover:opacity-80"
+                      className="block text-lg text-foreground transition-colors hover:text-red-700"
                     >
                       {policy.label}
                     </Link>
                   ))}
                 </div>
 
-                <Separator className="my-5 bg-white/15" />
+                <Separator className="my-5" />
 
-                <Label className="flex items-start gap-3 text-sm text-white">
+                <Label className="flex items-start gap-3 text-sm text-foreground">
                   <Checkbox
                     checked={acceptedTerms}
                     onCheckedChange={(checked) => setAcceptedTerms(Boolean(checked))}
-                    className="mt-0.5 border-white data-[state=checked]:bg-white data-[state=checked]:text-[#660810]"
+                    className="mt-0.5 border-red-700 data-[state=checked]:bg-red-700 data-[state=checked]:text-white"
                   />
                   <span>I accept terms and conditions</span>
                 </Label>
 
-                <p className="mt-3 text-xs text-white/75">
+                <p className="mt-3 text-xs text-muted-foreground">
                   Once accepted, the checkbox on checkout will stay checked and
                   payment will be enabled.
                 </p>
