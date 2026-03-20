@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/http";
 import { useAuth } from "../store/authStore";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ArrowUpLeft, MapPin, Users, Utensils, Check, User, ConciergeBell, Mail, Phone, Home, CalendarIcon } from "lucide-react";
 import { toDateOnly, toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -124,6 +131,8 @@ export default function Checkout() {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [otpStep, setOtpStep] = useState("idle");
   const [otp, setOtp] = useState("");
+  const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const pendingProceedRef = useRef(false);
 
   const countries = getAllCountries();
@@ -336,6 +345,10 @@ export default function Checkout() {
 
   const proceedPayment = async () => {
     if (processingPayment) return;
+    if (!acceptedTerms) {
+      toast.error("Please accept the terms and conditions to continue");
+      return;
+    }
     setProcessingPayment(true);
     const g = totalGuests;
 
@@ -500,6 +513,10 @@ export default function Checkout() {
 
 
   const proceed = async () => {
+    if (!acceptedTerms) {
+      setPolicyDialogOpen(true);
+      return;
+    }
     if (!user) {
       pendingProceedRef.current = true;
       if (otpStep === "idle") sendOtp();
@@ -615,6 +632,14 @@ export default function Checkout() {
       </div>
     );
   }
+
+  const policyLinks = [
+    { label: "Terms & Conditions", to: "/terms" },
+    { label: "Privacy Policy", to: "/privacy" },
+    { label: "Refund & Cancellation", to: "/refund" },
+    { label: "Pool Safety Guidelines", to: "/pool-safety" },
+    { label: "House Rules", to: "/house-rules" },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -1185,9 +1210,34 @@ export default function Checkout() {
             </p>
           </div>
 
+          <div className="rounded-2xl border bg-white p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setPolicyDialogOpen(true)}
+              className="flex w-full items-start gap-3 text-left"
+            >
+              <Checkbox
+                checked={acceptedTerms}
+                className="mt-0.5 pointer-events-none"
+                aria-hidden="true"
+              />
+              <span className="text-sm text-foreground">
+                I accept the{" "}
+                <span className="font-medium text-red-700">
+                  terms and conditions
+                </span>
+              </span>
+            </button>
+
+            <p className="mt-2 text-xs text-muted-foreground">
+              Clicking this opens the policy popup. Payment stays disabled until
+              acceptance is completed there.
+            </p>
+          </div>
+
           {/* ================= CTA ================= */}
           <Button
-            disabled={processingPayment}
+            disabled={processingPayment || !acceptedTerms}
             className="w-full h-12 text-base bg-red-700 hover:bg-red-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             onClick={proceed}
           >
@@ -1222,13 +1272,58 @@ export default function Checkout() {
           {/* ================= MOBILE FIXED CTA ================= */}
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-3">
             <Button
-              disabled={processingPayment}
+              disabled={processingPayment || !acceptedTerms}
               className="w-full h-12 text-base bg-red-700 hover:bg-red-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               onClick={proceed}
             >
               {processingPayment ? "Processing..." : "Proceed to Payment"}
             </Button>
           </div>
+
+          <Dialog open={policyDialogOpen} onOpenChange={setPolicyDialogOpen}>
+            <DialogContent className="max-w-md rounded-2xl border-0 bg-[#660810] p-0 text-white">
+              <DialogHeader className="px-6 pt-6 text-left">
+                <DialogTitle className="text-3xl font-semibold text-white">
+                  Policies
+                </DialogTitle>
+                <DialogDescription className="text-sm text-white/75">
+                  Review the policies below before continuing to payment.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="px-6 pb-6 pt-2">
+                <div className="space-y-3">
+                  {policyLinks.map((policy) => (
+                    <Link
+                      key={policy.to}
+                      to={policy.to}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block text-lg text-white transition-opacity hover:opacity-80"
+                    >
+                      {policy.label}
+                    </Link>
+                  ))}
+                </div>
+
+                <Separator className="my-5 bg-white/15" />
+
+                <Label className="flex items-start gap-3 text-sm text-white">
+                  <Checkbox
+                    checked={acceptedTerms}
+                    onCheckedChange={(checked) => setAcceptedTerms(Boolean(checked))}
+                    className="mt-0.5 border-white data-[state=checked]:bg-white data-[state=checked]:text-[#660810]"
+                  />
+                  <span>I accept terms and conditions</span>
+                </Label>
+
+                <p className="mt-3 text-xs text-white/75">
+                  Once accepted, the checkbox on checkout will stay checked and
+                  payment will be enabled.
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
 
 
         </section>
