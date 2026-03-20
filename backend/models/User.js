@@ -30,6 +30,11 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    anniversary: {
+      type: Date,
+      default: null,
+    },
+
     address: { type: String, default: null },
     country: { type: String, default: null },
     state: { type: String, default: null },

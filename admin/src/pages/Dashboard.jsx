@@ -7,8 +7,8 @@ import {
   format, addDays, startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
   isWithinInterval, isSameMonth, addMonths, subMonths, isAfter
 } from "date-fns";
-import { CalendarDays, CalendarCheck2, XCircle, Wallet, Plus, Home, Ban, Calendar, Moon, Users } from "lucide-react";
-import { getStats, listBookingsAdmin, listBlackouts, createBlackout, deleteBlackout, getBirthdayGuests } from "../api/admin";
+import { CalendarDays, CalendarCheck2, XCircle, Wallet, Plus, Home, Ban, Calendar, Moon, Users, Heart } from "lucide-react";
+import { getStats, listBookingsAdmin, listBlackouts, createBlackout, deleteBlackout, getBirthdayGuests, getAnniversaryGuests } from "../api/admin";
 import MobileBookingCard from "@/components/MobileBookingCard";
 import BookingTable from "@/components/BookingTable";
 import BookingViewPopup from "@/components/BookingViewPopup";
@@ -188,6 +188,7 @@ export default function Dashboard() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [editBooking, setEditBooking] = useState(null);
   const [birthdayGuests, setBirthdayGuests] = useState([]);
+  const [anniversaryGuests, setAnniversaryGuests] = useState([]);
 
 
   useEffect(() => {
@@ -204,11 +205,12 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const [statsRes, bookingsRes, blackoutsRes, birthdays] = await Promise.all([
+        const [statsRes, bookingsRes, blackoutsRes, birthdays, anniversaries] = await Promise.all([
           getStats(),
           listBookingsAdmin({ limit: 200 }),
           listBlackouts(),
-          getBirthdayGuests()
+          getBirthdayGuests(),
+          getAnniversaryGuests()
         ]);
 
         setStats({
@@ -235,6 +237,7 @@ export default function Dashboard() {
         );
 
         setBirthdayGuests(birthdays || []);
+        setAnniversaryGuests(anniversaries || []);
 
 
       } catch (err) {
@@ -755,7 +758,20 @@ export default function Dashboard() {
 
       </div>
 
-     <BirthdaySection guests={birthdayGuests} />
+      <BirthdaySection
+        guests={birthdayGuests}
+        title={`Birthdays in ${format(new Date(), "MMMM")}`}
+        accentIcon={<CalendarDays size={18} />}
+        dateKey="birthday"
+      />
+
+      <BirthdaySection
+        guests={anniversaryGuests}
+        title={`Anniversaries in ${format(new Date(), "MMMM")}`}
+        accentIcon={<Heart size={18} />}
+        dateKey="anniversary"
+        actionHint="Send anniversary offers to increase repeat stays"
+      />
 
       <div className="bg-card border border-border rounded-xl mt-6 p-4 sm:p-6">
         {/* HEADER */}

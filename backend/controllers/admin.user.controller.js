@@ -9,7 +9,7 @@ const { isValidObjectId } = mongoose;
 export const listUsersAdmin = async (_req, res) => {
   try {
     const users = await User.find()
-      .select("name email phone mobile dob createdAt")
+      .select("name email phone mobile dob anniversary createdAt")
       .sort({ createdAt: -1 });
 
     const counts = await Booking.aggregate([
@@ -26,6 +26,7 @@ export const listUsersAdmin = async (_req, res) => {
         email: u.email || "",
         phone: u.phone ?? u.mobile ?? "",
         dob: u.dob || null,
+        anniversary: u.anniversary || null,
         createdAt: u.createdAt,
         bookingsCount: add.count || 0,
         lastBookingAt: add.lastBookingAt || null
@@ -45,7 +46,7 @@ export const getUserAdmin = async (req, res) => {
     const { id } = req.params;
     if (!isValidObjectId(id)) return res.status(400).json({ message: "Invalid user id" });
 
-    const user = await User.findById(id).select("name email phone mobile address country state city pincode dob createdAt");
+    const user = await User.findById(id).select("name email phone mobile address country state city pincode dob anniversary createdAt");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
@@ -54,6 +55,7 @@ export const getUserAdmin = async (req, res) => {
       email: user.email || "",
       phone: user.phone ?? user.mobile ?? "",
       dob: user.dob || null,
+      anniversary: user.anniversary || null,
       address: user.address || "",
       country: user.country || "",
       state: user.state || "",
@@ -210,6 +212,7 @@ export const updateUserAdmin = async (req, res) => {
       email,
       phone,
       dob,
+      anniversary,
       address,
       country,
       state,
@@ -229,6 +232,7 @@ export const updateUserAdmin = async (req, res) => {
       user.mobile = v;
     }
     if (dob !== undefined) user.dob = dob ? new Date(dob) : null;
+    if (anniversary !== undefined) user.anniversary = anniversary ? new Date(anniversary) : null;
 
     await user.save();
     res.json({
@@ -237,6 +241,7 @@ export const updateUserAdmin = async (req, res) => {
       email: user.email || "",
       phone: user.phone ?? user.mobile ?? "",
       dob: user.dob || null,
+      anniversary: user.anniversary || null,
       createdAt: user.createdAt,
     });
   } catch (err) {
@@ -268,7 +273,7 @@ export const deleteUserAdmin = async (req, res) => {
 
 export const createUserAdmin = async (req, res) => {
   try {
-    let { name, email, phone, password, dob, isAdmin } = req.body || {};
+    let { name, email, phone, password, dob, anniversary, isAdmin } = req.body || {};
 
     let normalizedEmail = null;
 
@@ -290,6 +295,7 @@ export const createUserAdmin = async (req, res) => {
       email,
       phone,
       dob: dob ? new Date(dob) : null,
+      anniversary: anniversary ? new Date(anniversary) : null,
       address: null,
       country: null,
       state: null,
@@ -701,3 +707,65 @@ export const getBirthdayGuests = async (req, res) => {
     res.status(500).json({ message: "Failed to load birthdays" })
   }
 }
+
+export const getAnniversaryGuests = async (req, res) => {
+  try {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+
+    const users = await User.find({
+      anniversary: { $ne: null }
+    })
+      .select("name phone email anniversary")
+      .lean();
+
+    const anniversaryUsers = users.filter((u) => {
+      const anniversary = new Date(u.anniversary);
+      return anniversary.getMonth() + 1 === currentMonth;
+    });
+
+    if (anniversaryUsers.length === 0) {
+      return res.json([]);
+    }
+
+    const bookings = await Booking.aggregate([
+      {
+        $match: { user: { $in: anniversaryUsers.map((u) => u._id) } }
+      },
+      {
+        $group: {
+          _id: "$user",
+          stays: { $sum: 1 },
+          lastStay: { $max: "$createdAt" }
+        }
+      }
+    ]);
+
+    const map = new Map(bookings.map((b) => [String(b._id), b]));
+
+    const result = anniversaryUsers.map((u) => {
+      const extra = map.get(String(u._id)) || {};
+
+      return {
+        _id: u._id,
+        name: u.name,
+        phone: u.phone,
+        email: u.email,
+        anniversary: u.anniversary,
+        stays: extra.stays || 0,
+        lastStay: extra.lastStay || null
+      };
+    });
+
+    result.sort((a, b) => {
+      const da = new Date(a.anniversary);
+      const db = new Date(b.anniversary);
+      return da.getDate() - db.getDate();
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error("anniversary report error:", err);
+    res.status(500).json({ message: "Failed to load anniversaries" });
+  }
+};

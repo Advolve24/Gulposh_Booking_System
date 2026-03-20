@@ -1,153 +1,95 @@
-import { Gift, Mail, Phone, Cake } from "lucide-react";
+import { Gift, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
 
-export default function BirthdaySection({ guests = [] }) {
-
+export default function BirthdaySection({
+  guests = [],
+  title,
+  accentIcon,
+  dateKey = "birthday",
+  actionHint = "Send wishes & special offers to retain guests",
+}) {
   const month = format(new Date(), "MMMM");
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 mt-6">
-
-      {/* ================= HEADER ================= */}
-
-      <div className="flex items-center justify-between mb-6">
-
+    <div className="bg-card border border-border rounded-xl p-5 mt-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
         <div className="flex items-center gap-3">
-
-          <div className="flex items-center gap-2">
-            <Cake size={18} className="text-[#6B2737]" />
-            <span className="text-lg">🎂</span>
+          <div className="flex items-center gap-2 text-[#6B2737]">
+            {accentIcon}
           </div>
 
           <h3 className="font-semibold text-[15px]">
-            Birthdays in {month}
+            {title || `Birthdays in ${month}`}
           </h3>
 
           <span className="text-xs bg-muted px-2 py-1 rounded-full">
             {guests.length} guests
           </span>
-
         </div>
 
         <p className="text-sm text-muted-foreground hidden md:block">
-          Send wishes & special offers to retain guests
+          {actionHint}
         </p>
-
       </div>
 
-      {/* ================= CARDS ================= */}
+      {guests.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No guests for this month.</p>
+      ) : (
+        <div className="flex flex-wrap gap-3">
+          {guests.map((g) => {
+            const eventDate = new Date(g[dateKey]);
+            const initials = g.name
+              ?.split(" ")
+              .map((n) => n[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase();
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-
-        {guests.map((g) => {
-
-          const birthday = new Date(g.birthday);
-          const today = new Date();
-
-          const passed = birthday.getDate() < today.getDate() &&
-            birthday.getMonth() === today.getMonth();
-
-          const initials = g.name
-            ?.split(" ")
-            .map((n) => n[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
-
-          return (
-
-            <div
-              key={g._id}
-              className="border bg-[#faf9f8] rounded-xl p-4 flex flex-col gap-4 shadow-sm hover:shadow-md transition"
-            >
-
-              {/* ================= TOP ================= */}
-
-              {/* DATE BADGE */}
-               <div className="flex items-start justify-end -mb-[16px]">
-                <span className="text-xs bg-[#6B2737] text-white px-2 py-1 rounded-full flex items-center gap-1">
-                  <Cake size={12} />
-                  {format(birthday, "dd MMM")}
-                </span>
+            return (
+              <div
+                key={g._id}
+                className="inline-flex min-w-[250px] items-center gap-3 rounded-full border bg-[#faf9f8] px-3 py-2 shadow-sm"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                  {initials}
                 </div>
 
-              <div className="flex items-start justify-between">
-
-                <div className="flex gap-3">
-
-                  {/* AVATAR */}
-                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-semibold">
-                    {initials}
-                  </div>
-
-                  {/* NAME + STATS */}
-                  <div>
-
-                    <p className="font-medium text-sm">
-                      {g.name}
-                    </p>
-
-                    <p className="text-xs text-muted-foreground">
-                      {g.stays} stays · Last: {g.lastStay ? format(new Date(g.lastStay), "dd MMM yy") : "—"}
-                    </p>
-
-                  </div>
-
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{g.name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    {format(eventDate, "dd MMM")} · {g.stays} stays · Last:{" "}
+                    {g.lastStay ? format(new Date(g.lastStay), "dd MMM yy") : "-"}
+                  </p>
                 </div>
 
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border hover:bg-muted transition"
+                  >
+                    <Phone size={14} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border hover:bg-muted transition"
+                  >
+                    <Mail size={14} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="inline-flex h-8 items-center gap-1 rounded-full bg-[#6B2737] px-3 text-xs text-white hover:opacity-90 transition"
+                  >
+                    <Gift size={12} />
+                    Offer
+                  </button>
+                </div>
               </div>
-
-              {/* ================= STATUS ================= */}
-
-              {passed && (
-                <p className="text-xs text-muted-foreground italic">
-                  Birthday has passed
-                </p>
-              )}
-
-              {/* ================= ACTION BUTTONS ================= */}
-
-              <div className="flex items-center gap-2">
-
-                <button
-                  onClick={() => {}}
-                  className="h-9 w-9 border rounded-md flex items-center justify-center hover:bg-muted transition"
-                >
-                  <Phone size={16} />
-                </button>
-
-                <button
-                  onClick={() => {}}
-                  className="h-9 w-9 border rounded-md flex items-center justify-center hover:bg-muted transition"
-                >
-                  <Mail size={16} />
-                </button>
-
-                <button
-                  onClick={() => {}}
-                  className="flex items-center gap-2 px-3 h-9 rounded-md bg-[#6B2737] text-white text-sm hover:opacity-90 transition"
-                >
-                  <Gift size={14} />
-                  Special Offer
-                </button>
-
-              </div>
-
-              {/* ================= SENT STATUS ================= */}
-
-              {passed && (
-                <p className="text-xs text-green-600">
-                  ✓ Wish sent
-                </p>
-              )}
-
-            </div>
-
-          );
-        })}
-
-      </div>
-
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

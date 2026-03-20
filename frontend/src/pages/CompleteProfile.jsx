@@ -21,6 +21,7 @@ export default function CompleteProfile() {
   const isGoogleLogin = user?.authProvider === "google";
   const isPhoneLogin = user?.authProvider === "phone";
   const [dobOpen, setDobOpen] = useState(false);
+  const [anniversaryOpen, setAnniversaryOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -39,6 +40,7 @@ export default function CompleteProfile() {
     email: "",
     phone: "",
     dob: null,
+    anniversary: null,
 
     address: "",
     country: "",
@@ -98,6 +100,7 @@ export default function CompleteProfile() {
       email: user.email || "",
       phone: user.phone || "",
       dob: user.dob ? new Date(user.dob) : null,
+      anniversary: user.anniversary ? new Date(user.anniversary) : null,
 
       address: user.address || "",
       country: countryObj?.name || "",
@@ -171,6 +174,7 @@ export default function CompleteProfile() {
         email: form.email || null,
         phone: isGoogleLogin ? form.phone : null,
         dob: form.dob.toISOString(),
+        anniversary: form.anniversary ? form.anniversary.toISOString() : null,
 
         address: form.address || null,
         country: form.country || null,
@@ -303,6 +307,41 @@ export default function CompleteProfile() {
               </PopoverContent>
             </Popover>
 
+          </div>
+
+          <div className="space-y-1">
+            <Label>Wedding Anniversary</Label>
+            <Popover open={anniversaryOpen} onOpenChange={setAnniversaryOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  {form.anniversary
+                    ? format(form.anniversary, "dd MMM yyyy")
+                    : "Optional"}
+                  <CalendarIcon className="h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent
+                className="p-0"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <Calendar
+                  mode="single"
+                  captionLayout="dropdown"
+                  fromYear={1950}
+                  toYear={new Date().getFullYear()}
+                  selected={form.anniversary}
+                  onSelect={(d) => {
+                    setForm((f) => ({ ...f, anniversary: d || null }));
+                    setTimeout(() => setAnniversaryOpen(false), 0);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <p className="text-xs text-muted-foreground">
+              Optional. Used only for special offers.
+            </p>
           </div>
 
           {/* ADDRESS (FULL WIDTH) */}

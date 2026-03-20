@@ -171,6 +171,7 @@ export const me = async (req, res) => {
     phone: user.phone,
     email: user.email,
     dob: user.dob,
+    anniversary: user.anniversary,
     address: user.address,
     country: user.country,
     state: user.state,
@@ -190,6 +191,7 @@ export const updateMe = async (req, res) => {
       email,
       phone,
       dob,
+      anniversary,
       address,
       country,
       state,
@@ -209,6 +211,7 @@ export const updateMe = async (req, res) => {
     user.name = name.trim();
     user.email = email?.trim() || user.email;
     user.dob = new Date(dob);
+    user.anniversary = anniversary ? new Date(anniversary) : null;
     user.address = address || null;
     user.country = country || null;
     user.state = state || null;

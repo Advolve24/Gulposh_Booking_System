@@ -132,3 +132,8 @@ export const getBirthdayGuests = async () => {
   const { data } = await api.get("/admin/users/birthdays")
   return data
 }
+
+export const getAnniversaryGuests = async () => {
+  const { data } = await api.get("/admin/users/anniversaries")
+  return data
+}

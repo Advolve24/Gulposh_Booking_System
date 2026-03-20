@@ -34,6 +34,7 @@ export default function MyAccount() {
     name: "",
     email: "",
     dob: null,
+    anniversary: null,
     address: "",
     country: "",
     state: "",
@@ -96,6 +97,7 @@ export default function MyAccount() {
           name: data.name || "",
           email: data.email || "",
           dob: data.dob ? new Date(data.dob) : null,
+          anniversary: data.anniversary ? new Date(data.anniversary) : null,
           address: data.address || "",
           country: countryObj?.name || "",
           state: data.state || "",
@@ -130,7 +132,8 @@ export default function MyAccount() {
 
     const current = {
       ...form,
-      dob: form.dob ? form.dob.toISOString() : null,
+        dob: form.dob ? form.dob.toISOString() : null,
+        anniversary: form.anniversary ? form.anniversary.toISOString() : null,
     };
 
     setHasChanges(JSON.stringify(current) !== JSON.stringify(initialForm));
@@ -237,6 +240,7 @@ export default function MyAccount() {
         email: form.email || null,
         phone,
         dob: form.dob.toISOString(),
+        anniversary: form.anniversary ? form.anniversary.toISOString() : null,
         address: form.address || null,
         country: form.country || null,
         state: form.state || null,
@@ -370,6 +374,29 @@ export default function MyAccount() {
                   toYear={new Date().getFullYear()}
                   selected={form.dob}
                   onSelect={(d) => setForm(f => ({ ...f, dob: d }))}
+                  className="year-first-calendar"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label>Wedding Anniversary</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" disabled={!editMode} className="w-full justify-between">
+                  {form.anniversary ? format(form.anniversary, "dd MMM yyyy") : "Optional"}
+                  <CalendarIcon className="h-4 w-4 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0">
+                <Calendar
+                  mode="single"
+                  captionLayout="dropdown"
+                  fromYear={1950}
+                  toYear={new Date().getFullYear()}
+                  selected={form.anniversary}
+                  onSelect={(d) => setForm(f => ({ ...f, anniversary: d || null }))}
                   className="year-first-calendar"
                 />
               </PopoverContent>
