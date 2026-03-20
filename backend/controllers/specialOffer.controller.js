@@ -2,6 +2,17 @@ import SpecialOffer from "../models/SpecialOffer.js";
 import User from "../models/User.js";
 
 const normalizePhone = (phone = "") => String(phone).replace(/\D/g, "").slice(-10);
+const startOfDay = (value) => {
+  const d = new Date(value);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const endOfDay = (value) => {
+  const d = new Date(value);
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
 
 export const upsertSpecialOffer = async (req, res) => {
   try {
@@ -11,6 +22,8 @@ export const upsertSpecialOffer = async (req, res) => {
       message,
       occasionType = "manual",
       occasionDate = null,
+      validFrom = null,
+      validTo = null,
     } = req.body || {};
 
     if (!userId) {
@@ -20,6 +33,16 @@ export const upsertSpecialOffer = async (req, res) => {
     const parsedDiscount = Number(discountPercent);
     if (!Number.isFinite(parsedDiscount) || parsedDiscount <= 0 || parsedDiscount > 100) {
       return res.status(400).json({ message: "discountPercent must be between 1 and 100" });
+    }
+
+    if (!validFrom || !validTo) {
+      return res.status(400).json({ message: "validFrom and validTo are required" });
+    }
+
+    const parsedValidFrom = startOfDay(validFrom);
+    const parsedValidTo = endOfDay(validTo);
+    if (parsedValidTo < parsedValidFrom) {
+      return res.status(400).json({ message: "validTo must be after validFrom" });
     }
 
     const user = await User.findById(userId).select("name email phone anniversary dob");
@@ -39,6 +62,8 @@ export const upsertSpecialOffer = async (req, res) => {
       phone: normalizePhone(user.phone || ""),
       occasionType,
       occasionDate: occasionDate ? new Date(occasionDate) : null,
+      validFrom: parsedValidFrom,
+      validTo: parsedValidTo,
       discountPercent: parsedDiscount,
       message: String(message || "").trim(),
       isActive: true,
@@ -61,8 +86,11 @@ export const getMySpecialOffer = async (req, res) => {
     const normalizedPhone = normalizePhone(user.phone || "");
     const normalizedEmail = String(user.email || "").trim().toLowerCase();
 
+    const now = new Date();
     const offer = await SpecialOffer.findOne({
       isActive: true,
+      validFrom: { $lte: now },
+      validTo: { $gte: now },
       $or: [
         { user: user._id },
         ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
@@ -82,6 +110,8 @@ export const getMySpecialOffer = async (req, res) => {
       phone: offer.phone,
       occasionType: offer.occasionType,
       occasionDate: offer.occasionDate,
+      validFrom: offer.validFrom,
+      validTo: offer.validTo,
       discountPercent: offer.discountPercent,
       message: offer.message,
       isActive: offer.isActive,
@@ -114,6 +144,8 @@ export const getSpecialOfferByUser = async (req, res) => {
       phone: offer.phone,
       occasionType: offer.occasionType,
       occasionDate: offer.occasionDate,
+      validFrom: offer.validFrom,
+      validTo: offer.validTo,
       discountPercent: offer.discountPercent,
       message: offer.message,
       isActive: offer.isActive,

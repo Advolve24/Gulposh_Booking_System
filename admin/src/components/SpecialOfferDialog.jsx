@@ -13,6 +13,11 @@ const fmt = (date) => {
   return format(new Date(date), "dd MMM yyyy");
 };
 
+const toInputDate = (date) => {
+  if (!date) return "";
+  return format(new Date(date), "yyyy-MM-dd");
+};
+
 export default function SpecialOfferDialog({
   open,
   onOpenChange,
@@ -22,6 +27,8 @@ export default function SpecialOfferDialog({
 }) {
   const [discountPercent, setDiscountPercent] = useState("");
   const [message, setMessage] = useState("");
+  const [validFrom, setValidFrom] = useState("");
+  const [validTo, setValidTo] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadingOffer, setLoadingOffer] = useState(false);
 
@@ -39,12 +46,16 @@ export default function SpecialOfferDialog({
 
         if (existingOffer) {
           setDiscountPercent(String(existingOffer.discountPercent || ""));
+          setValidFrom(toInputDate(existingOffer.validFrom));
+          setValidTo(toInputDate(existingOffer.validTo));
           setMessage(
             existingOffer.message ||
               `Hello ${guest.name || "Guest"}, we would like to share a special offer with you from Villa Gulposh.`
           );
         } else {
           setDiscountPercent("");
+          setValidFrom(toInputDate(guest?.[dateKey]));
+          setValidTo("");
           setMessage(
             `Hello ${guest.name || "Guest"}, we would like to share a special offer with you from Villa Gulposh.`
           );
@@ -52,6 +63,8 @@ export default function SpecialOfferDialog({
       } catch {
         if (!cancelled) {
           setDiscountPercent("");
+          setValidFrom(toInputDate(guest?.[dateKey]));
+          setValidTo("");
           setMessage(
             `Hello ${guest.name || "Guest"}, we would like to share a special offer with you from Villa Gulposh.`
           );
@@ -73,10 +86,14 @@ export default function SpecialOfferDialog({
     const cleaned = String(guest.phone).replace(/\D/g, "");
     const phone = cleaned.length === 10 ? `91${cleaned}` : cleaned;
     const text = encodeURIComponent(
-      `${message}${discountPercent ? `\nOffer: ${discountPercent}% discount` : ""}`
+      `${message}${discountPercent ? `\nOffer: ${discountPercent}% discount` : ""}${
+        validFrom || validTo
+          ? `\nValid: ${validFrom || "-"} to ${validTo || "-"}`
+          : ""
+      }`
     );
     return `https://wa.me/${phone}?text=${text}`;
-  }, [discountPercent, guest, message]);
+  }, [discountPercent, guest, message, validFrom, validTo]);
 
   const applyOffer = async () => {
     if (!guest?._id) return;
@@ -84,6 +101,16 @@ export default function SpecialOfferDialog({
     const parsedPercent = Number(discountPercent);
     if (!Number.isFinite(parsedPercent) || parsedPercent <= 0 || parsedPercent > 100) {
       toast.error("Enter a valid discount percentage");
+      return;
+    }
+
+    if (!validFrom) {
+      toast.error("Offer start date is required");
+      return;
+    }
+
+    if (!validTo) {
+      toast.error("Offer end date is required");
       return;
     }
 
@@ -95,6 +122,8 @@ export default function SpecialOfferDialog({
         message,
         occasionType,
         occasionDate: guest?.[dateKey] || null,
+        validFrom,
+        validTo,
       });
       toast.success("Offer applied for this user");
     } catch {
@@ -137,6 +166,28 @@ export default function SpecialOfferDialog({
                 disabled={loadingOffer}
                 onChange={(e) => setDiscountPercent(e.target.value)}
               />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Offer Start Date</Label>
+                <Input
+                  type="date"
+                  value={validFrom}
+                  disabled={loadingOffer}
+                  onChange={(e) => setValidFrom(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Offer End Date</Label>
+                <Input
+                  type="date"
+                  value={validTo}
+                  disabled={loadingOffer}
+                  onChange={(e) => setValidTo(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

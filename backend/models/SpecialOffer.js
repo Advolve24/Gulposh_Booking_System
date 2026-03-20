@@ -12,6 +12,8 @@ const specialOfferSchema = new mongoose.Schema(
       default: "manual",
     },
     occasionDate: { type: Date, default: null },
+    validFrom: { type: Date, default: null },
+    validTo: { type: Date, default: null },
     discountPercent: {
       type: Number,
       required: true,
