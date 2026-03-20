@@ -70,12 +70,6 @@ function getWeekendEligibleNights(range) {
   return Math.min(3, totalNights);
 }
 
-function addDays(dateLike, days) {
-  const date = new Date(dateLike);
-  date.setDate(date.getDate() + days);
-  return date;
-}
-
 function normalizeDateStart(dateLike) {
   if (!dateLike) return null;
   const date = new Date(dateLike);
