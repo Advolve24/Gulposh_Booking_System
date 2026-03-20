@@ -103,6 +103,7 @@ export default function Checkout() {
 
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
+  const [specialOffer, setSpecialOffer] = useState(null);
   const hasRoomCoupon =
     room &&
     room.discountType &&
@@ -237,6 +238,16 @@ export default function Checkout() {
       });
   }, []);
 
+  useEffect(() => {
+    api.get("/auth/me/special-offer")
+      .then(({ data }) => {
+        setSpecialOffer(data || null);
+      })
+      .catch(() => {
+        setSpecialOffer(null);
+      });
+  }, []);
+
 
   const nights = useMemo(() => {
     if (!range?.from || !range?.to) return 0;
@@ -344,9 +355,20 @@ export default function Checkout() {
     return Math.round((subtotalAfterCoupon * weekendOffer.percent) / 100);
   }, [couponDiscountAmount, subTotal, weekendOffer]);
 
+  const specialOfferAmount = useMemo(() => {
+    if (!specialOffer?.discountPercent) return 0;
+    const subtotalAfterOtherDiscounts = Math.max(
+      0,
+      subTotal - couponDiscountAmount - weekendDiscountAmount
+    );
+    return Math.round(
+      (subtotalAfterOtherDiscounts * Number(specialOffer.discountPercent || 0)) / 100
+    );
+  }, [couponDiscountAmount, specialOffer, subTotal, weekendDiscountAmount]);
+
   const discountAmount = useMemo(() => {
-    return couponDiscountAmount + weekendDiscountAmount;
-  }, [couponDiscountAmount, weekendDiscountAmount]);
+    return couponDiscountAmount + weekendDiscountAmount + specialOfferAmount;
+  }, [couponDiscountAmount, weekendDiscountAmount, specialOfferAmount]);
 
   const discountedSubtotal = useMemo(() => {
     return Math.max(0, subTotal - discountAmount);
@@ -517,6 +539,10 @@ export default function Checkout() {
                 ? weekendOffer.percent
                 : 0,
               weekendDiscountAmount,
+              specialOfferId: specialOffer?._id || null,
+              specialOfferPercent: Number(specialOffer?.discountPercent || 0),
+              specialOfferAmount,
+              specialOfferMessage: specialOffer?.message || "",
             } : null,
             guests: g,
             adults,
@@ -890,6 +916,13 @@ export default function Checkout() {
                     </div>
                   )}
 
+                  {specialOfferAmount > 0 && (
+                    <div className="flex justify-between text-green-700">
+                      <span>Special Offer</span>
+                      <span>-{INR(specialOfferAmount)}</span>
+                    </div>
+                  )}
+
                   {room.mealMode === "only" && (
                     <div className="flex justify-between text-green-700">
                       <span>Meals</span>
@@ -1233,6 +1266,13 @@ export default function Checkout() {
                 <span>-₹{weekendDiscountAmount.toLocaleString("en-IN")}</span>
               </div>
             )}
+
+            {specialOfferAmount > 0 && (
+              <div className="flex justify-between text-green-700">
+                <span>Special Offer</span>
+                <span>-₹{specialOfferAmount.toLocaleString("en-IN")}</span>
+              </div>
+            )}
           </div>
 
           {/* Payment Summary */}
@@ -1269,6 +1309,13 @@ export default function Checkout() {
                 <div className="flex justify-between text-green-700">
                   <span>Weekend Discount Added</span>
                   <span>-{INR(weekendDiscountAmount)}</span>
+                </div>
+              )}
+
+              {specialOfferAmount > 0 && (
+                <div className="flex justify-between text-green-700">
+                  <span>Special Offer Added</span>
+                  <span>-{INR(specialOfferAmount)}</span>
                 </div>
               )}
 

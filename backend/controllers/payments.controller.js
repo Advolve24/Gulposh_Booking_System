@@ -10,6 +10,7 @@ import {
 import { parseYMD, toDateOnly } from "../lib/date.js";
 import { notifyAdmin } from "../utils/notifyAdmin.js";
 import User from "../models/User.js";
+import SpecialOffer from "../models/SpecialOffer.js";
 
 
 /* ----------------------------- Razorpay ----------------------------- */
@@ -47,6 +48,7 @@ const getDiscountBreakup = ({
   discountSettings,
   startDate,
   endDate,
+  specialOffer,
 }) => {
   let couponDiscountAmount = 0;
 
@@ -75,7 +77,18 @@ const getDiscountBreakup = ({
     ? Math.round((postCouponSubtotal * weekendDiscountPercent) / 100)
     : 0;
 
-  const discountAmount = couponDiscountAmount + weekendDiscountAmount;
+  const postWeekendSubtotal = Math.max(
+    0,
+    postCouponSubtotal - weekendDiscountAmount
+  );
+  const specialOfferPercent = Number(specialOffer?.discountPercent || 0);
+  const specialOfferAmount =
+    specialOffer && specialOfferPercent > 0
+      ? Math.round((postWeekendSubtotal * specialOfferPercent) / 100)
+      : 0;
+
+  const discountAmount =
+    couponDiscountAmount + weekendDiscountAmount + specialOfferAmount;
 
   return {
     discountAmount,
@@ -84,7 +97,27 @@ const getDiscountBreakup = ({
     weekendDiscountEnabled,
     weekendDiscountPercent: weekendEligible ? weekendDiscountPercent : 0,
     weekendEligible,
+    specialOfferId: specialOffer?._id || null,
+    specialOfferPercent,
+    specialOfferAmount,
+    specialOfferMessage: specialOffer?.message || "",
   };
+};
+
+const getEligibleSpecialOffer = async (user) => {
+  if (!user) return null;
+
+  const normalizedEmail = String(user.email || "").trim().toLowerCase();
+  const normalizedPhone = String(user.phone || "").replace(/\D/g, "").slice(-10);
+
+  return SpecialOffer.findOne({
+    isActive: true,
+    $or: [
+      { user: user._id },
+      ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+      ...(normalizedPhone ? [{ phone: normalizedPhone }] : []),
+    ],
+  }).sort({ createdAt: -1 });
 };
 
 /* ============================= CREATE ORDER ============================= */
@@ -150,6 +183,9 @@ export const createOrder = async (req, res) => {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
+    const currentUser = await User.findById(userId).select("email phone");
+    const specialOffer = await getEligibleSpecialOffer(currentUser);
+
     const refreshedDiscountBreakup = getDiscountBreakup({
       subTotal,
       couponCode,
@@ -157,6 +193,7 @@ export const createOrder = async (req, res) => {
       discountSettings: taxSetting,
       startDate: sDate,
       endDate: eDate,
+      specialOffer,
     });
     const discountAmount = refreshedDiscountBreakup.discountAmount;
     const finalDiscountedSubtotal = Math.max(0, subTotal - discountAmount);
@@ -223,6 +260,10 @@ export const createOrder = async (req, res) => {
       weekendDiscountPercent: refreshedDiscountBreakup.weekendDiscountPercent,
       weekendDiscountAmount: refreshedDiscountBreakup.weekendDiscountAmount,
       couponDiscountAmount: refreshedDiscountBreakup.couponDiscountAmount,
+      specialOfferId: refreshedDiscountBreakup.specialOfferId,
+      specialOfferPercent: refreshedDiscountBreakup.specialOfferPercent,
+      specialOfferAmount: refreshedDiscountBreakup.specialOfferAmount,
+      specialOfferMessage: refreshedDiscountBreakup.specialOfferMessage,
     });
   } catch (err) {
     console.error("❌ createOrder error:", err);
@@ -333,6 +374,8 @@ export const verifyPayment = async (req, res) => {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
+    const specialOffer = await getEligibleSpecialOffer(user);
+
     const discountBreakup = getDiscountBreakup({
       subTotal,
       couponCode,
@@ -340,6 +383,7 @@ export const verifyPayment = async (req, res) => {
       discountSettings: taxSetting,
       startDate: sDate,
       endDate: eDate,
+      specialOffer,
     });
     const discountAmount = discountBreakup.discountAmount;
     const discountedSubtotal = Math.max(0, subTotal - discountAmount);
@@ -429,6 +473,10 @@ export const verifyPayment = async (req, res) => {
               weekendDiscountEnabled: discountBreakup.weekendEligible,
               weekendDiscountPercent: discountBreakup.weekendDiscountPercent,
               weekendDiscountAmount: discountBreakup.weekendDiscountAmount,
+              specialOfferId: discountBreakup.specialOfferId,
+              specialOfferPercent: discountBreakup.specialOfferPercent,
+              specialOfferAmount: discountBreakup.specialOfferAmount,
+              specialOfferMessage: discountBreakup.specialOfferMessage,
             }
           : null,
       subTotal: discountedSubtotal,

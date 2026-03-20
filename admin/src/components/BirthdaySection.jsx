@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Gift, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
+import SpecialOfferDialog from "@/components/SpecialOfferDialog";
 
 export default function BirthdaySection({
   guests = [],
@@ -9,6 +11,7 @@ export default function BirthdaySection({
   actionHint = "Send wishes & special offers to retain guests",
 }) {
   const month = format(new Date(), "MMMM");
+  const [selectedGuest, setSelectedGuest] = useState(null);
 
   return (
     <div className="bg-card border border-border rounded-xl p-5 mt-6">
@@ -65,6 +68,7 @@ export default function BirthdaySection({
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
+                    onClick={() => guestAction(`tel:${g.phone || ""}`)}
                     className="flex h-8 w-8 items-center justify-center rounded-full border hover:bg-muted transition"
                   >
                     <Phone size={14} />
@@ -72,6 +76,7 @@ export default function BirthdaySection({
 
                   <button
                     type="button"
+                    onClick={() => guestAction(`mailto:${g.email || ""}`)}
                     className="flex h-8 w-8 items-center justify-center rounded-full border hover:bg-muted transition"
                   >
                     <Mail size={14} />
@@ -79,6 +84,7 @@ export default function BirthdaySection({
 
                   <button
                     type="button"
+                    onClick={() => setSelectedGuest(g)}
                     className="inline-flex h-8 items-center gap-1 rounded-full bg-[#6B2737] px-3 text-xs text-white hover:opacity-90 transition"
                   >
                     <Gift size={12} />
@@ -90,6 +96,21 @@ export default function BirthdaySection({
           })}
         </div>
       )}
+
+      <SpecialOfferDialog
+        open={!!selectedGuest}
+        onOpenChange={(next) => {
+          if (!next) setSelectedGuest(null);
+        }}
+        guest={selectedGuest}
+        occasionType={dateKey === "anniversary" ? "anniversary" : "birthday"}
+        dateKey={dateKey}
+      />
     </div>
   );
+}
+
+function guestAction(url) {
+  if (!url || url.endsWith(":")) return;
+  window.open(url, "_self");
 }

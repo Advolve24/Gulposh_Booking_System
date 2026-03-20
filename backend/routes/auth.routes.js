@@ -9,6 +9,7 @@ import {
   deleteMe,
   checkUserByPhone 
 } from "../controllers/auth.controller.js";
+import { getMySpecialOffer } from "../controllers/specialOffer.controller.js";
 import { authRequired } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -24,6 +25,7 @@ router.post("/logout", logout);
 
 router.delete("/me", authRequired, deleteMe);
 router.get("/me", authRequired, me);
+router.get("/me/special-offer", authRequired, getMySpecialOffer);
 router.put("/me", authRequired, updateMe);
 router.post("/check-user", checkUserByPhone);
 

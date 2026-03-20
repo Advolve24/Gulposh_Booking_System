@@ -137,3 +137,8 @@ export const getAnniversaryGuests = async () => {
   const { data } = await api.get("/admin/users/anniversaries")
   return data
 }
+
+export const createSpecialOffer = async (payload) => {
+  const { data } = await api.post("/admin/offers", payload);
+  return data;
+}

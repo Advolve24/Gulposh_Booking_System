@@ -15,6 +15,7 @@ import {
   updateTax,
 } from "../controllers/taxSetting.controller.js";
 import { listEnquiriesAdmin } from "../controllers/admin.enquiry.controller.js";
+import { upsertSpecialOffer } from "../controllers/specialOffer.controller.js";
 
 
 
@@ -87,6 +88,7 @@ router.post("/villa-verify", verifyVillaPayment);
 router.get("/search", adminGlobalSearch);
 router.post("/bookings/:id/cancel", cancelBookingAdmin);
 router.get("/enquiries", listEnquiriesAdmin);
+router.post("/offers", upsertSpecialOffer);
 /* ================= TAX SETTINGS ================= */
 
 // Get current tax (admin panel)
