@@ -46,12 +46,6 @@ function getSuggestedSundayCheckout(fromDate) {
   return suggested;
 }
 
-function addDays(dateLike, days) {
-  const date = new Date(dateLike);
-  date.setDate(date.getDate() + days);
-  return date;
-}
-
 function getWeekendEligibleNights(range) {
   if (!range?.from || !range?.to) return 0;
   if (!isFriday(range.from)) return 0;
@@ -77,24 +71,17 @@ function normalizeDateStart(dateLike) {
   return date;
 }
 
-function normalizeDateEnd(dateLike) {
-  if (!dateLike) return null;
-  const date = new Date(dateLike);
-  date.setHours(23, 59, 59, 999);
-  return date;
-}
-
 function doesOfferOverlapSelectedStay(offer, range) {
   if (!offer?.validFrom || !offer?.validTo || !range?.from || !range?.to) {
     return false;
   }
 
   const stayStart = normalizeDateStart(range.from);
-  const stayEnd = normalizeDateEnd(range.to);
+  const stayEndExclusive = normalizeDateStart(range.to);
   const offerStart = normalizeDateStart(offer.validFrom);
-  const offerEnd = normalizeDateEnd(offer.validTo);
+  const offerEndExclusive = normalizeDateStart(offer.validTo);
 
-  return offerStart <= stayEnd && offerEnd >= stayStart;
+  return stayStart < offerEndExclusive && stayEndExclusive > offerStart;
 }
 
 function getOfferEligibleNights(offer, range) {
@@ -105,7 +92,7 @@ function getOfferEligibleNights(offer, range) {
   const stayStart = normalizeDateStart(range.from);
   const stayEndExclusive = normalizeDateStart(range.to);
   const offerStart = normalizeDateStart(offer.validFrom);
-  const offerEndExclusive = addDays(normalizeDateStart(offer.validTo), 1);
+  const offerEndExclusive = normalizeDateStart(offer.validTo);
 
   const overlapStart = stayStart > offerStart ? stayStart : offerStart;
   const overlapEndExclusive =

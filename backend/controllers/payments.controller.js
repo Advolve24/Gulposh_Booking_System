@@ -132,28 +132,15 @@ const getDiscountBreakup = ({
   };
 };
 
-const getOfferBoundaryDate = (value, endOfDay = false) => {
-  if (!value) return null;
-  const date = toDateOnly(value);
-  if (endOfDay) {
-    date.setHours(23, 59, 59, 999);
-  } else {
-    date.setHours(0, 0, 0, 0);
-  }
-  return date;
-};
-
 const doesOfferOverlapStay = (offer, startDate, endDate) => {
   if (!offer || !startDate || !endDate) return false;
 
-  const stayStart = getOfferBoundaryDate(startDate, false);
-  const stayEnd = getOfferBoundaryDate(endDate, true);
-  const offerStart = getOfferBoundaryDate(offer.validFrom, false);
-  const offerEnd = getOfferBoundaryDate(offer.validTo, true);
+  const stayStart = toDateOnly(startDate);
+  const stayEndExclusive = toDateOnly(endDate);
+  const offerStart = toDateOnly(offer.validFrom);
+  const offerEndExclusive = toDateOnly(offer.validTo);
 
-  if (!stayStart || !stayEnd || !offerStart || !offerEnd) return false;
-
-  return offerStart <= stayEnd && offerEnd >= stayStart;
+  return stayStart < offerEndExclusive && stayEndExclusive > offerStart;
 };
 
 const getOfferEligibleNights = (offer, startDate, endDate) => {
@@ -162,7 +149,7 @@ const getOfferEligibleNights = (offer, startDate, endDate) => {
   const stayStart = toDateOnly(startDate);
   const stayEndExclusive = toDateOnly(endDate);
   const offerStart = toDateOnly(offer.validFrom);
-  const offerEndExclusive = addDays(toDateOnly(offer.validTo), 1);
+  const offerEndExclusive = toDateOnly(offer.validTo);
 
   const overlapStart = stayStart > offerStart ? stayStart : offerStart;
   const overlapEndExclusive =
