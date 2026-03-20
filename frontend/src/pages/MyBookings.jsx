@@ -318,7 +318,7 @@ export default function MyBookings() {
                             openCancel(b._id);
                           }}
                         >
-                          Cancel
+                          Cancel Booking
                         </Button>
 
                       </div>
