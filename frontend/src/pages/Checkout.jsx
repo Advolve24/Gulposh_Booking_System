@@ -46,6 +46,12 @@ function getSuggestedSundayCheckout(fromDate) {
   return suggested;
 }
 
+function addDays(dateLike, days) {
+  const date = new Date(dateLike);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
 function normalizeDateStart(dateLike) {
   if (!dateLike) return null;
   const date = new Date(dateLike);
@@ -71,6 +77,26 @@ function doesOfferOverlapSelectedStay(offer, range) {
   const offerEnd = normalizeDateEnd(offer.validTo);
 
   return offerStart <= stayEnd && offerEnd >= stayStart;
+}
+
+function getOfferEligibleNights(offer, range) {
+  if (!offer?.validFrom || !offer?.validTo || !range?.from || !range?.to) {
+    return 0;
+  }
+
+  const stayStart = normalizeDateStart(range.from);
+  const stayEndExclusive = normalizeDateStart(range.to);
+  const offerStart = normalizeDateStart(offer.validFrom);
+  const offerEndExclusive = addDays(normalizeDateStart(offer.validTo), 1);
+
+  const overlapStart = stayStart > offerStart ? stayStart : offerStart;
+  const overlapEndExclusive =
+    stayEndExclusive < offerEndExclusive ? stayEndExclusive : offerEndExclusive;
+
+  return Math.max(
+    0,
+    Math.round((overlapEndExclusive - overlapStart) / (1000 * 60 * 60 * 24))
+  );
 }
 
 const INR = (num) =>
@@ -385,14 +411,18 @@ export default function Checkout() {
   const specialOfferAmount = useMemo(() => {
     if (!specialOffer?.discountPercent) return 0;
     if (!doesOfferOverlapSelectedStay(specialOffer, range)) return 0;
+    const eligibleOfferNights = getOfferEligibleNights(specialOffer, range);
+    if (eligibleOfferNights <= 0 || nights <= 0) return 0;
     const subtotalAfterOtherDiscounts = Math.max(
       0,
       subTotal - couponDiscountAmount - weekendDiscountAmount
     );
+    const eligibleOfferSubtotal =
+      (subtotalAfterOtherDiscounts * eligibleOfferNights) / nights;
     return Math.round(
-      (subtotalAfterOtherDiscounts * Number(specialOffer.discountPercent || 0)) / 100
+      (eligibleOfferSubtotal * Number(specialOffer.discountPercent || 0)) / 100
     );
-  }, [couponDiscountAmount, range, specialOffer, subTotal, weekendDiscountAmount]);
+  }, [couponDiscountAmount, nights, range, specialOffer, subTotal, weekendDiscountAmount]);
 
   const discountAmount = useMemo(() => {
     return couponDiscountAmount + weekendDiscountAmount + specialOfferAmount;

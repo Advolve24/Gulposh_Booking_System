@@ -27,6 +27,12 @@ const nightsBetween = (start, end) => {
   return Math.max(0, Math.round((e - s) / 86400000));
 };
 
+const addDays = (date, days) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
 const isFridayStartWithSundayAdded = (start, end) => {
   if (!start || !end) return false;
 
@@ -50,6 +56,7 @@ const getDiscountBreakup = ({
   endDate,
   specialOffer,
 }) => {
+  const totalNights = nightsBetween(startDate, endDate);
   let couponDiscountAmount = 0;
 
   const validCoupon =
@@ -82,9 +89,16 @@ const getDiscountBreakup = ({
     postCouponSubtotal - weekendDiscountAmount
   );
   const specialOfferPercent = Number(specialOffer?.discountPercent || 0);
+  const eligibleOfferNights = getOfferEligibleNights(specialOffer, startDate, endDate);
+  const eligibleOfferSubtotal =
+    totalNights > 0
+      ? Number(
+          ((postWeekendSubtotal * eligibleOfferNights) / totalNights).toFixed(2)
+        )
+      : 0;
   const specialOfferAmount =
-    specialOffer && specialOfferPercent > 0
-      ? Math.round((postWeekendSubtotal * specialOfferPercent) / 100)
+    specialOffer && specialOfferPercent > 0 && eligibleOfferNights > 0
+      ? Math.round((eligibleOfferSubtotal * specialOfferPercent) / 100)
       : 0;
 
   const discountAmount =
@@ -100,6 +114,7 @@ const getDiscountBreakup = ({
     specialOfferId: specialOffer?._id || null,
     specialOfferPercent,
     specialOfferAmount,
+    specialOfferEligibleNights: eligibleOfferNights,
     specialOfferMessage: specialOffer?.message || "",
   };
 };
@@ -126,6 +141,24 @@ const doesOfferOverlapStay = (offer, startDate, endDate) => {
   if (!stayStart || !stayEnd || !offerStart || !offerEnd) return false;
 
   return offerStart <= stayEnd && offerEnd >= stayStart;
+};
+
+const getOfferEligibleNights = (offer, startDate, endDate) => {
+  if (!offer || !startDate || !endDate) return 0;
+
+  const stayStart = toDateOnly(startDate);
+  const stayEndExclusive = toDateOnly(endDate);
+  const offerStart = toDateOnly(offer.validFrom);
+  const offerEndExclusive = addDays(toDateOnly(offer.validTo), 1);
+
+  const overlapStart = stayStart > offerStart ? stayStart : offerStart;
+  const overlapEndExclusive =
+    stayEndExclusive < offerEndExclusive ? stayEndExclusive : offerEndExclusive;
+
+  return Math.max(
+    0,
+    Math.round((overlapEndExclusive - overlapStart) / 86400000)
+  );
 };
 
 const getEligibleSpecialOffer = async (user, startDate, endDate) => {
@@ -289,6 +322,7 @@ export const createOrder = async (req, res) => {
       specialOfferId: refreshedDiscountBreakup.specialOfferId,
       specialOfferPercent: refreshedDiscountBreakup.specialOfferPercent,
       specialOfferAmount: refreshedDiscountBreakup.specialOfferAmount,
+      specialOfferEligibleNights: refreshedDiscountBreakup.specialOfferEligibleNights,
       specialOfferMessage: refreshedDiscountBreakup.specialOfferMessage,
     });
   } catch (err) {
@@ -502,6 +536,7 @@ export const verifyPayment = async (req, res) => {
               specialOfferId: discountBreakup.specialOfferId,
               specialOfferPercent: discountBreakup.specialOfferPercent,
               specialOfferAmount: discountBreakup.specialOfferAmount,
+              specialOfferEligibleNights: discountBreakup.specialOfferEligibleNights,
               specialOfferMessage: discountBreakup.specialOfferMessage,
             }
           : null,
