@@ -380,8 +380,8 @@ export default function CancelBookingFlow({
                 <Checkbox checked={agree} onCheckedChange={setAgree} />
                 <span>
                   I understand and agree to the
-                  <a href="https://booking.villagulposh.com/refund" target="_blank" rel="noopener noreferrer">
-                    cancellation policy
+                  <a className="text-blue" href="https://booking.villagulposh.com/refund" target="_blank" rel="noopener noreferrer">
+                     cancellation policy
                   </a>.
                 </span>
               </label>
