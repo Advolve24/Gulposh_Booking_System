@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { AlertTriangle, Clock, Check } from "lucide-react";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 import {
   Dialog,
@@ -91,34 +91,34 @@ export default function CancelBookingFlow({
 
   /* ================= FINAL CANCEL ================= */
   /* ================= FINAL CANCEL ================= */
-const handleCancel = async () => {
-  if (!agree || !reason) return;
+  const handleCancel = async () => {
+    if (!agree || !reason) return;
 
-  const toastId = toast.loading("Cancelling your booking...");
+    const toastId = toast.loading("Cancelling your booking...");
 
-  setLoading(true);
-  try {
-    await cancelBooking(bookingId, {
-      reason,
-      notes,
-    });
+    setLoading(true);
+    try {
+      await cancelBooking(bookingId, {
+        reason,
+        notes,
+      });
 
-    toast.success("Booking cancelled successfully", {
-      id: toastId,
-    });
+      toast.success("Booking cancelled successfully", {
+        id: toastId,
+      });
 
-    onOpenChange(false);
-    onSuccess?.();
-  } catch (err) {
-    console.error("Cancel booking failed:", err);
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (err) {
+      console.error("Cancel booking failed:", err);
 
-    toast.error("Failed to cancel booking. Please try again.", {
-      id: toastId,
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+      toast.error("Failed to cancel booking. Please try again.", {
+        id: toastId,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const Container = isDesktop ? Dialog : Drawer;
@@ -379,14 +379,17 @@ const handleCancel = async () => {
               <label className="flex items-start gap-3 text-xs">
                 <Checkbox checked={agree} onCheckedChange={setAgree} />
                 <span>
-                  I understand and agree to the cancellation policy.
+                  I understand and agree to the
+                  <a href="https://booking.villagulposh.com/refund" target="_blank" rel="noopener noreferrer">
+                    cancellation policy
+                  </a>.
                 </span>
               </label>
             </div>
           )}
         </div>
         {/* ================= FOOTER ================= */}
-         <div className="p-4 border-t bg-white flex gap-2 rounded-b-xl">
+        <div className="p-4 border-t bg-white flex gap-2 rounded-b-xl">
           <Button
             variant="outline"
             className="flex-1"
