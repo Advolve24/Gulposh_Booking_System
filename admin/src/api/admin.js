@@ -84,6 +84,12 @@ export const getAdminTax = () =>
 export const updateAdminTax = (taxPercent) =>
   api.put("/admin/tax", { taxPercent }).then(r => r.data);
 
+export const getAdminDiscount = () =>
+  api.get("/admin/discount").then(r => r.data);
+
+export const updateAdminDiscount = (payload) =>
+  api.put("/admin/discount", payload).then(r => r.data);
+
 
 export const getOverview = async () => {
   const { data } = await api.get("/reports/overview");

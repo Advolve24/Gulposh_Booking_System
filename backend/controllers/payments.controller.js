@@ -26,6 +26,67 @@ const nightsBetween = (start, end) => {
   return Math.max(0, Math.round((e - s) / 86400000));
 };
 
+const isFridayStartWithSundayAdded = (start, end) => {
+  if (!start || !end) return false;
+
+  const startDate = toDateOnly(start);
+  const endDate = toDateOnly(end);
+
+  if (startDate.getDay() !== 5) return false;
+
+  const mondayCheckout = new Date(startDate);
+  mondayCheckout.setDate(mondayCheckout.getDate() + 3);
+
+  return endDate >= mondayCheckout;
+};
+
+const getDiscountBreakup = ({
+  subTotal,
+  couponCode,
+  room,
+  discountSettings,
+  startDate,
+  endDate,
+}) => {
+  let couponDiscountAmount = 0;
+
+  const validCoupon =
+    couponCode &&
+    room.discountCode &&
+    couponCode.trim().toUpperCase() === room.discountCode.trim().toUpperCase();
+
+  if (validCoupon) {
+    if (room.discountType === "percent") {
+      couponDiscountAmount = Math.round((subTotal * room.discountValue) / 100);
+    } else if (room.discountType === "flat") {
+      couponDiscountAmount = Number(room.discountValue || 0);
+    }
+  }
+
+  const weekendDiscountEnabled = Boolean(discountSettings?.weekendDiscountEnabled);
+  const weekendDiscountPercent = Number(discountSettings?.weekendDiscountPercent || 0);
+  const weekendEligible =
+    weekendDiscountEnabled &&
+    weekendDiscountPercent > 0 &&
+    isFridayStartWithSundayAdded(startDate, endDate);
+
+  const postCouponSubtotal = Math.max(0, subTotal - couponDiscountAmount);
+  const weekendDiscountAmount = weekendEligible
+    ? Math.round((postCouponSubtotal * weekendDiscountPercent) / 100)
+    : 0;
+
+  const discountAmount = couponDiscountAmount + weekendDiscountAmount;
+
+  return {
+    discountAmount,
+    couponDiscountAmount,
+    weekendDiscountAmount,
+    weekendDiscountEnabled,
+    weekendDiscountPercent: weekendEligible ? weekendDiscountPercent : 0,
+    weekendEligible,
+  };
+};
+
 /* ============================= CREATE ORDER ============================= */
 export const createOrder = async (req, res) => {
   try {
@@ -82,34 +143,23 @@ export const createOrder = async (req, res) => {
         nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
-    let subTotal = roomTotal + mealTotal;
-
-    let discountAmount = 0;
-
-    const validCoupon =
-      couponCode &&
-      room.discountCode &&
-      couponCode.trim().toUpperCase() ===
-      room.discountCode.trim().toUpperCase();
-
-    if (validCoupon) {
-      if (room.discountType === "percent") {
-        discountAmount = Math.round(
-          (subTotal * room.discountValue) / 100
-        );
-      } else if (room.discountType === "flat") {
-        discountAmount = room.discountValue;
-      }
-    }
-    const discountedSubtotal = Math.max(
-      0,
-      subTotal - discountAmount
-    );
+    const subTotal = roomTotal + mealTotal;
 
     const taxSetting = await TaxSetting.findOne();
     if (!taxSetting) {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
+
+    const refreshedDiscountBreakup = getDiscountBreakup({
+      subTotal,
+      couponCode,
+      room,
+      discountSettings: taxSetting,
+      startDate: sDate,
+      endDate: eDate,
+    });
+    const discountAmount = refreshedDiscountBreakup.discountAmount;
+    const finalDiscountedSubtotal = Math.max(0, subTotal - discountAmount);
 
     const cgstPercent = taxSetting.taxPercent / 2;
     const sgstPercent = taxSetting.taxPercent / 2;
@@ -117,23 +167,20 @@ export const createOrder = async (req, res) => {
     let cgstAmount = 0;
     let sgstAmount = 0;
     let totalTax = 0;
-    let taxableAmount = discountedSubtotal;
 
     if (room.taxMode === "included") {
-      const base = discountedSubtotal / (1 + taxSetting.taxPercent / 100);
-      totalTax = discountedSubtotal - base;
+      const base = finalDiscountedSubtotal / (1 + taxSetting.taxPercent / 100);
+      totalTax = finalDiscountedSubtotal - base;
 
       cgstAmount = Number((totalTax / 2).toFixed(2));
       sgstAmount = Number((totalTax / 2).toFixed(2));
-
-      taxableAmount = discountedSubtotal - totalTax;
     } else {
       cgstAmount = Number(
-        ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
+        ((finalDiscountedSubtotal * cgstPercent) / 100).toFixed(2)
       );
 
       sgstAmount = Number(
-        ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
+        ((finalDiscountedSubtotal * sgstPercent) / 100).toFixed(2)
       );
 
       totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
@@ -141,8 +188,8 @@ export const createOrder = async (req, res) => {
 
     const grandTotal =
       room.taxMode === "included"
-        ? discountedSubtotal
-        : Number((discountedSubtotal + totalTax).toFixed(2));
+        ? finalDiscountedSubtotal
+        : Number((finalDiscountedSubtotal + totalTax).toFixed(2));
 
     const amountPaise = Math.round(grandTotal * 100);
     if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
@@ -171,7 +218,11 @@ export const createOrder = async (req, res) => {
       totalTax,
       grandTotal,
       discountAmount,
-      discountedSubtotal,
+      discountedSubtotal: finalDiscountedSubtotal,
+      weekendDiscountEnabled: refreshedDiscountBreakup.weekendEligible,
+      weekendDiscountPercent: refreshedDiscountBreakup.weekendDiscountPercent,
+      weekendDiscountAmount: refreshedDiscountBreakup.weekendDiscountAmount,
+      couponDiscountAmount: refreshedDiscountBreakup.couponDiscountAmount,
     });
   } catch (err) {
     console.error("❌ createOrder error:", err);
@@ -277,33 +328,21 @@ export const verifyPayment = async (req, res) => {
 
     const subTotal = roomTotal + mealTotal;
 
-    let discountAmount = 0;
-
-    const validCoupon =
-      couponCode &&
-      room.discountCode &&
-      couponCode.trim().toUpperCase() ===
-      room.discountCode.trim().toUpperCase();
-
-    if (validCoupon) {
-      if (room.discountType === "percent") {
-        discountAmount = Math.round(
-          (subTotal * room.discountValue) / 100
-        );
-      } else if (room.discountType === "flat") {
-        discountAmount = room.discountValue;
-      }
-    }
-
-    const discountedSubtotal = Math.max(
-      0,
-      subTotal - discountAmount
-    );
-
     const taxSetting = await TaxSetting.findOne();
     if (!taxSetting) {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
+
+    const discountBreakup = getDiscountBreakup({
+      subTotal,
+      couponCode,
+      room,
+      discountSettings: taxSetting,
+      startDate: sDate,
+      endDate: eDate,
+    });
+    const discountAmount = discountBreakup.discountAmount;
+    const discountedSubtotal = Math.max(0, subTotal - discountAmount);
 
     const cgstPercent = taxSetting.taxPercent / 2;
     const sgstPercent = taxSetting.taxPercent / 2;
@@ -381,10 +420,16 @@ export const verifyPayment = async (req, res) => {
       discountMeta:
         discountAmount > 0
           ? {
-            discountType: room.discountType,
-            discountValue: room.discountValue,
-            discountAmount,
-          }
+              discountType: room.discountType,
+              discountValue: room.discountValue,
+              discountAmount,
+              couponDiscountType: room.discountType,
+              couponDiscountValue: room.discountValue,
+              couponDiscountAmount: discountBreakup.couponDiscountAmount,
+              weekendDiscountEnabled: discountBreakup.weekendEligible,
+              weekendDiscountPercent: discountBreakup.weekendDiscountPercent,
+              weekendDiscountAmount: discountBreakup.weekendDiscountAmount,
+            }
           : null,
       subTotal: discountedSubtotal,
       amount: grandTotal,

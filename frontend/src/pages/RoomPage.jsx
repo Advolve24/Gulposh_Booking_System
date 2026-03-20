@@ -8,6 +8,7 @@ import { amenityCategories } from "../data/aminities";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import {
   ShieldCheck, Clock, Ban, Music,
   Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft
@@ -60,6 +61,17 @@ function mergeRanges(ranges) {
   return out;
 }
 
+function isFriday(date) {
+  return date instanceof Date && !Number.isNaN(date) && date.getDay() === 5;
+}
+
+function getSuggestedSundayCheckout(fromDate) {
+  if (!fromDate) return null;
+  const suggested = new Date(fromDate);
+  suggested.setDate(suggested.getDate() + 3);
+  return suggested;
+}
+
 function BookingCard({
   room,
   range,
@@ -70,6 +82,7 @@ function BookingCard({
   setChildren,
   disabledAll,
   goToCheckout,
+  weekendOffer,
 }) {
   const totalGuests = adults + children;
 
@@ -97,6 +110,31 @@ function BookingCard({
             disabledRanges={disabledAll}
           />
         </div>
+
+        {weekendOffer?.canSuggest && (
+          <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+            <p className="font-medium">
+              Add Sunday night and save {weekendOffer.percent}%.
+            </p>
+            <p className="mt-1 text-xs text-green-700">
+              Book till {weekendOffer.suggestedCheckoutLabel} to apply the
+              weekend discount on total billing.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 h-9 border-green-300 bg-white text-green-800 hover:bg-green-100"
+              onClick={() =>
+                setRange({
+                  from: range?.from || null,
+                  to: weekendOffer.suggestedCheckout,
+                })
+              }
+            >
+              Add Sunday and Save
+            </Button>
+          </div>
+        )}
 
         {/* GUESTS */}
         <div className="space-y-2">
@@ -197,6 +235,10 @@ export default function RoomPage() {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [discountConfig, setDiscountConfig] = useState({
+    enabled: false,
+    percent: 0,
+  });
 
   const handleBack = () => {
     navigate("/", { state: { scrollToResults: true } });
@@ -265,6 +307,18 @@ export default function RoomPage() {
         }))
       )
     );
+
+    api.get("/tax").then(({ data }) => {
+      setDiscountConfig({
+        enabled: Boolean(data.weekendDiscountEnabled),
+        percent: Number(data.weekendDiscountPercent || 0),
+      });
+    }).catch(() => {
+      setDiscountConfig({
+        enabled: false,
+        percent: 0,
+      });
+    });
   }, [id]);
 
   const disabledAll = useMemo(
@@ -283,6 +337,30 @@ export default function RoomPage() {
       room.reviews.reduce((a, r) => a + r.rating, 0) / room.reviews.length
     ).toFixed(1);
   }, [room]);
+
+  const weekendOffer = useMemo(() => {
+    if (!discountConfig.enabled || discountConfig.percent <= 0 || !range?.from) {
+      return null;
+    }
+
+    if (!isFriday(range.from)) {
+      return null;
+    }
+
+    const suggestedCheckout = getSuggestedSundayCheckout(range.from);
+    const canSuggest = !range?.to || new Date(range.to) < suggestedCheckout;
+
+    return {
+      percent: discountConfig.percent,
+      suggestedCheckout,
+      suggestedCheckoutLabel: suggestedCheckout.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      canSuggest,
+    };
+  }, [discountConfig, range]);
 
   const goToCheckout = () => {
     if (!range?.from || !range?.to || totalGuests < 1) {
@@ -645,6 +723,31 @@ export default function RoomPage() {
               />
             </div>
 
+            {weekendOffer?.canSuggest && (
+              <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                <p className="font-medium">
+                  Add Sunday night and save {weekendOffer.percent}%.
+                </p>
+                <p className="mt-1 text-xs text-green-700">
+                  Extend checkout till {weekendOffer.suggestedCheckoutLabel} to
+                  unlock the weekend discount.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3 h-9 border-green-300 bg-white text-green-800 hover:bg-green-100"
+                  onClick={() =>
+                    setRange({
+                      from: range?.from || null,
+                      to: weekendOffer.suggestedCheckout,
+                    })
+                  }
+                >
+                  Add Sunday and Save
+                </Button>
+              </div>
+            )}
+
             {/* GUESTS */}
             <div>
               <label className="text-xs font-medium text-muted-foreground">
@@ -801,6 +904,7 @@ export default function RoomPage() {
                 setChildren={setChildren}
                 disabledAll={disabledAll}
                 goToCheckout={goToCheckout}
+                weekendOffer={weekendOffer}
               />
             </div>
           </div>

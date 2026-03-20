@@ -35,6 +35,17 @@ function minusOneDay(date) {
   return d;
 }
 
+function isFriday(date) {
+  return date instanceof Date && !Number.isNaN(date) && date.getDay() === 5;
+}
+
+function getSuggestedSundayCheckout(fromDate) {
+  if (!fromDate) return null;
+  const suggested = new Date(fromDate);
+  suggested.setDate(suggested.getDate() + 3);
+  return suggested;
+}
+
 const INR = (num) =>
   `₹${Number(num || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -128,6 +139,8 @@ export default function Checkout() {
   }
 
   const [taxPercent, setTaxPercent] = useState(0);
+  const [weekendDiscountEnabled, setWeekendDiscountEnabled] = useState(false);
+  const [weekendDiscountPercent, setWeekendDiscountPercent] = useState(0);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [otpStep, setOtpStep] = useState("idle");
   const [otp, setOtp] = useState("");
@@ -216,6 +229,8 @@ export default function Checkout() {
     api.get("/tax")
       .then(({ data }) => {
         setTaxPercent(data.taxPercent);
+        setWeekendDiscountEnabled(Boolean(data.weekendDiscountEnabled));
+        setWeekendDiscountPercent(Number(data.weekendDiscountPercent || 0));
       })
       .catch(() => {
         toast.error("Failed to load tax configuration");
@@ -282,7 +297,32 @@ export default function Checkout() {
     return roomTotal + mealTotal;
   }, [roomTotal, mealTotal]);
 
-  const discountAmount = useMemo(() => {
+  const weekendOffer = useMemo(() => {
+    if (!weekendDiscountEnabled || weekendDiscountPercent <= 0 || !range?.from) {
+      return null;
+    }
+
+    if (!isFriday(range.from)) {
+      return null;
+    }
+
+    const suggestedCheckout = getSuggestedSundayCheckout(range.from);
+    const eligible = range?.to ? new Date(range.to) >= suggestedCheckout : false;
+
+    return {
+      eligible,
+      canSuggest: !eligible,
+      percent: weekendDiscountPercent,
+      suggestedCheckout,
+      suggestedCheckoutLabel: suggestedCheckout.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+    };
+  }, [weekendDiscountEnabled, weekendDiscountPercent, range]);
+
+  const couponDiscountAmount = useMemo(() => {
     if (!hasRoomCoupon) return 0;
     if (!couponApplied) return 0;
     if (couponCode !== room.discountCode) return 0;
@@ -297,6 +337,16 @@ export default function Checkout() {
 
     return 0;
   }, [hasRoomCoupon, couponApplied, couponCode, room, subTotal]);
+
+  const weekendDiscountAmount = useMemo(() => {
+    if (!weekendOffer?.eligible) return 0;
+    const subtotalAfterCoupon = Math.max(0, subTotal - couponDiscountAmount);
+    return Math.round((subtotalAfterCoupon * weekendOffer.percent) / 100);
+  }, [couponDiscountAmount, subTotal, weekendOffer]);
+
+  const discountAmount = useMemo(() => {
+    return couponDiscountAmount + weekendDiscountAmount;
+  }, [couponDiscountAmount, weekendDiscountAmount]);
 
   const discountedSubtotal = useMemo(() => {
     return Math.max(0, subTotal - discountAmount);
@@ -461,6 +511,12 @@ export default function Checkout() {
               discountType: room.discountType,
               discountValue: room.discountValue,
               discountAmount,
+              couponDiscountAmount,
+              weekendDiscountEnabled: Boolean(weekendOffer?.eligible),
+              weekendDiscountPercent: weekendOffer?.eligible
+                ? weekendOffer.percent
+                : 0,
+              weekendDiscountAmount,
             } : null,
             guests: g,
             adults,
@@ -820,10 +876,17 @@ export default function Checkout() {
                     </div>
                   )}
 
-                  {discountAmount > 0 && (
+                  {couponDiscountAmount > 0 && (
                     <div className="flex justify-between text-green-700">
-                      <span>Discount</span>
-                      <span>-{INR(discountAmount)}</span>
+                      <span>Coupon Discount</span>
+                      <span>-{INR(couponDiscountAmount)}</span>
+                    </div>
+                  )}
+
+                  {weekendDiscountAmount > 0 && (
+                    <div className="flex justify-between text-green-700">
+                      <span>Weekend Discount</span>
+                      <span>-{INR(weekendDiscountAmount)}</span>
                     </div>
                   )}
 
@@ -1006,6 +1069,37 @@ export default function Checkout() {
                   Select your stay dates to continue
                 </p>
               )}
+
+              {weekendOffer?.canSuggest && (
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                  <p className="font-medium">
+                    Add Sunday night and get {weekendOffer.percent}% off.
+                  </p>
+                  <p className="mt-1 text-xs text-green-700">
+                    Extend checkout till {weekendOffer.suggestedCheckoutLabel} to
+                    unlock this discount on the booking subtotal.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-3 border-green-300 bg-white text-green-800 hover:bg-green-100"
+                    onClick={() =>
+                      setRange((prev) => ({
+                        from: prev?.from || null,
+                        to: weekendOffer.suggestedCheckout,
+                      }))
+                    }
+                  >
+                    Add Sunday and Save
+                  </Button>
+                </div>
+              )}
+
+              {weekendOffer?.eligible && (
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                  Weekend discount of {weekendOffer.percent}% has been applied.
+                </div>
+              )}
             </div>
 
             {/* ================= GUEST COUNT ================= */}
@@ -1126,10 +1220,17 @@ export default function Checkout() {
               </div>
             )}
 
-            {discountAmount > 0 && (
+            {couponDiscountAmount > 0 && (
               <div className="flex justify-between text-green-700">
-                <span>Discount</span>
-                <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
+                <span>Coupon Discount</span>
+                <span>-₹{couponDiscountAmount.toLocaleString("en-IN")}</span>
+              </div>
+            )}
+
+            {weekendDiscountAmount > 0 && (
+              <div className="flex justify-between text-green-700">
+                <span>Weekend Discount</span>
+                <span>-₹{weekendDiscountAmount.toLocaleString("en-IN")}</span>
               </div>
             )}
           </div>
@@ -1163,6 +1264,13 @@ export default function Checkout() {
                   <span>{INR(totalTax)}</span>
                 </span>
               </div>
+
+              {weekendDiscountAmount > 0 && (
+                <div className="flex justify-between text-green-700">
+                  <span>Weekend Discount Added</span>
+                  <span>-{INR(weekendDiscountAmount)}</span>
+                </div>
+              )}
 
               <Separator />
 

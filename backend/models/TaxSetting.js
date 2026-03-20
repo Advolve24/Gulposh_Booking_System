@@ -9,6 +9,16 @@ const taxSettingSchema = new mongoose.Schema(
       min: 0,
       max: 100,
     },
+    weekendDiscountEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    weekendDiscountPercent: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
   },
   { timestamps: true }
 );

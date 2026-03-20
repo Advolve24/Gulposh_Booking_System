@@ -8,7 +8,12 @@ import { listUsersAdmin, getUserAdmin, listUserBookingsAdmin, listBookingsAdmin,
 import { createVillaOrder, verifyVillaPayment } from "../controllers/admin.villa.controller.js";
 import { adminGlobalSearch } from "../controllers/admin.search.controller.js";
 import { adminActionBooking} from "../controllers/admin.booking.controller.js";
-import { getActiveTax, updateTax} from "../controllers/taxSetting.controller.js";
+import {
+  getActiveTax,
+  getDiscountConfig,
+  updateDiscountConfig,
+  updateTax,
+} from "../controllers/taxSetting.controller.js";
 import { listEnquiriesAdmin } from "../controllers/admin.enquiry.controller.js";
 
 
@@ -88,5 +93,7 @@ router.get("/tax", getActiveTax);
 
 // Update tax (admin panel)
 router.put("/tax", updateTax);
+router.get("/discount", getDiscountConfig);
+router.put("/discount", updateDiscountConfig);
 
 export default router;
