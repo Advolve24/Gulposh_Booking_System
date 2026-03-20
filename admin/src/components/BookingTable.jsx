@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { format } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
 import {
@@ -11,9 +10,6 @@ import {
 
 const dateFmt = (d) =>
   d ? format(new Date(d), "dd MMM yy") : "-";
-
-const recentGroupLabel = (d) =>
-  d ? format(new Date(d), "dd MMMM yyyy") : "Unknown Date";
 
 const StatusChip = ({ status }) => {
   const map = {
@@ -76,10 +72,7 @@ export default function BookingTable({
   onDownloadInvoice,
   onEditBooking,
   onCancelBooking,
-  groupByRecent = false,
 }) {
-  let lastRecentLabel = null;
-
   return (
     <div className="bg-card border rounded-xl overflow-x-auto">
       <table className="min-w-[1200px] w-full text-sm">
@@ -101,137 +94,118 @@ export default function BookingTable({
         <tbody>
           {bookings.map((b) => {
             const guests = guestLabel(b);
-            const recentLabel = recentGroupLabel(b.createdAt);
-            const showRecentHeader =
-              groupByRecent && recentLabel !== lastRecentLabel;
-
-            if (groupByRecent) {
-              lastRecentLabel = recentLabel;
-            }
 
             return (
-              <Fragment key={b._id}>
-                {showRecentHeader && (
-                  <tr className="border-t bg-muted/20">
-                    <td
-                      colSpan={10}
-                      className="px-4 py-3 text-sm font-semibold text-foreground"
-                    >
-                      {recentLabel}
-                    </td>
-                  </tr>
-                )}
+              <tr
+                key={b._id}
+                onClick={() => onRowClick?.(b)}
+                className="border-t hover:bg-muted/20 cursor-pointer"
+              >
+                <td className="px-4 py-4">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                    <span className="font-medium">#{b._id.slice(-6)}</span>
+                  </div>
+                </td>
 
-                <tr
-                  onClick={() => onRowClick?.(b)}
-                  className="border-t hover:bg-muted/20 cursor-pointer"
-                >
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-green-500" />
-                      <span className="font-medium">#{b._id.slice(-6)}</span>
-                    </div>
-                  </td>
+                <td className="px-4 py-4">
+                  <div className="font-medium">{b.user?.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {b.user?.phone}
+                  </div>
+                </td>
 
-                  <td className="px-4 py-4">
-                    <div className="font-medium">{b.user?.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {b.user?.phone}
-                    </div>
-                  </td>
+                <td className="px-4 py-4">
+                  {b.isVilla ? "Entire Villa" : b.room?.name || "-"}
+                </td>
 
-                  <td className="px-4 py-4">
-                    {b.isVilla ? "Entire Villa" : b.room?.name || "-"}
-                  </td>
+                <td className="px-4 py-4">{dateFmt(b.startDate)}</td>
+                <td className="px-4 py-4">{dateFmt(b.endDate)}</td>
 
-                  <td className="px-4 py-4">{dateFmt(b.startDate)}</td>
-                  <td className="px-4 py-4">{dateFmt(b.endDate)}</td>
+                <td className="px-4 py-4 text-center">
+                  {nightsBetween(b.startDate, b.endDate)}
+                </td>
 
-                  <td className="px-4 py-4 text-center">
-                    {nightsBetween(b.startDate, b.endDate)}
-                  </td>
+                <td className="px-4 py-4">
+                  <div>{guests.main}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {guests.sub}
+                  </div>
+                </td>
 
-                  <td className="px-4 py-4">
-                    <div>{guests.main}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {guests.sub}
-                    </div>
-                  </td>
+                <td className="px-4 py-4 text-right font-medium">
+                  {b.amount?.toLocaleString("en-IN")}
+                </td>
 
-                  <td className="px-4 py-4 text-right font-medium">
-                    {b.amount?.toLocaleString("en-IN")}
-                  </td>
+                <td className="px-4 py-4 text-center">
+                  <StatusChip status={b.status} />
+                </td>
 
-                  <td className="px-4 py-4 text-center">
-                    <StatusChip status={b.status} />
-                  </td>
+                <td className="px-4 py-4 text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1 rounded-md hover:bg-muted"
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
+                    </DropdownMenuTrigger>
 
-                  <td className="px-4 py-4 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1 rounded-md hover:bg-muted"
-                        >
-                          <MoreHorizontal size={18} />
-                        </button>
-                      </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRowClick?.(b);
+                        }}
+                      >
+                        View Booking
+                      </DropdownMenuItem>
 
-                      <DropdownMenuContent align="end" className="bg-white">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRowClick?.(b);
-                          }}
-                        >
-                          View Booking
-                        </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditBooking?.(b);
+                        }}
+                      >
+                        Edit Booking
+                      </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditBooking?.(b);
-                          }}
-                        >
-                          Edit Booking
-                        </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewInvoice?.(b);
+                        }}
+                      >
+                        View Invoice
+                      </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onViewInvoice?.(b);
-                          }}
-                        >
-                          View Invoice
-                        </DropdownMenuItem>
+                      <DropdownMenuSeparator />
 
-                        <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDownloadInvoice?.(b);
+                        }}
+                      >
+                        Download Invoice
+                      </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDownloadInvoice?.(b);
-                          }}
-                        >
-                          Download Invoice
-                        </DropdownMenuItem>
+                      <DropdownMenuSeparator />
 
-                        <DropdownMenuSeparator />
-
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onCancelBooking?.(b);
-                          }}
-                        >
-                          Cancel Booking
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              </Fragment>
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCancelBooking?.(b);
+                        }}
+                      >
+                        Cancel Booking
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </td>
+              </tr>
             );
           })}
         </tbody>

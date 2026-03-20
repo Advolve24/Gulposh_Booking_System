@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
 import AppLayout from "@/components/layout/AppLayout";
 import { useSearchParams } from "react-router-dom";
 import { MoreHorizontal, Calendar, Users, Moon, RotateCcw, CheckCircle, XCircle } from "lucide-react";
@@ -63,10 +62,6 @@ const isUpcoming = (b) =>
 
 const isPast = (b) =>
   toDateOnly(b.endDate) < today;
-
-const recentGroupLabel = (d) =>
-  d ? format(new Date(d), "dd MMMM yyyy") : "Unknown Date";
-
 
 export default function Booking() {
   const navigate = useNavigate();
@@ -213,7 +208,6 @@ export default function Booking() {
           <div className="relative overflow-x-auto">
             <BookingTable
               bookings={visible}
-              groupByRecent={status === "recent"}
               onRowClick={async (b) => {
                 try {
                   const full = await getBookingAdmin(b._id);
@@ -243,42 +237,27 @@ export default function Booking() {
 
         {/* MOBILE VIEW */}
         <div className="sm:hidden space-y-3">
-          {visible.map((b, index) => {
-            const currentLabel = recentGroupLabel(b.createdAt);
-            const previousLabel =
-              index > 0 ? recentGroupLabel(visible[index - 1].createdAt) : null;
-            const showRecentHeader =
-              status === "recent" && currentLabel !== previousLabel;
-
-            return (
-              <div key={b._id} className="space-y-3">
-                {showRecentHeader && (
-                  <div className="px-1 pt-1 text-sm font-semibold text-foreground">
-                    {currentLabel}
-                  </div>
-                )}
-
-                <MobileBookingCard
-                  booking={b}
-                  onOpen={async (b) => {
-                    try {
-                      const full = await getBookingAdmin(b._id);
-                      setSelectedBooking(full);
-                    } catch {
-                      toast.error("Failed to load booking details");
-                    }
-                  }}
-                  onViewInvoice={(booking) =>
-                    navigate(`/bookings/${booking._id}/invoice`)
-                  }
-                  onDownloadInvoice={(b) => {
-                    downloadInvoiceDirect(b._id);
-                  }}
-                  onEditBooking={(b) => setEditBooking(b)}
-                />
-              </div>
-            );
-          })}
+          {visible.map((b) => (
+            <MobileBookingCard
+              key={b._id}
+              booking={b}
+              onOpen={async (b) => {
+                try {
+                  const full = await getBookingAdmin(b._id);
+                  setSelectedBooking(full);
+                } catch {
+                  toast.error("Failed to load booking details");
+                }
+              }}
+              onViewInvoice={(booking) =>
+                navigate(`/bookings/${booking._id}/invoice`)
+              }
+              onDownloadInvoice={(b) => {
+                downloadInvoiceDirect(b._id);
+              }}
+              onEditBooking={(b) => setEditBooking(b)}
+            />
+          ))}
         </div>
 
 
