@@ -46,7 +46,7 @@ export default function Discount() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl px-2 sm:px-6 space-y-6">
+      <div className="max-w-4xl px-2 sm:px-4 space-y-6">
         <div>
           <h1 className="text-2xl font-serif font-semibold">Discount</h1>
           <p className="text-sm text-muted-foreground mt-1">
