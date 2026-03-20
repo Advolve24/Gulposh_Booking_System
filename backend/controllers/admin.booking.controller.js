@@ -2,6 +2,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
+import { sendBookingCancellationMail } from "../utils/mailer.js";
 
 const rp = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -243,7 +244,10 @@ export const adminActionBooking = async (req, res) => {
       refundAmount,
     } = req.body || {};
 
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(bookingId).populate(
+      "room",
+      "name coverImage galleryImages mealMode location"
+    );
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
@@ -292,6 +296,19 @@ export const adminActionBooking = async (req, res) => {
       };
 
       await booking.save();
+
+      const adminEmail = process.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        sendBookingCancellationMail({
+          to: adminEmail,
+          booking,
+          room: booking.room,
+          recipientName: "Admin",
+          isAdmin: true,
+        }).catch((err) => {
+          console.error("Admin cancellation mail error:", err.message);
+        });
+      }
 
       return res.json({
         ok: true,

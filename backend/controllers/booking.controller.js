@@ -1,5 +1,6 @@
 import Booking from "../models/Booking.js";
 import { notifyAdmin } from "../utils/notifyAdmin.js";
+import { sendBookingCancellationMail } from "../utils/mailer.js";
 
 
 const nightsBetween = (start, end) => {
@@ -160,7 +161,7 @@ export const cancelMyBooking = async (req, res) => {
     const booking = await Booking.findOne({
       _id: req.params.id,
       user: req.user.id,
-    });
+    }).populate("room", "name coverImage galleryImages mealMode location");
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
@@ -217,6 +218,19 @@ export const cancelMyBooking = async (req, res) => {
       });
     } catch (err) {
       console.error("Admin notification failed:", err);
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      sendBookingCancellationMail({
+        to: adminEmail,
+        booking,
+        room: booking.room,
+        recipientName: "Admin",
+        isAdmin: true,
+      }).catch((err) => {
+        console.error("Admin cancellation mail error:", err.message);
+      });
     }
 
 

@@ -3,7 +3,10 @@ import crypto from "crypto";
 import Room from "../models/Room.js";
 import Booking from "../models/Booking.js";
 import TaxSetting from "../models/TaxSetting.js";
-import { sendBookingConfirmationMail } from "../utils/mailer.js";
+import {
+  sendAdminBookingNotificationMail,
+  sendBookingConfirmationMail,
+} from "../utils/mailer.js";
 import { parseYMD, toDateOnly } from "../lib/date.js";
 import { notifyAdmin } from "../utils/notifyAdmin.js";
 import User from "../models/User.js";
@@ -431,6 +434,24 @@ export const verifyPayment = async (req, res) => {
     }
     else {
       console.warn("⚠️ No email found to send booking confirmation");
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      sendAdminBookingNotificationMail({
+        to: adminEmail,
+        booking,
+        room,
+        customerName: contactName || user?.name || "Guest",
+      })
+        .then(() => {
+          console.log("Admin booking mail queued:", adminEmail);
+        })
+        .catch((err) => {
+          console.error("Admin booking mail error:", err.message);
+        });
+    } else {
+      console.warn("ADMIN_EMAIL not configured; admin booking mail skipped");
     }
 
     return res.json({ ok: true, booking });

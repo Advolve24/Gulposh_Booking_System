@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import User from "../models/User.js";
 import Booking from "../models/Booking.js";
 import bcrypt from "bcryptjs";
+import { sendBookingCancellationMail } from "../utils/mailer.js";
 
 const { isValidObjectId } = mongoose;
 
@@ -591,7 +592,10 @@ export const cancelBookingAdmin = async (req, res) => {
       return res.status(400).json({ message: "Invalid booking id" });
     }
 
-    const booking = await Booking.findById(id);
+    const booking = await Booking.findById(id).populate(
+      "room",
+      "name coverImage galleryImages mealMode location"
+    );
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
@@ -601,6 +605,19 @@ export const cancelBookingAdmin = async (req, res) => {
       cancelledBy: "admin",
       reason: reason || "Cancelled by admin",
     });
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      sendBookingCancellationMail({
+        to: adminEmail,
+        booking: updated,
+        room: updated.room,
+        recipientName: "Admin",
+        isAdmin: true,
+      }).catch((err) => {
+        console.error("Admin cancellation mail error:", err.message);
+      });
+    }
 
     res.json({
       ok: true,
