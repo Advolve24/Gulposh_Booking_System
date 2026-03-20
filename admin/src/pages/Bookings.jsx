@@ -64,6 +64,9 @@ const isUpcoming = (b) =>
 const isPast = (b) =>
   toDateOnly(b.endDate) < today;
 
+const recentGroupLabel = (d) =>
+  d ? format(new Date(d), "dd MMMM yyyy") : "Unknown Date";
+
 
 export default function Booking() {
   const navigate = useNavigate();
@@ -86,6 +89,8 @@ export default function Booking() {
     if (status !== "all") {
       if (status === "upcoming") {
         data = data.filter(isUpcoming);
+      } else if (status === "recent") {
+        data = data.filter((b) => Boolean(b.createdAt));
       } else {
         data = data.filter((b) => b.status === status);
       }
@@ -103,6 +108,10 @@ export default function Booking() {
       );
     }
     data.sort((a, b) => {
+      if (status === "recent") {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+
       const aStart = toDateOnly(a.startDate);
       const bStart = toDateOnly(b.startDate);
 
@@ -130,7 +139,7 @@ export default function Booking() {
   const loadBookings = async () => {
     try {
       const params = {};
-      if (status !== "all" && status !== "upcoming") {
+      if (status !== "all" && status !== "upcoming" && status !== "recent") {
         params.status = status;
       }
       const data = await listBookingsAdmin(params);
@@ -167,6 +176,7 @@ export default function Booking() {
             </SelectTrigger>
             <SelectContent className="bg-white">
               <SelectItem value="all">All</SelectItem>
+              <SelectItem value="recent">Recent</SelectItem>
               <SelectItem value="confirmed">Paid</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="upcoming">Upcoming</SelectItem>
@@ -203,6 +213,7 @@ export default function Booking() {
           <div className="relative overflow-x-auto">
             <BookingTable
               bookings={visible}
+              groupByRecent={status === "recent"}
               onRowClick={async (b) => {
                 try {
                   const full = await getBookingAdmin(b._id);
@@ -232,27 +243,42 @@ export default function Booking() {
 
         {/* MOBILE VIEW */}
         <div className="sm:hidden space-y-3">
-          {visible.map((b) => (
-            <MobileBookingCard
-              key={b._id}
-              booking={b}
-              onOpen={async (b) => {
-                try {
-                  const full = await getBookingAdmin(b._id);
-                  setSelectedBooking(full);
-                } catch {
-                  toast.error("Failed to load booking details");
-                }
-              }}
-              onViewInvoice={(booking) =>
-                navigate(`/bookings/${booking._id}/invoice`)
-              }
-              onDownloadInvoice={(b) => {
-                downloadInvoiceDirect(b._id);
-              }}
-              onEditBooking={(b) => setEditBooking(b)}
-            />
-          ))}
+          {visible.map((b, index) => {
+            const currentLabel = recentGroupLabel(b.createdAt);
+            const previousLabel =
+              index > 0 ? recentGroupLabel(visible[index - 1].createdAt) : null;
+            const showRecentHeader =
+              status === "recent" && currentLabel !== previousLabel;
+
+            return (
+              <div key={b._id} className="space-y-3">
+                {showRecentHeader && (
+                  <div className="px-1 pt-1 text-sm font-semibold text-foreground">
+                    {currentLabel}
+                  </div>
+                )}
+
+                <MobileBookingCard
+                  booking={b}
+                  onOpen={async (b) => {
+                    try {
+                      const full = await getBookingAdmin(b._id);
+                      setSelectedBooking(full);
+                    } catch {
+                      toast.error("Failed to load booking details");
+                    }
+                  }}
+                  onViewInvoice={(booking) =>
+                    navigate(`/bookings/${booking._id}/invoice`)
+                  }
+                  onDownloadInvoice={(b) => {
+                    downloadInvoiceDirect(b._id);
+                  }}
+                  onEditBooking={(b) => setEditBooking(b)}
+                />
+              </div>
+            );
+          })}
         </div>
 
 

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { format } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
 import {
@@ -7,11 +8,12 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { useMemo } from "react";
-
 
 const dateFmt = (d) =>
-  d ? format(new Date(d), "dd MMM yy") : "—";
+  d ? format(new Date(d), "dd MMM yy") : "-";
+
+const recentGroupLabel = (d) =>
+  d ? format(new Date(d), "dd MMMM yyyy") : "Unknown Date";
 
 const StatusChip = ({ status }) => {
   const map = {
@@ -67,8 +69,6 @@ const nightsBetween = (from, to) => {
   return Math.max(1, Math.round((b - a) / 86400000));
 };
 
-
-
 export default function BookingTable({
   bookings,
   onRowClick,
@@ -76,8 +76,9 @@ export default function BookingTable({
   onDownloadInvoice,
   onEditBooking,
   onCancelBooking,
+  groupByRecent = false,
 }) {
-
+  let lastRecentLabel = null;
 
   return (
     <div className="bg-card border rounded-xl overflow-x-auto">
@@ -91,7 +92,7 @@ export default function BookingTable({
             <th className="px-4 py-3 text-left">Check out</th>
             <th className="px-4 py-3 text-center">Nights</th>
             <th className="px-4 py-3 text-left">Guests</th>
-            <th className="px-4 py-3 text-right">Amount(₹)</th>
+            <th className="px-4 py-3 text-right">Amount (Rs.)</th>
             <th className="px-4 py-3 text-center">Payment</th>
             <th />
           </tr>
@@ -100,133 +101,137 @@ export default function BookingTable({
         <tbody>
           {bookings.map((b) => {
             const guests = guestLabel(b);
+            const recentLabel = recentGroupLabel(b.createdAt);
+            const showRecentHeader =
+              groupByRecent && recentLabel !== lastRecentLabel;
+
+            if (groupByRecent) {
+              lastRecentLabel = recentLabel;
+            }
 
             return (
-              <tr
-                key={b._id}
-                onClick={() => onRowClick?.(b)}
-                className="
-                  border-t
-                  hover:bg-muted/20
-                  cursor-pointer
-                "
-              >
-                {/* Booking ID */}
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-green-500" />
-                    <span className="font-medium">
-                      #{b._id.slice(-6)}
-                    </span>
-                  </div>
-                </td>
+              <Fragment key={b._id}>
+                {showRecentHeader && (
+                  <tr className="border-t bg-muted/20">
+                    <td
+                      colSpan={10}
+                      className="px-4 py-3 text-sm font-semibold text-foreground"
+                    >
+                      {recentLabel}
+                    </td>
+                  </tr>
+                )}
 
-                {/* Guest */}
-                <td className="px-4 py-4">
-                  <div className="font-medium">{b.user?.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {b.user?.phone}
-                  </div>
-                </td>
+                <tr
+                  onClick={() => onRowClick?.(b)}
+                  className="border-t hover:bg-muted/20 cursor-pointer"
+                >
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                      <span className="font-medium">#{b._id.slice(-6)}</span>
+                    </div>
+                  </td>
 
-                {/* Room */}
-                <td className="px-4 py-4">
-                  {b.isVilla ? "Entire Villa" : b.room?.name || "—"}
-                </td>
+                  <td className="px-4 py-4">
+                    <div className="font-medium">{b.user?.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {b.user?.phone}
+                    </div>
+                  </td>
 
-                {/* Dates */}
-                <td className="px-4 py-4">{dateFmt(b.startDate)}</td>
-                <td className="px-4 py-4">{dateFmt(b.endDate)}</td>
+                  <td className="px-4 py-4">
+                    {b.isVilla ? "Entire Villa" : b.room?.name || "-"}
+                  </td>
 
-                {/* Nights */}
-                <td className="px-4 py-4 text-center">
-                  {nightsBetween(b.startDate, b.endDate)}
-                </td>
+                  <td className="px-4 py-4">{dateFmt(b.startDate)}</td>
+                  <td className="px-4 py-4">{dateFmt(b.endDate)}</td>
 
-                {/* Guests */}
-                <td className="px-4 py-4">
-                  <div>{guests.main}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {guests.sub}
-                  </div>
-                </td>
+                  <td className="px-4 py-4 text-center">
+                    {nightsBetween(b.startDate, b.endDate)}
+                  </td>
 
-                {/* Amount */}
-                <td className="px-4 py-4 text-right font-medium">
-                  {b.amount?.toLocaleString("en-IN")}
-                </td>
+                  <td className="px-4 py-4">
+                    <div>{guests.main}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {guests.sub}
+                    </div>
+                  </td>
 
-                {/* Payment */}
-                <td className="px-4 py-4 text-center">
-                  <StatusChip status={b.status} />
-                </td>
+                  <td className="px-4 py-4 text-right font-medium">
+                    {b.amount?.toLocaleString("en-IN")}
+                  </td>
 
-                {/* Actions */}
-                <td className="px-4 py-4 text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-1 rounded-md hover:bg-muted"
-                      >
-                        <MoreHorizontal size={18} />
-                      </button>
-                    </DropdownMenuTrigger>
+                  <td className="px-4 py-4 text-center">
+                    <StatusChip status={b.status} />
+                  </td>
 
-                    <DropdownMenuContent align="end" className="bg-white">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRowClick?.(b);
-                        }}
-                      >
-                        View Booking
-                      </DropdownMenuItem>
+                  <td className="px-4 py-4 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-1 rounded-md hover:bg-muted"
+                        >
+                          <MoreHorizontal size={18} />
+                        </button>
+                      </DropdownMenuTrigger>
 
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditBooking?.(b);
-                        }}
-                      >
-                        Edit Booking
-                      </DropdownMenuItem>
+                      <DropdownMenuContent align="end" className="bg-white">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRowClick?.(b);
+                          }}
+                        >
+                          View Booking
+                        </DropdownMenuItem>
 
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onViewInvoice?.(b);
-                        }}
-                      >
-                        View Invoice
-                      </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditBooking?.(b);
+                          }}
+                        >
+                          Edit Booking
+                        </DropdownMenuItem>
 
-                      <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewInvoice?.(b);
+                          }}
+                        >
+                          View Invoice
+                        </DropdownMenuItem>
 
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDownloadInvoice?.(b);
-                        }}
-                      >
-                        Download Invoice
-                      </DropdownMenuItem>
+                        <DropdownMenuSeparator />
 
-                      <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDownloadInvoice?.(b);
+                          }}
+                        >
+                          Download Invoice
+                        </DropdownMenuItem>
 
-                      <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onCancelBooking?.(b);
-                        }}
-                      >
-                        Cancel Booking
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>
-              </tr>
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCancelBooking?.(b);
+                          }}
+                        >
+                          Cancel Booking
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              </Fragment>
             );
           })}
         </tbody>

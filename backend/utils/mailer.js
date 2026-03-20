@@ -113,6 +113,7 @@ const renderBookingEmailHtml = ({
   heading,
   footerText,
   ctaLabel,
+  ctaHref,
   subjectLabel,
   booking,
   room,
@@ -262,7 +263,7 @@ const renderBookingEmailHtml = ({
 
         <tr>
           <td align="center" style="padding:18px 28px 24px;">
-            <a href="https://booking.villagulposh.com" style="background:#1f5f54;color:#ffffff;padding:16px 26px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">${ctaLabel}</a>
+            <a href="${ctaHref}" style="background:#1f5f54;color:#ffffff;padding:16px 26px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">${ctaLabel}</a>
           </td>
         </tr>
 
@@ -378,6 +379,7 @@ export const sendBookingConfirmationMail = async ({ to, name, booking, room }) =
       heading: "Booking Confirmed!",
       footerText: "We look forward to welcoming you. - Team Gulposh",
       ctaLabel: "View Full Booking Details ->",
+      ctaHref: "https://booking.villagulposh.com",
       subjectLabel: "Booking confirmed",
       booking,
       room,
@@ -400,6 +402,7 @@ export const sendAdminBookingNotificationMail = async ({
       heading: "New Booking Received",
       footerText: "This is an automated admin notification from Villa Gulposh.",
       ctaLabel: "Open Booking Portal ->",
+      ctaHref: "https://admin.villagulposh.com/",
       subjectLabel: "New booking received",
       booking,
       room,
