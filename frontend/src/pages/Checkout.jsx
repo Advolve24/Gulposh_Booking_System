@@ -1283,7 +1283,7 @@ export default function Checkout() {
           <Dialog open={policyDialogOpen} onOpenChange={setPolicyDialogOpen}>
             <DialogContent className="max-w-md rounded-2xl border border-border bg-white p-0 text-foreground">
               <DialogHeader className="px-6 pt-6 text-left">
-                <DialogTitle className="text-3xl font-semibold text-foreground">
+                <DialogTitle className="text-[22px] font-semibold text-foreground">
                   Policies
                 </DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground">
@@ -1299,7 +1299,7 @@ export default function Checkout() {
                       to={policy.to}
                       target="_blank"
                       rel="noreferrer"
-                      className="block text-lg text-foreground transition-colors hover:text-red-700"
+                      className="block text-[16px] text-foreground transition-colors hover:text-red-700"
                     >
                       {policy.label}
                     </Link>
