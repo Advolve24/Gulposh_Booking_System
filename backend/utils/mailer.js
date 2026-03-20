@@ -131,7 +131,7 @@ const renderBookingEmailHtml = ({
             <table width="100%">
               <tr>
                 <td width="48" valign="top">
-                  <div style="width:44px;height:44px;background:#ffffff22;border-radius:50%;text-align:center;line-height:44px;font-size:22px;color:#ffffff;font-weight:bold;">+</div>
+                  <div style="width:44px;height:44px;background:#ffffff22;border-radius:50%;text-align:center;line-height:44px;font-size:22px;color:#ffffff;font-weight:bold;">&#10003;</div>
                 </td>
                 <td style="padding-left:14px;">
                   <h1 style="margin:0;font-size:22px;color:#ffffff;font-weight:600;">${heading}</h1>
@@ -289,6 +289,20 @@ const renderCancellationEmailHtml = ({
 }) => {
   const meta = getBookingMailMeta({ booking, room });
   const cancellation = booking.cancellation || {};
+  const guestName =
+    booking.contactName ||
+    booking.userSnapshot?.name ||
+    booking.user?.name ||
+    "Guest";
+  const guestPhone =
+    booking.contactPhone ||
+    booking.userSnapshot?.phone ||
+    booking.user?.phone ||
+    "-";
+  const cancelledByLabel =
+    cancellation.cancelledBy === "user"
+      ? `${guestName} (${guestPhone})`
+      : "Admin";
 
   return renderMailShell({
     preheader: subjectLabel,
@@ -323,7 +337,7 @@ const renderCancellationEmailHtml = ({
               </tr>
               <tr>
                 <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Cancelled By</td>
-                <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;text-transform:capitalize;">${cancellation.cancelledBy || "-"}</td>
+                <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">${cancelledByLabel}</td>
               </tr>
               <tr>
                 <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Reason</td>
