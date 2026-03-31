@@ -27,29 +27,46 @@ const nightsBetween = (start, end) => {
   return Math.max(0, Math.round((e - s) / 86400000));
 };
 
-const addDays = (date, days) => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
+const getRoomBasePerNight = (room, taxPercent) => {
+  if (!room) return 0;
+  if (room.taxMode === "included") {
+    return Number(
+      (Number(room.pricePerNight || 0) / (1 + Number(taxPercent || 0) / 100)).toFixed(2)
+    );
+  }
+  return Number(room.pricePerNight || 0);
 };
 
-const isFridayStartWithSundayAdded = (start, end) => {
-  if (!start || !end) return false;
+const analyzeWeekendStay = (start, end) => {
+  if (!start || !end) return 0;
 
-  const startDate = toDateOnly(start);
-  const endDate = toDateOnly(end);
+  const stayStart = toDateOnly(start);
+  const stayEndExclusive = toDateOnly(end);
+  let fridayNights = 0;
+  let saturdayNights = 0;
+  let sundayNights = 0;
 
-  if (startDate.getDay() !== 5) return false;
+  for (
+    let cursor = new Date(stayStart);
+    cursor < stayEndExclusive;
+    cursor.setDate(cursor.getDate() + 1)
+  ) {
+    const day = cursor.getDay();
+    if (day === 5) fridayNights += 1;
+    if (day === 6) saturdayNights += 1;
+    if (day === 0) sundayNights += 1;
+  }
 
-  const mondayCheckout = new Date(startDate);
-  mondayCheckout.setDate(mondayCheckout.getDate() + 3);
+  const hasFridayOrSaturday = fridayNights > 0 || saturdayNights > 0;
+  const unlocked = hasFridayOrSaturday && sundayNights > 0;
 
-  return endDate >= mondayCheckout;
-};
-
-const getWeekendEligibleNights = (start, end) => {
-  if (!isFridayStartWithSundayAdded(start, end)) return 0;
-  return Math.min(3, nightsBetween(start, end));
+  return {
+    fridayNights,
+    saturdayNights,
+    sundayNights,
+    unlocked,
+    eligibleNights: unlocked ? fridayNights + saturdayNights + sundayNights : 0,
+  };
 };
 
 const getDiscountBreakup = ({
@@ -79,19 +96,18 @@ const getDiscountBreakup = ({
 
   const weekendDiscountEnabled = Boolean(discountSettings?.weekendDiscountEnabled);
   const weekendDiscountPercent = Number(discountSettings?.weekendDiscountPercent || 0);
-  const weekendEligibleNights = getWeekendEligibleNights(startDate, endDate);
+  const weekendStay = analyzeWeekendStay(startDate, endDate);
+  const weekendEligibleNights = weekendStay.eligibleNights;
+  const roomBasePerNight = getRoomBasePerNight(room, discountSettings?.taxPercent);
   const weekendEligible =
     weekendDiscountEnabled &&
     weekendDiscountPercent > 0 &&
     weekendEligibleNights > 0;
 
   const postCouponSubtotal = Math.max(0, subTotal - couponDiscountAmount);
-  const weekendEligibleSubtotal =
-    totalNights > 0
-      ? Number(
-          ((postCouponSubtotal * weekendEligibleNights) / totalNights).toFixed(2)
-        )
-      : 0;
+  const weekendEligibleSubtotal = Number(
+    (roomBasePerNight * weekendEligibleNights).toFixed(2)
+  );
   const weekendDiscountAmount = weekendEligible
     ? Math.round((weekendEligibleSubtotal * weekendDiscountPercent) / 100)
     : 0;

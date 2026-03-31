@@ -35,33 +35,61 @@ function minusOneDay(date) {
   return d;
 }
 
-function isFriday(date) {
-  return date instanceof Date && !Number.isNaN(date) && date.getDay() === 5;
-}
+function getWeekendOfferState(range, percent = 0) {
+  if (!range?.from || !range?.to) return null;
 
-function getSuggestedSundayCheckout(fromDate) {
-  if (!fromDate) return null;
-  const suggested = new Date(fromDate);
-  suggested.setDate(suggested.getDate() + 3);
-  return suggested;
-}
+  const stayStart = normalizeDateStart(range.from);
+  const stayEndExclusive = normalizeDateStart(range.to);
+  let fridayNights = 0;
+  let saturdayNights = 0;
+  let sundayNights = 0;
+  let lastFridayOrSaturday = null;
 
-function getWeekendEligibleNights(range) {
-  if (!range?.from || !range?.to) return 0;
-  if (!isFriday(range.from)) return 0;
+  for (
+    let cursor = new Date(stayStart);
+    cursor < stayEndExclusive;
+    cursor.setDate(cursor.getDate() + 1)
+  ) {
+    const day = cursor.getDay();
+    if (day === 5) {
+      fridayNights += 1;
+      lastFridayOrSaturday = new Date(cursor);
+    }
+    if (day === 6) {
+      saturdayNights += 1;
+      lastFridayOrSaturday = new Date(cursor);
+    }
+    if (day === 0) sundayNights += 1;
+  }
 
-  const suggestedCheckout = getSuggestedSundayCheckout(range.from);
-  if (!suggestedCheckout || new Date(range.to) < suggestedCheckout) return 0;
+  const hasFridayOrSaturday = fridayNights > 0 || saturdayNights > 0;
+  const eligible = hasFridayOrSaturday && sundayNights > 0;
+  const eligibleNights = eligible ? fridayNights + saturdayNights + sundayNights : 0;
 
-  const totalNights = Math.max(
-    0,
-    Math.round(
-      (normalizeDateStart(range.to) - normalizeDateStart(range.from)) /
-        (1000 * 60 * 60 * 24)
-    )
-  );
+  let suggestedCheckout = null;
+  if (!eligible && hasFridayOrSaturday && lastFridayOrSaturday) {
+    suggestedCheckout = new Date(lastFridayOrSaturday);
+    if (suggestedCheckout.getDay() === 5) {
+      suggestedCheckout.setDate(suggestedCheckout.getDate() + 3);
+    } else if (suggestedCheckout.getDay() === 6) {
+      suggestedCheckout.setDate(suggestedCheckout.getDate() + 2);
+    }
+  }
 
-  return Math.min(3, totalNights);
+  return {
+    eligible,
+    canSuggest: Boolean(suggestedCheckout && suggestedCheckout > stayEndExclusive),
+    percent,
+    eligibleNights,
+    suggestedCheckout,
+    suggestedCheckoutLabel: suggestedCheckout
+      ? suggestedCheckout.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "",
+  };
 }
 
 function normalizeDateStart(dateLike) {
@@ -106,9 +134,11 @@ function getOfferEligibleNights(offer, range) {
 
 const INR = (num) =>
   `₹${Number(num || 0).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   })}`;
+
+const roundedRupee = (num) => Math.round(Number(num || 0));
 
 export default function Checkout() {
   const { state } = useLocation();
@@ -349,6 +379,11 @@ export default function Checkout() {
     return nights * priceBreakup.base;
   }, [room, nights, priceBreakup]);
 
+  const roomGrossTotal = useMemo(() => {
+    if (!room) return 0;
+    return nights * Number(room.pricePerNight || 0);
+  }, [room, nights]);
+
   const mealTotal = useMemo(() => {
     if (!room) return 0;
     if (room.mealMode === "only") return 0;
@@ -367,28 +402,11 @@ export default function Checkout() {
   }, [roomTotal, mealTotal]);
 
   const weekendOffer = useMemo(() => {
-    if (!weekendDiscountEnabled || weekendDiscountPercent <= 0 || !range?.from) {
+    if (!weekendDiscountEnabled || weekendDiscountPercent <= 0 || !range?.from || !range?.to) {
       return null;
     }
 
-    if (!isFriday(range.from)) {
-      return null;
-    }
-
-    const suggestedCheckout = getSuggestedSundayCheckout(range.from);
-    const eligible = range?.to ? new Date(range.to) >= suggestedCheckout : false;
-
-    return {
-      eligible,
-      canSuggest: !eligible,
-      percent: weekendDiscountPercent,
-      suggestedCheckout,
-      suggestedCheckoutLabel: suggestedCheckout.toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-    };
+    return getWeekendOfferState(range, weekendDiscountPercent);
   }, [weekendDiscountEnabled, weekendDiscountPercent, range]);
 
   const couponDiscountAmount = useMemo(() => {
@@ -396,8 +414,11 @@ export default function Checkout() {
     if (!couponApplied) return 0;
     if (couponCode !== room.discountCode) return 0;
 
+    const couponBaseAmount =
+      room?.taxMode === "included" ? roomGrossTotal + mealTotal : subTotal;
+
     if (room.discountType === "percent") {
-      return Math.round((subTotal * room.discountValue) / 100);
+      return Math.round((couponBaseAmount * room.discountValue) / 100);
     }
 
     if (room.discountType === "flat") {
@@ -405,21 +426,19 @@ export default function Checkout() {
     }
 
     return 0;
-  }, [hasRoomCoupon, couponApplied, couponCode, room, subTotal]);
+  }, [hasRoomCoupon, couponApplied, couponCode, mealTotal, room, roomGrossTotal, subTotal]);
 
   const weekendDiscountAmount = useMemo(() => {
     if (!weekendOffer?.eligible) return 0;
-    const eligibleWeekendNights = getWeekendEligibleNights(range);
-    if (eligibleWeekendNights <= 0 || nights <= 0) return 0;
-    const subtotalAfterCoupon = Math.max(0, subTotal - couponDiscountAmount);
-    const eligibleWeekendSubtotal =
-      (subtotalAfterCoupon * eligibleWeekendNights) / nights;
+    const eligibleWeekendNights = weekendOffer.eligibleNights;
+    if (eligibleWeekendNights <= 0 || !room) return 0;
+    const eligibleWeekendSubtotal = priceBreakup.base * eligibleWeekendNights;
     return Math.round((eligibleWeekendSubtotal * weekendOffer.percent) / 100);
-  }, [couponDiscountAmount, nights, range, subTotal, weekendOffer]);
+  }, [priceBreakup.base, room, weekendOffer]);
 
   const weekendEligibleNights = useMemo(
-    () => getWeekendEligibleNights(range),
-    [range]
+    () => weekendOffer?.eligibleNights || 0,
+    [weekendOffer]
   );
 
   const specialOfferEligibleNights = useMemo(
@@ -969,9 +988,11 @@ export default function Checkout() {
                   <div className="flex justify-between">
                     <span>
                       Room ({nights} nights × ₹
-                      {room?.taxMode === "included"
-                        ? priceBreakup.base.toFixed(2)
-                        : room?.pricePerNight})
+                      {roundedRupee(
+                        room?.taxMode === "included"
+                          ? priceBreakup.base
+                          : room?.pricePerNight
+                      )})
                     </span>
                     <span>
                       {INR(roomTotal)}
@@ -1199,11 +1220,10 @@ export default function Checkout() {
               {weekendOffer?.canSuggest && (
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
                   <p className="font-medium">
-                    Add Sunday night and get {weekendOffer.percent}% off.
+                    Add Sunday and save {weekendOffer.percent}% on eligible weekend nights.
                   </p>
                   <p className="mt-1 text-xs text-green-700">
-                    Extend checkout till {weekendOffer.suggestedCheckoutLabel} to
-                    unlock this discount on the booking subtotal.
+                    Extend checkout till {weekendOffer.suggestedCheckoutLabel} to include Sunday night and unlock the weekend offer.
                   </p>
                   <Button
                     type="button"
@@ -1278,6 +1298,12 @@ export default function Checkout() {
                     Include Meals
                   </span>
                 </Label>
+              )}
+
+              {withMeal && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <span className="font-medium">Meal Assurance:</span> All guest meals are pre-arranged with a focus on quality, hygiene, and comfort.
+                </div>
               )}
 
 
