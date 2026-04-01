@@ -77,18 +77,22 @@ function RoomNightlyPrices({ room, align = "right", compact = false }) {
       : align === "left"
         ? "text-left"
         : "text-left sm:text-right";
-  const priceClass = compact ? "text-sm font-semibold" : "text-lg sm:text-xl font-semibold";
+  const priceClass = compact ? "text-xl font-semibold" : "text-lg sm:text-xl font-semibold";
 
   return (
-    <div className={`space-y-2 ${wrapperClass}`}>
+    <div className={`flex items-center justify-between ${wrapperClass}`}>
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground">
           Weekdays
         </div>
         <div className={priceClass}>
           {formatCurrency(weekdayPrice)}
-          <span className="text-sm font-normal text-muted-foreground"> /night</span>
+          <span className="text-sm font-normal text-muted-foreground"> /N</span>
         </div>
+      </div>
+
+      <div className="w-[1px] border h-[28px]">
+
       </div>
 
       <div>
@@ -98,7 +102,7 @@ function RoomNightlyPrices({ room, align = "right", compact = false }) {
         </div>
         <div className={priceClass}>
           {formatCurrency(weekendPrice)}
-          <span className="text-sm font-normal text-muted-foreground"> /night</span>
+          <span className="text-sm font-normal text-muted-foreground"> /N</span>
         </div>
       </div>
     </div>
@@ -133,6 +137,7 @@ function BookingCard({
             value={range}
             onChange={setRange}
             disabledRanges={disabledAll}
+            showWeekdayInBox
           />
         </div>
 
@@ -536,7 +541,7 @@ export default function RoomPage() {
         </div>
 
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:justify-between gap-3 items-center">
           <div className="mt-4">
             <h1 className="text-xl sm:text-2xl font-bold">{room.name}</h1>
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -553,7 +558,9 @@ export default function RoomPage() {
             )}
           </div>
 
-          <RoomNightlyPrices room={room} />
+          <div className="rounded-2xl border border-[#eadfd6] bg-white p-4 md:w-[34%] ">
+              <RoomNightlyPrices room={room} align="left" compact />
+            </div>
         </div>
 
         {/* GRID */}
@@ -728,9 +735,8 @@ export default function RoomPage() {
 
           {/* RIGHT – BOOKING CARD (✅ SAME AS HOMEPAGE CALENDAR) */}
           <div className="hidden md:block w-[34%] sticky top-24 h-fit space-y-4">
-            <div className="rounded-2xl border border-[#eadfd6] bg-white p-4">
-              <RoomNightlyPrices room={room} align="left" compact />
-            </div>
+
+
 
             <div className="border border-[#eadfd6] rounded-2xl p-5 space-y-5 bg-white">
               {/* SAME CALENDAR RANGE AS HOMEPAGE (popover with date boxes) */}
@@ -742,7 +748,8 @@ export default function RoomPage() {
               <CalendarRange
                 value={range}
                 onChange={setRange}
-                disabledRanges={disabledAll} // ✅ global blocked+booked+blackouts
+                disabledRanges={disabledAll}
+                showWeekdayInBox
               />
               </div>
 

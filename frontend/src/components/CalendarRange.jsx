@@ -36,6 +36,7 @@ export default function CalendarRange({
   onChange,
   disabledRanges,
   inline = false,
+  showWeekdayInBox = false,
 }) {
   const monthRefs = useRef([]);
   const [roomRanges, setRoomRanges] = useState([]);
@@ -378,8 +379,16 @@ export default function CalendarRange({
     return (
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-3">
-          <DateBox label="Check in" value={value?.from} />
-          <DateBox label="Check out" value={value?.to} />
+          <DateBox
+            label="Check in"
+            value={value?.from}
+            showWeekday={showWeekdayInBox}
+          />
+          <DateBox
+            label="Check out"
+            value={value?.to}
+            showWeekday={showWeekdayInBox}
+          />
         </div>
         <div className="border rounded-xl bg-card">{calendarUI}</div>
       </div>
@@ -398,10 +407,18 @@ export default function CalendarRange({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full h-14 grid grid-cols-2 rounded-xl"
+          className="grid w-full grid-cols-2 rounded-xl py-3 h-auto"
         >
-          <DateBox label="Check in" value={value?.from} />
-          <DateBox label="Check out" value={value?.to} />
+          <DateBox
+            label="Check in"
+            value={value?.from}
+            showWeekday={showWeekdayInBox}
+          />
+          <DateBox
+            label="Check out"
+            value={value?.to}
+            showWeekday={showWeekdayInBox}
+          />
         </Button>
       </PopoverTrigger>
 
@@ -414,14 +431,19 @@ export default function CalendarRange({
 }
 
 
-function DateBox({ label, value }) {
+function DateBox({ label, value, showWeekday = false }) {
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex min-h-[52px] flex-col items-center justify-center">
       <span className="text-[11px] uppercase">{label}</span>
       <span className="flex items-center gap-2 text-sm">
         <CalendarDays size={14} />
         {value ? format(value, "dd MMM yyyy") : "Add date"}
       </span>
+      {showWeekday && value && (
+        <span className="mt-1 text-[11px] text-muted-foreground">
+          {format(value, "EEEE")}
+        </span>
+      )}
     </div>
   );
 }

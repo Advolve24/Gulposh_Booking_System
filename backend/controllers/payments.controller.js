@@ -261,8 +261,22 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
+    const taxSetting = await TaxSetting.findOne();
+    if (!taxSetting) {
+      return res.status(500).json({ message: "Tax configuration missing" });
+    }
+
     const pricingBreakdown = getRoomPricingBreakdown(room, sDate, eDate);
-    const roomTotal = pricingBreakdown.roomTotal;
+    const roomGrossTotal = Number(pricingBreakdown.roomTotal || 0);
+    const roomTotal =
+      room.taxMode === "included"
+        ? Number(
+            (
+              roomGrossTotal /
+              (1 + Number(taxSetting.taxPercent || 0) / 100)
+            ).toFixed(2)
+          )
+        : roomGrossTotal;
 
     const mealTotal = withMeal
       ? nights *
@@ -271,11 +285,6 @@ export const createOrder = async (req, res) => {
       : 0;
 
     const subTotal = roomTotal + mealTotal;
-
-    const taxSetting = await TaxSetting.findOne();
-    if (!taxSetting) {
-      return res.status(500).json({ message: "Tax configuration missing" });
-    }
 
     const currentUser = await User.findById(userId).select("email phone");
     const specialOffer = await getEligibleSpecialOffer(currentUser, sDate, eDate);
@@ -299,28 +308,17 @@ export const createOrder = async (req, res) => {
     let sgstAmount = 0;
     let totalTax = 0;
 
-    if (room.taxMode === "included") {
-      const base = finalDiscountedSubtotal / (1 + taxSetting.taxPercent / 100);
-      totalTax = finalDiscountedSubtotal - base;
+    cgstAmount = Number(
+      ((finalDiscountedSubtotal * cgstPercent) / 100).toFixed(2)
+    );
 
-      cgstAmount = Number((totalTax / 2).toFixed(2));
-      sgstAmount = Number((totalTax / 2).toFixed(2));
-    } else {
-      cgstAmount = Number(
-        ((finalDiscountedSubtotal * cgstPercent) / 100).toFixed(2)
-      );
+    sgstAmount = Number(
+      ((finalDiscountedSubtotal * sgstPercent) / 100).toFixed(2)
+    );
 
-      sgstAmount = Number(
-        ((finalDiscountedSubtotal * sgstPercent) / 100).toFixed(2)
-      );
+    totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
 
-      totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
-    }
-
-    const grandTotal =
-      room.taxMode === "included"
-        ? finalDiscountedSubtotal
-        : Number((finalDiscountedSubtotal + totalTax).toFixed(2));
+    const grandTotal = Math.round(finalDiscountedSubtotal + totalTax);
 
     const amountPaise = Math.round(grandTotal * 100);
     if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
@@ -450,8 +448,22 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
+    const taxSetting = await TaxSetting.findOne();
+    if (!taxSetting) {
+      return res.status(500).json({ message: "Tax configuration missing" });
+    }
+
     const pricingBreakdown = getRoomPricingBreakdown(room, sDate, eDate);
-    const roomTotal = pricingBreakdown.roomTotal;
+    const roomGrossTotal = Number(pricingBreakdown.roomTotal || 0);
+    const roomTotal =
+      room.taxMode === "included"
+        ? Number(
+            (
+              roomGrossTotal /
+              (1 + Number(taxSetting.taxPercent || 0) / 100)
+            ).toFixed(2)
+          )
+        : roomGrossTotal;
     let mealTotal = 0;
 
     if (room.mealMode === "only") {
@@ -466,11 +478,6 @@ export const verifyPayment = async (req, res) => {
     }
 
     const subTotal = roomTotal + mealTotal;
-
-    const taxSetting = await TaxSetting.findOne();
-    if (!taxSetting) {
-      return res.status(500).json({ message: "Tax configuration missing" });
-    }
 
     const specialOffer = await getEligibleSpecialOffer(user, sDate, eDate);
 
@@ -492,32 +499,19 @@ export const verifyPayment = async (req, res) => {
     let cgstAmount = 0;
     let sgstAmount = 0;
     let totalTax = 0;
-    let taxableAmount = discountedSubtotal;
+    const taxableAmount = discountedSubtotal;
 
-    if (room.taxMode === "included") {
-      const base = discountedSubtotal / (1 + taxSetting.taxPercent / 100);
-      totalTax = discountedSubtotal - base;
+    cgstAmount = Number(
+      ((taxableAmount * cgstPercent) / 100).toFixed(2)
+    );
 
-      cgstAmount = Number((totalTax / 2).toFixed(2));
-      sgstAmount = Number((totalTax / 2).toFixed(2));
+    sgstAmount = Number(
+      ((taxableAmount * sgstPercent) / 100).toFixed(2)
+    );
 
-      taxableAmount = discountedSubtotal - totalTax;
-    } else {
-      cgstAmount = Number(
-        ((discountedSubtotal * cgstPercent) / 100).toFixed(2)
-      );
+    totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
 
-      sgstAmount = Number(
-        ((discountedSubtotal * sgstPercent) / 100).toFixed(2)
-      );
-
-      totalTax = Number((cgstAmount + sgstAmount).toFixed(2));
-    }
-
-    const grandTotal =
-      room.taxMode === "included"
-        ? discountedSubtotal
-        : Number((discountedSubtotal + totalTax).toFixed(2));
+    const grandTotal = Math.round(discountedSubtotal + totalTax);
 
     const overlap = await Booking.findOne({
       room: room._id,
@@ -546,7 +540,8 @@ export const verifyPayment = async (req, res) => {
       guests,
       adults,
       children,
-      pricePerNight: pricingBreakdown.averagePricePerNight,
+      pricePerNight:
+        nights > 0 ? Number((roomTotal / nights).toFixed(2)) : 0,
       roomTotal,
       pricingMeta: getRoomPricingMeta(room, sDate, eDate),
       withMeal: !!withMeal,

@@ -28,6 +28,7 @@ import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 import { getWeekendOfferState } from "../lib/weekendOffer";
+import { getRoomPricingBreakdown } from "../lib/roomPricing";
 
 
 function minusOneDay(date) {
@@ -302,41 +303,18 @@ export default function Checkout() {
   }, [range]);
 
 
-  const priceBreakup = useMemo(() => {
-    if (!room) return { base: 0, gst: 0, cgst: 0, sgst: 0 };
-
-    if (room.taxMode === "included") {
-      const base = room.pricePerNight / (1 + taxPercent / 100);
-      const gst = room.pricePerNight - base;
-
-      const cgst = gst / 2;
-      const sgst = gst / 2;
-
-      return {
-        base: Number(base.toFixed(2)),
-        gst: Number(gst.toFixed(2)),
-        cgst: Number(cgst.toFixed(2)),
-        sgst: Number(sgst.toFixed(2)),
-      };
-    }
-    const gst = (room.pricePerNight * taxPercent) / 100;
-    return {
-      base: room.pricePerNight,
-      gst,
-      cgst: gst / 2,
-      sgst: gst / 2,
-    };
-  }, [room, taxPercent]);
+  const roomPricing = useMemo(
+    () => getRoomPricingBreakdown(room, range, taxPercent),
+    [room, range, taxPercent]
+  );
 
   const roomTotal = useMemo(() => {
-    if (!room) return 0;
-    return nights * priceBreakup.base;
-  }, [room, nights, priceBreakup]);
+    return roomPricing.baseTotal;
+  }, [roomPricing]);
 
-  const roomGrossTotal = useMemo(() => {
-    if (!room) return 0;
-    return nights * Number(room.pricePerNight || 0);
-  }, [room, nights]);
+  const roomChargeTotal = useMemo(() => {
+    return roomTotal;
+  }, [roomTotal]);
 
   const mealTotal = useMemo(() => {
     if (!room) return 0;
@@ -352,8 +330,8 @@ export default function Checkout() {
   }, [room, nights, withMeal, vegGuests, nonVegGuests]);
 
   const subTotal = useMemo(() => {
-    return roomTotal + mealTotal;
-  }, [roomTotal, mealTotal]);
+    return roomChargeTotal + mealTotal;
+  }, [roomChargeTotal, mealTotal]);
 
   const weekendOffer = useMemo(() => {
     if (!range?.from || !range?.to) {
@@ -367,8 +345,7 @@ export default function Checkout() {
     if (!couponApplied) return 0;
     if (couponCode !== room.discountCode) return 0;
 
-    const couponBaseAmount =
-      room?.taxMode === "included" ? roomGrossTotal + mealTotal : subTotal;
+    const couponBaseAmount = subTotal;
 
     if (room.discountType === "percent") {
       return Math.round((couponBaseAmount * room.discountValue) / 100);
@@ -379,15 +356,14 @@ export default function Checkout() {
     }
 
     return 0;
-  }, [hasRoomCoupon, couponApplied, couponCode, mealTotal, room, roomGrossTotal, subTotal]);
+  }, [hasRoomCoupon, couponApplied, couponCode, room, subTotal]);
 
   const weekendDiscountAmount = useMemo(() => {
     if (!weekendOffer?.eligible) return 0;
-    const eligibleWeekendNights = weekendOffer.eligibleNights;
-    if (eligibleWeekendNights <= 0 || !room) return 0;
-    const eligibleWeekendSubtotal = priceBreakup.base * eligibleWeekendNights;
+    if (roomPricing.weekendNights <= 0 || !room) return 0;
+    const eligibleWeekendSubtotal = roomPricing.weekendBaseTotal;
     return Math.round((eligibleWeekendSubtotal * weekendOffer.percent) / 100);
-  }, [priceBreakup.base, room, weekendOffer]);
+  }, [room, roomPricing, weekendOffer]);
 
   const weekendEligibleNights = useMemo(
     () => weekendOffer?.eligibleNights || 0,
@@ -430,44 +406,29 @@ export default function Checkout() {
   }, [subTotal, discountAmount]);
 
   const taxableAmount = useMemo(() => {
-    if (!room) return discountedSubtotal;
-    if (room.taxMode === "included") {
-      const gstPortion =
-        (discountedSubtotal * taxPercent) / (100 + taxPercent);
-
-      return discountedSubtotal - gstPortion;
-    }
     return discountedSubtotal;
-  }, [discountedSubtotal, taxPercent, room]);
+  }, [discountedSubtotal]);
 
   const cgstPercent = taxPercent / 2;
   const sgstPercent = taxPercent / 2;
 
   const cgstAmount = useMemo(() => {
     if (!room) return 0;
-    if (room.taxMode === "included") {
-      return Number((nights * priceBreakup.cgst).toFixed(2));
-    }
-    return Number(((discountedSubtotal * cgstPercent) / 100).toFixed(2));
-  }, [room, nights, priceBreakup, discountedSubtotal, cgstPercent]);
+    return Number(((taxableAmount * cgstPercent) / 100).toFixed(2));
+  }, [room, taxableAmount, cgstPercent]);
 
 
   const sgstAmount = useMemo(() => {
     if (!room) return 0;
-    if (room.taxMode === "included") {
-      return Number((nights * priceBreakup.sgst).toFixed(2));
-    }
-    return Number(((discountedSubtotal * sgstPercent) / 100).toFixed(2));
-  }, [room, nights, priceBreakup, discountedSubtotal, sgstPercent]);
+    return Number(((taxableAmount * sgstPercent) / 100).toFixed(2));
+  }, [room, taxableAmount, sgstPercent]);
 
   const totalTax = useMemo(() => cgstAmount + sgstAmount, [cgstAmount, sgstAmount]);
 
   const grandTotal = useMemo(() => {
     if (!room) return 0;
-
-    return Number((discountedSubtotal + totalTax).toFixed(2));
-
-  }, [room, discountedSubtotal, totalTax]);
+    return Number((taxableAmount + totalTax).toFixed(2));
+  }, [room, taxableAmount, totalTax]);
 
 
   const proceedPayment = async () => {
@@ -943,16 +904,16 @@ export default function Checkout() {
                       Room ({nights} nights × ₹
                       {roundedRupee(
                         room?.taxMode === "included"
-                          ? priceBreakup.base
-                          : room?.pricePerNight
+                          ? roomPricing.averageBasePerNight
+                          : roomPricing.averageGrossPerNight
                       )})
                     </span>
                     <span>
-                      {INR(roomTotal)}
+                      {INR(roomChargeTotal)}
                     </span>
                   </div>
 
-                  {room.mealMode === "price" && withMeal && (
+                  {(room.mealMode === "price" && withMeal) && (
                     <div className="flex justify-between">
                       <span>Meals</span>
                       <span>{INR(mealTotal)}</span>
@@ -1162,6 +1123,7 @@ export default function Checkout() {
                   });
                 }}
                 disabledRanges={disabledAll}
+                showWeekdayInBox
               />
 
               {!range?.from && (
@@ -1361,7 +1323,7 @@ export default function Checkout() {
               <div className="flex justify-between">
                 <span>Room Charges</span>
                 <span>
-                  <span>{INR(roomTotal)}</span>
+                  <span>{INR(roomChargeTotal)}</span>
                 </span>
               </div>
 
@@ -1374,12 +1336,12 @@ export default function Checkout() {
                 </div>
               )}
 
-              <div className="flex justify-between">
-                <span>GST</span>
-                <span>
-                  <span>{INR(totalTax)}</span>
-                </span>
-              </div>
+              {room.mealMode === "only" && (
+                <div className="flex justify-between text-green-700">
+                  <span>Meals</span>
+                  <span>Included</span>
+                </div>
+              )}
 
               {weekendDiscountAmount > 0 && (
                 <div className="flex justify-between text-green-700">
@@ -1387,6 +1349,13 @@ export default function Checkout() {
                     Weekend Discount Added ({weekendEligibleNights} night{weekendEligibleNights === 1 ? "" : "s"} @ {weekendOffer?.percent || 0}%)
                   </span>
                   <span>-{INR(weekendDiscountAmount)}</span>
+                </div>
+              )}
+
+              {couponDiscountAmount > 0 && (
+                <div className="flex justify-between text-green-700">
+                  <span>Coupon Discount</span>
+                  <span>-{INR(couponDiscountAmount)}</span>
                 </div>
               )}
 
@@ -1398,6 +1367,13 @@ export default function Checkout() {
                   <span>-{INR(specialOfferAmount)}</span>
                 </div>
               )}
+
+              <div className="flex justify-between">
+                <span>GST</span>
+                <span>
+                  <span>{INR(totalTax)}</span>
+                </span>
+              </div>
 
               <Separator />
 
