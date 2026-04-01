@@ -3,7 +3,7 @@ import TaxSetting from "../models/TaxSetting.js";
 export const getActiveTax = async (_req, res) => {
   try {
     const settings = await TaxSetting.findOne().select(
-      "taxPercent weekendDiscountEnabled weekendDiscountPercent"
+      "taxPercent weekendDiscountEnabled twoWeekendNightsDiscountPercent threeWeekendNightsDiscountPercent"
     );
 
     if (!settings) {
@@ -17,7 +17,12 @@ export const getActiveTax = async (_req, res) => {
       success: true,
       taxPercent: Number(settings.taxPercent || 0),
       weekendDiscountEnabled: !!settings.weekendDiscountEnabled,
-      weekendDiscountPercent: Number(settings.weekendDiscountPercent || 0),
+      twoWeekendNightsDiscountPercent: Number(
+        settings.twoWeekendNightsDiscountPercent || 0
+      ),
+      threeWeekendNightsDiscountPercent: Number(
+        settings.threeWeekendNightsDiscountPercent || 0
+      ),
     });
   } catch (err) {
     console.error("getActiveTax error:", err);
@@ -50,7 +55,8 @@ export const updateTax = async (req, res) => {
         $set: { taxPercent },
         $setOnInsert: {
           weekendDiscountEnabled: false,
-          weekendDiscountPercent: 0,
+          twoWeekendNightsDiscountPercent: 0,
+          threeWeekendNightsDiscountPercent: 0,
         },
       },
       { new: true, upsert: true }
@@ -73,13 +79,18 @@ export const updateTax = async (req, res) => {
 export const getDiscountConfig = async (_req, res) => {
   try {
     const settings = await TaxSetting.findOne().select(
-      "weekendDiscountEnabled weekendDiscountPercent"
+      "weekendDiscountEnabled twoWeekendNightsDiscountPercent threeWeekendNightsDiscountPercent"
     );
 
     return res.json({
       success: true,
       weekendDiscountEnabled: !!settings?.weekendDiscountEnabled,
-      weekendDiscountPercent: Number(settings?.weekendDiscountPercent || 0),
+      twoWeekendNightsDiscountPercent: Number(
+        settings?.twoWeekendNightsDiscountPercent || 0
+      ),
+      threeWeekendNightsDiscountPercent: Number(
+        settings?.threeWeekendNightsDiscountPercent || 0
+      ),
     });
   } catch (err) {
     console.error("getDiscountConfig error:", err);
@@ -92,7 +103,11 @@ export const getDiscountConfig = async (_req, res) => {
 
 export const updateDiscountConfig = async (req, res) => {
   try {
-    const { weekendDiscountEnabled, weekendDiscountPercent } = req.body || {};
+    const {
+      weekendDiscountEnabled,
+      twoWeekendNightsDiscountPercent,
+      threeWeekendNightsDiscountPercent,
+    } = req.body || {};
 
     if (typeof weekendDiscountEnabled !== "boolean") {
       return res.status(400).json({
@@ -101,11 +116,27 @@ export const updateDiscountConfig = async (req, res) => {
       });
     }
 
-    const parsedPercent = Number(weekendDiscountPercent ?? 0);
-    if (!Number.isFinite(parsedPercent) || parsedPercent < 0 || parsedPercent > 100) {
+    const parsedTwoNightPercent = Number(twoWeekendNightsDiscountPercent ?? 0);
+    const parsedThreeNightPercent = Number(threeWeekendNightsDiscountPercent ?? 0);
+    if (
+      !Number.isFinite(parsedTwoNightPercent) ||
+      parsedTwoNightPercent < 0 ||
+      parsedTwoNightPercent > 100
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Invalid discount percent (0-100 required)",
+        message: "Invalid 2-night discount percent (0-100 required)",
+      });
+    }
+
+    if (
+      !Number.isFinite(parsedThreeNightPercent) ||
+      parsedThreeNightPercent < 0 ||
+      parsedThreeNightPercent > 100
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid 3-night discount percent (0-100 required)",
       });
     }
 
@@ -114,7 +145,12 @@ export const updateDiscountConfig = async (req, res) => {
       {
         $set: {
           weekendDiscountEnabled,
-          weekendDiscountPercent: weekendDiscountEnabled ? parsedPercent : 0,
+          twoWeekendNightsDiscountPercent: weekendDiscountEnabled
+            ? parsedTwoNightPercent
+            : 0,
+          threeWeekendNightsDiscountPercent: weekendDiscountEnabled
+            ? parsedThreeNightPercent
+            : 0,
         },
         $setOnInsert: {
           taxPercent: 0,
@@ -127,7 +163,12 @@ export const updateDiscountConfig = async (req, res) => {
       success: true,
       message: "Discount updated successfully",
       weekendDiscountEnabled: !!settings.weekendDiscountEnabled,
-      weekendDiscountPercent: Number(settings.weekendDiscountPercent || 0),
+      twoWeekendNightsDiscountPercent: Number(
+        settings.twoWeekendNightsDiscountPercent || 0
+      ),
+      threeWeekendNightsDiscountPercent: Number(
+        settings.threeWeekendNightsDiscountPercent || 0
+      ),
     });
   } catch (err) {
     console.error("updateDiscountConfig error:", err);

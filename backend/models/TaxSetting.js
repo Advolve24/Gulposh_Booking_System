@@ -13,7 +13,13 @@ const taxSettingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    weekendDiscountPercent: {
+    twoWeekendNightsDiscountPercent: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    threeWeekendNightsDiscountPercent: {
       type: Number,
       default: 0,
       min: 0,

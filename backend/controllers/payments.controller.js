@@ -61,15 +61,13 @@ const analyzeWeekendStay = (start, end) => {
     if (day === 0) sundayNights += 1;
   }
 
-  const hasFridayOrSaturday = fridayNights > 0 || saturdayNights > 0;
-  const unlocked = hasFridayOrSaturday && sundayNights > 0;
+  const weekendNights = fridayNights + saturdayNights + sundayNights;
 
   return {
     fridayNights,
     saturdayNights,
     sundayNights,
-    unlocked,
-    eligibleNights: unlocked ? fridayNights + saturdayNights + sundayNights : 0,
+    weekendNights,
   };
 };
 
@@ -99,9 +97,21 @@ const getDiscountBreakup = ({
   }
 
   const weekendDiscountEnabled = Boolean(discountSettings?.weekendDiscountEnabled);
-  const weekendDiscountPercent = Number(discountSettings?.weekendDiscountPercent || 0);
+  const twoWeekendNightsDiscountPercent = Number(
+    discountSettings?.twoWeekendNightsDiscountPercent || 0
+  );
+  const threeWeekendNightsDiscountPercent = Number(
+    discountSettings?.threeWeekendNightsDiscountPercent || 0
+  );
   const weekendStay = analyzeWeekendStay(startDate, endDate);
-  const weekendEligibleNights = weekendStay.eligibleNights;
+  const weekendEligibleNights =
+    weekendStay.weekendNights >= 2 ? weekendStay.weekendNights : 0;
+  const weekendDiscountPercent =
+    weekendStay.weekendNights >= 3
+      ? threeWeekendNightsDiscountPercent
+      : weekendStay.weekendNights >= 2
+      ? twoWeekendNightsDiscountPercent
+      : 0;
   const roomBasePerNight = getRoomBasePerNight(
     room,
     discountSettings?.taxPercent,

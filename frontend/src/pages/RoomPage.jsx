@@ -14,6 +14,7 @@ import {
   Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft
 } from "lucide-react";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
+import { getWeekendOfferState } from "../lib/weekendOffer";
 
 
 const humanize = (v = "") =>
@@ -61,15 +62,47 @@ function mergeRanges(ranges) {
   return out;
 }
 
-function isFriday(date) {
-  return date instanceof Date && !Number.isNaN(date) && date.getDay() === 5;
-}
+const formatCurrency = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
-function getSuggestedSundayCheckout(fromDate) {
-  if (!fromDate) return null;
-  const suggested = new Date(fromDate);
-  suggested.setDate(suggested.getDate() + 3);
-  return suggested;
+const getWeekendPrice = (room) =>
+  Number(room?.weekendPricePerNight || room?.pricePerNight || 0);
+
+function RoomNightlyPrices({ room, align = "right", compact = false }) {
+  const weekdayPrice = Number(room?.pricePerNight || 0);
+  const weekendPrice = getWeekendPrice(room);
+  const wrapperClass =
+    align === "center"
+      ? "text-center"
+      : align === "left"
+        ? "text-left"
+        : "text-left sm:text-right";
+  const priceClass = compact ? "text-sm font-semibold" : "text-lg sm:text-xl font-semibold";
+
+  return (
+    <div className={`space-y-2 ${wrapperClass}`}>
+      <div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          Weekdays
+        </div>
+        <div className={priceClass}>
+          {formatCurrency(weekdayPrice)}
+          <span className="text-sm font-normal text-muted-foreground"> /night</span>
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+          Weekend
+          <span className="ml-1 normal-case">(Fri, Sat, Sun nights)</span>
+        </div>
+        <div className={priceClass}>
+          {formatCurrency(weekendPrice)}
+          <span className="text-sm font-normal text-muted-foreground"> /night</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function BookingCard({
@@ -90,14 +123,6 @@ function BookingCard({
     <div className="flex flex-col h-full">
       {/* SCROLLABLE CONTENT */}
       <div className="flex-1 space-y-4 pb-4">
-        {/* PRICE */}
-        <div className="text-center">
-          <span className="text-2xl font-semibold">
-            ₹{Number(room.pricePerNight).toLocaleString("en-IN")}
-          </span>
-          <span className="text-sm text-muted-foreground"> / night</span>
-        </div>
-
         {/* DATES */}
         <div>
           <label className="text-[11px] font-medium text-muted-foreground">
@@ -112,18 +137,20 @@ function BookingCard({
         </div>
 
         {weekendOffer?.canSuggest && (
-          <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-            <p className="font-medium">
-              Add Sunday night and save {weekendOffer.percent}%.
+          <div className="rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-4 text-sm text-amber-900 shadow-sm">
+            <p className="font-semibold tracking-wide">
+              Limited Weekend Offer
             </p>
-            <p className="mt-1 text-xs text-green-700">
-              Book till {weekendOffer.suggestedCheckoutLabel} to apply the
-              weekend discount on total billing.
+            <p className="mt-1 font-medium">
+              {weekendOffer.suggestionTitle}
+            </p>
+            <p className="mt-1 text-xs text-amber-800">
+              {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
             </p>
             <Button
               type="button"
               variant="outline"
-              className="mt-3 h-9 border-green-300 bg-white text-green-800 hover:bg-green-100"
+              className="mt-3 h-9 border-amber-400 bg-white text-amber-900 hover:bg-amber-100"
               onClick={() =>
                 setRange({
                   from: range?.from || null,
@@ -131,8 +158,19 @@ function BookingCard({
                 })
               }
             >
-              Add Sunday and Save
+              {weekendOffer.suggestionButtonLabel}
             </Button>
+          </div>
+        )}
+
+        {weekendOffer?.eligible && (
+          <div className="rounded-2xl border border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 p-4 text-sm text-green-800 shadow-sm">
+            <p className="font-semibold">
+              {weekendOffer.percent}% weekend discount applied
+            </p>
+            <p className="mt-1 text-xs text-green-700">
+              Active for {weekendOffer.appliedTier} weekend night{weekendOffer.appliedTier === 1 ? "" : "s"} in your selected stay.
+            </p>
           </div>
         )}
 
@@ -236,8 +274,9 @@ export default function RoomPage() {
   const [showDrawer, setShowDrawer] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [discountConfig, setDiscountConfig] = useState({
-    enabled: false,
-    percent: 0,
+    weekendDiscountEnabled: false,
+    twoWeekendNightsDiscountPercent: 0,
+    threeWeekendNightsDiscountPercent: 0,
   });
 
   const handleBack = () => {
@@ -310,13 +349,19 @@ export default function RoomPage() {
 
     api.get("/tax").then(({ data }) => {
       setDiscountConfig({
-        enabled: Boolean(data.weekendDiscountEnabled),
-        percent: Number(data.weekendDiscountPercent || 0),
+        weekendDiscountEnabled: Boolean(data.weekendDiscountEnabled),
+        twoWeekendNightsDiscountPercent: Number(
+          data.twoWeekendNightsDiscountPercent || 0
+        ),
+        threeWeekendNightsDiscountPercent: Number(
+          data.threeWeekendNightsDiscountPercent || 0
+        ),
       });
     }).catch(() => {
       setDiscountConfig({
-        enabled: false,
-        percent: 0,
+        weekendDiscountEnabled: false,
+        twoWeekendNightsDiscountPercent: 0,
+        threeWeekendNightsDiscountPercent: 0,
       });
     });
   }, [id]);
@@ -339,27 +384,10 @@ export default function RoomPage() {
   }, [room]);
 
   const weekendOffer = useMemo(() => {
-    if (!discountConfig.enabled || discountConfig.percent <= 0 || !range?.from) {
+    if (!range?.from || !range?.to) {
       return null;
     }
-
-    if (!isFriday(range.from)) {
-      return null;
-    }
-
-    const suggestedCheckout = getSuggestedSundayCheckout(range.from);
-    const canSuggest = !range?.to || new Date(range.to) < suggestedCheckout;
-
-    return {
-      percent: discountConfig.percent,
-      suggestedCheckout,
-      suggestedCheckoutLabel: suggestedCheckout.toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-      canSuggest,
-    };
+    return getWeekendOfferState(range, discountConfig);
   }, [discountConfig, range]);
 
   const goToCheckout = () => {
@@ -525,9 +553,7 @@ export default function RoomPage() {
             )}
           </div>
 
-          <div className="text-lg sm:text-xl font-semibold">
-            ₹{Number(room.pricePerNight).toLocaleString("en-IN")}/night
-          </div>
+          <RoomNightlyPrices room={room} />
         </div>
 
         {/* GRID */}
@@ -701,17 +727,14 @@ export default function RoomPage() {
           </div>
 
           {/* RIGHT – BOOKING CARD (✅ SAME AS HOMEPAGE CALENDAR) */}
-          <div className="hidden md:block w-[34%] sticky top-24 h-fit border border-[#eadfd6] rounded-2xl p-5 space-y-5 bg-white">
-            {/* PRICE */}
-            <div className="text-center">
-              <span className="text-2xl font-semibold">
-                ₹{Number(room.pricePerNight).toLocaleString("en-IN")}
-              </span>
-              <span className="text-sm text-muted-foreground">/night</span>
+          <div className="hidden md:block w-[34%] sticky top-24 h-fit space-y-4">
+            <div className="rounded-2xl border border-[#eadfd6] bg-white p-4">
+              <RoomNightlyPrices room={room} align="left" compact />
             </div>
 
-            {/* SAME CALENDAR RANGE AS HOMEPAGE (popover with date boxes) */}
-            <div>
+            <div className="border border-[#eadfd6] rounded-2xl p-5 space-y-5 bg-white">
+              {/* SAME CALENDAR RANGE AS HOMEPAGE (popover with date boxes) */}
+              <div>
               <label className="text-xs font-medium text-muted-foreground">
                 CHECK IN / CHECK OUT
               </label>
@@ -721,21 +744,23 @@ export default function RoomPage() {
                 onChange={setRange}
                 disabledRanges={disabledAll} // ✅ global blocked+booked+blackouts
               />
-            </div>
+              </div>
 
             {weekendOffer?.canSuggest && (
-              <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                <p className="font-medium">
-                  Add Sunday night and save {weekendOffer.percent}%.
+              <div className="rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-4 text-sm text-amber-900 shadow-sm">
+                <p className="font-semibold tracking-wide">
+                  Limited Weekend Offer
                 </p>
-                <p className="mt-1 text-xs text-green-700">
-                  Extend checkout till {weekendOffer.suggestedCheckoutLabel} to
-                  unlock the weekend discount.
+                <p className="mt-1 font-medium">
+                  {weekendOffer.suggestionTitle}
+                </p>
+                <p className="mt-1 text-xs text-amber-800">
+                  {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
                 </p>
                 <Button
                   type="button"
                   variant="outline"
-                  className="mt-3 h-9 border-green-300 bg-white text-green-800 hover:bg-green-100"
+                  className="mt-3 h-9 border-amber-400 bg-white text-amber-900 hover:bg-amber-100"
                   onClick={() =>
                     setRange({
                       from: range?.from || null,
@@ -743,8 +768,19 @@ export default function RoomPage() {
                     })
                   }
                 >
-                  Add Sunday and Save
+                  {weekendOffer.suggestionButtonLabel}
                 </Button>
+              </div>
+            )}
+
+            {weekendOffer?.eligible && (
+              <div className="rounded-2xl border border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 p-4 text-sm text-green-800 shadow-sm">
+                <p className="font-semibold">
+                  {weekendOffer.percent}% weekend discount applied
+                </p>
+                <p className="mt-1 text-xs text-green-700">
+                  Active for {weekendOffer.appliedTier} weekend night{weekendOffer.appliedTier === 1 ? "" : "s"} in your selected stay.
+                </p>
               </div>
             )}
 
@@ -807,6 +843,7 @@ export default function RoomPage() {
               </div>
             </div>
 
+            </div>
           </div>
         </div>
       </div>
@@ -824,11 +861,11 @@ export default function RoomPage() {
           {/* PRICE (30%) */}
           <div className="w-[30%]">
             <div className="text-xs text-muted-foreground">Price</div>
-            <div className="text-base font-bold leading-tight">
-              ₹{Number(room.pricePerNight).toLocaleString("en-IN")}
-              <span className="text-xs font-normal text-muted-foreground">
-                /night
-              </span>
+            <div className="text-xs font-semibold leading-tight">
+              Weekday: {formatCurrency(room.pricePerNight)}
+            </div>
+            <div className="text-xs font-semibold leading-tight">
+              Weekend: {formatCurrency(getWeekendPrice(room))}
             </div>
           </div>
 

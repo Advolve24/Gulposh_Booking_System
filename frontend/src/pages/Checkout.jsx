@@ -27,69 +27,13 @@ import { getAllCountries, getStatesByCountry, getCitiesByState } from "../lib/lo
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
+import { getWeekendOfferState } from "../lib/weekendOffer";
 
 
 function minusOneDay(date) {
   const d = new Date(date);
   d.setDate(d.getDate() - 1);
   return d;
-}
-
-function getWeekendOfferState(range, percent = 0) {
-  if (!range?.from || !range?.to) return null;
-
-  const stayStart = normalizeDateStart(range.from);
-  const stayEndExclusive = normalizeDateStart(range.to);
-  let fridayNights = 0;
-  let saturdayNights = 0;
-  let sundayNights = 0;
-  let lastFridayOrSaturday = null;
-
-  for (
-    let cursor = new Date(stayStart);
-    cursor < stayEndExclusive;
-    cursor.setDate(cursor.getDate() + 1)
-  ) {
-    const day = cursor.getDay();
-    if (day === 5) {
-      fridayNights += 1;
-      lastFridayOrSaturday = new Date(cursor);
-    }
-    if (day === 6) {
-      saturdayNights += 1;
-      lastFridayOrSaturday = new Date(cursor);
-    }
-    if (day === 0) sundayNights += 1;
-  }
-
-  const hasFridayOrSaturday = fridayNights > 0 || saturdayNights > 0;
-  const eligible = hasFridayOrSaturday && sundayNights > 0;
-  const eligibleNights = eligible ? fridayNights + saturdayNights + sundayNights : 0;
-
-  let suggestedCheckout = null;
-  if (!eligible && hasFridayOrSaturday && lastFridayOrSaturday) {
-    suggestedCheckout = new Date(lastFridayOrSaturday);
-    if (suggestedCheckout.getDay() === 5) {
-      suggestedCheckout.setDate(suggestedCheckout.getDate() + 3);
-    } else if (suggestedCheckout.getDay() === 6) {
-      suggestedCheckout.setDate(suggestedCheckout.getDate() + 2);
-    }
-  }
-
-  return {
-    eligible,
-    canSuggest: Boolean(suggestedCheckout && suggestedCheckout > stayEndExclusive),
-    percent,
-    eligibleNights,
-    suggestedCheckout,
-    suggestedCheckoutLabel: suggestedCheckout
-      ? suggestedCheckout.toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-      : "",
-  };
 }
 
 function normalizeDateStart(dateLike) {
@@ -228,8 +172,11 @@ export default function Checkout() {
   }
 
   const [taxPercent, setTaxPercent] = useState(0);
-  const [weekendDiscountEnabled, setWeekendDiscountEnabled] = useState(false);
-  const [weekendDiscountPercent, setWeekendDiscountPercent] = useState(0);
+  const [weekendDiscountConfig, setWeekendDiscountConfig] = useState({
+    weekendDiscountEnabled: false,
+    twoWeekendNightsDiscountPercent: 0,
+    threeWeekendNightsDiscountPercent: 0,
+  });
   const [processingPayment, setProcessingPayment] = useState(false);
   const [otpStep, setOtpStep] = useState("idle");
   const [otp, setOtp] = useState("");
@@ -318,8 +265,15 @@ export default function Checkout() {
     api.get("/tax")
       .then(({ data }) => {
         setTaxPercent(data.taxPercent);
-        setWeekendDiscountEnabled(Boolean(data.weekendDiscountEnabled));
-        setWeekendDiscountPercent(Number(data.weekendDiscountPercent || 0));
+        setWeekendDiscountConfig({
+          weekendDiscountEnabled: Boolean(data.weekendDiscountEnabled),
+          twoWeekendNightsDiscountPercent: Number(
+            data.twoWeekendNightsDiscountPercent || 0
+          ),
+          threeWeekendNightsDiscountPercent: Number(
+            data.threeWeekendNightsDiscountPercent || 0
+          ),
+        });
       })
       .catch(() => {
         toast.error("Failed to load tax configuration");
@@ -402,12 +356,11 @@ export default function Checkout() {
   }, [roomTotal, mealTotal]);
 
   const weekendOffer = useMemo(() => {
-    if (!weekendDiscountEnabled || weekendDiscountPercent <= 0 || !range?.from || !range?.to) {
+    if (!range?.from || !range?.to) {
       return null;
     }
-
-    return getWeekendOfferState(range, weekendDiscountPercent);
-  }, [weekendDiscountEnabled, weekendDiscountPercent, range]);
+    return getWeekendOfferState(range, weekendDiscountConfig);
+  }, [range, weekendDiscountConfig]);
 
   const couponDiscountAmount = useMemo(() => {
     if (!hasRoomCoupon) return 0;
@@ -1218,17 +1171,16 @@ export default function Checkout() {
               )}
 
               {weekendOffer?.canSuggest && (
-                <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-                  <p className="font-medium">
-                    Add Sunday and save {weekendOffer.percent}% on eligible weekend nights.
-                  </p>
-                  <p className="mt-1 text-xs text-green-700">
-                    Extend checkout till {weekendOffer.suggestedCheckoutLabel} to include Sunday night and unlock the weekend offer.
+                <div className="rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-4 text-sm text-amber-900">
+                  <p className="font-semibold tracking-wide">Weekend Offer</p>
+                  <p className="mt-1 font-medium">{weekendOffer.suggestionTitle}</p>
+                  <p className="mt-1 text-xs text-amber-800">
+                    {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
                   </p>
                   <Button
                     type="button"
                     variant="outline"
-                    className="mt-3 border-green-300 bg-white text-green-800 hover:bg-green-100"
+                    className="mt-3 border-amber-400 bg-white text-amber-900 hover:bg-amber-100"
                     onClick={() =>
                       setRange((prev) => ({
                         from: prev?.from || null,
@@ -1236,15 +1188,15 @@ export default function Checkout() {
                       }))
                     }
                   >
-                    Add Sunday and Save
+                    {weekendOffer.suggestionButtonLabel}
                   </Button>
                 </div>
               )}
 
               {weekendOffer?.eligible && (
-                <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+                <div className="rounded-2xl border border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 p-4 text-sm text-green-800">
                   Weekend discount of {weekendOffer.percent}% has been applied for{" "}
-                  {weekendEligibleNights} eligible night{weekendEligibleNights === 1 ? "" : "s"} only.
+                  {weekendOffer.appliedTier} weekend night{weekendOffer.appliedTier === 1 ? "" : "s"}.
                 </div>
               )}
             </div>

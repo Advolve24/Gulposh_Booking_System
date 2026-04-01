@@ -13,14 +13,18 @@ export default function Discount() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [enabled, setEnabled] = useState(false);
-  const [percent, setPercent] = useState(20);
+  const [twoNightPercent, setTwoNightPercent] = useState(15);
+  const [threeNightPercent, setThreeNightPercent] = useState(20);
 
   useEffect(() => {
     (async () => {
       try {
         const data = await getAdminDiscount();
         setEnabled(Boolean(data.weekendDiscountEnabled));
-        setPercent(Number(data.weekendDiscountPercent || 0));
+        setTwoNightPercent(Number(data.twoWeekendNightsDiscountPercent || 0));
+        setThreeNightPercent(
+          Number(data.threeWeekendNightsDiscountPercent || 0)
+        );
       } catch {
         toast.error("Failed to load discount settings");
       } finally {
@@ -34,7 +38,8 @@ export default function Discount() {
       setSaving(true);
       await updateAdminDiscount({
         weekendDiscountEnabled: enabled,
-        weekendDiscountPercent: Number(percent || 0),
+        twoWeekendNightsDiscountPercent: Number(twoNightPercent || 0),
+        threeWeekendNightsDiscountPercent: Number(threeNightPercent || 0),
       });
       toast.success("Discount settings updated");
     } catch {
@@ -50,7 +55,7 @@ export default function Discount() {
         <div>
           <h1 className="text-2xl font-serif font-semibold">Discount</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Configure the Friday to Sunday upsell discount shown during booking.
+            Configure tiered discounts for 2 and 3 weekend nights.
           </p>
         </div>
 
@@ -59,8 +64,8 @@ export default function Discount() {
             <div className="space-y-1">
               <h2 className="text-lg font-semibold">Weekend Offer</h2>
               <p className="text-sm text-muted-foreground">
-                If a guest starts a booking on Friday and adds Sunday night
-                as well, this discount is applied to the booking subtotal.
+                Apply one discount for any 2 weekend nights and a higher
+                discount for Friday, Saturday, and Sunday together.
               </p>
             </div>
 
@@ -79,29 +84,56 @@ export default function Discount() {
 
           <Separator />
 
-          <div className="max-w-xs space-y-2">
-            <Label htmlFor="discount-percent">Discount Percentage</Label>
-            <div className="relative">
-              <Percent className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="discount-percent"
-                type="number"
-                min={0}
-                max={100}
-                value={percent}
-                disabled={loading || !enabled}
-                onChange={(e) => setPercent(e.target.value)}
-                className="pl-9"
-              />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="max-w-xs space-y-2">
+              <Label htmlFor="discount-two-night-percent">
+                2 Weekend Nights Discount
+              </Label>
+              <div className="relative">
+                <Percent className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="discount-two-night-percent"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={twoNightPercent}
+                  disabled={loading || !enabled}
+                  onChange={(e) => setTwoNightPercent(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Example: Fri+Sat or Sat+Sun = 15%
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Example: 10, 15, 20
-            </p>
+
+            <div className="max-w-xs space-y-2">
+              <Label htmlFor="discount-three-night-percent">
+                3 Weekend Nights Discount
+              </Label>
+              <div className="relative">
+                <Percent className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="discount-three-night-percent"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={threeNightPercent}
+                  disabled={loading || !enabled}
+                  onChange={(e) => setThreeNightPercent(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Example: Fri+Sat+Sun = 20%
+              </p>
+            </div>
           </div>
 
           <div className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">
-            Applied when check-in is Friday and checkout is Monday or later,
-            which means the guest added Sunday night to the booking.
+            Weekend nights are Friday, Saturday, and Sunday nights.
+            Any 2 weekend nights get the first discount. All 3 weekend nights
+            get the higher discount.
           </div>
 
           <div className="flex justify-end">
