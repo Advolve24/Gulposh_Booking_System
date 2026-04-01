@@ -49,6 +49,7 @@ export const createRoom = async (req, res) => {
     const {
       name,
       pricePerNight,
+      weekendPricePerNight,
       maxGuests,
       mealMode,
       taxMode,
@@ -75,6 +76,10 @@ export const createRoom = async (req, res) => {
     const room = await Room.create({
       name: String(name).trim(),
       pricePerNight: Number(pricePerNight) || 0,
+      weekendPricePerNight:
+        weekendPricePerNight !== undefined
+          ? Number(weekendPricePerNight) || 0
+          : Number(pricePerNight) || 0,
 
       maxGuests:
         maxGuests !== undefined
@@ -137,6 +142,7 @@ export const updateRoom = async (req, res) => {
     const {
       name,
       pricePerNight,
+      weekendPricePerNight,
       maxGuests,
       mealMode,
       taxMode,
@@ -160,6 +166,12 @@ export const updateRoom = async (req, res) => {
 
     if (pricePerNight !== undefined) {
       update.pricePerNight = Number(pricePerNight) || 0;
+    }
+
+    if (weekendPricePerNight !== undefined) {
+      update.weekendPricePerNight = Number(weekendPricePerNight) || 0;
+    } else if (pricePerNight !== undefined) {
+      update.weekendPricePerNight = Number(pricePerNight) || 0;
     }
 
     if (maxGuests !== undefined) {

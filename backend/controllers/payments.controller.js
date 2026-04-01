@@ -11,6 +11,10 @@ import { parseYMD, toDateOnly } from "../lib/date.js";
 import { notifyAdmin } from "../utils/notifyAdmin.js";
 import User from "../models/User.js";
 import SpecialOffer from "../models/SpecialOffer.js";
+import {
+  getRoomPricingBreakdown,
+  getRoomPricingMeta,
+} from "../utils/roomPricing.js";
 
 
 /* ----------------------------- Razorpay ----------------------------- */
@@ -27,14 +31,14 @@ const nightsBetween = (start, end) => {
   return Math.max(0, Math.round((e - s) / 86400000));
 };
 
-const getRoomBasePerNight = (room, taxPercent) => {
+const getRoomBasePerNight = (room, taxPercent, nightlyPrice = room?.pricePerNight) => {
   if (!room) return 0;
   if (room.taxMode === "included") {
     return Number(
-      (Number(room.pricePerNight || 0) / (1 + Number(taxPercent || 0) / 100)).toFixed(2)
+      (Number(nightlyPrice || 0) / (1 + Number(taxPercent || 0) / 100)).toFixed(2)
     );
   }
-  return Number(room.pricePerNight || 0);
+  return Number(nightlyPrice || 0);
 };
 
 const analyzeWeekendStay = (start, end) => {
@@ -98,7 +102,11 @@ const getDiscountBreakup = ({
   const weekendDiscountPercent = Number(discountSettings?.weekendDiscountPercent || 0);
   const weekendStay = analyzeWeekendStay(startDate, endDate);
   const weekendEligibleNights = weekendStay.eligibleNights;
-  const roomBasePerNight = getRoomBasePerNight(room, discountSettings?.taxPercent);
+  const roomBasePerNight = getRoomBasePerNight(
+    room,
+    discountSettings?.taxPercent,
+    Number(room?.weekendPricePerNight || room?.pricePerNight || 0)
+  );
   const weekendEligible =
     weekendDiscountEnabled &&
     weekendDiscountPercent > 0 &&
@@ -243,7 +251,8 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
-    const roomTotal = nights * room.pricePerNight;
+    const pricingBreakdown = getRoomPricingBreakdown(room, sDate, eDate);
+    const roomTotal = pricingBreakdown.roomTotal;
 
     const mealTotal = withMeal
       ? nights *
@@ -431,7 +440,8 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid date range" });
     }
 
-    const roomTotal = nights * room.pricePerNight;
+    const pricingBreakdown = getRoomPricingBreakdown(room, sDate, eDate);
+    const roomTotal = pricingBreakdown.roomTotal;
     let mealTotal = 0;
 
     if (room.mealMode === "only") {
@@ -526,8 +536,9 @@ export const verifyPayment = async (req, res) => {
       guests,
       adults,
       children,
-      pricePerNight: room.pricePerNight,
+      pricePerNight: pricingBreakdown.averagePricePerNight,
       roomTotal,
+      pricingMeta: getRoomPricingMeta(room, sDate, eDate),
       withMeal: !!withMeal,
       vegGuests,
       nonVegGuests,

@@ -3,6 +3,10 @@ import crypto from "crypto";
 import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
 import { sendBookingCancellationMail } from "../utils/mailer.js";
+import {
+  getRoomPricingBreakdown,
+  getRoomPricingMeta,
+} from "../utils/roomPricing.js";
 
 const rp = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -69,14 +73,22 @@ export const createAdminOrder = async (req, res) => {
       return res.status(404).json({ message: "Room not found" });
     }
 
-    const pricePerNight =
-      customAmount && Number(customAmount) > 0
+    const hasOverridePrice = customAmount && Number(customAmount) > 0;
+    const flatNightPrice =
+      hasOverridePrice
         ? Number(customAmount)
         : withMeal && room.priceWithMeal > 0
-        ? room.priceWithMeal
-        : room.pricePerNight;
-
-    const roomTotal = nights * pricePerNight;
+        ? Number(room.priceWithMeal)
+        : null;
+    const pricingBreakdown =
+      flatNightPrice !== null
+        ? {
+            averagePricePerNight: flatNightPrice,
+            roomTotal: nights * flatNightPrice,
+          }
+        : getRoomPricingBreakdown(room, sDate, eDate);
+    const pricePerNight = pricingBreakdown.averagePricePerNight;
+    const roomTotal = pricingBreakdown.roomTotal;
     const amountPaise = Math.round(roomTotal * 100);
 
     const order = await rp.orders.create({
@@ -164,15 +176,21 @@ export const verifyAdminPayment = async (req, res) => {
       return res.status(404).json({ message: "Room not found" });
     }
 
-    const pricePerNight =
-      withMeal && room.priceWithMeal > 0
-        ? room.priceWithMeal
-        : room.pricePerNight;
+    const flatNightPrice =
+      withMeal && room.priceWithMeal > 0 ? Number(room.priceWithMeal) : null;
+    const pricingBreakdown =
+      flatNightPrice !== null
+        ? {
+            averagePricePerNight: flatNightPrice,
+            roomTotal: nights * flatNightPrice,
+          }
+        : getRoomPricingBreakdown(room, sDate, eDate);
+    const pricePerNight = pricingBreakdown.averagePricePerNight;
 
     const vegPrice = Number(room.mealPriceVeg || 0);
     const nonVegPrice = Number(room.mealPriceNonVeg || 0);
 
-    const roomTotal = nights * pricePerNight;
+    const roomTotal = pricingBreakdown.roomTotal;
 
     const booking = await Booking.create({
       user: userId,
@@ -186,6 +204,15 @@ export const verifyAdminPayment = async (req, res) => {
 
       pricePerNight,
       roomTotal,
+      pricingMeta:
+        flatNightPrice !== null
+          ? {
+              weekdayPricePerNight: flatNightPrice,
+              weekendPricePerNight: flatNightPrice,
+              weekdayNights: nights,
+              weekendNights: 0,
+            }
+          : getRoomPricingMeta(room, sDate, eDate),
 
       withMeal: !!withMeal,
       vegGuests: 0,
@@ -278,7 +305,31 @@ export const adminActionBooking = async (req, res) => {
       booking.startDate = ns;
       booking.endDate = ne;
       booking.nights = newNights;
-      booking.roomTotal = newNights * booking.pricePerNight;
+      const weekdayPricePerNight = Number(
+        booking.pricingMeta?.weekdayPricePerNight || booking.pricePerNight || 0
+      );
+      const weekendPricePerNight = Number(
+        booking.pricingMeta?.weekendPricePerNight ||
+          booking.pricePerNight ||
+          weekdayPricePerNight
+      );
+      const refreshedPricing = getRoomPricingBreakdown(
+        {
+          pricePerNight: weekdayPricePerNight,
+          weekendPricePerNight,
+        },
+        ns,
+        ne
+      );
+
+      booking.pricePerNight = refreshedPricing.averagePricePerNight;
+      booking.roomTotal = refreshedPricing.roomTotal;
+      booking.pricingMeta = {
+        weekdayPricePerNight,
+        weekendPricePerNight,
+        weekdayNights: refreshedPricing.weekdayNights,
+        weekendNights: refreshedPricing.weekendNights,
+      };
       booking.amount = booking.roomTotal + booking.mealTotal;
 
       booking.adminAction = {

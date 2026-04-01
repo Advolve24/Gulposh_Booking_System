@@ -14,6 +14,7 @@ export default function MobileRoomForm({
   /* BASIC */
   name, setName,
   pricePerNight, setPricePerNight,
+  weekendPricePerNight, setWeekendPricePerNight,
   description, setDescription,
 
   /* MEALS */
@@ -54,7 +55,7 @@ export default function MobileRoomForm({
     let done = 0;
     const total = 6;
 
-    if (name && pricePerNight) done++;
+    if (name && pricePerNight && weekendPricePerNight) done++;
     if (mealPriceVeg || mealPriceNonVeg || mealPriceCombo) done++;
     if (amenities.length > 0) done++;
     if (houseRules.length > 0) done++;
@@ -65,6 +66,7 @@ export default function MobileRoomForm({
   }, [
     name,
     pricePerNight,
+    weekendPricePerNight,
     mealPriceVeg,
     mealPriceNonVeg,
     mealPriceCombo,
@@ -96,8 +98,12 @@ export default function MobileRoomForm({
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
 
-        <Field label="Price per Night (₹) *">
+        <Field label="Price per Night for Weekdays (₹) *">
           <Input type="number" value={pricePerNight} onChange={(e) => setPricePerNight(e.target.value)} />
+        </Field>
+
+        <Field label="Price per Night for Weekend (₹) *">
+          <Input type="number" value={weekendPricePerNight} onChange={(e) => setWeekendPricePerNight(e.target.value)} />
         </Field>
 
         <Field label="Description">

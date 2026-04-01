@@ -32,6 +32,7 @@ export default function InvoicePage() {
     toast.loading("Preparing invoice…");
 
     await new Promise((r) => setTimeout(r, 100));
+    
 
     const canvas = await html2canvas(pdfRef.current, {
       scale: 1.25,

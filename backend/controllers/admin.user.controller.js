@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import Booking from "../models/Booking.js";
 import bcrypt from "bcryptjs";
 import { sendBookingCancellationMail } from "../utils/mailer.js";
+import { getRoomPricingBreakdown, getRoomPricingMeta } from "../utils/roomPricing.js";
 
 const { isValidObjectId } = mongoose;
 
@@ -419,7 +420,38 @@ export const updateBookingAdmin = async (req, res) => {
       ? vegTotal + nonVegTotal
       : 0;
 
-    booking.roomTotal = booking.pricePerNight * nights;
+    const hasStoredPricing =
+      Number(booking.pricingMeta?.weekdayPricePerNight || 0) > 0 ||
+      Number(booking.pricingMeta?.weekendPricePerNight || 0) > 0;
+    const pricingSource = hasStoredPricing
+      ? {
+          pricePerNight:
+            Number(booking.pricingMeta?.weekdayPricePerNight || 0) ||
+            Number(booking.room?.pricePerNight || 0) ||
+            Number(booking.pricePerNight || 0),
+          weekendPricePerNight:
+            Number(booking.pricingMeta?.weekendPricePerNight || 0) ||
+            Number(booking.room?.weekendPricePerNight || 0) ||
+            Number(booking.room?.pricePerNight || 0) ||
+            Number(booking.pricePerNight || 0),
+        }
+      : booking.room;
+    const pricingBreakdown = getRoomPricingBreakdown(
+      pricingSource,
+      booking.startDate,
+      booking.endDate
+    );
+
+    booking.pricePerNight = pricingBreakdown.averagePricePerNight;
+    booking.roomTotal = pricingBreakdown.roomTotal;
+    booking.pricingMeta = hasStoredPricing
+      ? {
+          weekdayPricePerNight: pricingSource.pricePerNight,
+          weekendPricePerNight: pricingSource.weekendPricePerNight,
+          weekdayNights: pricingBreakdown.weekdayNights,
+          weekendNights: pricingBreakdown.weekendNights,
+        }
+      : getRoomPricingMeta(booking.room, booking.startDate, booking.endDate);
     booking.amount = booking.roomTotal + booking.mealTotal;
 
     if (status) booking.status = status;
@@ -464,7 +496,10 @@ export const getBookingAdmin = async (req, res) => {
 
     const booking = await Booking.findById(id)
       .populate("user", "name email phone createdAt")
-      .populate("room", "name pricePerNight mealPriceVeg mealPriceNonVeg isVilla")
+      .populate(
+        "room",
+        "name pricePerNight weekendPricePerNight mealPriceVeg mealPriceNonVeg isVilla"
+      )
       .lean();
 
     if (!booking) {

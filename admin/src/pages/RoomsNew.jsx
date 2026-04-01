@@ -36,6 +36,7 @@ export default function RoomsNew() {
 
   const [name, setName] = useState("");
   const [pricePerNight, setPricePerNight] = useState("");
+  const [weekendPricePerNight, setWeekendPricePerNight] = useState("");
   const [mealMode, setMealMode] = useState("");
   const [taxMode, setTaxMode] = useState("excluded");
   const [mealPriceVeg, setMealPriceVeg] = useState("");
@@ -92,6 +93,9 @@ export default function RoomsNew() {
 
         setName(r.name || "");
         setPricePerNight(String(r.pricePerNight ?? ""));
+        setWeekendPricePerNight(
+          String(r.weekendPricePerNight ?? r.pricePerNight ?? "")
+        );
         setMaxGuests(String(r.maxGuests ?? ""));
         setMealMode(r.mealMode || "");
         setTaxMode(r.taxMode || "excluded");
@@ -163,8 +167,10 @@ export default function RoomsNew() {
 
   const STEP_VALIDATORS = [
     // 0️⃣ Basic
-    ({ name, pricePerNight }) =>
-      name.trim().length > 2 && Number(pricePerNight) > 0,
+    ({ name, pricePerNight, weekendPricePerNight }) =>
+      name.trim().length > 2 &&
+      Number(pricePerNight) > 0 &&
+      Number(weekendPricePerNight) > 0,
 
     // 1️⃣ Meals
     ({ mealPriceVeg, mealPriceNonVeg }) =>
@@ -216,6 +222,7 @@ export default function RoomsNew() {
       const payload = {
         name: name.trim(),
         pricePerNight: Number(pricePerNight),
+        weekendPricePerNight: Number(weekendPricePerNight),
         maxGuests: Number(maxGuests),
         mealMode,
         taxMode,
@@ -257,6 +264,7 @@ export default function RoomsNew() {
         return (
           name.trim().length > 2 &&
           Number(pricePerNight) > 0 &&
+          Number(weekendPricePerNight) > 0 &&
           Number(maxGuests) > 0
         );
 
@@ -386,7 +394,7 @@ export default function RoomsNew() {
           {/* STEP CONTENT */}
           {step === 0 && (
             <Section title="Basic Information">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
                 <Field label="Room Name *">
                   <Input
                     value={name}
@@ -396,13 +404,25 @@ export default function RoomsNew() {
                   />
                 </Field>
 
-                <Field label="Price per Night (₹) *">
+                <Field label="Price per Night for Weekdays (₹) *">
                   <Input
                     type="number"
                     value={pricePerNight}
                     onChange={(e) => setPricePerNight(e.target.value)}
                     className="text-sm"
                   />
+                </Field>
+
+                <Field label="Price per Night for Weekend (₹) *">
+                  <Input
+                    type="number"
+                    value={weekendPricePerNight}
+                    onChange={(e) => setWeekendPricePerNight(e.target.value)}
+                    className="text-sm"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Applied to Friday, Saturday, and Sunday nights.
+                  </p>
                 </Field>
 
                 <Field label="Max Guests *">

@@ -18,6 +18,13 @@ const bookingSchema = new mongoose.Schema(
     pricePerNight: { type: Number, required: true },
     roomTotal: { type: Number, required: true },
 
+    pricingMeta: {
+      weekdayPricePerNight: { type: Number, default: 0 },
+      weekendPricePerNight: { type: Number, default: 0 },
+      weekdayNights: { type: Number, default: 0 },
+      weekendNights: { type: Number, default: 0 },
+    },
+
     withMeal: { type: Boolean, default: false },
 
     vegGuests: { type: Number, default: 0 },
