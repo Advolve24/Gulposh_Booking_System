@@ -19,7 +19,6 @@ import {
   BedDouble,
   BedSingle,
   Home,
-  ClipboardList,
   Star,
   ArrowLeft,
   Pencil,
@@ -68,46 +67,63 @@ const prettify = (str = "") =>
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
-const getDiscountedPrice = (room) => {
-  if (!room || room.discountType === "none") return null;
+const formatCurrency = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN")}`;
+
+const getWeekendPrice = (room) =>
+  Number(room?.weekendPricePerNight || room?.pricePerNight || 0);
+
+const getDiscountedNightPrice = (price, room) => {
+  if (!room || room.discountType === "none") return Number(price || 0);
   if (room.discountType === "percent") {
     return Math.round(
-      room.pricePerNight -
-      (room.pricePerNight * room.discountValue) / 100
+      Number(price || 0) - (Number(price || 0) * room.discountValue) / 100
     );
   }
   if (room.discountType === "flat") {
-    return Math.max(
-      0,
-      room.pricePerNight - room.discountValue
-    );
+    return Math.max(0, Number(price || 0) - Number(room.discountValue || 0));
   }
-  return null;
+  return Number(price || 0);
 };
 
-function IconRow({ title, list }) {
-  if (!Array.isArray(list) || list.length === 0) return null;
+function NightlyPriceSummary({ room, compact = false }) {
+  const weekdayPrice = Number(room?.pricePerNight || 0);
+  const weekendPrice = getWeekendPrice(room);
+  const showDiscount = room?.discountType !== "none";
+
+  const renderPrice = (label, price, hint) => (
+    <div>
+      <div className="text-xs text-muted-foreground">
+        {label}
+        {hint ? <span className="ml-1">{hint}</span> : null}
+      </div>
+
+      {showDiscount ? (
+        <div className="flex flex-col">
+          <span className="line-through text-sm text-muted-foreground">
+            {formatCurrency(price)}
+          </span>
+          <span className="font-semibold text-green-600">
+            {formatCurrency(getDiscountedNightPrice(price, room))}
+            {!compact ? " / night" : ""}
+          </span>
+        </div>
+      ) : (
+        <div className="font-semibold">
+          {formatCurrency(price)}
+          {!compact ? " / night" : ""}
+          {room.taxMode === "excluded" && (
+            <span className="ml-1 text-xs text-muted-foreground">+ GST</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-3">
-      <h3 className="font-semibold text-lg">{title}</h3>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {list.map((item, i) => {
-          const key = String(item).toLowerCase().replace(/_/g, "");
-          const Icon = ICONS[key] || Landmark;
-
-          return (
-            <div
-              key={i}
-              className="flex items-center gap-3 border border-border rounded-lg px-3 py-2 bg-card"
-            >
-              <Icon className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm">{prettify(item)}</span>
-            </div>
-          );
-        })}
-      </div>
+      {renderPrice("Weekdays", weekdayPrice)}
+      {renderPrice("Weekend", weekendPrice, "(Fri, Sat, Sun nights)")}
     </div>
   );
 }
@@ -144,8 +160,7 @@ export default function AdminRoomView() {
   }, [id]);
 
   const images = useMemo(
-    () =>
-      [room?.coverImage, ...(room?.galleryImages || [])].filter(Boolean),
+    () => [room?.coverImage, ...(room?.galleryImages || [])].filter(Boolean),
     [room]
   );
 
@@ -174,9 +189,7 @@ export default function AdminRoomView() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-4">
-        {/* TOP BAR */}
         <div className="flex items-center justify-between gap-4">
-          {/* BACK */}
           <Link
             to="/rooms"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition"
@@ -185,9 +198,7 @@ export default function AdminRoomView() {
             Back
           </Link>
 
-          {/* ACTIONS */}
           <div className="flex items-center gap-3">
-            {/* EDIT */}
             <Link
               to={`/rooms/new?id=${room._id}`}
               className="
@@ -206,7 +217,6 @@ export default function AdminRoomView() {
               Edit Room
             </Link>
 
-            {/* DELETE */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button
@@ -240,6 +250,7 @@ export default function AdminRoomView() {
                   </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDelete}
+                    disabled={deleting}
                     className="bg-destructive text-destructive-foreground hover:opacity-90"
                   >
                     Delete
@@ -250,10 +261,7 @@ export default function AdminRoomView() {
           </div>
         </div>
 
-
-        {/* MAIN GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
-          {/* LEFT */}
           <div className="space-y-8">
             <ImageSlider images={images} />
 
@@ -264,13 +272,15 @@ export default function AdminRoomView() {
                 </h1>
 
                 {room.discountType !== "none" && (
-                  <span className="
+                  <span
+                    className="
       px-2 py-1
       rounded-full
       text-xs font-semibold
       bg-green-100
       text-green-700
-    ">
+    "
+                  >
                     {room.discountType === "percent"
                       ? `${room.discountValue}% OFF`
                       : `₹${room.discountValue} OFF`}
@@ -280,48 +290,28 @@ export default function AdminRoomView() {
 
               <div className="flex gap-4 items-center">
                 <div className="text-[16px] md:text-[18px] font-bold sm:text-black">
-                  {room.discountType !== "none" ? (
-                    <div className="flex flex-col">
-                      <span className="line-through text-sm text-muted-foreground">
-                        ₹{room.pricePerNight.toLocaleString("en-IN")}
-                      </span>
-                      <span className="font-bold text-green-600">
-                        ₹{getDiscountedPrice(room).toLocaleString("en-IN")} / night
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="font-bold">
-                      ₹{room.pricePerNight.toLocaleString("en-IN")} / night
-                      {room.taxMode === "excluded" && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          + GST
-                        </span>
-                      )}
-                    </span>
-                  )}
+                  <NightlyPriceSummary room={room} />
                 </div>
-                {/* ✅ MAX GUESTS */}
+
                 {room.maxGuests && (
                   <p className="text-sm flex gap-2 items-center text-muted-foreground">
-                    <Users className="h-4 w-4" /> <span className="font-medium text-foreground"> {room.maxGuests}</span> guests
+                    <Users className="h-4 w-4" />
+                    <span className="font-medium text-foreground">
+                      {room.maxGuests}
+                    </span>
+                    guests
                   </p>
                 )}
               </div>
             </div>
 
-
-            {/* ================= AMENITIES ================= */}
             {Array.isArray(room.amenities) && room.amenities.length > 0 && (
               <div className="bg-card border border-border rounded-xl p-6">
                 <h3 className="font-semibold text-lg mb-5">Amenities</h3>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
                   {room.amenities.map((item, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 text-sm"
-                    >
-                      {/* CHECK ICON */}
+                    <div key={i} className="flex items-center gap-3 text-sm">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100">
                         <svg
                           viewBox="0 0 24 24"
@@ -336,7 +326,6 @@ export default function AdminRoomView() {
                         </svg>
                       </span>
 
-                      {/* TEXT */}
                       <span className="leading-snug">
                         {item
                           .replace(/_/g, " ")
@@ -348,8 +337,6 @@ export default function AdminRoomView() {
               </div>
             )}
 
-
-            {/* ================= HOUSE RULES ================= */}
             {Array.isArray(room.houseRules) && room.houseRules.length > 0 && (
               <div className="bg-card border border-border rounded-xl p-6">
                 <h3 className="font-semibold text-lg mb-5">House Rules</h3>
@@ -357,21 +344,16 @@ export default function AdminRoomView() {
                 <ul className="space-y-4">
                   {room.houseRules.map((rule, i) => (
                     <li key={i} className="flex items-start gap-4 text-sm">
-                      {/* NUMBER CIRCLE */}
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-primary">
                         {i + 1}
                       </span>
 
-                      {/* TEXT */}
-                      <span className="text-muted-foreground">
-                        {rule}
-                      </span>
+                      <span className="text-muted-foreground">{rule}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-
 
             {room.reviews?.length > 0 && (
               <div className="bg-card border border-border rounded-xl p-5 space-y-4">
@@ -392,9 +374,7 @@ export default function AdminRoomView() {
                 </div>
 
                 {avgRating && (
-                  <div className="text-sm">
-                    {avgRating} ★★★★★
-                  </div>
+                  <div className="text-sm">{avgRating} ★★★★★</div>
                 )}
 
                 {visibleReviews.map((r, i) => (
@@ -404,12 +384,10 @@ export default function AdminRoomView() {
             )}
           </div>
 
-          {/* RIGHT — TRUE STICKY */}
           <aside className="relative">
             <div className="sticky top-[96px] self-start bg-card border border-border rounded-xl p-5 space-y-4">
               <h3 className="font-semibold">Pricing</h3>
 
-              {/* MAX GUESTS */}
               {room.maxGuests && (
                 <div className="flex items-center justify-between text-sm border border-border rounded-lg px-3 py-2 bg-muted/40">
                   <span className="text-muted-foreground">Max Guests</span>
@@ -418,33 +396,10 @@ export default function AdminRoomView() {
               )}
 
               <div className="bg-muted rounded-lg p-4">
-                <div className="text-sm text-muted-foreground">Per Night</div>
-                <div className="text-2xl font-semibold text-primary">
-                  {room.discountType !== "none" ? (
-                    <div className="flex flex-col">
-                      <span className="line-through text-sm text-muted-foreground">
-                        ₹{room.pricePerNight.toLocaleString("en-IN")}
-                      </span>
-                      <span className="text-green-600">
-                        ₹{getDiscountedPrice(room).toLocaleString("en-IN")}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="text-2xl font-semibold text-primary">
-                      ₹{room.pricePerNight.toLocaleString("en-IN")}
-
-                      {room.taxMode === "excluded" && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          + GST
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
+                <div className="text-sm text-muted-foreground mb-3">Per Night</div>
+                <NightlyPriceSummary room={room} compact />
               </div>
 
-              {/* TAX MODE */}
               {room.taxMode === "included" && (
                 <div className="flex items-center justify-between border border-blue-200 bg-blue-50 rounded-lg px-3 py-2">
                   <span className="font-medium text-blue-700">
@@ -468,15 +423,16 @@ export default function AdminRoomView() {
               )}
 
               <div className="text-sm space-y-2">
-
                 {room.discountType !== "none" && (
-                  <div className="
+                  <div
+                    className="
     border border-green-200
     bg-green-50
     rounded-lg
     p-3
     space-y-1
-  ">
+  "
+                  >
                     <div className="font-medium text-green-700">
                       Discount Active
                     </div>
@@ -528,9 +484,7 @@ export default function AdminRoomView() {
                     )}
                   </>
                 )}
-
               </div>
-
             </div>
           </aside>
         </div>
