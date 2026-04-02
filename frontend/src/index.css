@@ -344,3 +344,19 @@ justify-content: center;
 .rdp-dropdowns{
   flex-direction: row-reverse;
 }
+
+@keyframes limited-offer-pill-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.limited-offer-pill {
+  animation: limited-offer-pill-pulse 1.8s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform;
+}

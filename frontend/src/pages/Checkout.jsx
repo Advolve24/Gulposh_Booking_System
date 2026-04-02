@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowUpLeft, MapPin, Users, Utensils, Check, User, ConciergeBell, Mail, Phone, Home, CalendarIcon } from "lucide-react";
+import { ArrowUpLeft, MapPin, Users, Utensils, Check, User, ConciergeBell, Mail, Phone, Home, CalendarIcon, Flame } from "lucide-react";
 import { toDateOnly, toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -1133,16 +1133,21 @@ export default function Checkout() {
               )}
 
               {weekendOffer?.canSuggest && (
-                <div className="rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 p-4 text-sm text-amber-900">
-                  <p className="font-semibold tracking-wide">Weekend Offer</p>
-                  <p className="mt-1 font-medium">{weekendOffer.suggestionTitle}</p>
-                  <p className="mt-1 text-xs text-amber-800">
+                <div className="rounded-[22px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-4 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
+                  <span className="limited-offer-pill inline-flex items-center gap-1 rounded-full bg-[#ffc928] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.04em] text-[#4a3200]">
+                    <Flame className="h-3.5 w-3.5" />
+                    Limited Offer
+                  </span>
+                  <p className="mt-3 text-lg font-semibold leading-7 text-[#1f1406]">
+                    {weekendOffer.suggestionTitle}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[#6c5a35]">
                     {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
                   </p>
                   <Button
                     type="button"
                     variant="outline"
-                    className="mt-3 border-amber-400 bg-white text-amber-900 hover:bg-amber-100"
+                    className="mt-4 h-11 rounded-xl border border-[#1f1406] bg-white px-5 text-[15px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
                     onClick={() =>
                       setRange((prev) => ({
                         from: prev?.from || null,
