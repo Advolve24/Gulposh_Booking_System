@@ -84,6 +84,8 @@ const INR = (num) =>
   })}`;
 
 const roundedRupee = (num) => Math.round(Number(num || 0));
+const CHECK_IN_TIME = "12:00 PM";
+const CHECK_OUT_TIME = "10:00 AM";
 
 export default function Checkout() {
   const { state } = useLocation();
@@ -878,7 +880,9 @@ export default function Checkout() {
                       {range?.from && format(range.from, "dd MMM yyyy")}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                      Saturday, 2:00 PM
+                      {range?.from
+                        ? `${format(range.from, "EEEE")}, ${CHECK_IN_TIME}`
+                        : CHECK_IN_TIME}
                     </div>
                   </div>
 
@@ -890,7 +894,9 @@ export default function Checkout() {
                       {range?.to && format(range.to, "dd MMM yyyy")}
                     </div>
                     <div className="text-[11px] text-muted-foreground">
-                      Wednesday, 11:00 AM
+                      {range?.to
+                        ? `${format(range.to, "EEEE")}, ${CHECK_OUT_TIME}`
+                        : CHECK_OUT_TIME}
                     </div>
                   </div>
                 </div>

@@ -17,6 +17,9 @@ import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 import { useAuth } from "@/store/authStore";
 
+const CHECK_IN_TIME = "12:00 PM";
+const CHECK_OUT_TIME = "10:00 AM";
+
 function minusOneDay(date) {
   const d = new Date(date);
   d.setDate(d.getDate() - 1);
@@ -407,12 +410,22 @@ export default function EntireVilla() {
                       <div className="font-medium">
                         {range.from && format(range.from, "dd MMM yyyy")}
                       </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {range.from
+                          ? `${format(range.from, "EEEE")}, ${CHECK_IN_TIME}`
+                          : CHECK_IN_TIME}
+                      </div>
                     </div>
 
                     <div className="bg-[#faf7f4] rounded-xl p-3">
                       <div className="text-xs text-muted-foreground">CHECK-OUT</div>
                       <div className="font-medium">
                         {range.to && format(range.to, "dd MMM yyyy")}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {range.to
+                          ? `${format(range.to, "EEEE")}, ${CHECK_OUT_TIME}`
+                          : CHECK_OUT_TIME}
                       </div>
                     </div>
                   </div>
