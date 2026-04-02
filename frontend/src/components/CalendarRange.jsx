@@ -440,7 +440,7 @@ function DateBox({ label, value, showWeekday = false }) {
         {value ? format(value, "dd MMM yyyy") : "Add date"}
       </span>
       {showWeekday && value && (
-        <span className="mt-1 text-[11px] text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           {format(value, "EEEE")}
         </span>
       )}

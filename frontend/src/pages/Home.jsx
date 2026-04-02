@@ -462,6 +462,7 @@ export default function Home() {
                         value={range}
                         onChange={(newRange) => handleRangeSelect(newRange)}
                         disabledRanges={disabledAll}
+                        showWeekdayInBox
                       />
                       {/* <BookingCalendar
                       onSelect={(range) => {

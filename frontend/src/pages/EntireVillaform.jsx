@@ -692,6 +692,7 @@ export default function EntireVilla() {
                   value={range}
                   onChange={setRange}
                   disabledRanges={disabledAll}
+                  showWeekdayInBox
                 />
               </div>
 
