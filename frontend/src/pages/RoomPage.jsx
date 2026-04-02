@@ -618,7 +618,9 @@ export default function RoomPage() {
 
               <div className="flex gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-primary" />
-                Gulposh Villa, Lonavala, Maharashtra
+                <a href="https://maps.google.com/?q=House+no+32+A,+Dnyandeep+Co-Op+Housing+Society,+Villa+Gulposh+Vidyasagar+Properties+Pvt+Ltd,+Kirawali,+Deulwadi,+Maharashtra+410201" target="_blank" rel="noopener noreferrer">
+                  House no 32 A, Dnyandeep Co-Op Housing Society,<br/> Villa Gulposh Vidyasagar Properties Pvt Ltd, Kirawali, Deulwadi, Maharashtra 410201
+                </a>
               </div>
             </section>
 
