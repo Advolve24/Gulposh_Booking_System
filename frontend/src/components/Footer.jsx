@@ -136,10 +136,9 @@ export default function Footer() {
                                 rel="noopener noreferrer"
                                 className="group flex items-start gap-3 relative w-fit"
                             >
-                                <MapPin size={16} className="mt-1" />
+                                <MapPin size={18} className="mt-1" />
                                 <span className="relative leading-snug">
-                                    Villa Gulposh,<br />
-                                    Karjat, Maharashtra – 410201
+                                   Villa Gulposh Vidyasagar Properties <br/>Pvt Ltd. House no 32 A, Dnyandeep<br/> Society, Kirawali, Karjat - 410201
                                     <span
                                         className="
               absolute left-0 -bottom-1 h-[1.5px] bg-white

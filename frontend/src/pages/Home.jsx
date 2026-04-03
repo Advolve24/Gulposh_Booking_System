@@ -875,7 +875,7 @@ export default function Home() {
                     Exclusive Experience
                   </div>
 
-                  <h4 className="mt-5">For Groups of <span className="font-bold text-[18px]">10+ Guests</span></h4>
+                  <h4 className="mt-5">Planning a stay for more than <span className="font-bold text-[18px]">10+ Guests ?</span></h4>
                   <h3 className="mt-2 text-3xl md:text-4xl leading-tight font-semibold">
                     Book the Entire Villa
                   </h3>
