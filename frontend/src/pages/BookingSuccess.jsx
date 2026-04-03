@@ -20,6 +20,7 @@ import {
 import { api } from "@/api/http";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { formatINR } from "@/lib/currency";
 
 
 const fmt = (d) =>
@@ -270,7 +271,7 @@ export default function BookingSuccess() {
                             <div className="flex justify-between">
                                 <span className="font-[500]">Room Charges</span>
                                 <span className="font-[500]">
-                                    ₹{roomTotal.toLocaleString("en-IN")}
+                                    {formatINR(roomTotal)}
                                 </span>
                             </div>
 
@@ -283,21 +284,21 @@ export default function BookingSuccess() {
                             ) : mealTotal > 0 ? (
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>Food Charges</span>
-                                    <span>₹{mealTotal.toLocaleString("en-IN")}</span>
+                                    <span>{formatINR(mealTotal)}</span>
                                 </div>
                             ) : null}
 
                             {/* SUBTOTAL */}
                             <div className="flex justify-between">
                                 <span>Subtotal</span>
-                                <span>₹{subtotal.toLocaleString("en-IN")}</span>
+                                <span>{formatINR(subtotal)}</span>
                             </div>
 
                             {/* DISCOUNT */}
                             {discountAmount > 0 && (
                                 <div className="flex justify-between text-green-700">
                                     <span>Discount</span>
-                                    <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
+                                    <span>-{formatINR(discountAmount)}</span>
                                 </div>
                             )}
 
@@ -305,7 +306,7 @@ export default function BookingSuccess() {
                             {discountAmount > 0 && (
                                 <div className="flex justify-between">
                                     <span>After Discount</span>
-                                    <span>₹{discountedSubtotal.toLocaleString("en-IN")}</span>
+                                    <span>{formatINR(discountedSubtotal)}</span>
                                 </div>
                             )}
 
@@ -313,12 +314,12 @@ export default function BookingSuccess() {
                             <div className="flex flex-col justify-between text-muted-foreground">
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>CGST</span>
-                                    <span>₹{cgstAmount.toLocaleString("en-IN")}</span>
+                                    <span>{formatINR(cgstAmount)}</span>
                                 </div>
 
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>SGST</span>
-                                    <span>₹{sgstAmount.toLocaleString("en-IN")}</span>
+                                    <span>{formatINR(sgstAmount)}</span>
                                 </div>
                             </div>
 
@@ -328,7 +329,7 @@ export default function BookingSuccess() {
                             <div className="flex justify-between font-semibold text-base">
                                 <span>Total Paid</span>
                                 <span className="text-red-600">
-                                    ₹{grandTotal.toLocaleString("en-IN")}
+                                    {formatINR(grandTotal)}
                                 </span>
                             </div>
 

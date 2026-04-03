@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { getBooking, cancelBooking } from "@/api/bookings";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { formatINR } from "@/lib/currency";
 
 /* ---------------------------------------------
    CONFIG
@@ -246,7 +247,7 @@ export default function CancelBookingFlow({
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total Paid</span>
                   <span className="font-medium">
-                    ₹{booking.amount.toLocaleString("en-IN")}
+                    {formatINR(booking.amount)}
                   </span>
                 </div>
 
@@ -254,7 +255,7 @@ export default function CancelBookingFlow({
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Cancellation Fee</span>
                   <span className="text-red-600 font-medium">
-                    - ₹{(booking.amount - refundAmount).toLocaleString("en-IN")}
+                    - {formatINR(booking.amount - refundAmount)}
                   </span>
                 </div>
 
@@ -264,7 +265,7 @@ export default function CancelBookingFlow({
                 <div className="flex justify-between items-center text-sm">
                   <span className="font-medium">Refund Amount</span>
                   <span className="text-green-600 font-semibold text-base">
-                    ₹{refundAmount.toLocaleString("en-IN")}
+                    {formatINR(refundAmount)}
                   </span>
                 </div>
               </div>

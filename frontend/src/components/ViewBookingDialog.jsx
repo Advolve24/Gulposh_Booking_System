@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Calendar, Users, IndianRupee, CreditCard } from "lucide-react";
+import { Calendar, Users } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { api } from "../api/http";
-import { Wifi, Phone, Mail, Copy } from "lucide-react";
+import { Phone, Copy } from "lucide-react";
+import { formatINR } from "../lib/currency";
 
 const fmt = (d) =>
   new Date(d).toLocaleDateString("en-GB", {
@@ -268,14 +269,11 @@ export default function ViewBookingDialog({
 
               {/* ================= BILLING ================= */}
               <div className="border-t pt-4 space-y-2">
-
                 <p className="text-xs uppercase text-muted-foreground tracking-wide">
                   Billing Details
                 </p>
 
                 <div className="mt-3 rounded-xl overflow-hidden border bg-white">
-
-                  {/* HEADER */}
                   <div className="grid grid-cols-6 text-[11px] font-semibold uppercase bg-[#f3f0ed] text-[#6b5f57] px-3 py-2">
                     <div className="text-left">Room</div>
                     <div className="text-left">Food</div>
@@ -285,40 +283,22 @@ export default function ViewBookingDialog({
                     <div className="text-left">SGST {sgstPercent}%</div>
                   </div>
 
-                  {/* VALUES */}
                   <div className="grid grid-cols-6 text-sm px-3 py-3 font-medium">
-                    <div>₹{roomTotal.toLocaleString("en-IN")}</div>
-
-                    <div>₹{mealTotal.toLocaleString("en-IN")}</div>
-
-                    <div className="text-green-600">
-                      -₹{discountAmount.toLocaleString("en-IN")}
-                    </div>
-
-                    <div>₹{discountedSubtotal.toLocaleString("en-IN")}</div>
-
-                    <div>
-                      ₹{Math.round(cgstAmount).toLocaleString("en-IN")}
-                    </div>
-
-                    <div>
-                      ₹{Math.round(sgstAmount).toLocaleString("en-IN")}
-                    </div>
+                    <div>{formatINR(roomTotal)}</div>
+                    <div>{formatINR(mealTotal)}</div>
+                    <div className="text-green-600">-{formatINR(discountAmount)}</div>
+                    <div>{formatINR(discountedSubtotal)}</div>
+                    <div>{formatINR(cgstAmount)}</div>
+                    <div>{formatINR(sgstAmount)}</div>
                   </div>
 
-                  {/* DIVIDER */}
                   <div className="border-t" />
 
-                  {/* GRAND TOTAL */}
                   <div className="flex justify-between items-center px-4 py-3 text-lg font-bold">
                     <span className="tracking-wide">Grand Total</span>
-                    <span className="text-primary">
-                      ₹{Math.round(grandTotal).toLocaleString("en-IN")}
-                    </span>
+                    <span className="text-primary">{formatINR(grandTotal)}</span>
                   </div>
                 </div>
-
-
               </div>
 
             </div>
@@ -344,25 +324,4 @@ const InfoCard = ({ icon, title, main, sub }) => (
     )}
   </div>
 );
-
-const Row = ({ label, value }) => {
-  const isNegative = value < 0;
-
-  return (
-    <div className="flex justify-between text-sm">
-      <span>{label}</span>
-      <span
-        className={
-          isNegative
-            ? "text-green-600 font-medium"
-            : ""
-        }
-      >
-        {isNegative ? "-" : ""}₹
-        {Math.abs(value).toLocaleString("en-IN")}
-      </span>
-    </div>
-  );
-};
-
 
