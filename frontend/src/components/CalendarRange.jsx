@@ -407,7 +407,7 @@ export default function CalendarRange({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="grid w-full grid-cols-2 rounded-xl py-3 h-auto"
+          className="grid w-full grid-cols-2 rounded-xl py-[2px] h-auto"
         >
           <DateBox
             label="Check in"

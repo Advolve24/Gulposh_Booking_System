@@ -62,6 +62,28 @@ function mergeRanges(ranges) {
   return out;
 }
 
+function clampGuestSelection(adultsValue, childrenValue, maxGuests) {
+  const safeMax = Number(maxGuests || 0);
+  const safeAdults = Math.max(0, Number(adultsValue || 0));
+  const safeChildren = Math.max(0, Number(childrenValue || 0));
+
+  if (safeMax <= 0) {
+    return {
+      adults: Math.max(1, safeAdults || 1),
+      children: 0,
+    };
+  }
+
+  const nextAdults = Math.min(Math.max(1, safeAdults || 1), safeMax);
+  const remainingCapacity = Math.max(0, safeMax - nextAdults);
+  const nextChildren = Math.min(safeChildren, remainingCapacity);
+
+  return {
+    adults: nextAdults,
+    children: nextChildren,
+  };
+}
+
 const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
@@ -120,6 +142,7 @@ function BookingCard({
   disabledAll,
   goToCheckout,
   weekendOffer,
+  onCapacityMaxAttempt,
 }) {
   const totalGuests = adults + children;
 
@@ -193,6 +216,7 @@ function BookingCard({
             min={1}
             max={room.maxGuests - children}
             onChange={setAdults}
+            onMaxAttempt={onCapacityMaxAttempt}
           />
 
           <GuestCounter
@@ -202,6 +226,7 @@ function BookingCard({
             min={0}
             max={room.maxGuests - adults}
             onChange={setChildren}
+            onMaxAttempt={onCapacityMaxAttempt}
           />
 
           <p className="text-xs text-muted-foreground">
@@ -250,12 +275,10 @@ export default function RoomPage() {
   const navigate = useNavigate();
 
   const navState = location.state;
-  const savedSearch = sessionStorage.getItem("searchParams");
-  const fallbackState = savedSearch ? JSON.parse(savedSearch) : null;
-
-  const initialSearch = navState || fallbackState;
+  const initialSearch = navState || null;
 
   const [room, setRoom] = useState(null);
+  const [allRooms, setAllRooms] = useState([]);
   const [range, setRange] = useState(() => {
     if (!initialSearch?.range?.from || !initialSearch?.range?.to) return undefined;
 
@@ -279,6 +302,7 @@ export default function RoomPage() {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [capacityPopupOpen, setCapacityPopupOpen] = useState(false);
   const [discountConfig, setDiscountConfig] = useState({
     weekendDiscountEnabled: false,
     twoWeekendNightsDiscountPercent: 0,
@@ -302,27 +326,6 @@ export default function RoomPage() {
 
 
   useEffect(() => {
-    if (!location.state) return;
-
-    const saved = sessionStorage.getItem("searchParams");
-    if (!saved) return;
-
-    const parsed = JSON.parse(saved);
-
-    if (parsed?.range?.from && parsed?.range?.to) {
-      setRange({
-        from: new Date(parsed.range.from),
-        to: new Date(parsed.range.to),
-      });
-    }
-
-    if (typeof parsed?.adults === "number") setAdults(parsed.adults);
-    if (typeof parsed?.children === "number") setChildren(parsed.children);
-  }, [location.state]);
-
-
-
-  useEffect(() => {
     if (range?.from && typeof range.from === "string") {
       setRange({
         from: new Date(range.from),
@@ -334,6 +337,7 @@ export default function RoomPage() {
 
   useEffect(() => {
     api.get(`/rooms/${id}`).then(({ data }) => setRoom(data));
+    api.get("/rooms").then(({ data }) => setAllRooms(data || []));
 
     api.get("/rooms/disabled/all").then(({ data }) =>
       setBookedAll(
@@ -372,6 +376,28 @@ export default function RoomPage() {
     });
   }, [id]);
 
+  useEffect(() => {
+    if (!room?.maxGuests) return;
+
+    const source = navState || null;
+
+    if (source?.range?.from && source?.range?.to) {
+      setRange({
+        from: new Date(source.range.from),
+        to: new Date(source.range.to),
+      });
+    }
+
+    const clamped = clampGuestSelection(
+      source?.adults ?? adults,
+      source?.children ?? children,
+      room.maxGuests
+    );
+
+    setAdults(clamped.adults);
+    setChildren(clamped.children);
+  }, [id, room?.maxGuests]);
+
   const disabledAll = useMemo(
     () => mergeRanges([...blackoutRanges, ...bookedAll]),
     [blackoutRanges, bookedAll]
@@ -395,6 +421,61 @@ export default function RoomPage() {
     }
     return getWeekendOfferState(range, discountConfig);
   }, [discountConfig, range]);
+
+  const recommendedRooms = useMemo(() => {
+    if (!room?._id) return [];
+
+    return allRooms
+      .filter(
+        (candidate) =>
+          candidate._id !== room._id &&
+          Number(candidate.maxGuests || 0) > Number(room.maxGuests || 0)
+      )
+      .sort((a, b) => Number(a.maxGuests || 0) - Number(b.maxGuests || 0));
+  }, [allRooms, room]);
+
+  const savedBookingSearch = useMemo(
+    () => ({
+      range,
+      adults,
+      children,
+    }),
+    [range, adults, children]
+  );
+
+  const roomSearch = useMemo(() => {
+    const params = new URLSearchParams();
+
+    if (range?.from && range?.to) {
+      params.set("from", new Date(range.from).toISOString());
+      params.set("to", new Date(range.to).toISOString());
+    }
+
+    if (totalGuests > 0) {
+      params.set("guests", String(totalGuests));
+    }
+
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  }, [range, totalGuests]);
+
+  const handleCapacityMaxAttempt = () => {
+    setCapacityPopupOpen(true);
+  };
+
+  const goToSuggestedRoom = (targetRoomId) => {
+    sessionStorage.setItem("searchParams", JSON.stringify(savedBookingSearch));
+    setCapacityPopupOpen(false);
+    navigate(`/room/${targetRoomId}${roomSearch}`, {
+      state: savedBookingSearch,
+    });
+  };
+
+  const goToEntireVilla = () => {
+    sessionStorage.setItem("searchParams", JSON.stringify(savedBookingSearch));
+    setCapacityPopupOpen(false);
+    navigate("/entire-villa-form");
+  };
 
   const goToCheckout = () => {
     if (!range?.from || !range?.to || totalGuests < 1) {
@@ -808,6 +889,7 @@ export default function RoomPage() {
                 min={1}
                 max={room.maxGuests - children}
                 onChange={setAdults}
+                onMaxAttempt={handleCapacityMaxAttempt}
               />
 
               <GuestCounter
@@ -817,6 +899,7 @@ export default function RoomPage() {
                 min={0}
                 max={room.maxGuests - adults}
                 onChange={setChildren}
+                onMaxAttempt={handleCapacityMaxAttempt}
               />
 
               <p className="mt-2 text-xs text-muted-foreground">
@@ -953,11 +1036,82 @@ export default function RoomPage() {
                 disabledAll={disabledAll}
                 goToCheckout={goToCheckout}
                 weekendOffer={weekendOffer}
+                onCapacityMaxAttempt={handleCapacityMaxAttempt}
               />
             </div>
           </div>
         </DrawerContent>
       </Drawer>
+
+      {capacityPopupOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setCapacityPopupOpen(false)}
+          />
+
+          <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setCapacityPopupOpen(false)}
+              className="absolute right-4 top-4 z-10 h-9 w-9 rounded-full bg-black/5 text-lg text-black/70 transition hover:bg-black/10"
+            >
+              X
+            </button>
+
+            <div className="border-b border-[#eadfd6] px-6 py-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ba081c]">
+                Room Capacity Reached
+              </div>
+              <h3 className="mt-2 text-2xl font-semibold text-[#2A201B]">
+                This room&apos;s max guest capacity is {room.maxGuests}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-[#6d5c52]">
+                Please select another room for more guests, or choose the entire villa for your group.
+              </p>
+            </div>
+
+            <div className="px-6 py-6">
+              <div className="space-y-3">
+                {recommendedRooms.map((candidate) => (
+                  <button
+                    key={candidate._id}
+                    type="button"
+                    onClick={() => goToSuggestedRoom(candidate._id)}
+                    className="flex w-full items-center justify-between rounded-2xl border border-[#eadfd6] bg-[#fffaf7] px-4 py-4 text-left transition hover:border-[#ba081c] hover:bg-[#fff4f1]"
+                  >
+                    <div>
+                      <div className="text-base font-semibold text-[#2A201B]">
+                        {candidate.name}
+                      </div>
+                      <div className="text-sm text-[#6d5c52]">
+                        Max guest capacity: {candidate.maxGuests}
+                      </div>
+                    </div>
+                    <ArrowUpLeft className="h-4 w-4 text-[#ba081c]" />
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={goToEntireVilla}
+                  className="flex w-full items-center justify-between rounded-2xl bg-[#ba081c] px-4 py-4 text-left text-white transition hover:bg-[#a00718]"
+                >
+                  <div>
+                    <div className="text-base font-semibold">
+                      Entire Villa
+                    </div>
+                    <div className="text-sm text-white/85">
+                      Reserve all rooms for larger groups
+                    </div>
+                  </div>
+                  <ArrowUpLeft className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );

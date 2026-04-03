@@ -98,6 +98,8 @@ export default function Checkout() {
   const initialChildren = Number(state?.children ?? 0);
 
   const [room, setRoom] = useState(null);
+  const [allRooms, setAllRooms] = useState([]);
+  const [capacityPopupOpen, setCapacityPopupOpen] = useState(false);
 
   /* ================= FORM ================= */
   const [form, setForm] = useState({
@@ -224,6 +226,7 @@ export default function Checkout() {
       return;
     }
     api.get(`/rooms/${state.roomId}`).then(({ data }) => setRoom(data));
+    api.get("/rooms").then(({ data }) => setAllRooms(data || []));
   }, [state, navigate]);
 
 
@@ -431,6 +434,52 @@ export default function Checkout() {
     if (!room) return 0;
     return Number((taxableAmount + totalTax).toFixed(2));
   }, [room, taxableAmount, totalTax]);
+
+  const recommendedRooms = useMemo(() => {
+    if (!room?._id) return [];
+
+    return allRooms
+      .filter(
+        (candidate) =>
+          candidate._id !== room._id &&
+          Number(candidate.maxGuests || 0) > Number(room.maxGuests || 0)
+      )
+      .sort((a, b) => Number(a.maxGuests || 0) - Number(b.maxGuests || 0));
+  }, [allRooms, room]);
+
+  const handleCapacityMaxAttempt = () => {
+    setCapacityPopupOpen(true);
+  };
+
+  const goToSuggestedRoom = (targetRoomId) => {
+    setCapacityPopupOpen(false);
+    navigate(`/room/${targetRoomId}`, {
+      state: {
+        range: {
+          from: range?.from || null,
+          to: range?.to || null,
+        },
+        adults,
+        children,
+      },
+    });
+  };
+
+  const goToEntireVilla = () => {
+    sessionStorage.setItem(
+      "searchParams",
+      JSON.stringify({
+        range: {
+          from: range?.from || null,
+          to: range?.to || null,
+        },
+        adults,
+        children,
+      })
+    );
+    setCapacityPopupOpen(false);
+    navigate("/entire-villa-form");
+  };
 
 
   const proceedPayment = async () => {
@@ -662,9 +711,17 @@ export default function Checkout() {
     max = Infinity,
     onChange,
     helper,
+    onMaxAttempt,
   }) {
     const decrement = () => onChange(Math.max(min, value - 1));
-    const increment = () => onChange(Math.min(max, value + 1));
+    const increment = () => {
+      if (value < max) {
+        onChange(Math.min(max, value + 1));
+        return;
+      }
+      onMaxAttempt?.();
+    };
+    const isIncrementDisabled = value >= max && !onMaxAttempt;
 
     return (
       <div className="space-y-1">
@@ -687,7 +744,7 @@ export default function Checkout() {
           <button
             type="button"
             onClick={increment}
-            disabled={value >= max}
+            disabled={isIncrementDisabled}
             className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
           >
             +
@@ -1187,6 +1244,7 @@ export default function Checkout() {
                   setVegGuests(0);
                   setNonVegGuests(0);
                 }}
+                onMaxAttempt={handleCapacityMaxAttempt}
               />
 
               <Counter
@@ -1199,6 +1257,7 @@ export default function Checkout() {
                   setVegGuests(0);
                   setNonVegGuests(0);
                 }}
+                onMaxAttempt={handleCapacityMaxAttempt}
               />
 
               <div className="col-span-2 text-xs text-muted-foreground">
@@ -1551,6 +1610,76 @@ export default function Checkout() {
         </section>
 
       </div>
+
+      {capacityPopupOpen && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setCapacityPopupOpen(false)}
+          />
+
+          <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setCapacityPopupOpen(false)}
+              className="absolute right-4 top-4 z-10 h-9 w-9 rounded-full bg-black/5 text-lg text-black/70 transition hover:bg-black/10"
+            >
+              X
+            </button>
+
+            <div className="border-b border-[#eadfd6] px-6 py-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ba081c]">
+                Room Capacity Reached
+              </div>
+              <h3 className="mt-2 text-2xl font-semibold text-[#2A201B]">
+                This room&apos;s max guest capacity is {room?.maxGuests}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-[#6d5c52]">
+                Please select another room for more guests, or choose the entire villa for your group.
+              </p>
+            </div>
+
+            <div className="px-6 py-6">
+              <div className="space-y-3">
+                {recommendedRooms.map((candidate) => (
+                  <button
+                    key={candidate._id}
+                    type="button"
+                    onClick={() => goToSuggestedRoom(candidate._id)}
+                    className="flex w-full items-center justify-between rounded-2xl border border-[#eadfd6] bg-[#fffaf7] px-4 py-4 text-left transition hover:border-[#ba081c] hover:bg-[#fff4f1]"
+                  >
+                    <div>
+                      <div className="text-base font-semibold text-[#2A201B]">
+                        {candidate.name}
+                      </div>
+                      <div className="text-sm text-[#6d5c52]">
+                        Max guest capacity: {candidate.maxGuests}
+                      </div>
+                    </div>
+                    <ArrowUpLeft className="h-4 w-4 text-[#ba081c]" />
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={goToEntireVilla}
+                  className="flex w-full items-center justify-between rounded-2xl bg-[#ba081c] px-4 py-4 text-left text-white transition hover:bg-[#a00718]"
+                >
+                  <div>
+                    <div className="text-base font-semibold">
+                      Entire Villa
+                    </div>
+                    <div className="text-sm text-white/85">
+                      Reserve all rooms for larger groups
+                    </div>
+                  </div>
+                  <ArrowUpLeft className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

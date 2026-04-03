@@ -7,9 +7,17 @@ export default function GuestCounter({
   min = 0,
   max,
   onChange,
+  onMaxAttempt,
 }) {
   const dec = () => value > min && onChange(value - 1);
-  const inc = () => value < max && onChange(value + 1);
+  const inc = () => {
+    if (value < max) {
+      onChange(value + 1);
+      return;
+    }
+    onMaxAttempt?.();
+  };
+  const isIncrementDisabled = value >= max && !onMaxAttempt;
 
   return (
     <div className="flex items-center justify-between py-3">
@@ -31,7 +39,7 @@ export default function GuestCounter({
 
         <button
           onClick={inc}
-          disabled={value >= max}
+          disabled={isIncrementDisabled}
           className="h-8 w-8 rounded-full border flex items-center justify-center disabled:opacity-40"
         >
           <Plus size={14} />
