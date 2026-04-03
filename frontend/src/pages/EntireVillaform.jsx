@@ -19,6 +19,7 @@ import { useAuth } from "@/store/authStore";
 
 const CHECK_IN_TIME = "12:00 PM";
 const CHECK_OUT_TIME = "10:00 AM";
+const ENTIRE_VILLA_MAX_GUESTS = 16;
 
 function minusOneDay(date) {
   const d = new Date(date);
@@ -195,7 +196,9 @@ export default function EntireVilla() {
         setRange({ from: new Date(r.from), to: new Date(r.to) });
       }
       const total = Number(adults) + Number(children);
-      if (total > 0) setGuests(String(total));
+      if (total > 0) {
+        setGuests(String(Math.min(total, ENTIRE_VILLA_MAX_GUESTS)));
+      }
     } catch { }
   }, []);
 
@@ -716,7 +719,7 @@ export default function EntireVilla() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[...Array(22)].map((_, i) => (
+                    {[...Array(ENTIRE_VILLA_MAX_GUESTS)].map((_, i) => (
                       <SelectItem key={i + 1} value={String(i + 1)}>
                         {i + 1}
                       </SelectItem>
