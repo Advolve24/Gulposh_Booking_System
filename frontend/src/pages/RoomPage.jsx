@@ -170,10 +170,10 @@ function BookingCard({
               <Flame className="h-3.5 w-3.5" />
               Limited Offer
             </span>
-            <p className="mt-1 text-lg font-semibold leading-3 text-[#1f1406]">
+            <p className="mt-1 text-lg font-semibold leading-4 text-[#1f1406]">
               {weekendOffer.suggestionTitle}
             </p>
-            <p className="mt-1 text-sm leading-3 text-[#6c5a35]">
+            <p className="mt-1 text-sm leading-4 text-[#6c5a35]">
               {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
             </p>
             <Button
@@ -843,10 +843,10 @@ export default function RoomPage() {
                   <Flame className="h-3.5 w-3.5" />
                   Limited Offer
                 </span>
-                <p className="mt-1 text-lg font-semibold leading-3 text-[#1f1406]">
+                <p className="mt-1 text-lg font-semibold leading-4 text-[#1f1406]">
                   {weekendOffer.suggestionTitle}
                 </p>
-                <p className="mt-1 text-sm leading-3 text-[#6c5a35]">
+                <p className="mt-1 text-sm leading-4 text-[#6c5a35]">
                   {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
                 </p>
                 <Button
