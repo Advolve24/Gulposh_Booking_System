@@ -1204,13 +1204,13 @@ export default function Checkout() {
                   <p className="mt-3 text-lg font-semibold leading-7 text-[#1f1406]">
                     {weekendOffer.suggestionTitle}
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-[#6c5a35]">
+                  <p className="text-sm leading-6 text-[#6c5a35]">
                     {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
                   </p>
                   <Button
                     type="button"
                     variant="outline"
-                    className="mt-4 h-11 rounded-xl border border-[#1f1406] bg-white px-5 text-[15px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
+                    className="mt-1 h-11 rounded-xl border border-[#1f1406] bg-white px-5 text-[15px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
                     onClick={() =>
                       setRange((prev) => ({
                         from: prev?.from || null,
