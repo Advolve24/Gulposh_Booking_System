@@ -361,7 +361,7 @@ export default function VillaInvoice() {
                   <div className="flex justify-between border-b border-dashed border-gray-300 pb-2">
                     <span className="text-gray-600">Package</span>
                     <span className="font-bold text-gray-900">
-                      {booking.room?.name || (booking.isVilla ? "Entire Villa" : "-")}
+                      {booking.room?.name || (booking.isVilla ? "Entire Villa" : "Entire Villa")}
                     </span>
                   </div>
 
