@@ -226,7 +226,7 @@ export default function VillaInvoice() {
 
   return (
     <div className="min-h-screen bg-[#faf7f4] px-3 md:px-6 py-4 md:py-8">
-      <div className="max-w-6xl mx-auto flex gap-6">
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 md:gap-6">
 
         {/* ================= MAIN ================= */}
         <div className="flex-1">
@@ -241,10 +241,10 @@ export default function VillaInvoice() {
 
           <div
             ref={invoiceRef}
-            className="bg-white rounded-2xl p-8 text-[14px] leading-relaxed max-w-[900px] mx-auto"
+            className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 text-[13px] sm:text-[14px] leading-relaxed max-w-[900px] mx-auto"
           >
             {/* ================= HEADER ================= */}
-            <div className="flex justify-between items-start border-b pb-3">
+            <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start border-b pb-3">
               <div className="flex gap-4 items-center">
                 <div>
                   <img src="/Gulposh-Logo2.png" className="w-18 h-16 bg-white" />
@@ -257,7 +257,7 @@ export default function VillaInvoice() {
                 </div>
               </div>
 
-              <div className="text-right min-w-[260px]">
+              <div className="min-w-0 md:min-w-[260px] md:text-right">
 
                 {/* TAX INVOICE badge */}
                 <div className="flex justify-end mb-2">
@@ -289,7 +289,7 @@ export default function VillaInvoice() {
             </div>
 
             {/* ================= SELLER + BILL ================= */}
-            <div className="grid grid-cols-2 gap-3 mt-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
               <div className="border rounded-xl p-4">
 
                 <p className="font-bold">
@@ -348,12 +348,12 @@ export default function VillaInvoice() {
             </div>
 
             {/* ================= STAY DETAILS ================= */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 mt-3 text-[14px]">
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 mt-3 text-[14px]">
               <p className="font-bold text-gray-800 mb-4 uppercase tracking-wide">
                 Stay Details
               </p>
 
-              <div className="grid grid-cols-2 gap-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
 
                 {/* LEFT COLUMN */}
                 <div className="space-y-4">
@@ -413,8 +413,9 @@ export default function VillaInvoice() {
 
             {/* ================= ITEMS TABLE ================= */}
             <div className="mt-3 border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
 
-              <table className="w-full text-[14px]">
+              <table className="w-full min-w-[680px] text-[14px]">
 
                 {/* HEADER */}
                 <thead className="bg-[#f3f4f6] text-gray-600">
@@ -501,19 +502,20 @@ export default function VillaInvoice() {
                 </tbody>
 
               </table>
+              </div>
             </div>
 
 
             {/* ================= TOTALS ================= */}
-            <div className="flex items-start gap-3 mt-3">
-              <div className="w-[75%] bg-[#fff5f5] border border-dashed border-red-300 rounded-2xl p-5 text-[13px] text-red-700 leading-relaxed">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-3 mt-3">
+              <div className="w-full lg:w-[75%] bg-[#fff5f5] border border-dashed border-red-300 rounded-2xl p-4 sm:p-5 text-[13px] text-red-700 leading-relaxed">
                 <span className="font-semibold">Note:</span>{" "}
                 Meals are optional add-ons for in-house guests and are billed as part of
                 the accommodation package. GST is calculated on the package subtotal at
                 the applicable accommodation rate.
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 text-[14px]">
+              <div className="w-full bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 text-[14px]">
                 <p className="font-bold text-gray-800 mb-2 uppercase tracking-wide">
                   Totals
                 </p>
@@ -594,7 +596,7 @@ export default function VillaInvoice() {
             </div>
 
             {/* ================= PAYMENT ================= */}
-            <div className="grid grid-cols-2 gap-3 mt-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
               <div className="border rounded-xl p-4 text-sm">
                 <p className="font-bold mb-2">PAYMENT DETAILS</p>
                 <p>Mode: <span className="capitalize font-bold">{booking.paymentProvider}</span></p>
@@ -604,7 +606,7 @@ export default function VillaInvoice() {
                 </p>
               </div>
 
-              <div className="border rounded-xl p-4 text-sm text-right">
+              <div className="border rounded-xl p-4 text-sm md:text-right">
                 <p>
                   For <span className="font-bold">Vidyasagar Properties Private Limited</span>
                   <br />
