@@ -19,6 +19,12 @@ const formatBookingId = (id = "") => `BK-${getShortId(id)}`;
 const formatInvoiceNo = (id = "") => `VG-INV-${getShortId(id)}`;
 const CHECK_IN_TIME = "12:00 PM";
 const CHECK_OUT_TIME = "10:00 AM";
+const INR = (num) =>
+  `₹${Number(num || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
+const roundedRupee = (num) => Math.round(Number(num || 0));
 
 export default function VillaInvoice() {
   const { id } = useParams();
@@ -121,6 +127,7 @@ export default function VillaInvoice() {
       : `Veg ₹${vegTotal.toLocaleString("en-IN")} • Non-Veg ₹${nonVegTotal.toLocaleString("en-IN")}`;
 
   const grandTotal = booking.amount || 0;
+  const roundedGrandTotal = roundedRupee(grandTotal);
 
   const mealMode = booking.room?.mealMode;
 
@@ -526,7 +533,7 @@ export default function VillaInvoice() {
                     Subtotal (Taxable Value)
                   </span>
                   <span className="font-bold">
-                    ₹{subTotal.toLocaleString("en-IN")}
+                    {INR(subTotal)}
                   </span>
                 </div>
 
@@ -535,7 +542,7 @@ export default function VillaInvoice() {
                   <div className="flex justify-between py-1 text-green-600">
                     <span>Discount</span>
                     <span className="font-bold">
-                      -₹{discountAmount.toLocaleString("en-IN")}
+                      -{INR(discountAmount)}
                     </span>
                   </div>
                 )}
@@ -547,7 +554,7 @@ export default function VillaInvoice() {
                       After Discount
                     </span>
                     <span className="font-bold">
-                      ₹{discountedSubtotal.toLocaleString("en-IN")}
+                      {INR(discountedSubtotal)}
                     </span>
                   </div>
                 )}
@@ -559,7 +566,7 @@ export default function VillaInvoice() {
                       CGST @ 9%
                     </span>
                     <span className="font-bold">
-                      ₹{cgstAmount.toLocaleString("en-IN")}
+                      {INR(cgstAmount)}
                     </span>
                   </div>
 
@@ -568,7 +575,7 @@ export default function VillaInvoice() {
                       SGST @ 9%
                     </span>
                     <span className="font-bold">
-                      ₹{sgstAmount.toLocaleString("en-IN")}
+                      {INR(sgstAmount)}
                     </span>
                   </div>
 
@@ -581,7 +588,7 @@ export default function VillaInvoice() {
                     Total Payable
                   </span>
                   <span className="font-bold text-primary text-xl">
-                    ₹{grandTotal.toLocaleString("en-IN")}
+                    {INR(grandTotal)}
                   </span>
                 </div>
 
@@ -589,7 +596,7 @@ export default function VillaInvoice() {
                 <p className="text-gray-600 text-[14px] mt-0 leading-snug">
                   Amount in words:{" "}
                   <span className="font-medium text-gray-800">
-                    {convertNumberToWords(grandTotal)} Only
+                    {convertNumberToWords(roundedGrandTotal)} Only
                   </span>
                 </p>
               </div>
