@@ -262,7 +262,7 @@ export default function VillaInvoice() {
                 {/* TAX INVOICE badge */}
                 <div className="flex justify-end mb-2">
                   <span className="bg-red-100 text-primary px-3 py-2 rounded-full text-xs font-semibold tracking-wide">
-                    TAX INVOICE
+                    INVOICE
                   </span>
                 </div>
 
@@ -361,7 +361,7 @@ export default function VillaInvoice() {
                   <div className="flex justify-between border-b border-dashed border-gray-300 pb-2">
                     <span className="text-gray-600">Package</span>
                     <span className="font-bold text-gray-900">
-                      {booking.room?.name}
+                      {booking.room?.name || (booking.isVilla ? "Entire Villa" : "-")}
                     </span>
                   </div>
 
