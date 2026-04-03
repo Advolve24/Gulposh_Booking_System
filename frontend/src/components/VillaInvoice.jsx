@@ -17,6 +17,8 @@ const convertNumberToWords = (num) => {
 const getShortId = (id = "") => id.slice(-6).toUpperCase();
 const formatBookingId = (id = "") => `BK-${getShortId(id)}`;
 const formatInvoiceNo = (id = "") => `VG-INV-${getShortId(id)}`;
+const CHECK_IN_TIME = "12:00 PM";
+const CHECK_OUT_TIME = "10:00 AM";
 
 export default function VillaInvoice() {
   const { id } = useParams();
@@ -245,7 +247,7 @@ export default function VillaInvoice() {
             <div className="flex justify-between items-start border-b pb-3">
               <div className="flex gap-4 items-center">
                 <div>
-                  <img src="/Gulposh-Logo2.png" className="w-18 h-14 bg-white" />
+                  <img src="/Gulposh-Logo2.png" className="w-18 h-16 bg-white" />
                   <p className="text-gray-600 text-sm">
                     A unit of <span className="font-semibold">Vidyasagar Properties Private Limited</span>
                   </p>
@@ -357,7 +359,7 @@ export default function VillaInvoice() {
                 <div className="space-y-4">
 
                   <div className="flex justify-between border-b border-dashed border-gray-300 pb-2">
-                    <span className="text-gray-600">Property</span>
+                    <span className="text-gray-600">Package</span>
                     <span className="font-bold text-gray-900">
                       {booking.room?.name}
                     </span>
@@ -366,14 +368,14 @@ export default function VillaInvoice() {
                   <div className="flex justify-between border-b border-dashed border-gray-300 pb-2">
                     <span className="text-gray-600">Check-in</span>
                     <span className="font-bold text-gray-900">
-                      {format(new Date(booking.startDate), "dd MMM yyyy • hh:mm a")}
+                      {format(new Date(booking.startDate), "dd MMM yyyy")} • {CHECK_IN_TIME}
                     </span>
                   </div>
 
                   <div className="flex justify-between">
                     <span className="text-gray-600">Check-out</span>
                     <span className="font-bold text-gray-900">
-                      {format(new Date(booking.endDate), "dd MMM yyyy • hh:mm a")}
+                      {format(new Date(booking.endDate), "dd MMM yyyy")} • {CHECK_OUT_TIME}
                     </span>
                   </div>
 
