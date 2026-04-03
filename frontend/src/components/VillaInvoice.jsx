@@ -244,9 +244,8 @@ export default function VillaInvoice() {
             {/* ================= HEADER ================= */}
             <div className="flex justify-between items-start border-b pb-3">
               <div className="flex gap-4 items-center">
-                <img src="/logo1.png" className="w-18 h-14 bg-white rounded-lg p-2 border" />
                 <div>
-                  <p className="font-bold text-[22px]">Villa Gulposh</p>
+                  <img src="/Gulposh-Logo2.png" className="w-18 h-14 bg-white" />
                   <p className="text-gray-600 text-sm">
                     A unit of <span className="font-semibold">Vidyasagar Properties Private Limited</span>
                   </p>
