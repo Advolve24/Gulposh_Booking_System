@@ -300,7 +300,7 @@ export const downloadInvoicePDF = async (req, res) => {
         <p><strong>Villa Address:</strong></p>
         <p>Villa Gulposh Vidyasagar Properties Pvt Ltd.</p>
         <p>Kirawali, Karjat – 410201</p>
-        <p>stay@villagulposh.com</p>
+        <p>info@villagulposh.com</p>
         <p>+91 98200 74617</p>
       </div>
 

@@ -27,7 +27,7 @@ export default function PoolSafety() {
               Kirawali, Karjat – 410201
             </p>
             <p>
-              <strong>Contact:</strong> +91 98200 74617 | stay@villagulposh.com
+              <strong>Contact:</strong> +91 98200 74617 | info@villagulposh.com
             </p>
           </div>
 

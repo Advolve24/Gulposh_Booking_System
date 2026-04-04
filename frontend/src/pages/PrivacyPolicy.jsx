@@ -77,7 +77,7 @@ export default function PrivacyPolicy() {
             points={[
               "Request correction of inaccurate information",
               "Request deletion of account data (subject to legal/booking record requirements)",
-              "To request changes, email: stay@villagulposh.com"
+              "To request changes, email: info@villagulposh.com"
             ]}
           />
 
@@ -92,7 +92,7 @@ export default function PrivacyPolicy() {
           <PolicyBlock
             title="8. Contact"
             points={[
-              "For privacy queries: stay@villagulposh.com",
+              "For privacy queries: info@villagulposh.com",
               "Contact number: +91 98200 74617"
             ]}
           />

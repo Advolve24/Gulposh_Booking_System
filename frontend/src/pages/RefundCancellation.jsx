@@ -22,7 +22,7 @@ export default function RefundCancellation() {
           {/* PROPERTY INFO */}
           <div className="space-y-2">
             <p><strong>Property:</strong> Villa Gulposh – Vidyasagar Properties Pvt Ltd.</p>
-            <p><strong>Contact:</strong> +91 98200 74617 | stay@villagulposh.com</p>
+            <p><strong>Contact:</strong> +91 98200 74617 | info@villagulposh.com</p>
             <p><strong>Check-in:</strong> 12:00 PM | <strong>Check-out:</strong> 10:00 AM</p>
           </div>
 
@@ -75,7 +75,7 @@ export default function RefundCancellation() {
             title="6. Force Majeure"
             points={[
               "In case of events beyond control (natural calamities, government restrictions, etc.), Villa Gulposh may offer rescheduling or partial refunds on a case-by-case basis",
-              "For support: +91 98200 74617 | stay@villagulposh.com"
+              "For support: +91 98200 74617 | info@villagulposh.com"
             ]}
           />
 

@@ -26,7 +26,7 @@ export default function HouseRules() {
               <strong>Main Website:</strong> villagulposh.com
             </p>
             <p>
-              <strong>Contact:</strong> +91 98200 74617 | stay@villagulposh.com
+              <strong>Contact:</strong> +91 98200 74617 | info@villagulposh.com
             </p>
           </div>
 

@@ -111,12 +111,12 @@ export default function Footer() {
                         {/* EMAIL */}
                         <li>
                             <a
-                                href="mailto:stay@villagulposh.com"
+                                href="mailto:info@villagulposh.com"
                                 className="group flex items-center gap-3 relative w-fit"
                             >
                                 <Mail size={16} />
                                 <span className="relative">
-                                    stay@villagulposh.com
+                                    info@villagulposh.com
                                     <span
                                         className="
               absolute left-0 -bottom-1 h-[1.5px] bg-white

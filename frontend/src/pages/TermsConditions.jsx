@@ -29,7 +29,7 @@ export default function TermsConditions() {
             <div className="space-y-2">
               <p><strong>Property:</strong> Villa Gulposh – Vidyasagar Properties Pvt Ltd.</p>
               <p><strong>Address:</strong> House no 32 A, Dnyandeep Society, Kirawali, Karjat – 410201</p>
-              <p><strong>Contact:</strong> +91 98200 74617 | stay@villagulposh.com</p>
+              <p><strong>Contact:</strong> +91 98200 74617 | info@villagulposh.com</p>
             </div>
 
             <Divider />
