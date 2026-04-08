@@ -623,7 +623,7 @@ export default function RoomPage() {
         </div>
 
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:justify-between gap-3 items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between gap-3 md:items-center">
           <div className="mt-4">
             <h1 className="text-xl sm:text-2xl font-bold">{room.name}</h1>
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -640,7 +640,7 @@ export default function RoomPage() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-[#eadfd6] bg-white p-4 md:w-[34%] ">
+          <div className="rounded-2xl border border-[#eadfd6] bg-white p-4 md:w-[34%] w-full ">
               <RoomNightlyPrices room={room} align="left" compact />
             </div>
         </div>
@@ -953,7 +953,7 @@ export default function RoomPage() {
       >
         <div className="flex items-center gap-3 max-w-md mx-auto">
           {/* PRICE (30%) */}
-          <div className="w-[30%]">
+          <div className="w-[35%]">
             <div className="text-xs text-muted-foreground">Price</div>
             <div className="text-xs font-semibold leading-tight">
               Weekday: {formatCurrency(room.pricePerNight)}
@@ -967,7 +967,7 @@ export default function RoomPage() {
           <Button
             onClick={() => setShowDrawer(true)}
             className="
-        w-[70%]
+        w-[60%]
         h-12
         rounded-xl
         text-base
