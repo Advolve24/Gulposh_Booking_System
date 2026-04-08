@@ -8,9 +8,21 @@ import { Download, Printer, ArrowLeft } from "lucide-react";
 import { toWords } from "number-to-words";
 
 
+const toTitleCaseWords = (value = "") =>
+  value.replace(/\b([a-z])/g, (match) => match.toUpperCase());
+
 const convertNumberToWords = (num) => {
   const words = toWords(num);
-  return `Rupees ${words.charAt(0).toUpperCase() + words.slice(1)}`;
+  return `Rupees ${toTitleCaseWords(words)}`;
+};
+
+const formatDiscountPercent = (subtotal, discountAmount) => {
+  if (subtotal <= 0 || discountAmount <= 0) return null;
+
+  const percent = (discountAmount / subtotal) * 100;
+  return Number.isInteger(percent)
+    ? `${percent}%`
+    : `${percent.toFixed(2).replace(/\.?0+$/, "")}%`;
 };
 
 
@@ -92,6 +104,7 @@ export default function VillaInvoice() {
   const discountAmount = Number(
     booking.discountMeta?.discountAmount || 0
   );
+  const discountPercentLabel = formatDiscountPercent(subTotal, discountAmount);
 
   const discountedSubtotal = Math.max(
     0,
@@ -540,7 +553,10 @@ export default function VillaInvoice() {
                 {/* Discount */}
                 {discountAmount > 0 && (
                   <div className="flex justify-between py-1 text-green-600">
-                    <span>Discount</span>
+                    <span>
+                      Discount
+                      {discountPercentLabel ? ` (${discountPercentLabel})` : ""}
+                    </span>
                     <span className="font-bold">
                       -{INR(discountAmount)}
                     </span>
