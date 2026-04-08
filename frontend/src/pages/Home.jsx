@@ -982,7 +982,7 @@ export default function Home() {
 
               <div className="mt-6 flex gap-3 justify-start">
                 <Button
-                  className="bg-[#a11d2e] hover:bg-[#8e1827] text-white rounded-[8px] px-4 py-4"
+                  className="bg-[#a11d2e] hover:bg-[#8e1827] text-white rounded-[8px] px-2 md:px-4 py-4"
                   onClick={() => {
                     sessionStorage.setItem(
                       "searchParams",
@@ -996,7 +996,7 @@ export default function Home() {
 
                 <Button
                   variant="outline"
-                  className="rounded-[8px] px-4 py-4"
+                  className="rounded-[8px] md:px-4 px-2 py-4"
                   onClick={() => setShowVillaPopup(false)}
                 >
                   Continue Room Booking
