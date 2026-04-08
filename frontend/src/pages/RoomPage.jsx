@@ -147,9 +147,9 @@ function BookingCard({
   const totalGuests = adults + children;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* SCROLLABLE CONTENT */}
-      <div className="flex-1 space-y-4 pb-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4 pr-1">
         {/* DATES */}
         <div>
           <label className="text-[11px] font-medium text-muted-foreground">
@@ -984,18 +984,24 @@ export default function RoomPage() {
 
       {/* MOBILE DRAWER */}
       <Drawer open={showDrawer} onOpenChange={setShowDrawer}>
-        <DrawerContent
+      <DrawerContent
           className="
+      flex
+      h-[65vh]
+      max-h-[65vh]
+      flex-col
       rounded-t-2xl
       bg-white
       pt-3
       pb-4
+      overflow-hidden
     "
         >
           {/* HEADER */}
           <DrawerHeader
             className="
     relative
+    shrink-0
     px-4
     mb-2
     flex
@@ -1023,8 +1029,8 @@ export default function RoomPage() {
 
 
           {/* CENTERED BOOKING CARD (NO EDGE TOUCH) */}
-          <div className="px-4">
-            <div className="mx-auto max-w-[330px]">
+          <div className="min-h-0 flex-1 overflow-hidden px-4">
+            <div className="mx-auto flex h-full min-h-0 max-w-[330px] flex-col overflow-hidden">
               <BookingCard
                 room={room}
                 range={range}
