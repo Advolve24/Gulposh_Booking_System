@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import BookingSearchWidget from "./widgets/BookingSearchWidget";
 import "./index.css";
 
-ReactDOM.createRoot(
-  document.getElementById("gulposh-booking-widget")
-).render(<BookingSearchWidget />);
+const el = document.getElementById("gulposh-booking-widget");
+
+if (el) {
+  ReactDOM.createRoot(el).render(<BookingSearchWidget />);
+}
