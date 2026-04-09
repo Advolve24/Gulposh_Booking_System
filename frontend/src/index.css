@@ -360,3 +360,13 @@ justify-content: center;
   transform-origin: center;
   will-change: transform;
 }
+
+#gulposh-booking-widget {
+    width: 100%;
+    position: relative;
+    z-index: 999;
+}
+
+#gulposh-booking-widget * {
+    box-sizing: border-box;
+}
