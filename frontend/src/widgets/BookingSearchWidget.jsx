@@ -1,18 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/http";
-import CalendarRange from "../components/CalendarRange";
-import GuestCounter from "../components/GuestCounter";
 
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { format, addMonths, subMonths } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+
 import { Button } from "@/components/ui/button";
 
-import { Search, Users } from "lucide-react";
+import {
+  Search,
+  Users,
+  Minus,
+  Plus,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
 import { toast } from "sonner";
 
 import {
   toDateOnly,
   toDateOnlyFromAPI,
   toDateOnlyFromAPIUTC,
+  todayDateOnly,
 } from "../lib/date";
 
 function minusOneDay(date) {
@@ -67,6 +83,8 @@ export default function BookingSearchWidget() {
   const [range, setRange] = useState();
   const [adults, setAdults] = useState(0);
   const [children, setChildren] = useState(0);
+
+  const [month, setMonth] = useState(new Date());
 
   const [isRangeInvalid, setIsRangeInvalid] = useState(false);
 
@@ -125,7 +143,7 @@ export default function BookingSearchWidget() {
     const checkOut = range.to.toISOString().split("T")[0];
 
     window.location.href =
-      `https://booking.villagulposh.com/?checkIn=${checkIn}&checkOut=${checkOut}&adults=${adults}&children=${children}&scrollToResults=1`;
+      `https://booking.villagulposh.com/?checkIn=${checkIn}&checkOut=${checkOut}&adults=${adults}&children=${children}`;
   };
 
   const resetFilters = () => {
@@ -134,43 +152,106 @@ export default function BookingSearchWidget() {
     setChildren(0);
   };
 
+  const GuestCounterInline = ({
+    label,
+    description,
+    value,
+    min = 0,
+    max,
+    onChange,
+  }) => {
+    return (
+      <div className="flex items-center justify-between py-3">
+        <div>
+          <p className="font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => value > min && onChange(value - 1)}
+            className="h-8 w-8 rounded-full border flex items-center justify-center"
+          >
+            <Minus size={14} />
+          </button>
+
+          <span>{value}</span>
+
+          <button
+            onClick={() => value < max && onChange(value + 1)}
+            className="h-8 w-8 rounded-full border flex items-center justify-center"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full px-4">
-      <div
-        className="
-          w-full max-w-6xl
-          mx-auto
-          rounded-3xl
-          bg-white/10
-          backdrop-blur-sm
-          shadow-[0_30px_80px_-35px_rgba(0,0,0,0.6)]
-          ring-1 ring-black/5
-          p-4
-        "
-      >
-        <div
-          className="
-            grid grid-cols-1
-            gap-2
-            md:grid-cols-[1.3fr_1fr_auto_auto]
-            md:items-end
-          "
-        >
+      <div className="w-full max-w-6xl mx-auto rounded-3xl bg-white/10 backdrop-blur-sm p-4">
+
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-[1.3fr_1fr_auto_auto]">
+
+          {/* CALENDAR */}
           <div>
             <div className="text-[10px] tracking-widest uppercase text-white font-semibold">
               CHECK IN / CHECK OUT
             </div>
 
-            <div className="mt-2">
-              <CalendarRange
-                value={range}
-                onChange={handleRangeSelect}
-                disabledRanges={disabledAll}
-                showWeekdayInBox
-              />
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="grid w-full grid-cols-2 rounded-xl py-[2px] h-14 mt-2"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-[11px] uppercase">Check In</span>
+                    <span className="flex items-center gap-2 text-sm">
+                      <CalendarDays size={14} />
+                      {range?.from ? format(range.from, "dd MMM yyyy") : "Add date"}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <span className="text-[11px] uppercase">Check Out</span>
+                    <span className="flex items-center gap-2 text-sm">
+                      <CalendarDays size={14} />
+                      {range?.to ? format(range.to, "dd MMM yyyy") : "Add date"}
+                    </span>
+                  </div>
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent className="w-[680px] p-4">
+
+                <div className="flex justify-between mb-4">
+                  <button onClick={() => setMonth(subMonths(month, 1))}>
+                    <ChevronLeft />
+                  </button>
+
+                  <button onClick={() => setMonth(addMonths(month, 1))}>
+                    <ChevronRight />
+                  </button>
+                </div>
+
+                <Calendar
+                  mode="range"
+                  month={month}
+                  onMonthChange={setMonth}
+                  numberOfMonths={2}
+                  selected={range}
+                  onSelect={handleRangeSelect}
+                  disabled={[
+                    { before: todayDateOnly() }
+                  ]}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
+          {/* GUESTS */}
           <div>
             <div className="text-[10px] tracking-widest uppercase text-white font-semibold">
               GUESTS
@@ -180,74 +261,54 @@ export default function BookingSearchWidget() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="
-                    mt-2 h-14 w-full
-                    justify-between
-                    rounded-xl
-                    bg-white
-                    border-[#eadfd8]
-                    hover:bg-[#fffaf7]
-                  "
+                  className="mt-2 h-14 w-full justify-between rounded-xl bg-white"
                 >
                   {totalGuests > 0
-                    ? `${totalGuests} guest${totalGuests > 1 ? "s" : ""}`
-                    : "Select guests"}
+                    ? `${totalGuests} Guests`
+                    : "Select Guests"}
 
-                  <Users className="h-4 w-4 text-[#a11d2e]" />
+                  <Users size={18} />
                 </Button>
               </PopoverTrigger>
 
               <PopoverContent className="w-[350px] p-4 rounded-2xl">
-                <GuestCounter
+                <GuestCounterInline
                   label="Adults"
                   description="Ages 13+"
                   value={adults}
-                  min={0}
                   max={20}
                   onChange={setAdults}
                 />
 
-                <div className="my-3 h-px bg-border" />
-
-                <GuestCounter
+                <GuestCounterInline
                   label="Children"
                   description="Ages 2–12"
                   value={children}
-                  min={0}
-                  max={20 - adults}
+                  max={20}
                   onChange={setChildren}
                 />
               </PopoverContent>
             </Popover>
           </div>
 
+          {/* SEARCH */}
           <Button
             onClick={onSearch}
-            className="
-              h-14
-              rounded-xl
-              bg-[#941b2b]
-              hover:bg-[#8e1827]
-              text-white
-              px-7
-            "
+            className="h-14 rounded-xl bg-[#941b2b]"
           >
             Check Availability
             <Search className="ml-2 h-4 w-4" />
           </Button>
 
+          {/* RESET */}
           <Button
             variant="outline"
             onClick={resetFilters}
-            className="
-              h-14
-              rounded-xl
-              bg-white
-              text-black
-            "
+            className="h-14 rounded-xl bg-white"
           >
             Reset
           </Button>
+
         </div>
       </div>
     </div>
