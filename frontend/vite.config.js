@@ -12,6 +12,8 @@ export default defineConfig({
   },
 
   build: {
+    cssCodeSplit: false,
+
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
@@ -24,9 +26,7 @@ export default defineConfig({
 
       output: {
         entryFileNames: "[name].js",
-
         chunkFileNames: "assets/[name]-[hash].js",
-
         assetFileNames: "assets/[name]-[hash][extname]",
       },
     },
