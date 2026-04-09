@@ -125,6 +125,31 @@ export default function Home() {
 
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const checkIn = params.get("checkIn");
+    const checkOut = params.get("checkOut");
+    const adultsParam = params.get("adults");
+    const childrenParam = params.get("children");
+
+    if (checkIn && checkOut) {
+      setRange({
+        from: new Date(checkIn),
+        to: new Date(checkOut),
+      });
+    }
+
+    if (adultsParam !== null) {
+      setAdults(Number(adultsParam) || 0);
+    }
+
+    if (childrenParam !== null) {
+      setChildren(Number(childrenParam) || 0);
+    }
+  }, []);
+
+
+  useEffect(() => {
     api.get("/rooms").then(({ data }) => setRooms(data || []));
 
     (async () => {
@@ -152,15 +177,20 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-  if (location.state?.scrollToResults) {
-    setTimeout(() => {
-      document.getElementById("results")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 200);
-  }
-}, [location.state]);
+    const params = new URLSearchParams(window.location.search);
+
+    if (
+      location.state?.scrollToResults ||
+      params.get("scrollToResults") === "1"
+    ) {
+      setTimeout(() => {
+        document.getElementById("results")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 300);
+    }
+  }, [location]);
 
 
   const resetFilters = () => {
@@ -512,50 +542,50 @@ export default function Home() {
                         }}
                       >
                         <div data-guest-popover>
-                        <GuestCounter
-                          label="Adults"
-                          description="Ages 13 or above"
-                          value={adults}
-                          min={0}
-                          max={20}
-                          onChange={setAdults}
-                        />
+                          <GuestCounter
+                            label="Adults"
+                            description="Ages 13 or above"
+                            value={adults}
+                            min={0}
+                            max={20}
+                            onChange={setAdults}
+                          />
 
-                        <div className="my-3 h-px bg-border" />
+                          <div className="my-3 h-px bg-border" />
 
-                        <GuestCounter
-                          label="Children"
-                          description="Ages 2–12"
-                          value={children}
-                          min={0}
-                          max={20 - adults}
-                          onChange={setChildren}
-                        />
+                          <GuestCounter
+                            label="Children"
+                            description="Ages 2–12"
+                            value={children}
+                            min={0}
+                            max={20 - adults}
+                            onChange={setChildren}
+                          />
 
-                        <div className="my-4 h-px bg-border" />
+                          <div className="my-4 h-px bg-border" />
 
-                        <div className="rounded-xl border border-[#eadfd8] bg-[#fff8f5] p-3">
-                          <div className="text-[12px] text-[#5c4b42] leading-snug">
-                            Planning a stay for more than <strong>10 guests</strong>?
-                            <br />
-                            For large groups, we recommend reserving the <strong>Entire Gulposh Villa</strong>
-                            for better comfort and privacy.
+                          <div className="rounded-xl border border-[#eadfd8] bg-[#fff8f5] p-3">
+                            <div className="text-[12px] text-[#5c4b42] leading-snug">
+                              Planning a stay for more than <strong>10 guests</strong>?
+                              <br />
+                              For large groups, we recommend reserving the <strong>Entire Gulposh Villa</strong>
+                              for better comfort and privacy.
+                            </div>
+
+                            <Button
+                              size="sm"
+                              className="mt-3 w-full rounded-[8px] bg-[#a11d2e] hover:bg-[#8e1827] text-white text-[12px] h-9"
+                              onClick={() => {
+                                sessionStorage.setItem(
+                                  "searchParams",
+                                  JSON.stringify({ range, adults, children })
+                                );
+                                navigate("/entire-villa-form");
+                              }}
+                            >
+                              Enquire Entire Villa
+                            </Button>
                           </div>
-
-                          <Button
-                            size="sm"
-                            className="mt-3 w-full rounded-[8px] bg-[#a11d2e] hover:bg-[#8e1827] text-white text-[12px] h-9"
-                            onClick={() => {
-                              sessionStorage.setItem(
-                                "searchParams",
-                                JSON.stringify({ range, adults, children })
-                              );
-                              navigate("/entire-villa-form");
-                            }}
-                          >
-                            Enquire Entire Villa
-                          </Button>
-                        </div>
                         </div>
                       </PopoverContent>
                     </Popover>
