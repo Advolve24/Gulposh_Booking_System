@@ -18,7 +18,7 @@ export default function TermsConditions() {
               Effective for booking.villagulposh.com (booking & user-login portal)
               and villagulposh.com (main website)
             </p>
-          </div>
+          </div> 
         </section>
 
         {/* ================= CONTENT ================= */}
