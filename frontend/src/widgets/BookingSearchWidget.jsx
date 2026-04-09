@@ -146,33 +146,32 @@ export default function BookingSearchWidget() {
   }, []);
 
   useEffect(() => {
-    const onDocClick = (e) => {
-      const target = e.target;
+  const onDocClick = (e) => {
+    const path = e.composedPath();
 
-      if (
-        showCalendar &&
-        calendarRef.current &&
-        !calendarRef.current.contains(target) &&
-        dateTriggerRef.current &&
-        !dateTriggerRef.current.contains(target)
-      ) {
-        setShowCalendar(false);
-      }
+    if (
+      showCalendar &&
+      !path.includes(calendarRef.current) &&
+      !path.includes(dateTriggerRef.current)
+    ) {
+      setShowCalendar(false);
+    }
 
-      if (
-        showGuests &&
-        guestRef.current &&
-        !guestRef.current.contains(target) &&
-        guestTriggerRef.current &&
-        !guestTriggerRef.current.contains(target)
-      ) {
-        setShowGuests(false);
-      }
-    };
+    if (
+      showGuests &&
+      !path.includes(guestRef.current) &&
+      !path.includes(guestTriggerRef.current)
+    ) {
+      setShowGuests(false);
+    }
+  };
 
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [showCalendar, showGuests]);
+  window.addEventListener("mousedown", onDocClick);
+
+  return () => {
+    window.removeEventListener("mousedown", onDocClick);
+  };
+}, [showCalendar, showGuests]);
 
   const blockedNights = useMemo(() => {
     const nights = new Set();
