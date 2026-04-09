@@ -28,6 +28,7 @@ export default function GuestCounter({
 
       <div className="flex items-center gap-3">
         <button
+          type="button"
           onClick={dec}
           disabled={value <= min}
           className="h-8 w-8 rounded-full border flex items-center justify-center disabled:opacity-40"
@@ -38,6 +39,7 @@ export default function GuestCounter({
         <span className="w-6 text-center">{value}</span>
 
         <button
+          type="button"
           onClick={inc}
           disabled={isIncrementDisabled}
           className="h-8 w-8 rounded-full border flex items-center justify-center disabled:opacity-40"

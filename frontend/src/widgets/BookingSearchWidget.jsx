@@ -1,34 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api/http";
-
-import { format, addMonths, subMonths } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-
+import CalendarRange from "../components/CalendarRange";
+import GuestCounter from "../components/GuestCounter";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-
-import {
-  Search,
-  Users,
-  Minus,
-  Plus,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-
+import { Search, Users } from "lucide-react";
 import { toast } from "sonner";
-
 import {
   toDateOnly,
   toDateOnlyFromAPI,
   toDateOnlyFromAPIUTC,
-  todayDateOnly,
 } from "../lib/date";
 
 function minusOneDay(date) {
@@ -79,16 +60,14 @@ function rangeHasConflict(selected, blockedRanges) {
 
 export default function BookingSearchWidget() {
   const [disabledAll, setDisabledAll] = useState([]);
-
   const [range, setRange] = useState();
   const [adults, setAdults] = useState(0);
   const [children, setChildren] = useState(0);
-
-  const [month, setMonth] = useState(new Date());
-
   const [isRangeInvalid, setIsRangeInvalid] = useState(false);
 
   const totalGuests = adults + children;
+  const hasValidRange = !!(range?.from && range?.to);
+  const hasGuests = totalGuests > 0;
 
   useEffect(() => {
     (async () => {
@@ -110,7 +89,7 @@ export default function BookingSearchWidget() {
 
         setDisabledAll(mergeRanges([...bookings, ...blackouts]));
       } catch (err) {
-        console.error(err);
+        console.error("failed to load disabled ranges", err);
       }
     })();
   }, []);
@@ -124,18 +103,20 @@ export default function BookingSearchWidget() {
     }
 
     const conflict = rangeHasConflict(newRange, disabledAll);
-
+    if (conflict && !isRangeInvalid) {
+      toast.error("Some selected dates are already booked. Please adjust your stay.");
+    }
     setIsRangeInvalid(conflict);
   };
 
   const onSearch = () => {
-    if (!range?.from || !range?.to || totalGuests <= 0) {
+    if (!hasValidRange || !hasGuests) {
       toast.error("Please select dates and guests");
       return;
     }
 
     if (isRangeInvalid) {
-      toast.error("Unavailable dates selected.");
+      toast.error("Your selected stay includes unavailable dates. Please adjust the dates.");
       return;
     }
 
@@ -150,165 +131,91 @@ export default function BookingSearchWidget() {
     setRange(undefined);
     setAdults(0);
     setChildren(0);
-  };
-
-  const GuestCounterInline = ({
-    label,
-    description,
-    value,
-    min = 0,
-    max,
-    onChange,
-  }) => {
-    return (
-      <div className="flex items-center justify-between py-3">
-        <div>
-          <p className="font-medium">{label}</p>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => value > min && onChange(value - 1)}
-            className="h-8 w-8 rounded-full border flex items-center justify-center"
-          >
-            <Minus size={14} />
-          </button>
-
-          <span>{value}</span>
-
-          <button
-            onClick={() => value < max && onChange(value + 1)}
-            className="h-8 w-8 rounded-full border flex items-center justify-center"
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-      </div>
-    );
+    setIsRangeInvalid(false);
   };
 
   return (
     <div className="w-full px-4">
-      <div className="w-full max-w-6xl mx-auto rounded-3xl bg-white/10 backdrop-blur-sm p-4">
-
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-[1.3fr_1fr_auto_auto]">
-
-          {/* CALENDAR */}
+      <div className="mx-auto w-full max-w-6xl rounded-3xl bg-white/10 p-4 backdrop-blur-sm">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-[1.3fr_1fr_auto_auto] md:items-end">
           <div>
-            <div className="text-[10px] tracking-widest uppercase text-white font-semibold">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-white">
               CHECK IN / CHECK OUT
             </div>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="grid w-full grid-cols-2 rounded-xl py-[2px] h-14 mt-2"
-                >
-                  <div className="flex flex-col">
-                    <span className="text-[11px] uppercase">Check In</span>
-                    <span className="flex items-center gap-2 text-sm">
-                      <CalendarDays size={14} />
-                      {range?.from ? format(range.from, "dd MMM yyyy") : "Add date"}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col">
-                    <span className="text-[11px] uppercase">Check Out</span>
-                    <span className="flex items-center gap-2 text-sm">
-                      <CalendarDays size={14} />
-                      {range?.to ? format(range.to, "dd MMM yyyy") : "Add date"}
-                    </span>
-                  </div>
-                </Button>
-              </PopoverTrigger>
-
-              <PopoverContent className="w-[680px] p-4">
-
-                <div className="flex justify-between mb-4">
-                  <button onClick={() => setMonth(subMonths(month, 1))}>
-                    <ChevronLeft />
-                  </button>
-
-                  <button onClick={() => setMonth(addMonths(month, 1))}>
-                    <ChevronRight />
-                  </button>
-                </div>
-
-                <Calendar
-                  mode="range"
-                  month={month}
-                  onMonthChange={setMonth}
-                  numberOfMonths={2}
-                  selected={range}
-                  onSelect={handleRangeSelect}
-                  disabled={[
-                    { before: todayDateOnly() }
-                  ]}
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="mt-2">
+              <CalendarRange
+                value={range}
+                onChange={handleRangeSelect}
+                disabledRanges={disabledAll}
+                showWeekdayInBox
+              />
+            </div>
           </div>
 
-          {/* GUESTS */}
           <div>
-            <div className="text-[10px] tracking-widest uppercase text-white font-semibold">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-white">
               GUESTS
             </div>
 
             <Popover>
               <PopoverTrigger asChild>
                 <Button
+                  type="button"
                   variant="outline"
-                  className="mt-2 h-14 w-full justify-between rounded-xl bg-white"
+                  className="mt-2 h-14 w-full justify-between rounded-xl border-[#eadfd8] bg-white hover:bg-[#fffaf7]"
                 >
                   {totalGuests > 0
-                    ? `${totalGuests} Guests`
-                    : "Select Guests"}
-
-                  <Users size={18} />
+                    ? `${totalGuests} guest${totalGuests > 1 ? "s" : ""}`
+                    : "Select guests"}
+                  <Users className="h-4 w-4 text-[#a11d2e]" />
                 </Button>
               </PopoverTrigger>
 
-              <PopoverContent className="w-[350px] p-4 rounded-2xl">
-                <GuestCounterInline
+              <PopoverContent
+                className="w-[350px] rounded-2xl p-4"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
+                <GuestCounter
                   label="Adults"
-                  description="Ages 13+"
+                  description="Ages 13 or above"
                   value={adults}
+                  min={0}
                   max={20}
                   onChange={setAdults}
                 />
 
-                <GuestCounterInline
+                <div className="my-3 h-px bg-border" />
+
+                <GuestCounter
                   label="Children"
-                  description="Ages 2–12"
+                  description="Ages 2-12"
                   value={children}
-                  max={20}
+                  min={0}
+                  max={20 - adults}
                   onChange={setChildren}
                 />
               </PopoverContent>
             </Popover>
           </div>
 
-          {/* SEARCH */}
           <Button
+            type="button"
             onClick={onSearch}
-            className="h-14 rounded-xl bg-[#941b2b]"
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#941b2b] px-7 text-white shadow-lg shadow-[#a11d2e]/20 hover:bg-[#8e1827] md:w-auto"
           >
             Check Availability
-            <Search className="ml-2 h-4 w-4" />
+            <Search className="h-4 w-4" />
           </Button>
 
-          {/* RESET */}
           <Button
+            type="button"
             variant="outline"
             onClick={resetFilters}
-            className="h-14 rounded-xl bg-white"
+            className="h-14 w-full rounded-xl border-white/60 text-black backdrop-blur-sm hover:bg-white hover:text-black md:w-auto"
           >
             Reset
           </Button>
-
         </div>
       </div>
     </div>
