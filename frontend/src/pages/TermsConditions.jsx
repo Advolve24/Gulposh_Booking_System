@@ -46,7 +46,7 @@ export default function TermsConditions() {
             <PolicyBlock
               title="2. Booking Process & Confirmation"
               content={[
-                "A booking is considered confirmed only after successful payment (full/partial as shown at checkout) and generation of a booking confirmation on the portal.",
+                "A booking is considered confirmed only after successful payment (full as shown at checkout) and generation of a booking confirmation on the portal.",
                 "You must provide accurate details (guest count, contact info, dates). Incorrect details may lead to booking issues, price changes, or cancellation as per policy."
               ]}
             />
@@ -67,7 +67,7 @@ export default function TermsConditions() {
               content={[
                 "Only registered/declared guests are allowed inside the property.",
                 "Any additional guests/visitors may be denied entry or charged as per property decision.",
-                "Guests must carry valid government ID proof if requested at check-in."
+                "A valid government ID is required at check-in."
               ]}
             />
 
