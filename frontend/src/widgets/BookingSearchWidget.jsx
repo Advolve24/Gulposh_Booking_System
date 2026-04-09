@@ -134,8 +134,8 @@ export default function BookingSearchWidget() {
                 }));
 
                 const blackouts = (blackoutsRes.data || []).map((b) => ({
-                    from: toDateOnlyFromAPI(b.from),
-                    to: toDateOnlyFromAPI(b.to),
+                    from: toDateOnlyFromAPIUTC(b.from),
+                    to: toDateOnlyFromAPIUTC(b.to),
                 }));
 
                 setDisabledAll(mergeRanges([...bookings, ...blackouts]));
