@@ -583,15 +583,15 @@ function MonthPanel({
                             className={[
                                 "absolute inset-0 z-0",
                                 inMiddle ? "bg-[#fbeaec]" : "",
-                                isStart ? "bg-[#a11d2e] rounded-l-lg" : "",
-                                isEnd ? "bg-[#a11d2e] rounded-r-lg" : "",
+                                isStart ? "bg-[#a11d2e] rounded-l-[8px]" : "",
+                                isEnd ? "bg-[#a11d2e] rounded-r-[8px]" : "",
                             ].join(" ")}
                         />
                     )}
 
                     {/* TODAY STYLE */}
                     {today && !isStart && !isEnd && (
-                        <span className="absolute inset-1 rounded-md bg-[#f1ece8] z-0" />
+                        <span className="absolute inset-0 rounded-[8px] bg-[#f1ece8] z-0" />
                     )}
 
                     {/* TEXT */}
