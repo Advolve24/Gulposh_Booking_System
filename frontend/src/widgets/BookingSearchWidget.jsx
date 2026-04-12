@@ -409,7 +409,7 @@ export default function BookingSearchWidget() {
                         {showGuests && (
                             <div
                                 ref={guestRef}
-                                className="absolute left-0 top-[calc(100%+10px)] z-[9999] w-[350px] max-w-[95vw] rounded-3xl bg-white p-4 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.25)]"
+                                className="absolute -left-[20px] md:left-0 top-[calc(100%+10px)] z-[9999] w-[320px] md:w-[350px] max-w-[95vw] rounded-3xl bg-white p-4 shadow-[0_30px_80px_-25px_rgba(0,0,0,0.25)]"
                             >
                                 <GuestRow
                                     label="Adults"
