@@ -35,6 +35,8 @@ const ALLOWED_ORIGINS = [
   "https://gulposh-booking-system.vercel.app",
   "https://booking.villagulposh.com",
   "https://admin.villagulposh.com",
+  "https://villagulposh.com",
+  "https://www.villagulposh.com",
 ];
 
 app.use(
