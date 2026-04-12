@@ -11,7 +11,6 @@ if (host) {
 
   const styleTag = document.createElement("style");
   styleTag.textContent = styles;
-
   shadowRoot.appendChild(styleTag);
 
   const mountPoint = document.createElement("div");
@@ -20,7 +19,13 @@ if (host) {
   ReactDOM.createRoot(mountPoint).render(
     <React.StrictMode>
       <BookingSearchWidget />
-      <Toaster richColors closeButton position="top-center" />
     </React.StrictMode>
+  );
+
+  const toasterDiv = document.createElement("div");
+  document.body.appendChild(toasterDiv);
+
+  ReactDOM.createRoot(toasterDiv).render(
+    <Toaster richColors closeButton position="top-center" />
   );
 }
