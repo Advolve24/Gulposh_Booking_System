@@ -500,7 +500,7 @@ function GuestRow({
                 <p className="text-sm text-[#8a8079]">{description}</p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
                 <button
                     type="button"
                     onClick={onMinus}
@@ -510,7 +510,7 @@ function GuestRow({
                     <Minus size={14} />
                 </button>
 
-                <span className="w-4 text-center text-[18px] text-[#2A201B]">
+                <span className="w-5 text-center text-[18px] text-[#2A201B]">
                     {value}
                 </span>
 
