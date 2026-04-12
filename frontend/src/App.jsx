@@ -33,16 +33,32 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import AuthModal from "./components/AuthModal";
 import VillaInvoice from "./components/VillaInvoice";
+import ReactGA from "react-ga4";
 
-/* =====================================================
-   🔁 SCROLL TO TOP
-===================================================== */
+
+const TRACKING_ID = "G-D2R9FKL1W9";
+ReactGA.initialize(TRACKING_ID);
+
+
 function ScrollToTop() {
   const { pathname } = useLocation();
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  return null;
+}
+
+function AnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    ReactGA.send({
+      hitType: "pageview",
+      page: location.pathname,
+    });
+  }, [location]);
 
   return null;
 }
@@ -211,6 +227,7 @@ if (!initialized) {
 
   return (
     <BrowserRouter>
+      <AnalyticsTracker />
       <AppRoutes />
     </BrowserRouter>
   );
