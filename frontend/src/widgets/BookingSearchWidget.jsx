@@ -112,6 +112,12 @@ export default function BookingSearchWidget() {
     const [showGuests, setShowGuests] = useState(false);
 
     const [month, setMonth] = useState(new Date());
+    const [monthsToShow, setMonthsToShow] = useState(3);
+    const monthsList = useMemo(() => {
+        return Array.from({ length: monthsToShow }, (_, i) =>
+            addMonths(month, i)
+        );
+    }, [month, monthsToShow]);
 
     const calendarRef = useRef(null);
     const guestRef = useRef(null);
@@ -350,19 +356,28 @@ export default function BookingSearchWidget() {
                                     </div>
                                 </div>
 
-                                <div className="md:hidden">
-                                    <MonthPanel
-                                        month={month}
-                                        range={range}
-                                        blockedNights={blockedNights}
-                                        onDaySelect={handleDaySelect}
-                                        isDisabledForCheckIn={isDisabledForCheckIn}
-                                        isDisabledForCheckOut={isDisabledForCheckOut}
-                                        onPrev={() => setMonth((m) => subMonths(m, 1))}
-                                        onNext={() => setMonth((m) => addMonths(m, 1))}
-                                        showPrev
-                                        showNext
-                                    />
+                                <div className="md:hidden max-h-[420px] overflow-y-auto pr-2 space-y-6">
+                                    {monthsList.map((m, i) => (
+                                        <MonthPanel
+                                            key={i}
+                                            month={m}
+                                            range={range}
+                                            blockedNights={blockedNights}
+                                            onDaySelect={handleDaySelect}
+                                            isDisabledForCheckIn={isDisabledForCheckIn}
+                                            isDisabledForCheckOut={isDisabledForCheckOut}
+                                        />
+                                    ))}
+
+                                    {/* LOAD MORE BUTTON */}
+                                    <div className="flex justify-center pt-2">
+                                        <button
+                                            onClick={() => setMonthsToShow((prev) => prev + 3)}
+                                            className="px-4 py-2 rounded-xl border border-[#e6e1dd] text-sm bg-white shadow-sm"
+                                        >
+                                            Load more dates
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -570,7 +585,7 @@ function MonthPanel({
                     onClick={() => inCurrentMonth && !disabled && onDaySelect(current)}
                     disabled={!inCurrentMonth || disabled}
                     className={[
-                        "relative h-10 w-[100%] text-sm flex items-center justify-center z-10",
+                        "relative h-10 w-full md:w-[100%] text-sm flex items-center justify-center z-10",
                         !inCurrentMonth ? "text-transparent" : "",
                         disabled && inCurrentMonth ? "cursor-not-allowed text-[#d7d2cd]" : "",
                         !disabled && inCurrentMonth ? "text-[#2A201B]" : "",
@@ -605,7 +620,7 @@ function MonthPanel({
         }
 
         rows.push(
-            <div key={day.toISOString()} className="grid grid-cols-7 gap-y-1">
+            <div key={day.toISOString()} className="grid grid-cols-7 gap-y-0 md:gap-y-1">
                 {days}
             </div>
         );
