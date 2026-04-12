@@ -605,7 +605,7 @@ function MonthPanel({
         }
 
         rows.push(
-            <div key={day.toISOString()} className="grid grid-cols-7 gap-0">
+            <div key={day.toISOString()} className="grid grid-cols-7 gap-y-1">
                 {days}
             </div>
         );
