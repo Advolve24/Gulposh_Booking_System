@@ -26,6 +26,11 @@ if (host) {
   document.body.appendChild(toasterDiv);
 
   ReactDOM.createRoot(toasterDiv).render(
-    <Toaster richColors closeButton position="top-center" />
+    <Toaster
+      richColors
+      closeButton
+      position="top-center"
+      container={document.body} 
+    />
   );
 }
