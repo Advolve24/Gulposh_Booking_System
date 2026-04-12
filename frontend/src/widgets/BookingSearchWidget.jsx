@@ -570,18 +570,21 @@ function MonthPanel({
                     onClick={() => inCurrentMonth && !disabled && onDaySelect(current)}
                     disabled={!inCurrentMonth || disabled}
                     className={[
-                        "relative h-10 w-10 text-sm transition flex items-center justify-center",
+                        "relative h-10 w-10 text-sm transition flex items-center justify-center -mx-[2px]",
                         !inCurrentMonth ? "text-transparent" : "",
                         disabled && inCurrentMonth ? "cursor-not-allowed text-[#d7d2cd]" : "",
                         !disabled && inCurrentMonth ? "text-[#2A201B] hover:bg-[#f6f2ef]" : "",
-                        inMiddle ? "bg-[#f8e7ea] text-[#7d1d2d]" : "",
+                        today && !isStart && !isEnd
+                            ? "bg-[#f1ece8] text-[#2A201B] rounded-md"
+                            : "",
+                        inMiddle ? "bg-[#fbeaec] text-[#a11d2e]" : "",
 
                         isStart
-                            ? "bg-[#a11d2e] text-white rounded-l-md"
+                            ? "bg-[#a11d2e] text-white rounded-l-lg"
                             : "",
 
                         isEnd
-                            ? "bg-[#a11d2e] text-white rounded-r-md"
+                            ? "bg-[#a11d2e] text-white rounded-r-lg"
                             : "",
                         blocked && !isStart && !isEnd && inCurrentMonth ? "opacity-40" : "",
                     ].join(" ")}
@@ -594,7 +597,7 @@ function MonthPanel({
         }
 
         rows.push(
-            <div key={day.toISOString()} className="grid grid-cols-7 gap-y-1">
+            <div key={day.toISOString()} className="grid grid-cols-7 gap-0">
                 {days}
             </div>
         );
@@ -631,7 +634,7 @@ function MonthPanel({
                 ))}
             </div>
 
-            <div className="space-y-1">{rows}</div>
+            <div>{rows}</div>
         </div>
     );
 }
