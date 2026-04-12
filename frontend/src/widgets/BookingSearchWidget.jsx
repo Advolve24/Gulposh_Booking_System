@@ -570,26 +570,34 @@ function MonthPanel({
                     onClick={() => inCurrentMonth && !disabled && onDaySelect(current)}
                     disabled={!inCurrentMonth || disabled}
                     className={[
-                        "relative h-10 w-10 text-sm transition flex items-center justify-center -mx-[2px]",
+                        "relative h-10 w-10 text-sm flex items-center justify-center z-10",
                         !inCurrentMonth ? "text-transparent" : "",
                         disabled && inCurrentMonth ? "cursor-not-allowed text-[#d7d2cd]" : "",
-                        !disabled && inCurrentMonth ? "text-[#2A201B] hover:bg-[#f6f2ef]" : "",
-                        today && !isStart && !isEnd
-                            ? "bg-[#f1ece8] text-[#2A201B] rounded-md"
-                            : "",
-                        inMiddle ? "bg-[#fbeaec] text-[#a11d2e]" : "",
-
-                        isStart
-                            ? "bg-[#a11d2e] text-white rounded-l-lg"
-                            : "",
-
-                        isEnd
-                            ? "bg-[#a11d2e] text-white rounded-r-lg"
-                            : "",
-                        blocked && !isStart && !isEnd && inCurrentMonth ? "opacity-40" : "",
+                        !disabled && inCurrentMonth ? "text-[#2A201B]" : "",
+                        isStart || isEnd ? "text-white font-medium" : "",
                     ].join(" ")}
                 >
-                    {format(current, "d")}
+                    {/* BACKGROUND LAYER */}
+                    {(inMiddle || isStart || isEnd) && (
+                        <span
+                            className={[
+                                "absolute inset-0 z-0",
+                                inMiddle ? "bg-[#fbeaec]" : "",
+                                isStart ? "bg-[#a11d2e] rounded-l-lg" : "",
+                                isEnd ? "bg-[#a11d2e] rounded-r-lg" : "",
+                            ].join(" ")}
+                        />
+                    )}
+
+                    {/* TODAY STYLE */}
+                    {today && !isStart && !isEnd && (
+                        <span className="absolute inset-1 rounded-md bg-[#f1ece8] z-0" />
+                    )}
+
+                    {/* TEXT */}
+                    <span className="relative z-10">
+                        {format(current, "d")}
+                    </span>
                 </button>
             );
 
