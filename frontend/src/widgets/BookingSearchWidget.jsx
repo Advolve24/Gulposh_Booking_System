@@ -570,7 +570,7 @@ function MonthPanel({
                     onClick={() => inCurrentMonth && !disabled && onDaySelect(current)}
                     disabled={!inCurrentMonth || disabled}
                     className={[
-                        "relative h-10 w-10 text-sm flex items-center justify-center z-10",
+                        "relative h-10 w-[100%] text-sm flex items-center justify-center z-10",
                         !inCurrentMonth ? "text-transparent" : "",
                         disabled && inCurrentMonth ? "cursor-not-allowed text-[#d7d2cd]" : "",
                         !disabled && inCurrentMonth ? "text-[#2A201B]" : "",
