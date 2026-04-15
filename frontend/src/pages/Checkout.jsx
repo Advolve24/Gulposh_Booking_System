@@ -29,6 +29,7 @@ import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 import { getWeekendOfferState } from "../lib/weekendOffer";
 import { getDisplayedNightlyPrices, getRoomPricingBreakdown } from "../lib/roomPricing";
+import GuestCounter from "../components/GuestCounter";
 
 
 function minusOneDay(date) {
@@ -86,6 +87,569 @@ const INR = (num) =>
 const roundedRupee = (num) => Math.round(Number(num || 0));
 const CHECK_IN_TIME = "12:00 PM";
 const CHECK_OUT_TIME = "10:00 AM";
+
+function CheckoutPriceSummaryCard({
+  room,
+  range,
+  nights,
+  grandTotal,
+  originalGrandTotal,
+  roomChargeTotal,
+  weekendDiscountAmount,
+  weekendEligibleNights,
+  weekendOffer,
+  totalTax,
+}) {
+  const [showBreakup, setShowBreakup] = useState(false);
+
+  const dateLabel =
+    range?.from && range?.to
+      ? `${format(range.from, "MMM d")} - ${format(range.to, "MMM d")}`
+      : "";
+  const showDiscountedComparison =
+    nights > 0 &&
+    Math.round(Number(originalGrandTotal || 0)) >
+      Math.round(Number(grandTotal || 0));
+
+  return (
+    <div
+      className="relative rounded-2xl bg-white p-2"
+      onMouseEnter={() => setShowBreakup(true)}
+      onMouseLeave={() => setShowBreakup(false)}
+    >
+      <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        {nights > 0 ? `For ${nights} night${nights === 1 ? "" : "s"}` : "Starting from"}
+      </div>
+      <div className="mt-1">
+        {showDiscountedComparison ? (
+          <>
+            <span className="mr-2 text-lg font-normal text-muted-foreground line-through">
+              {INR(originalGrandTotal)}
+            </span>
+            <span className="text-[24px] font-semibold text-[#2A201B]">{INR(grandTotal)}</span>
+            <span className="ml-1 text-sm font-normal text-muted-foreground">Incl. Taxes</span>
+          </>
+        ) : (
+          <>
+            <span className="text-[24px] font-semibold text-[#2A201B]">
+              {INR(nights > 0 ? grandTotal : room?.pricePerNight)}
+            </span>
+            <span className="ml-1 text-sm font-normal text-muted-foreground">Incl. Taxes</span>
+          </>
+        )}
+      </div>
+      {room?.mealMode === "only" ? (
+        <div className="mt-1 text-sm text-green-600">All Meals are included</div>
+      ) : null}
+
+    </div>
+  );
+}
+
+function CheckoutGuestPopover({
+  room,
+  adults,
+  setAdults,
+  children,
+  setChildren,
+  onMaxAttempt,
+}) {
+  const totalGuests = adults + children;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="mt-0 h-16 w-full justify-between rounded-xl border-[#eadfd8] bg-white px-4"
+        >
+          <div className="text-left">
+            <div className="text-[16px] font-semibold text-[#2A201B]">
+              {totalGuests} guest{totalGuests === 1 ? "" : "s"}
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <span>MAX {room.maxGuests || 10}</span>
+            <Users className="h-4 w-4 text-[#a11d2e]" />
+          </div>
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent
+        className="w-[330px] rounded-2xl p-4"
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="space-y-4">
+          <GuestCounter
+            label="Adults"
+            description="Ages 13+"
+            value={adults}
+            min={1}
+            max={room.maxGuests - children}
+            onChange={setAdults}
+            onMaxAttempt={onMaxAttempt}
+          />
+
+          <GuestCounter
+            label="Children"
+            description="Ages 2-12"
+            value={children}
+            min={0}
+            max={room.maxGuests - adults}
+            onChange={setChildren}
+            onMaxAttempt={onMaxAttempt}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function CheckoutSidebarBookingCard({
+  room,
+  roomId,
+  range,
+  setRange,
+  disabledAll,
+  adults,
+  setAdults,
+  children,
+  setChildren,
+  totalGuests,
+  weekendOffer,
+  pricingSummaryProps,
+  withMealState,
+  setWithMealState,
+  withMeal,
+  roomMealMode,
+  vegGuests,
+  setVegGuests,
+  nonVegGuests,
+  setNonVegGuests,
+  roomMealPriceVeg,
+  roomMealPriceNonVeg,
+  onMaxAttempt,
+}) {
+  return (
+    <div className="rounded-2xl border border-[#eadfd6] bg-white p-5 space-y-3">
+      <CheckoutPriceSummaryCard {...pricingSummaryProps} />
+
+      <div>
+        <CalendarRange
+          roomId={roomId}
+          value={range}
+          onChange={(r) => {
+            setRange({
+              from: r?.from || null,
+              to: r?.to || null,
+            });
+          }}
+          disabledRanges={disabledAll}
+          showWeekdayInBox
+          pricing={{
+            weekdayPrice: room?.pricePerNight,
+            weekendPrice: room?.weekendPricePerNight || room?.pricePerNight,
+          }}
+        />
+      </div>
+
+      <CheckoutGuestPopover
+        room={room}
+        adults={adults}
+        setAdults={setAdults}
+        children={children}
+        setChildren={setChildren}
+        onMaxAttempt={onMaxAttempt}
+      />
+
+      {(roomMealMode === "only" || roomMealMode === "price") && (
+        <div className="space-y-3 rounded-xl p-2">
+          <Label className="flex items-center gap-2">
+            <Checkbox
+              checked={withMealState}
+              onCheckedChange={(v) => setWithMealState(Boolean(v))}
+            />
+            <span className="flex items-center gap-1">
+              <Utensils className="w-4 h-4" />
+              Include Meals
+            </span>
+          </Label>
+
+          {withMeal && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[14px] text-amber-900">
+              <span className="font-medium">Meal Assurance:</span> All guest meals are pre-arranged with a focus on quality, hygiene, and comfort.
+            </div>
+          )}
+
+          {roomMealMode === "only" && (
+            <div className="rounded-xl border bg-green-50 py-2 px-3 text-[14px] text-green-700">
+              Meals are included in room price. You can opt out if not required.
+            </div>
+          )}
+
+          {withMeal && (
+            <div className="rounded-xl border bg-[#faf7f4] p-0 px-4 pb-3 space-y-3">
+              {roomMealMode === "price" ? (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Meal prices are per guest per night
+                  </p>
+
+                  <div className="flex justify-between text-sm">
+                    <span>Veg Meal</span>
+                    <span>₹{roomMealPriceVeg} / guest / night</span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span>Non-Veg Meal</span>
+                    <span>₹{roomMealPriceNonVeg} / guest / night</span>
+                  </div>
+                </>
+              ) : null}
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-foreground">Veg Guests</div>
+                  <div className="rounded-xl border px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextValue = Math.max(0, vegGuests - 1);
+                          setVegGuests(nextValue);
+                        }}
+                        disabled={vegGuests <= 0}
+                        className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
+                      >
+                        -
+                      </button>
+
+                      <span className="text-sm font-semibold w-6 text-center">
+                        {vegGuests}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextValue = vegGuests + 1;
+                          if (nextValue + nonVegGuests > totalGuests) {
+                            setVegGuests(totalGuests - nonVegGuests);
+                          } else {
+                            setVegGuests(nextValue);
+                          }
+                        }}
+                        disabled={vegGuests >= totalGuests || vegGuests + nonVegGuests >= totalGuests}
+                        className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-foreground">Non Veg Guests</div>
+                  <div className="rounded-xl border px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextValue = Math.max(0, nonVegGuests - 1);
+                          setNonVegGuests(nextValue);
+                        }}
+                        disabled={nonVegGuests <= 0}
+                        className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
+                      >
+                        -
+                      </button>
+
+                      <span className="text-sm font-semibold w-6 text-center">
+                        {nonVegGuests}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextValue = nonVegGuests + 1;
+                          if (vegGuests + nextValue > totalGuests) {
+                            setNonVegGuests(totalGuests - vegGuests);
+                          } else {
+                            setNonVegGuests(nextValue);
+                          }
+                        }}
+                        disabled={nonVegGuests >= totalGuests || vegGuests + nonVegGuests >= totalGuests}
+                        className="h-8 w-8 rounded-full border text-lg disabled:opacity-40"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Meal Guests Selected: <strong>{vegGuests + nonVegGuests}</strong> / {totalGuests}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {weekendOffer?.canSuggest && (
+        <div className="rounded-[22px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-4 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
+          <span className="limited-offer-pill inline-flex items-center gap-1 rounded-full bg-[#ffc928] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.04em] text-[#4a3200]">
+            <Flame className="h-3.5 w-3.5" />
+            Limited Offer
+          </span>
+          <p className="mt-3 text-lg font-semibold leading-7 text-[#1f1406]">
+            {weekendOffer.suggestionTitle}
+          </p>
+          <p className="text-sm leading-6 text-[#6c5a35]">
+            {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-1 h-11 rounded-xl border border-[#1f1406] bg-white px-5 text-[15px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
+            onClick={() =>
+              setRange((prev) => ({
+                from: prev?.from || null,
+                to: weekendOffer.suggestedCheckout,
+              }))
+            }
+          >
+            {weekendOffer.suggestionButtonLabel}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CheckoutRoomSummaryCard({
+  room,
+  totalGuests,
+  withMeal,
+  range,
+  nights,
+  roomPricing,
+  roomChargeTotal,
+  mealTotal,
+  couponDiscountAmount,
+  weekendDiscountAmount,
+  weekendEligibleNights,
+  weekendOffer,
+  specialOfferAmount,
+  specialOfferEligibleNights,
+  specialOffer,
+  cgstPercent,
+  cgstAmount,
+  sgstPercent,
+  sgstAmount,
+  grandTotal,
+  hasRoomCoupon,
+  couponCode,
+  setCouponCode,
+  setCouponApplied,
+}) {
+  return (
+    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="border-b border-[#efe7e1] px-5 py-4">
+        <div className="text-[22px] font-semibold text-[#2A201B]">
+          Payment Summary
+        </div>
+      </div>
+
+      <div className="p-5 space-y-4 text-sm">
+        <div className="flex flex-wrap flex-col items-start gap-x-2 gap-y-2">
+          <span className="font-semibold text-foreground text-[22px]">
+            {room?.name}
+          </span>
+
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <MapPin className="w-4 h-4" />
+            <span>Karjat, Maharashtra</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            <span>{totalGuests} Guests</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Utensils className="w-4 h-4" />
+            <span>
+              {room.mealMode === "only"
+                ? "Meals Included"
+                : withMeal
+                  ? "With Meals"
+                  : "Without Meals"}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-[#faf7f4] rounded-xl p-3">
+            <div className="text-xs text-muted-foreground mb-1">
+              CHECK-IN
+            </div>
+            <div className="font-medium">
+              {range?.from && format(range.from, "dd MMM yyyy")}
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              {range?.from
+                ? `${format(range.from, "EEEE")}, ${CHECK_IN_TIME}`
+                : CHECK_IN_TIME}
+            </div>
+          </div>
+
+          <div className="bg-[#faf7f4] rounded-xl p-3">
+            <div className="text-xs text-muted-foreground mb-1">
+              CHECK-OUT
+            </div>
+            <div className="font-medium">
+              {range?.to && format(range.to, "dd MMM yyyy")}
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              {range?.to
+                ? `${format(range.to, "EEEE")}, ${CHECK_OUT_TIME}`
+                : CHECK_OUT_TIME}
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span>
+              ₹
+              {roundedRupee(
+                room?.taxMode === "included"
+                  ? roomPricing.averageBasePerNight
+                  : roomPricing.averageGrossPerNight
+              )} x {nights} nights
+            </span>
+            <span className="font-semibold text-[#2A201B]">{INR(roomChargeTotal)}</span>
+          </div>
+
+          {room.mealMode === "price" && withMeal && (
+            <div className="flex justify-between">
+              <span>Meals</span>
+              <span className="font-semibold text-[#2A201B]">{INR(mealTotal)}</span>
+            </div>
+          )}
+
+          {couponDiscountAmount > 0 && (
+            <div className="flex justify-between text-green-700">
+              <span>Coupon Discount</span>
+              <span>-{INR(couponDiscountAmount)}</span>
+            </div>
+          )}
+
+          {weekendDiscountAmount > 0 && (
+            <div className="flex justify-between text-green-700">
+              <span>
+                Weekend Discount ({weekendEligibleNights} night{weekendEligibleNights === 1 ? "" : "s"} @ {weekendOffer?.percent || 0}%)
+              </span>
+              <span>-{INR(weekendDiscountAmount)}</span>
+            </div>
+          )}
+
+          {specialOfferAmount > 0 && (
+            <div className="flex justify-between text-green-700">
+              <span>
+                Special Offer ({specialOfferEligibleNights} night{specialOfferEligibleNights === 1 ? "" : "s"} @ {Number(specialOffer?.discountPercent || 0)}%)
+              </span>
+              <span>-{INR(specialOfferAmount)}</span>
+            </div>
+          )}
+
+          {(weekendDiscountAmount > 0 || specialOfferAmount > 0) && (
+            <p className="text-xs text-muted-foreground">
+              Discounts are calculated only on eligible nights within the selected stay.
+            </p>
+          )}
+
+          {room.mealMode === "only" && (
+            <div className="flex justify-between text-green-700">
+              <span>Meals</span>
+              <span className="font-semibold">Included</span>
+            </div>
+          )}
+
+          <div className="flex flex-col justify-between text-muted-foreground">
+            <div className="flex justify-between">
+              <span>CGST ({cgstPercent}%)</span>
+              <span className="font-semibold text-[#2A201B]">{INR(cgstAmount)}</span>
+            </div>
+
+            <div className="flex justify-between">
+              <span>SGST ({sgstPercent}%)</span>
+              <span className="font-semibold text-[#2A201B]">{INR(sgstAmount)}</span>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {hasRoomCoupon && (
+          <>
+            <div className="space-y-2">
+              <Label>Promo Code</Label>
+
+              <div className="flex gap-2">
+                <Input
+                  value={couponCode}
+                  onChange={(e) =>
+                    setCouponCode(e.target.value.toUpperCase())
+                  }
+                  placeholder="Enter promo code"
+                />
+
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (couponCode === room.discountCode) {
+                      setCouponApplied(true);
+                      toast.success(`${room.discountLabel || "Offer"} applied!`);
+                    } else {
+                      setCouponApplied(false);
+                      toast.error("Invalid code for this room");
+                    }
+                  }}
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+          </>
+        )}
+
+        <div className="flex justify-between items-end">
+          <div>
+            <div className="text-[18px] font-medium">Total</div>
+            <div className="text-xs text-muted-foreground">
+              Including all taxes
+            </div>
+          </div>
+
+          <div className="text-xl font-semibold text-red-600">
+            {INR(grandTotal)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Checkout() {
   const { state } = useLocation();
@@ -342,8 +906,8 @@ export default function Checkout() {
     if (!range?.from || !range?.to) {
       return null;
     }
-    return getWeekendOfferState(range, weekendDiscountConfig);
-  }, [range, weekendDiscountConfig]);
+    return getWeekendOfferState(range, weekendDiscountConfig, disabledAll);
+  }, [disabledAll, range, weekendDiscountConfig]);
 
   const couponDiscountAmount = useMemo(() => {
     if (!hasRoomCoupon) return 0;
@@ -434,6 +998,33 @@ export default function Checkout() {
     if (!room) return 0;
     return Number((taxableAmount + totalTax).toFixed(2));
   }, [room, taxableAmount, totalTax]);
+
+  const pricingSummaryProps = useMemo(
+    () => ({
+      room,
+      range,
+      nights,
+      grandTotal,
+      originalGrandTotal: Number((subTotal + totalTax).toFixed(2)),
+      roomChargeTotal,
+      weekendDiscountAmount,
+      weekendEligibleNights,
+      weekendOffer,
+      totalTax,
+    }),
+    [
+      grandTotal,
+      nights,
+      subTotal,
+      range,
+      room,
+      roomChargeTotal,
+      totalTax,
+      weekendDiscountAmount,
+      weekendEligibleNights,
+      weekendOffer,
+    ]
+  );
 
   const recommendedRooms = useMemo(() => {
     if (!room?._id) return [];
@@ -799,6 +1390,7 @@ export default function Checkout() {
   ];
 
   return (
+    <div className="bg-[#fbfbfb]">
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* reCAPTCHA – hidden, no layout impact */}
       <div
@@ -868,194 +1460,6 @@ export default function Checkout() {
 
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
 
-        {/* ================= DESKTOP STICKY SUMMARY ================= */}
-        <aside className="hidden lg:block lg:col-span-4">
-          <div className="sticky top-[120px] px-4 py-0">
-
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-
-              {/* IMAGE */}
-              <div className="relative">
-                {roomImage && (
-                  <img
-                    src={roomImage}
-                    alt={room.name}
-                    className="h-56 w-full object-cover"
-                  />
-                )}
-
-                {/* BADGE */}
-                <span className="absolute top-3 left-3 bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  Best Value
-                </span>
-              </div>
-
-              {/* CONTENT */}
-              <div className="p-5 space-y-4 text-sm">
-
-                {/* TITLE */}
-                {/* LOCATION */}
-                <div className="flex flex-wrap flex-col items-start gap-x-2 gap-y-2">
-                  <span className="font-semibold text-foreground text-[22px]">
-                    {room?.name}
-                  </span>
-
-
-
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>Karjat, Maharashtra</span>
-                  </div>
-                </div>
-
-                {/* GUESTS + MEALS */}
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    <span>{totalGuests} Guests</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Utensils className="w-4 h-4" />
-                    <span>
-                      {room.mealMode === "only"
-                        ? "Meals Included"
-                        : withMeal
-                          ? "With Meals"
-                          : "Without Meals"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* CHECK-IN / CHECK-OUT */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#faf7f4] rounded-xl p-3">
-                    <div className="text-xs text-muted-foreground mb-1">
-                      CHECK-IN
-                    </div>
-                    <div className="font-medium">
-                      {range?.from && format(range.from, "dd MMM yyyy")}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {range?.from
-                        ? `${format(range.from, "EEEE")}, ${CHECK_IN_TIME}`
-                        : CHECK_IN_TIME}
-                    </div>
-                  </div>
-
-                  <div className="bg-[#faf7f4] rounded-xl p-3">
-                    <div className="text-xs text-muted-foreground mb-1">
-                      CHECK-OUT
-                    </div>
-                    <div className="font-medium">
-                      {range?.to && format(range.to, "dd MMM yyyy")}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {range?.to
-                        ? `${format(range.to, "EEEE")}, ${CHECK_OUT_TIME}`
-                        : CHECK_OUT_TIME}
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* PRICE BREAKUP */}
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>
-                      Room ({nights} nights × ₹
-                      {roundedRupee(
-                        room?.taxMode === "included"
-                          ? roomPricing.averageBasePerNight
-                          : roomPricing.averageGrossPerNight
-                      )})
-                    </span>
-                    <span>
-                      {INR(roomChargeTotal)}
-                    </span>
-                  </div>
-
-                  {(room.mealMode === "price" && withMeal) && (
-                    <div className="flex justify-between">
-                      <span>Meals</span>
-                      <span>{INR(mealTotal)}</span>
-                    </div>
-                  )}
-
-                  {couponDiscountAmount > 0 && (
-                    <div className="flex justify-between text-green-700">
-                      <span>Coupon Discount</span>
-                      <span>-{INR(couponDiscountAmount)}</span>
-                    </div>
-                  )}
-
-                  {weekendDiscountAmount > 0 && (
-                    <div className="flex justify-between text-green-700">
-                      <span>
-                        Weekend Discount ({weekendEligibleNights} night{weekendEligibleNights === 1 ? "" : "s"} @ {weekendOffer?.percent || 0}%)
-                      </span>
-                      <span>-{INR(weekendDiscountAmount)}</span>
-                    </div>
-                  )}
-
-                  {specialOfferAmount > 0 && (
-                    <div className="flex justify-between text-green-700">
-                      <span>
-                        Special Offer ({specialOfferEligibleNights} night{specialOfferEligibleNights === 1 ? "" : "s"} @ {Number(specialOffer?.discountPercent || 0)}%)
-                      </span>
-                      <span>-{INR(specialOfferAmount)}</span>
-                    </div>
-                  )}
-
-                  {(weekendDiscountAmount > 0 || specialOfferAmount > 0) && (
-                    <p className="text-xs text-muted-foreground">
-                      Discounts are calculated only on eligible nights within the selected stay.
-                    </p>
-                  )}
-
-                  {room.mealMode === "only" && (
-                    <div className="flex justify-between text-green-700">
-                      <span>Meals</span>
-                      <span>Included</span>
-                    </div>
-                  )}
-
-                  <div className="flex flex-col justify-between text-muted-foreground">
-                    <div className="flex justify-between">
-                      <span>CGST ({cgstPercent}%)</span>
-                      <span>{INR(cgstAmount)}</span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span>SGST ({sgstPercent}%)</span>
-                      <span>{INR(sgstAmount)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* TOTAL */}
-                <div className="flex justify-between items-end">
-                  <div>
-                    <div className="text-[18px] font-medium">Total</div>
-                    <div className="text-xs text-muted-foreground">
-                      Including all taxes
-                    </div>
-                  </div>
-
-                  <div className="text-xl font-semibold text-red-600">
-                    {INR(grandTotal)}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        </aside>
-
-
         <section className="lg:col-span-6 space-y-6">
           {/* ================= MOBILE ROOM CARD ================= */}
           <div className="lg:hidden">
@@ -1069,7 +1473,7 @@ export default function Checkout() {
                 <User className="h-5 w-5 text-red-700" />
               </div>
               <div>
-                <h3 className="font-semibold text-base">Guest Details</h3>
+                <h3 className="font-sans font-semibold text-base">Guest Details</h3>
                 <p className="text-xs text-muted-foreground">
                   Information provided for this reservation
                 </p>
@@ -1110,7 +1514,7 @@ export default function Checkout() {
                 <MapPin className="h-5 w-5 text-red-700" />
               </div>
               <div>
-                <h3 className="font-semibold text-base">Address Details</h3>
+                <h3 className="font-sans font-semibold text-base">Address Details</h3>
                 <p className="text-xs text-muted-foreground">
                   Billing address for this reservation
                 </p>
@@ -1156,8 +1560,35 @@ export default function Checkout() {
 
           </div>
 
+          <CheckoutRoomSummaryCard
+            room={room}
+            totalGuests={totalGuests}
+            withMeal={withMeal}
+            range={range}
+            nights={nights}
+            roomPricing={roomPricing}
+            roomChargeTotal={roomChargeTotal}
+            mealTotal={mealTotal}
+            couponDiscountAmount={couponDiscountAmount}
+            weekendDiscountAmount={weekendDiscountAmount}
+            weekendEligibleNights={weekendEligibleNights}
+            weekendOffer={weekendOffer}
+            specialOfferAmount={specialOfferAmount}
+            specialOfferEligibleNights={specialOfferEligibleNights}
+            specialOffer={specialOffer}
+            cgstPercent={cgstPercent}
+            cgstAmount={cgstAmount}
+            sgstPercent={sgstPercent}
+            sgstAmount={sgstAmount}
+            grandTotal={grandTotal}
+            hasRoomCoupon={hasRoomCoupon}
+            couponCode={couponCode}
+            setCouponCode={setCouponCode}
+            setCouponApplied={setCouponApplied}
+          />
+
           {/* ================= BOOKING PREFERENCES ================= */}
-          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-6">
+          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-6 lg:hidden">
 
             {/* HEADER */}
             <div className="flex items-start gap-3">
@@ -1188,8 +1619,8 @@ export default function Checkout() {
                 disabledRanges={disabledAll}
                 showWeekdayInBox
                 pricing={{
-                  weekdayPrice: getDisplayedNightlyPrices(room, totalGuests).weekdayPrice,
-                  weekendPrice: getDisplayedNightlyPrices(room, totalGuests).weekendPrice,
+                  weekdayPrice: room?.pricePerNight,
+                  weekendPrice: room?.weekendPricePerNight || room?.pricePerNight,
                 }}
               />
 
@@ -1289,14 +1720,14 @@ export default function Checkout() {
               )}
 
               {withMeal && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
                   <span className="font-medium">Meal Assurance:</span> All guest meals are pre-arranged with a focus on quality, hygiene, and comfort.
                 </div>
               )}
 
 
               {room.mealMode === "only" && (
-                <div className="rounded-xl border bg-green-50 p-4 text-sm text-green-700">
+                <div className="rounded-xl border bg-green-50 p-2 text-xs text-green-700">
                   Meals are included in room price. You can opt out if not required.
                 </div>
               )}
@@ -1322,7 +1753,7 @@ export default function Checkout() {
             </div>
             {/* ================= MEALS ================= */}
             {withMeal && (
-              <div className="space-y-4 pt-2">
+              <div className="space-y-4 pt-0">
 
                 <div className="grid grid-cols-2 gap-4">
                   <Counter
@@ -1387,114 +1818,6 @@ export default function Checkout() {
             )}
           </div>
 
-          {/* Payment Summary */}
-          <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-3">
-            <h4 className="text-sm font-semibold text-foreground">
-              Payment Summary
-            </h4>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Room Charges</span>
-                <span>
-                  <span>{INR(roomChargeTotal)}</span>
-                </span>
-              </div>
-
-              {withMeal && (
-                <div className="flex justify-between">
-                  <span>Meals</span>
-                  <span>
-                    <span>{INR(mealTotal)}</span>
-                  </span>
-                </div>
-              )}
-
-              {room.mealMode === "only" && (
-                <div className="flex justify-between text-green-700">
-                  <span>Meals</span>
-                  <span>Included</span>
-                </div>
-              )}
-
-              {weekendDiscountAmount > 0 && (
-                <div className="flex justify-between text-green-700">
-                  <span>
-                    Weekend Discount Added ({weekendEligibleNights} night{weekendEligibleNights === 1 ? "" : "s"} @ {weekendOffer?.percent || 0}%)
-                  </span>
-                  <span>-{INR(weekendDiscountAmount)}</span>
-                </div>
-              )}
-
-              {couponDiscountAmount > 0 && (
-                <div className="flex justify-between text-green-700">
-                  <span>Coupon Discount</span>
-                  <span>-{INR(couponDiscountAmount)}</span>
-                </div>
-              )}
-
-              {specialOfferAmount > 0 && (
-                <div className="flex justify-between text-green-700">
-                  <span>
-                    Special Offer Added ({specialOfferEligibleNights} night{specialOfferEligibleNights === 1 ? "" : "s"} @ {Number(specialOffer?.discountPercent || 0)}%)
-                  </span>
-                  <span>-{INR(specialOfferAmount)}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between">
-                <span>GST</span>
-                <span>
-                  <span>{INR(totalTax)}</span>
-                </span>
-              </div>
-
-              <Separator />
-
-              {hasRoomCoupon && (
-                <div className="space-y-2">
-                  <Label>Promo Code</Label>
-
-                  <div className="flex gap-2">
-                    <Input
-                      value={couponCode}
-                      onChange={(e) =>
-                        setCouponCode(e.target.value.toUpperCase())
-                      }
-                      placeholder="Enter promo code"
-                    />
-
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        if (couponCode === room.discountCode) {
-                          setCouponApplied(true);
-                          toast.success(`${room.discountLabel || "Offer"} applied!`);
-                        } else {
-                          setCouponApplied(false);
-                          toast.error("Invalid code for this room");
-                        }
-                      }}
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-between font-semibold">
-                <span className="text-[16px]">Total Payable</span>
-                <span className="text-red-700 text-[18px]">
-                  {INR(grandTotal)}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Includes all applicable taxes & fees
-            </p>
-          </div>
-
           <div className="rounded-2xl border bg-white p-4 sm:p-5">
             <button
               type="button"
@@ -1523,7 +1846,7 @@ export default function Checkout() {
           {/* ================= CTA ================= */}
           <Button
             disabled={processingPayment || !acceptedTerms}
-            className="w-full h-12 text-base bg-red-700 hover:bg-red-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full h-12 text-base bg-red-700 hover:bg-red-800 disabled:bg-gray-300 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             onClick={proceed}
           >
             {processingPayment ? (
@@ -1558,7 +1881,7 @@ export default function Checkout() {
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t px-4 py-3">
             <Button
               disabled={processingPayment || !acceptedTerms}
-              className="w-full h-12 text-base bg-red-700 hover:bg-red-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full h-12 text-base bg-red-700 hover:bg-red-800 disabled:bg-gray-400 disabled:text-white disabled:opacity-100 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               onClick={proceed}
             >
               {processingPayment ? "Processing..." : "Proceed to Payment"}
@@ -1612,6 +1935,55 @@ export default function Checkout() {
 
 
         </section>
+
+
+        {/* ================= DESKTOP STICKY SUMMARY ================= */}
+        <aside className="hidden lg:block lg:col-span-4">
+          <div className="sticky top-[90px] px-4 py-0 mt-5">
+
+            <div className="mb-5">
+              <CheckoutSidebarBookingCard
+                room={room}
+                roomId={roomId}
+                range={range}
+                setRange={setRange}
+                disabledRanges={disabledAll}
+                adults={adults}
+                setAdults={(v) => {
+                  setAdults(v);
+                  setVegGuests(0);
+                  setNonVegGuests(0);
+                }}
+                children={children}
+                setChildren={(v) => {
+                  setChildren(v);
+                  setVegGuests(0);
+                  setNonVegGuests(0);
+                }}
+                totalGuests={totalGuests}
+                weekendOffer={weekendOffer}
+                pricingSummaryProps={pricingSummaryProps}
+                withMealState={withMealState}
+                setWithMealState={(v) => {
+                  setWithMealState(Boolean(v));
+                  setVegGuests(0);
+                  setNonVegGuests(0);
+                }}
+                withMeal={withMeal}
+                roomMealMode={room.mealMode}
+                vegGuests={vegGuests}
+                setVegGuests={setVegGuests}
+                nonVegGuests={nonVegGuests}
+                setNonVegGuests={setNonVegGuests}
+                roomMealPriceVeg={room.mealPriceVeg}
+                roomMealPriceNonVeg={room.mealPriceNonVeg}
+                onMaxAttempt={handleCapacityMaxAttempt}
+              />
+            </div>
+
+          </div>
+        </aside>
+
 
       </div>
 
@@ -1684,6 +2056,7 @@ export default function Checkout() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

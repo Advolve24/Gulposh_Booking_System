@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../store/authStore";
 import { api } from "../api/http";
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { getWeekendOfferState } from "../lib/weekendOffer";
-import { getDisplayedNightlyPrices } from "../lib/roomPricing";
+import { getDisplayedNightlyPrices, getRoomPricingBreakdown } from "../lib/roomPricing";
 
 
 const humanize = (v = "") =>
@@ -89,48 +89,60 @@ function clampGuestSelection(adultsValue, childrenValue, maxGuests) {
 const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
-function RoomNightlyPrices({ room, guests = 0, align = "right", compact = false }) {
-  const { weekdayPrice, weekendPrice, baseGuests, extraGuestCount } =
-    getDisplayedNightlyPrices(room, guests);
+function RoomNightlyPrices({
+  room,
+  range,
+  guests = 0,
+  align = "right",
+  compact = false,
+  pricingSummary = null,
+}) {
+  const { weekdayPrice } = getDisplayedNightlyPrices(room, guests);
   const wrapperClass =
     align === "center"
       ? "text-center"
       : align === "left"
-        ? "text-left"
+        ? "text-left flex flex-col gap-0"
         : "text-left sm:text-right";
-  const priceClass = compact ? "text-xl font-semibold" : "text-lg sm:text-xl font-semibold";
-  const subtitle = extraGuestCount > 0 ? `for ${guests} guests` : `for up to ${baseGuests} guests`;
+  const priceClass = compact ? "text-[2rem] font-semibold leading-none" : "text-2xl sm:text-[2rem] font-semibold leading-none";
+  const hasStaySelection = Boolean(pricingSummary?.nights > 0 && range?.from && range?.to);
+  const label = hasStaySelection ? `for ${pricingSummary.nights} night${pricingSummary.nights === 1 ? "" : "s"}` : "starting from";
+  const amount = hasStaySelection ? pricingSummary.totalPayable : weekdayPrice;
+  const amountSuffix = hasStaySelection ? " Incl. Taxes" : " / N Incl. Taxes";
+  const mealsLabel = room?.mealMode === "only" ? "All Meals are included" : "";
+  const showDiscountedComparison =
+    hasStaySelection &&
+    Math.round(Number(pricingSummary?.originalTotalPayable || 0)) >
+      Math.round(Number(pricingSummary?.totalPayable || 0));
 
   return (
-    <div className={`flex items-center justify-between ${wrapperClass}`}>
-      <div>
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
-          Weekdays
-          {extraGuestCount === 0 ? <span className="ml-1 normal-case">starting from</span> : null}
-        </div>
-        <div className={priceClass}>
-          {formatCurrency(weekdayPrice)}
-          <span className="ml-1 text-sm font-normal text-muted-foreground">/N</span>
-        </div>
-        <div className="text-xs text-muted-foreground">{subtitle}</div>
+    <div className={wrapperClass}>
+      <div className="text-[12px] uppercase tracking-[0.08em] text-muted-foreground">
+        {label}
       </div>
-
-      <div className="w-[1px] border h-[28px]">
-
+      <div className={`mt-1 leading-[18px] ${priceClass}`}>
+        {showDiscountedComparison ? (
+          <>
+            <span className="mr-2 text-lg font-normal text-muted-foreground line-through">
+              {formatCurrency(pricingSummary?.originalTotalPayable)}
+            </span>
+            <span className="text-[24px]">{formatCurrency(pricingSummary?.totalPayable)}</span>
+            <span className="ml-0 text-sm font-normal text-muted-foreground">
+              {amountSuffix}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="text-[24px]">{formatCurrency(amount)}</span>
+            <span className="ml-0 text-sm font-normal text-muted-foreground">
+              {amountSuffix}
+            </span>
+          </>
+        )}
       </div>
-
-      <div>
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
-          Weekend
-          <span className="ml-1 normal-case">(Fri, Sat, Sun nights)</span>
-          {extraGuestCount === 0 ? <span className="ml-1 normal-case">starting from</span> : null}
-        </div>
-        <div className={priceClass}>
-          {formatCurrency(weekendPrice)}
-          <span className="ml-1 text-sm font-normal text-muted-foreground">/N</span>
-        </div>
-        <div className="text-xs text-muted-foreground">{subtitle}</div>
-      </div>
+      {mealsLabel ? (
+        <div className="mt-1 text-sm text-green-600">{mealsLabel}</div>
+      ) : null}
     </div>
   );
 }
@@ -146,6 +158,7 @@ function BookingCard({
   disabledAll,
   goToCheckout,
   weekendOffer,
+  pricingSummary,
   onCapacityMaxAttempt,
 }) {
   const totalGuests = adults + children;
@@ -154,6 +167,15 @@ function BookingCard({
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* SCROLLABLE CONTENT */}
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4 pr-1">
+        <RoomNightlyPrices
+          room={room}
+          range={range}
+          guests={totalGuests}
+          align="left"
+          compact
+          pricingSummary={pricingSummary}
+        />
+
         {/* DATES */}
         <div>
           <label className="text-[11px] font-medium text-muted-foreground">
@@ -166,8 +188,8 @@ function BookingCard({
             disabledRanges={disabledAll}
             showWeekdayInBox
             pricing={{
-              weekdayPrice: getDisplayedNightlyPrices(room, totalGuests).weekdayPrice,
-              weekendPrice: getDisplayedNightlyPrices(room, totalGuests).weekendPrice,
+              weekdayPrice: room?.pricePerNight,
+              weekendPrice: room?.weekendPricePerNight || room?.pricePerNight,
             }}
           />
         </div>
@@ -221,6 +243,10 @@ function BookingCard({
           </div>
         )}
 
+        {pricingSummary?.nights > 0 && (
+          <PriceBreakupSummary pricingSummary={pricingSummary} />
+        )}
+
 
 
 
@@ -267,27 +293,28 @@ function RoomGuestPopover({
 
   return (
     <div>
-      <label className="text-xs font-medium text-muted-foreground">
-        GUESTS (MAX {room.maxGuests || 10})
-      </label>
+     
 
       <Popover>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="mt-2 h-16 w-full justify-between rounded-xl border-[#eadfd8] bg-white px-4"
+            className="mt-0 h-16 w-full justify-between rounded-xl border-[#eadfd8] bg-white px-4"
           >
             <div className="text-left">
               <div className="text-[16px] font-semibold text-[#2A201B]">
                 {totalGuests} guest{totalGuests === 1 ? "" : "s"}
               </div>
             </div>
+            <div className="flex justify-between gap-1">
+             <span className="font-gray">MAX {room.maxGuests || 10}</span>
             <Users className="h-4 w-4 text-[#a11d2e]" />
+            </div>
           </Button>
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-[350px] rounded-2xl p-4"
+          className="w-[330px] rounded-2xl p-4"
           align="start"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
@@ -321,6 +348,174 @@ function RoomGuestPopover({
           </div>
         </PopoverContent>
       </Popover>
+    </div>
+  );
+}
+
+function PriceBreakupSummary({ pricingSummary }) {
+  const [showBreakup, setShowBreakup] = useState(false);
+  const triggerRef = useRef(null);
+  const popupRef = useRef(null);
+  const [popupStyle, setPopupStyle] = useState({
+    position: "fixed",
+    left: 16,
+    top: 16,
+  });
+
+  if (!pricingSummary?.nights) return null;
+
+  useEffect(() => {
+    if (!showBreakup) return;
+
+    const updatePopupPosition = () => {
+      const triggerEl = triggerRef.current;
+      const popupEl = popupRef.current;
+      if (!triggerEl || !popupEl) return;
+
+      const triggerRect = triggerEl.getBoundingClientRect();
+      const popupRect = popupEl.getBoundingClientRect();
+      const gap = 12;
+      const viewportPadding = 16;
+
+      const spaceBelow = window.innerHeight - triggerRect.bottom;
+      const spaceAbove = triggerRect.top;
+      const openAbove =
+        spaceBelow < popupRect.height + gap && spaceAbove > spaceBelow;
+
+      let top = openAbove
+        ? triggerRect.top - popupRect.height - gap
+        : triggerRect.bottom + gap;
+
+      if (top < viewportPadding) {
+        top = viewportPadding;
+      }
+
+      if (top + popupRect.height > window.innerHeight - viewportPadding) {
+        top = Math.max(
+          viewportPadding,
+          window.innerHeight - popupRect.height - viewportPadding
+        );
+      }
+
+      let left = triggerRect.left;
+      if (left + popupRect.width > window.innerWidth - viewportPadding) {
+        left = triggerRect.right - popupRect.width;
+      }
+      if (left < viewportPadding) {
+        left = viewportPadding;
+      }
+
+      setPopupStyle({
+        position: "fixed",
+        top,
+        left,
+      });
+    };
+
+    updatePopupPosition();
+    window.addEventListener("scroll", updatePopupPosition, true);
+    window.addEventListener("resize", updatePopupPosition);
+
+    return () => {
+      window.removeEventListener("scroll", updatePopupPosition, true);
+      window.removeEventListener("resize", updatePopupPosition);
+    };
+  }, [showBreakup]);
+
+  return (
+    <div
+      ref={triggerRef}
+      className="relative py-0 px-2"
+      onMouseEnter={() => setShowBreakup(true)}
+      onMouseLeave={() => setShowBreakup(false)}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Total
+          </div>
+          <div className="mt-0 text-[11px] text-muted-foreground">
+            {pricingSummary.dateLabel} • {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
+          </div>
+          <button
+            type="button"
+            className="mt-1 text-sm font-medium text-[#0a66c2] underline underline-offset-2"
+            onFocus={() => setShowBreakup(true)}
+            onBlur={() => setShowBreakup(false)}
+          >
+            View price breakup
+          </button>
+        </div>
+
+        <div className="text-right">
+          <div className="text-[24px] font-semibold leading-none text-[#2A201B]">
+            {formatCurrency(pricingSummary.totalPayable)}
+          </div>
+          <div className="mt-1 text-sm text-muted-foreground">(incl. GST)</div>
+        </div>
+      </div>
+
+      {showBreakup ? (
+        <div
+          ref={popupRef}
+          style={popupStyle}
+          className="z-[120] w-[325px] rounded-3xl border border-[#e9dfd8] bg-white px-4 py-4 shadow-[0_20px_60px_-28px_rgba(42,32,27,0.35)]"
+        >
+          <div className="text-[20px] font-semibold text-[#2A201B]">Price Breakup</div>
+
+          <div className="mt-4 space-y-3 text-[13px]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[14px] font-medium text-[#2A201B]">Property Charges</div>
+                <div className="text-[13px] text-muted-foreground">
+                  {formatCurrency(pricingSummary.roomBasePerNight)} x {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
+                </div>
+              </div>
+              <div className="text-[14px] font-semibold text-[#2A201B]">
+                {formatCurrency(pricingSummary.roomSubtotal)}
+              </div>
+            </div>
+
+            {pricingSummary.weekendDiscountAmount > 0 ? (
+              <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-4">
+                <div>
+                  <div className="text-[14px] font-medium text-[#12824c]">
+                    Weekend Discount ({pricingSummary.weekendEligibleNights} night{pricingSummary.weekendEligibleNights === 1 ? "" : "s"} @ {pricingSummary.weekendDiscountPercent}%)
+                  </div>
+                  <div className="text-[13px] text-muted-foreground">
+                    Discounts are calculated only on eligible nights.
+                  </div>
+                </div>
+                <div className="text-[14px] font-semibold text-[#12824c]">
+                  -{formatCurrency(pricingSummary.weekendDiscountAmount)}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
+              <div className="text-[14px] font-medium text-[#2A201B]">GST</div>
+              <div className="text-[14px] font-semibold text-[#2A201B]">
+                {formatCurrency(pricingSummary.totalTax)}
+              </div>
+            </div>
+
+            <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
+              <div>
+                <div className="text-[14px] font-medium text-[#2A201B]">Meals</div>
+                <div className="text-[13px] text-muted-foreground">Included</div>
+              </div>
+              <div className="text-[14px] font-semibold text-[#12824c]">Included</div>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between border-t border-[#efe7e1] pt-3">
+            <div className="text-[15px] font-semibold text-[#2A201B]">Total Payable</div>
+            <div className="text-[21px] font-semibold leading-none text-[#2A201B]">
+              {formatCurrency(pricingSummary.totalPayable)}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -364,6 +559,7 @@ export default function RoomPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [capacityPopupOpen, setCapacityPopupOpen] = useState(false);
   const [discountConfig, setDiscountConfig] = useState({
+    taxPercent: 0,
     weekendDiscountEnabled: false,
     twoWeekendNightsDiscountPercent: 0,
     threeWeekendNightsDiscountPercent: 0,
@@ -419,6 +615,7 @@ export default function RoomPage() {
 
     api.get("/tax").then(({ data }) => {
       setDiscountConfig({
+        taxPercent: Number(data.taxPercent || 0),
         weekendDiscountEnabled: Boolean(data.weekendDiscountEnabled),
         twoWeekendNightsDiscountPercent: Number(
           data.twoWeekendNightsDiscountPercent || 0
@@ -429,6 +626,7 @@ export default function RoomPage() {
       });
     }).catch(() => {
       setDiscountConfig({
+        taxPercent: 0,
         weekendDiscountEnabled: false,
         twoWeekendNightsDiscountPercent: 0,
         threeWeekendNightsDiscountPercent: 0,
@@ -479,8 +677,83 @@ export default function RoomPage() {
     if (!range?.from || !range?.to) {
       return null;
     }
-    return getWeekendOfferState(range, discountConfig);
-  }, [discountConfig, range]);
+    return getWeekendOfferState(range, discountConfig, disabledAll);
+  }, [disabledAll, discountConfig, range]);
+
+  const roomPricing = useMemo(
+    () =>
+      getRoomPricingBreakdown(
+        room,
+        range,
+        Number(discountConfig.taxPercent || 0),
+        totalGuests
+      ),
+    [discountConfig.taxPercent, range, room, totalGuests]
+  );
+
+  const pricingSummary = useMemo(() => {
+    if (!room || !range?.from || !range?.to || roomPricing.nights <= 0) {
+      return null;
+    }
+
+    const roomSubtotal = Number(roomPricing.baseTotal || 0);
+    const originalTotalPayable =
+      room.taxMode === "included"
+        ? Number(roomPricing.grossTotal || 0)
+        : Number(
+            (
+              roomSubtotal *
+              (1 + Number(discountConfig.taxPercent || 0) / 100)
+            ).toFixed(2)
+          );
+    const weekendDiscountAmount =
+      weekendOffer?.eligible && roomPricing.weekendNights > 0
+        ? Math.round(
+            (Number(roomPricing.weekendBaseTotal || 0) *
+              Number(weekendOffer.percent || 0)) /
+              100
+          )
+        : 0;
+    const discountedSubtotal = Math.max(0, roomSubtotal - weekendDiscountAmount);
+    const totalTax = Number(
+      (
+        discountedSubtotal * Number(discountConfig.taxPercent || 0) /
+        100
+      ).toFixed(2)
+    );
+    const totalPayable =
+      room.taxMode === "included"
+        ? Math.max(
+            0,
+            Number(roomPricing.grossTotal || 0) -
+              Math.round(
+                (Number(roomPricing.weekendGrossTotal || 0) *
+                  Number(weekendOffer?.percent || 0)) /
+                  100
+              )
+          )
+        : Number((discountedSubtotal + totalTax).toFixed(2));
+
+    return {
+      nights: roomPricing.nights,
+      roomBasePerNight: Number(roomPricing.averageBasePerNight || 0),
+      roomSubtotal,
+      weekendDiscountAmount,
+      weekendDiscountPercent: Number(weekendOffer?.percent || 0),
+      weekendEligibleNights: Number(weekendOffer?.eligibleNights || 0),
+      discountedSubtotal,
+      totalTax,
+      totalPayable,
+      originalTotalPayable,
+      dateLabel: `${new Date(range.from).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })} - ${new Date(range.to).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })}`,
+    };
+  }, [discountConfig.taxPercent, range, room, roomPricing, weekendOffer]);
 
   const recommendedRooms = useMemo(() => {
     if (!room?._id) return [];
@@ -699,10 +972,6 @@ export default function RoomPage() {
               </div>
             )}
           </div>
-
-          <div className="rounded-2xl border border-[#eadfd6] bg-white p-4 md:w-[34%] w-full ">
-              <RoomNightlyPrices room={room} guests={totalGuests} align="left" compact />
-            </div>
         </div>
 
         {/* GRID */}
@@ -883,20 +1152,25 @@ export default function RoomPage() {
 
 
             <div className="border border-[#eadfd6] rounded-2xl p-5 space-y-5 bg-white">
+              <RoomNightlyPrices
+                room={room}
+                range={range}
+                guests={totalGuests}
+                align="left"
+                compact
+                pricingSummary={pricingSummary}
+              />
+
               {/* SAME CALENDAR RANGE AS HOMEPAGE (popover with date boxes) */}
               <div>
-              <label className="text-xs font-medium text-muted-foreground">
-                CHECK IN / CHECK OUT
-              </label>
-
               <CalendarRange
                 value={range}
                 onChange={setRange}
                 disabledRanges={disabledAll}
                 showWeekdayInBox
                 pricing={{
-                  weekdayPrice: getDisplayedNightlyPrices(room, totalGuests).weekdayPrice,
-                  weekendPrice: getDisplayedNightlyPrices(room, totalGuests).weekendPrice,
+                  weekdayPrice: room?.pricePerNight,
+                  weekendPrice: room?.weekendPricePerNight || room?.pricePerNight,
                 }}
               />
               </div>
@@ -948,6 +1222,10 @@ export default function RoomPage() {
                   Active for {weekendOffer.appliedTier} weekend night{weekendOffer.appliedTier === 1 ? "" : "s"} in your selected stay.
                 </p>
               </div>
+            )}
+
+            {pricingSummary?.nights > 0 && (
+              <PriceBreakupSummary pricingSummary={pricingSummary} />
             )}
 
             {/* BOOK NOW */}
@@ -1085,6 +1363,7 @@ export default function RoomPage() {
                 disabledAll={disabledAll}
                 goToCheckout={goToCheckout}
                 weekendOffer={weekendOffer}
+                pricingSummary={pricingSummary}
                 onCapacityMaxAttempt={handleCapacityMaxAttempt}
               />
             </div>

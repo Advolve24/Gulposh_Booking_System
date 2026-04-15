@@ -11,6 +11,39 @@ function addDays(date, days) {
   return next;
 }
 
+function buildBlockedNightSet(disabledRanges = []) {
+  const blockedNights = new Set();
+
+  (disabledRanges || []).forEach((range) => {
+    const from = normalizeDateStart(range?.from);
+    const to = normalizeDateStart(range?.to);
+
+    if (!from || !to) return;
+
+    for (let cursor = new Date(from); cursor <= to; cursor.setDate(cursor.getDate() + 1)) {
+      blockedNights.add(cursor.toDateString());
+    }
+  });
+
+  return blockedNights;
+}
+
+function isExtensionAvailable(stayEndExclusive, targetCheckout, disabledRanges = []) {
+  const start = normalizeDateStart(stayEndExclusive);
+  const end = normalizeDateStart(targetCheckout);
+  const blockedNights = buildBlockedNightSet(disabledRanges);
+
+  if (!start || !end || end <= start) return false;
+
+  for (let cursor = new Date(start); cursor < end; cursor.setDate(cursor.getDate() + 1)) {
+    if (blockedNights.has(cursor.toDateString())) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function analyzeWeekendStay(range) {
   if (!range?.from || !range?.to) return null;
 
@@ -44,7 +77,7 @@ export function analyzeWeekendStay(range) {
   };
 }
 
-export function getWeekendOfferState(range, config = {}) {
+export function getWeekendOfferState(range, config = {}, disabledRanges = []) {
   const analysis = analyzeWeekendStay(range);
   if (!analysis) return null;
 
@@ -121,23 +154,31 @@ export function getWeekendOfferState(range, config = {}) {
     };
   }
 
+  const suggestionAvailable =
+    suggestion?.targetCheckout &&
+    isExtensionAvailable(
+      analysis.stayEndExclusive,
+      suggestion.targetCheckout,
+      disabledRanges
+    );
+
   return {
     weekendNights,
     eligible: eligiblePercent > 0,
     eligibleNights: weekendNights,
     percent: eligiblePercent,
     appliedTier: weekendNights >= 3 ? 3 : weekendNights >= 2 ? 2 : 0,
-    canSuggest: Boolean(suggestion?.targetCheckout),
-    suggestedCheckout: suggestion?.targetCheckout || null,
-    suggestedCheckoutLabel: suggestion?.targetCheckout
+    canSuggest: Boolean(suggestionAvailable),
+    suggestedCheckout: suggestionAvailable ? suggestion.targetCheckout : null,
+    suggestedCheckoutLabel: suggestionAvailable && suggestion?.targetCheckout
       ? suggestion.targetCheckout.toLocaleDateString("en-IN", {
           day: "2-digit",
           month: "short",
           year: "numeric",
         })
       : "",
-    suggestionTitle: suggestion?.title || "",
-    suggestionButtonLabel: suggestion?.buttonLabel || "",
-    suggestionBodyPrefix: suggestion?.bodyPrefix || "",
+    suggestionTitle: suggestionAvailable ? suggestion?.title || "" : "",
+    suggestionButtonLabel: suggestionAvailable ? suggestion?.buttonLabel || "" : "",
+    suggestionBodyPrefix: suggestionAvailable ? suggestion?.bodyPrefix || "" : "",
   };
 }

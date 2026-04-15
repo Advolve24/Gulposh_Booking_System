@@ -54,6 +54,7 @@ export default function CalendarRange({
   const SWIPE_THRESHOLD = 50;
 
   const selectingRef = useRef(false);
+  const lastClickedDayRef = useRef(null);
 
   const INITIAL_MOBILE_MONTHS = 3;
   const [mobileMonths, setMobileMonths] = useState(() => {
@@ -109,13 +110,52 @@ export default function CalendarRange({
   const handleSelect = (range) => {
     const clickedFrom = range?.from ? new Date(range.from) : null;
     const clickedTo = range?.to ? new Date(range.to) : null;
+    const directClickedDay = lastClickedDayRef.current
+      ? new Date(lastClickedDayRef.current)
+      : null;
+
     if (!clickedFrom) {
+      lastClickedDayRef.current = null;
       onChange(undefined);
       return;
     }
     if (!value?.from || (value?.from && value?.to)) {
+      let nextCheckIn = clickedFrom;
+
+      if (value?.from && value?.to) {
+        const currentFrom = new Date(value.from);
+        const currentTo = new Date(value.to);
+
+        if (directClickedDay) {
+          nextCheckIn = directClickedDay;
+        } else if (
+          clickedFrom &&
+          clickedTo &&
+          clickedFrom.getTime() === currentFrom.getTime() &&
+          clickedTo.getTime() !== currentTo.getTime()
+        ) {
+          nextCheckIn = clickedTo;
+        } else if (
+          clickedFrom &&
+          clickedTo &&
+          clickedTo.getTime() === currentTo.getTime() &&
+          clickedFrom.getTime() !== currentFrom.getTime()
+        ) {
+          nextCheckIn = clickedFrom;
+        }
+      }
+
+      lastClickedDayRef.current = null;
+
+      if (
+        nextCheckIn < todayDateOnly() ||
+        blockedNights.has(nextCheckIn.toDateString())
+      ) {
+        return;
+      }
+
       selectingRef.current = true;
-      onChange({ from: clickedFrom, to: undefined });
+      onChange({ from: nextCheckIn, to: undefined });
       setOpen(true);
       return;
     }
@@ -137,6 +177,7 @@ export default function CalendarRange({
         }
 
         selectingRef.current = true;
+        lastClickedDayRef.current = null;
         onChange({ from: clickedFrom, to: undefined });
         setOpen(true);
         return;
@@ -151,6 +192,7 @@ export default function CalendarRange({
         }
 
         selectingRef.current = true;
+        lastClickedDayRef.current = null;
         onChange({ from: attemptedCheckout, to: undefined });
         setOpen(true);
         return;
@@ -161,6 +203,7 @@ export default function CalendarRange({
       }
 
       selectingRef.current = false;
+      lastClickedDayRef.current = null;
       onChange({ from: checkIn, to: attemptedCheckout });
 
       setTimeout(() => setOpen(false), 150);
@@ -170,8 +213,27 @@ export default function CalendarRange({
 
 
   const handleDayClick = (day) => {
-    if (!value?.from) return;
     const clicked = new Date(day);
+
+    if (value?.from && value?.to) {
+      const currentFrom = new Date(value.from);
+      const currentTo = new Date(value.to);
+
+      if (
+        clicked.toDateString() !== currentFrom.toDateString() &&
+        clicked.toDateString() !== currentTo.toDateString() &&
+        clicked >= todayDateOnly() &&
+        !blockedNights.has(clicked.toDateString())
+      ) {
+        lastClickedDayRef.current = clicked;
+      } else {
+        lastClickedDayRef.current = null;
+      }
+    } else {
+      lastClickedDayRef.current = null;
+    }
+
+    if (!value?.from) return;
     if (value?.from &&
       clicked.toDateString() === new Date(value.from).toDateString()) {
       onChange(undefined);
@@ -255,7 +317,7 @@ export default function CalendarRange({
 
   const disabled = useMemo(() => {
     const today = todayDateOnly();
-    if (!value?.from) {
+    if (!value?.from || (value?.from && value?.to)) {
       return [
         { before: today },
         (date) => blockedNights.has(date.toDateString())
@@ -300,6 +362,11 @@ export default function CalendarRange({
   }, [pricing?.weekdayPrice, pricing?.weekendPrice]);
 
   const CalendarPriceDayButton = ({ day, modifiers, children, className, ...props }) => {
+    const isWeekendDay = [0, 5, 6].includes(day.date.getDay());
+    const isSelectedEdge =
+      modifiers.range_start ||
+      modifiers.range_end ||
+      (modifiers.selected && !modifiers.range_middle);
     const priceLabel =
       !modifiers.hidden && !modifiers.outside && !modifiers.disabled && dayPriceFormatter
         ? dayPriceFormatter(day.date)
@@ -312,9 +379,19 @@ export default function CalendarRange({
         className={className}
         {...props}
       >
-        <span className="text-sm font-medium leading-none">{children}</span>
+        <span className="!text-[16px] font-medium leading-none">{children}</span>
         {priceLabel ? (
-          <span className="!text-[10px] leading-none opacity-90">{priceLabel}</span>
+          <span
+            className={`!text-[10px] leading-none opacity-90 ${
+              !isWeekendDay && isSelectedEdge
+                ? "text-white"
+                : isWeekendDay
+                  ? "text-orange-500"
+                  : "text-green-600"
+            }`}
+          >
+            {priceLabel}
+          </span>
         ) : null}
       </CalendarDayButton>
     );
