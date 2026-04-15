@@ -28,7 +28,7 @@ import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
 import { getWeekendOfferState } from "../lib/weekendOffer";
-import { getRoomPricingBreakdown } from "../lib/roomPricing";
+import { getDisplayedNightlyPrices, getRoomPricingBreakdown } from "../lib/roomPricing";
 
 
 function minusOneDay(date) {
@@ -309,8 +309,8 @@ export default function Checkout() {
 
 
   const roomPricing = useMemo(
-    () => getRoomPricingBreakdown(room, range, taxPercent),
-    [room, range, taxPercent]
+    () => getRoomPricingBreakdown(room, range, taxPercent, totalGuests),
+    [room, range, taxPercent, totalGuests]
   );
 
   const roomTotal = useMemo(() => {
@@ -1187,6 +1187,10 @@ export default function Checkout() {
                 }}
                 disabledRanges={disabledAll}
                 showWeekdayInBox
+                pricing={{
+                  weekdayPrice: getDisplayedNightlyPrices(room, totalGuests).weekdayPrice,
+                  weekendPrice: getDisplayedNightlyPrices(room, totalGuests).weekendPrice,
+                }}
               />
 
               {!range?.from && (

@@ -50,6 +50,7 @@ export const createRoom = async (req, res) => {
       name,
       pricePerNight,
       weekendPricePerNight,
+      baseGuests,
       maxGuests,
       mealMode,
       taxMode,
@@ -73,6 +74,17 @@ export const createRoom = async (req, res) => {
       });
     }
 
+    const safeBaseGuests =
+      baseGuests !== undefined ? Math.max(1, Number(baseGuests)) : 1;
+    const safeMaxGuests =
+      maxGuests !== undefined ? Math.max(1, Number(maxGuests)) : 1;
+
+    if (safeBaseGuests > safeMaxGuests) {
+      return res.status(400).json({
+        message: "baseGuests cannot be greater than maxGuests",
+      });
+    }
+
     const room = await Room.create({
       name: String(name).trim(),
       pricePerNight: Number(pricePerNight) || 0,
@@ -80,11 +92,8 @@ export const createRoom = async (req, res) => {
         weekendPricePerNight !== undefined
           ? Number(weekendPricePerNight) || 0
           : Number(pricePerNight) || 0,
-
-      maxGuests:
-        maxGuests !== undefined
-          ? Math.max(1, Number(maxGuests))
-          : 1,
+      baseGuests: safeBaseGuests,
+      maxGuests: safeMaxGuests,
 
       mealMode: mealMode || "",
 
@@ -143,6 +152,7 @@ export const updateRoom = async (req, res) => {
       name,
       pricePerNight,
       weekendPricePerNight,
+      baseGuests,
       maxGuests,
       mealMode,
       taxMode,
@@ -174,8 +184,33 @@ export const updateRoom = async (req, res) => {
       update.weekendPricePerNight = Number(pricePerNight) || 0;
     }
 
+    const currentRoom = await Room.findById(req.params.id).select(
+      "baseGuests maxGuests"
+    );
+
+    if (!currentRoom) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    if (baseGuests !== undefined) {
+      update.baseGuests = Math.max(1, Number(baseGuests));
+    }
+
     if (maxGuests !== undefined) {
       update.maxGuests = Math.max(1, Number(maxGuests));
+    }
+
+    const finalBaseGuests = Number(
+      update.baseGuests ?? currentRoom.baseGuests ?? 1
+    );
+    const finalMaxGuests = Number(
+      update.maxGuests ?? currentRoom.maxGuests ?? 1
+    );
+
+    if (finalBaseGuests > finalMaxGuests) {
+      return res.status(400).json({
+        message: "baseGuests cannot be greater than maxGuests",
+      });
     }
 
     if (mealPriceVeg !== undefined) {
@@ -247,10 +282,6 @@ export const updateRoom = async (req, res) => {
     const room = await Room.findByIdAndUpdate(req.params.id, update, {
       new: true,
     });
-
-    if (!room) {
-      return res.status(404).json({ message: "Room not found" });
-    }
 
     res.json(room);
   } catch (err) {

@@ -370,3 +370,6 @@ justify-content: center;
 #gulposh-booking-widget * {
     box-sizing: border-box;
 }
+.rdp-month {
+  margin-left: 20px;
+}

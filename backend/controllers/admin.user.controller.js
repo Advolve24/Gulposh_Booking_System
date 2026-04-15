@@ -434,24 +434,36 @@ export const updateBookingAdmin = async (req, res) => {
             Number(booking.room?.weekendPricePerNight || 0) ||
             Number(booking.room?.pricePerNight || 0) ||
             Number(booking.pricePerNight || 0),
+          baseGuests:
+            Number(booking.pricingMeta?.baseGuests || 0) ||
+            Number(booking.room?.baseGuests || 1) ||
+            1,
         }
       : booking.room;
     const pricingBreakdown = getRoomPricingBreakdown(
       pricingSource,
       booking.startDate,
-      booking.endDate
+      booking.endDate,
+      Number(booking.guests || booking.pricingMeta?.guestCount || 1)
     );
 
     booking.pricePerNight = pricingBreakdown.averagePricePerNight;
     booking.roomTotal = pricingBreakdown.roomTotal;
     booking.pricingMeta = hasStoredPricing
-      ? {
-          weekdayPricePerNight: pricingSource.pricePerNight,
-          weekendPricePerNight: pricingSource.weekendPricePerNight,
-          weekdayNights: pricingBreakdown.weekdayNights,
-          weekendNights: pricingBreakdown.weekendNights,
-        }
-      : getRoomPricingMeta(booking.room, booking.startDate, booking.endDate);
+        ? {
+            weekdayPricePerNight: pricingSource.pricePerNight,
+            weekendPricePerNight: pricingSource.weekendPricePerNight,
+            baseGuests: Number(booking.pricingMeta?.baseGuests || booking.room?.baseGuests || 1),
+            guestCount: Number(booking.guests || booking.pricingMeta?.guestCount || 1),
+            weekdayNights: pricingBreakdown.weekdayNights,
+            weekendNights: pricingBreakdown.weekendNights,
+          }
+      : getRoomPricingMeta(
+          booking.room,
+          booking.startDate,
+          booking.endDate,
+          Number(booking.guests || 1)
+        );
     booking.amount = booking.roomTotal + booking.mealTotal;
 
     if (status) booking.status = status;

@@ -75,6 +75,7 @@ const getDiscountBreakup = ({
   subTotal,
   couponCode,
   room,
+  guests,
   discountSettings,
   startDate,
   endDate,
@@ -115,7 +116,10 @@ const getDiscountBreakup = ({
   const roomBasePerNight = getRoomBasePerNight(
     room,
     discountSettings?.taxPercent,
-    Number(room?.weekendPricePerNight || room?.pricePerNight || 0)
+    Number(
+      getRoomPricingBreakdown(room, startDate, endDate, guests)
+        .weekendPricePerNight || room?.weekendPricePerNight || room?.pricePerNight || 0
+    )
   );
   const weekendEligible =
     weekendDiscountEnabled &&
@@ -266,7 +270,12 @@ export const createOrder = async (req, res) => {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
-    const pricingBreakdown = getRoomPricingBreakdown(room, sDate, eDate);
+    const pricingBreakdown = getRoomPricingBreakdown(
+      room,
+      sDate,
+      eDate,
+      Number(guests)
+    );
     const roomGrossTotal = Number(pricingBreakdown.roomTotal || 0);
     const roomTotal =
       room.taxMode === "included"
@@ -293,6 +302,7 @@ export const createOrder = async (req, res) => {
       subTotal,
       couponCode,
       room,
+      guests: Number(guests),
       discountSettings: taxSetting,
       startDate: sDate,
       endDate: eDate,
@@ -453,7 +463,12 @@ export const verifyPayment = async (req, res) => {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
-    const pricingBreakdown = getRoomPricingBreakdown(room, sDate, eDate);
+    const pricingBreakdown = getRoomPricingBreakdown(
+      room,
+      sDate,
+      eDate,
+      Number(guests)
+    );
     const roomGrossTotal = Number(pricingBreakdown.roomTotal || 0);
     const roomTotal =
       room.taxMode === "included"
@@ -485,6 +500,7 @@ export const verifyPayment = async (req, res) => {
       subTotal,
       couponCode,
       room,
+      guests: Number(guests),
       discountSettings: taxSetting,
       startDate: sDate,
       endDate: eDate,
@@ -543,7 +559,7 @@ export const verifyPayment = async (req, res) => {
       pricePerNight:
         nights > 0 ? Number((roomTotal / nights).toFixed(2)) : 0,
       roomTotal,
-      pricingMeta: getRoomPricingMeta(room, sDate, eDate),
+      pricingMeta: getRoomPricingMeta(room, sDate, eDate, Number(guests)),
       withMeal: !!withMeal,
       vegGuests,
       nonVegGuests,

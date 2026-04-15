@@ -80,7 +80,7 @@ export default function RoomCard({ room, range, guests }) {
               flex items-center gap-1
             "
           >
-            ₹{Number(room.pricePerNight).toLocaleString("en-IN")}
+            From {"\u20B9"}{Number(room.pricePerNight).toLocaleString("en-IN")}
             <span className="text-xs font-normal text-muted-foreground">
               /night
             </span>

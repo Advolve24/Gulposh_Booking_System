@@ -56,6 +56,7 @@ export default function RoomsNew() {
   const [houseRules, setHouseRules] = useState([]);
   const [ruleInput, setRuleInput] = useState("");
   const [maxGuests, setMaxGuests] = useState("");
+  const [baseGuests, setBaseGuests] = useState("");
 
   /* ---------------- REVIEWS ---------------- */
   const [reviews, setReviews] = useState([]);
@@ -96,6 +97,7 @@ export default function RoomsNew() {
         setWeekendPricePerNight(
           String(r.weekendPricePerNight ?? r.pricePerNight ?? "")
         );
+        setBaseGuests(String(r.baseGuests ?? 1));
         setMaxGuests(String(r.maxGuests ?? ""));
         setMealMode(r.mealMode || "");
         setTaxMode(r.taxMode || "excluded");
@@ -167,10 +169,13 @@ export default function RoomsNew() {
 
   const STEP_VALIDATORS = [
     // 0️⃣ Basic
-    ({ name, pricePerNight, weekendPricePerNight }) =>
+    ({ name, pricePerNight, weekendPricePerNight, baseGuests, maxGuests }) =>
       name.trim().length > 2 &&
       Number(pricePerNight) > 0 &&
-      Number(weekendPricePerNight) > 0,
+      Number(weekendPricePerNight) > 0 &&
+      Number(baseGuests) > 0 &&
+      Number(maxGuests) > 0 &&
+      Number(baseGuests) <= Number(maxGuests),
 
     // 1️⃣ Meals
     ({ mealPriceVeg, mealPriceNonVeg }) =>
@@ -223,6 +228,7 @@ export default function RoomsNew() {
         name: name.trim(),
         pricePerNight: Number(pricePerNight),
         weekendPricePerNight: Number(weekendPricePerNight),
+        baseGuests: Number(baseGuests),
         maxGuests: Number(maxGuests),
         mealMode,
         taxMode,
@@ -265,7 +271,9 @@ export default function RoomsNew() {
           name.trim().length > 2 &&
           Number(pricePerNight) > 0 &&
           Number(weekendPricePerNight) > 0 &&
-          Number(maxGuests) > 0
+          Number(baseGuests) > 0 &&
+          Number(maxGuests) > 0 &&
+          Number(baseGuests) <= Number(maxGuests)
         );
 
 
@@ -394,7 +402,7 @@ export default function RoomsNew() {
           {/* STEP CONTENT */}
           {step === 0 && (
             <Section title="Basic Information">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4">
                 <Field label="Room Name *">
                   <Input
                     value={name}
@@ -434,6 +442,27 @@ export default function RoomsNew() {
                     placeholder="e.g. 4"
                     className="text-sm"
                   />
+                </Field>
+
+                <Field label="Base Guests *">
+                  <Input
+                    type="number"
+                    min="1"
+                    max={maxGuests || undefined}
+                    value={baseGuests}
+                    onChange={(e) => setBaseGuests(e.target.value)}
+                    placeholder="e.g. 6"
+                    className="text-sm"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Base weekday/weekend price applies up to this guest count.
+                  </p>
+                  {Number(baseGuests || 0) > Number(maxGuests || 0) &&
+                  Number(maxGuests || 0) > 0 ? (
+                    <p className="mt-1 text-xs text-destructive">
+                      Base guests cannot be more than max guests.
+                    </p>
+                  ) : null}
                 </Field>
 
               </div>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/http";
 import { format, addMonths, subMonths } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
@@ -37,6 +37,7 @@ export default function CalendarRange({
   disabledRanges,
   inline = false,
   showWeekdayInBox = false,
+  pricing,
 }) {
   const monthRefs = useRef([]);
   const [roomRanges, setRoomRanges] = useState([]);
@@ -121,8 +122,41 @@ export default function CalendarRange({
     if (value?.from && !value?.to) {
       const checkIn = new Date(value.from);
       const attemptedCheckout = clickedTo || clickedFrom;
+      const isEarlierCheckInReplacement =
+        clickedFrom &&
+        clickedTo &&
+        clickedFrom < checkIn &&
+        clickedTo.getTime() === checkIn.getTime();
 
-      if (attemptedCheckout <= checkIn) {
+      if (isEarlierCheckInReplacement) {
+        if (
+          clickedFrom < todayDateOnly() ||
+          blockedNights.has(clickedFrom.toDateString())
+        ) {
+          return;
+        }
+
+        selectingRef.current = true;
+        onChange({ from: clickedFrom, to: undefined });
+        setOpen(true);
+        return;
+      }
+
+      if (attemptedCheckout < checkIn) {
+        if (
+          attemptedCheckout < todayDateOnly() ||
+          blockedNights.has(attemptedCheckout.toDateString())
+        ) {
+          return;
+        }
+
+        selectingRef.current = true;
+        onChange({ from: attemptedCheckout, to: undefined });
+        setOpen(true);
+        return;
+      }
+
+      if (attemptedCheckout.getTime() === checkIn.getTime()) {
         return;
       }
 
@@ -230,9 +264,11 @@ export default function CalendarRange({
     const checkIn = new Date(value.from);
     return [
       { before: today },
-      { before: checkIn },
       (date) => {
-        if (date <= checkIn) return false;
+        if (date <= checkIn) {
+          return blockedNights.has(date.toDateString());
+        }
+
         let d = new Date(checkIn);
         d.setDate(d.getDate() + 1);
         while (d < date) {
@@ -243,6 +279,46 @@ export default function CalendarRange({
       }
     ];
   }, [blockedNights, value?.from]);
+
+  const dayPriceFormatter = useMemo(() => {
+    const weekdayPrice = Number(pricing?.weekdayPrice || 0);
+    const weekendPrice = Number(pricing?.weekendPrice || pricing?.weekdayPrice || 0);
+
+    if (!weekdayPrice && !weekendPrice) return null;
+
+    return (date) => {
+      const day = date.getDay();
+      const amount = day === 5 || day === 6 || day === 0 ? weekendPrice : weekdayPrice;
+
+      if (!amount) return null;
+      if (amount >= 1000) {
+        return `₹ ${(amount / 1000).toFixed(1)}k`;
+      }
+
+      return `₹ ${amount}`;
+    };
+  }, [pricing?.weekdayPrice, pricing?.weekendPrice]);
+
+  const CalendarPriceDayButton = ({ day, modifiers, children, className, ...props }) => {
+    const priceLabel =
+      !modifiers.hidden && !modifiers.outside && !modifiers.disabled && dayPriceFormatter
+        ? dayPriceFormatter(day.date)
+        : null;
+
+    return (
+      <CalendarDayButton
+        day={day}
+        modifiers={modifiers}
+        className={className}
+        {...props}
+      >
+        <span className="text-sm font-medium leading-none">{children}</span>
+        {priceLabel ? (
+          <span className="!text-[10px] leading-none opacity-90">{priceLabel}</span>
+        ) : null}
+      </CalendarDayButton>
+    );
+  };
 
 
 
@@ -291,7 +367,7 @@ export default function CalendarRange({
               if (!isDesktop && selectingRef.current) return;
               setMonth(newMonth);
             }}
-            numberOfMonths={2}
+            numberOfMonths={1}
             selected={value || undefined}
             onSelect={handleSelect}
             onDayClick={handleDayClick}
@@ -304,9 +380,9 @@ export default function CalendarRange({
               table: "w-full border-collapse",
               head_row: "grid grid-cols-7",
               row: "grid grid-cols-7",
-              cell: "h-9 w-9 text-center",
-              day: "h-9 w-9 rounded-full outline-none",
-              day_button: "h-9 w-9 rounded-full outline-none",
+              cell: `${dayPriceFormatter ? "h-12 w-12" : "h-9 w-9"} text-center`,
+              day: `${dayPriceFormatter ? "h-12 w-12" : "h-9 w-9"} rounded-md outline-none`,
+              day_button: `${dayPriceFormatter ? "h-12 w-12" : "h-9 w-9"} rounded-md outline-none`,
               day_range_start: "bg-red-700 text-white",
               day_range_end: "bg-red-700 text-white",
               day_selected: "bg-red-700 text-white",
@@ -314,6 +390,7 @@ export default function CalendarRange({
               day_today: "border border-red-700",
               day_disabled: "opacity-40",
             }}
+            components={dayPriceFormatter ? { DayButton: CalendarPriceDayButton } : undefined}
           />
         </div>
       ) : (
@@ -345,9 +422,9 @@ export default function CalendarRange({
                   table: "w-full border-collapse",
                   head_row: "grid grid-cols-7",
                   row: "grid grid-cols-7",
-                  cell: "h-10 w-10 text-center",
-                  day: "h-10 w-10 rounded-full outline-none",
-                  day_button: "h-10 w-10 rounded-full outline-none",
+                  cell: `${dayPriceFormatter ? "h-12 w-12" : "h-10 w-10"} text-center`,
+                  day: `${dayPriceFormatter ? "h-12 w-12" : "h-10 w-10"} rounded-md outline-none`,
+                  day_button: `${dayPriceFormatter ? "h-12 w-12" : "h-10 w-10"} rounded-md outline-none`,
                   day_range_start: "bg-red-700 text-white",
                   day_range_end: "bg-red-700 text-white",
                   day_selected: "bg-red-700 text-white",
@@ -355,6 +432,7 @@ export default function CalendarRange({
                   day_today: "border border-red-700",
                   day_disabled: "opacity-40",
                 }}
+                components={dayPriceFormatter ? { DayButton: CalendarPriceDayButton } : undefined}
               />
             </div>
           ))}
@@ -390,7 +468,7 @@ export default function CalendarRange({
             showWeekday={showWeekdayInBox}
           />
         </div>
-        <div className="border rounded-xl bg-card">{calendarUI}</div>
+        <div className="border rounded-xl bg-card overflow-hidden">{calendarUI}</div>
       </div>
     );
   }
@@ -400,7 +478,6 @@ export default function CalendarRange({
     <Popover
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen && selectingRef.current) return;
         setOpen(nextOpen);
       }}
     >
@@ -423,7 +500,7 @@ export default function CalendarRange({
       </PopoverTrigger>
 
       {/* ✅ DESKTOP width same, MOBILE becomes square fixed */}
-      <PopoverContent className="calendar-popover p-0 w-full md:w-[680px]">
+      <PopoverContent className="calendar-popover p-0 w-full md:w-[430px] overflow-hidden">
         {calendarUI}
       </PopoverContent>
     </Popover>

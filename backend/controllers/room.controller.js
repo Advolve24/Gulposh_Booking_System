@@ -53,7 +53,7 @@ export const listRooms = async (_req, res) => {
   try {
     const rooms = await Room.find({ isVilla: { $ne: true } })
       .select(
-        "name coverImage pricePerNight weekendPricePerNight priceWithMeal description amenities maxGuests"
+        "name coverImage pricePerNight weekendPricePerNight baseGuests priceWithMeal description amenities maxGuests"
       )
       .sort({ createdAt: -1 });
     res.json(rooms);
@@ -133,4 +133,3 @@ export const getRoomBookings = async (req, res) => {
     res.status(500).json({ message: "Failed to load bookings" });
   }
 };
-

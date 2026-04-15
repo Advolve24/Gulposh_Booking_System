@@ -86,7 +86,7 @@ export const createAdminOrder = async (req, res) => {
             averagePricePerNight: flatNightPrice,
             roomTotal: nights * flatNightPrice,
           }
-        : getRoomPricingBreakdown(room, sDate, eDate);
+        : getRoomPricingBreakdown(room, sDate, eDate, Number(guests));
     const pricePerNight = pricingBreakdown.averagePricePerNight;
     const roomTotal = pricingBreakdown.roomTotal;
     const amountPaise = Math.round(roomTotal * 100);
@@ -184,7 +184,7 @@ export const verifyAdminPayment = async (req, res) => {
             averagePricePerNight: flatNightPrice,
             roomTotal: nights * flatNightPrice,
           }
-        : getRoomPricingBreakdown(room, sDate, eDate);
+        : getRoomPricingBreakdown(room, sDate, eDate, Number(guests));
     const pricePerNight = pricingBreakdown.averagePricePerNight;
 
     const vegPrice = Number(room.mealPriceVeg || 0);
@@ -211,8 +211,10 @@ export const verifyAdminPayment = async (req, res) => {
               weekendPricePerNight: flatNightPrice,
               weekdayNights: nights,
               weekendNights: 0,
+              baseGuests: Number(room?.baseGuests || 1),
+              guestCount: Number(guests || 1),
             }
-          : getRoomPricingMeta(room, sDate, eDate),
+          : getRoomPricingMeta(room, sDate, eDate, Number(guests)),
 
       withMeal: !!withMeal,
       vegGuests: 0,
@@ -317,9 +319,11 @@ export const adminActionBooking = async (req, res) => {
         {
           pricePerNight: weekdayPricePerNight,
           weekendPricePerNight,
+          baseGuests: Number(booking.pricingMeta?.baseGuests || booking.room?.baseGuests || 1),
         },
         ns,
-        ne
+        ne,
+        Number(booking.guests || booking.pricingMeta?.guestCount || 1)
       );
 
       booking.pricePerNight = refreshedPricing.averagePricePerNight;
@@ -327,6 +331,8 @@ export const adminActionBooking = async (req, res) => {
       booking.pricingMeta = {
         weekdayPricePerNight,
         weekendPricePerNight,
+        baseGuests: Number(booking.pricingMeta?.baseGuests || booking.room?.baseGuests || 1),
+        guestCount: Number(booking.guests || booking.pricingMeta?.guestCount || 1),
         weekdayNights: refreshedPricing.weekdayNights,
         weekendNights: refreshedPricing.weekendNights,
       };

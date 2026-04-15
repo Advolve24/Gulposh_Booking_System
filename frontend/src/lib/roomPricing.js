@@ -5,25 +5,70 @@ function normalizeDateStart(dateLike) {
   return date;
 }
 
-function isWeekendNight(date) {
+export function isWeekendNight(date) {
   const day = date.getDay();
   return day === 5 || day === 6 || day === 0;
 }
 
-export function getRoomPricingBreakdown(room, range, taxPercent = 0) {
+export function getExtraGuestCount(room, guests = 0) {
+  const baseGuests = Math.max(1, Number(room?.baseGuests || 1));
+  const totalGuests = Math.max(0, Number(guests || 0));
+
+  return Math.max(0, totalGuests - baseGuests);
+}
+
+export function getRoomNightPrice(room, date, guests = 0) {
+  const weekdayPrice = Number(room?.pricePerNight || 0);
+  const weekendPrice = Number(room?.weekendPricePerNight || room?.pricePerNight || 0);
+  const baseGuests = Math.max(1, Number(room?.baseGuests || 1));
+  const extraGuestCount = getExtraGuestCount(room, guests);
+  const surcharge = isWeekendNight(date)
+    ? (weekendPrice / baseGuests) * extraGuestCount
+    : (weekdayPrice / baseGuests) * extraGuestCount;
+
+  return (isWeekendNight(date) ? weekendPrice : weekdayPrice) + surcharge;
+}
+
+export function getDisplayedNightlyPrices(room, guests = 0) {
+  const weekdayBasePrice = Number(room?.pricePerNight || 0);
+  const weekendBasePrice = Number(room?.weekendPricePerNight || room?.pricePerNight || 0);
+  const baseGuests = Math.max(1, Number(room?.baseGuests || 1));
+  const extraGuestCount = getExtraGuestCount(room, guests);
+
+  return {
+    weekdayPrice:
+      weekdayBasePrice + (weekdayBasePrice / baseGuests) * extraGuestCount,
+    weekendPrice:
+      weekendBasePrice + (weekendBasePrice / baseGuests) * extraGuestCount,
+    baseGuests,
+    extraGuestCount,
+  };
+}
+
+export function getRoomPricingBreakdown(room, range, taxPercent = 0, guests = 0) {
   const stayStart = normalizeDateStart(range?.from);
   const stayEndExclusive = normalizeDateStart(range?.to);
 
-  const weekdayGrossPerNight = Number(room?.pricePerNight || 0);
-  const weekendGrossPerNight = Number(
+  const weekdayBasePrice = Number(room?.pricePerNight || 0);
+  const weekendBasePrice = Number(
     room?.weekendPricePerNight || room?.pricePerNight || 0
   );
+  const baseGuests = Math.max(1, Number(room?.baseGuests || 1));
+  const extraGuestCount = getExtraGuestCount(room, guests);
+  const weekdayGrossPerNight =
+    weekdayBasePrice + (weekdayBasePrice / baseGuests) * extraGuestCount;
+  const weekendGrossPerNight =
+    weekendBasePrice + (weekendBasePrice / baseGuests) * extraGuestCount;
 
   if (!room || !stayStart || !stayEndExclusive || stayEndExclusive <= stayStart) {
     return {
       nights: 0,
       weekdayNights: 0,
       weekendNights: 0,
+      weekdayBasePrice,
+      weekendBasePrice,
+      baseGuests,
+      extraGuestCount,
       grossTotal: 0,
       baseTotal: 0,
       weekendGrossTotal: 0,
@@ -72,6 +117,10 @@ export function getRoomPricingBreakdown(room, range, taxPercent = 0) {
     nights,
     weekdayNights,
     weekendNights,
+    weekdayBasePrice,
+    weekendBasePrice,
+    baseGuests,
+    extraGuestCount,
     grossTotal: Number(grossTotal.toFixed(2)),
     baseTotal: Number(baseTotal.toFixed(2)),
     weekendGrossTotal: Number(weekendGrossTotal.toFixed(2)),

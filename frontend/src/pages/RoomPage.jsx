@@ -6,6 +6,7 @@ import CalendarRange from "../components/CalendarRange";
 import GuestCounter from "../components/GuestCounter";
 import { amenityCategories } from "../data/aminities";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import { X } from "lucide-react";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { getWeekendOfferState } from "../lib/weekendOffer";
+import { getDisplayedNightlyPrices } from "../lib/roomPricing";
 
 
 const humanize = (v = "") =>
@@ -87,12 +89,9 @@ function clampGuestSelection(adultsValue, childrenValue, maxGuests) {
 const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
-const getWeekendPrice = (room) =>
-  Number(room?.weekendPricePerNight || room?.pricePerNight || 0);
-
-function RoomNightlyPrices({ room, align = "right", compact = false }) {
-  const weekdayPrice = Number(room?.pricePerNight || 0);
-  const weekendPrice = getWeekendPrice(room);
+function RoomNightlyPrices({ room, guests = 0, align = "right", compact = false }) {
+  const { weekdayPrice, weekendPrice, baseGuests, extraGuestCount } =
+    getDisplayedNightlyPrices(room, guests);
   const wrapperClass =
     align === "center"
       ? "text-center"
@@ -100,17 +99,20 @@ function RoomNightlyPrices({ room, align = "right", compact = false }) {
         ? "text-left"
         : "text-left sm:text-right";
   const priceClass = compact ? "text-xl font-semibold" : "text-lg sm:text-xl font-semibold";
+  const subtitle = extraGuestCount > 0 ? `for ${guests} guests` : `for up to ${baseGuests} guests`;
 
   return (
     <div className={`flex items-center justify-between ${wrapperClass}`}>
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground">
           Weekdays
+          {extraGuestCount === 0 ? <span className="ml-1 normal-case">starting from</span> : null}
         </div>
         <div className={priceClass}>
           {formatCurrency(weekdayPrice)}
-          <span className="text-sm font-normal text-muted-foreground"> /N</span>
+          <span className="ml-1 text-sm font-normal text-muted-foreground">/N</span>
         </div>
+        <div className="text-xs text-muted-foreground">{subtitle}</div>
       </div>
 
       <div className="w-[1px] border h-[28px]">
@@ -121,11 +123,13 @@ function RoomNightlyPrices({ room, align = "right", compact = false }) {
         <div className="text-xs uppercase tracking-wide text-muted-foreground">
           Weekend
           <span className="ml-1 normal-case">(Fri, Sat, Sun nights)</span>
+          {extraGuestCount === 0 ? <span className="ml-1 normal-case">starting from</span> : null}
         </div>
         <div className={priceClass}>
           {formatCurrency(weekendPrice)}
-          <span className="text-sm font-normal text-muted-foreground"> /N</span>
+          <span className="ml-1 text-sm font-normal text-muted-foreground">/N</span>
         </div>
+        <div className="text-xs text-muted-foreground">{subtitle}</div>
       </div>
     </div>
   );
@@ -161,8 +165,22 @@ function BookingCard({
             onChange={setRange}
             disabledRanges={disabledAll}
             showWeekdayInBox
+            pricing={{
+              weekdayPrice: getDisplayedNightlyPrices(room, totalGuests).weekdayPrice,
+              weekendPrice: getDisplayedNightlyPrices(room, totalGuests).weekendPrice,
+            }}
           />
         </div>
+
+        {/* GUESTS */}
+        <RoomGuestPopover
+          room={room}
+          adults={adults}
+          setAdults={setAdults}
+          children={children}
+          setChildren={setChildren}
+          onCapacityMaxAttempt={onCapacityMaxAttempt}
+        />
 
         {weekendOffer?.canSuggest && (
           <div className="rounded-[22px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-4 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
@@ -170,16 +188,16 @@ function BookingCard({
               <Flame className="h-3.5 w-3.5" />
               Limited Offer
             </span>
-            <p className="mt-1 text-lg font-semibold leading-5 text-[#1f1406]">
+            <p className="mt-1 text-[16px] font-semibold leading-5 text-[#1f1406]">
               {weekendOffer.suggestionTitle}
             </p>
-            <p className="mt-1 text-sm leading-5 text-[#6c5a35]">
+            <p className="mt-1 text-[12px] leading-5 text-[#6c5a35]">
               {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
             </p>
             <Button
               type="button"
               variant="outline"
-              className="mt-1 h-10 rounded-xl border border-[#1f1406] bg-white px-5 text-[15px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
+              className="mt-1 h-10 rounded-xl border border-[#1f1406] bg-white px-5 text-[14px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
               onClick={() =>
                 setRange({
                   from: range?.from || null,
@@ -203,36 +221,8 @@ function BookingCard({
           </div>
         )}
 
-        {/* GUESTS */}
-        <div className="space-y-2">
-          <label className="text-[11px] font-medium text-muted-foreground">
-            GUESTS (MAX {room.maxGuests || 10})
-          </label>
 
-          <GuestCounter
-            label="Adults"
-            description="Ages 13+"
-            value={adults}
-            min={1}
-            max={room.maxGuests - children}
-            onChange={setAdults}
-            onMaxAttempt={onCapacityMaxAttempt}
-          />
 
-          <GuestCounter
-            label="Children"
-            description="Ages 2–12"
-            value={children}
-            min={0}
-            max={room.maxGuests - adults}
-            onChange={setChildren}
-            onMaxAttempt={onCapacityMaxAttempt}
-          />
-
-          <p className="text-xs text-muted-foreground">
-            Total guests: <strong>{totalGuests}</strong>
-          </p>
-        </div>
 
         {/* BENEFITS */}
         <div className="space-y-2 text-sm text-green-700">
@@ -261,6 +251,76 @@ function BookingCard({
           Book Now
         </Button>
       </div>
+    </div>
+  );
+}
+
+function RoomGuestPopover({
+  room,
+  adults,
+  setAdults,
+  children,
+  setChildren,
+  onCapacityMaxAttempt,
+}) {
+  const totalGuests = adults + children;
+
+  return (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground">
+        GUESTS (MAX {room.maxGuests || 10})
+      </label>
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="mt-2 h-16 w-full justify-between rounded-xl border-[#eadfd8] bg-white px-4"
+          >
+            <div className="text-left">
+              <div className="text-[16px] font-semibold text-[#2A201B]">
+                {totalGuests} guest{totalGuests === 1 ? "" : "s"}
+              </div>
+            </div>
+            <Users className="h-4 w-4 text-[#a11d2e]" />
+          </Button>
+        </PopoverTrigger>
+
+        <PopoverContent
+          className="w-[350px] rounded-2xl p-4"
+          align="start"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
+          <div className="space-y-0">
+            <GuestCounter
+              label="Adults"
+              description="Ages 13+"
+              value={adults}
+              min={1}
+              max={room.maxGuests - children}
+              onChange={setAdults}
+              onMaxAttempt={onCapacityMaxAttempt}
+            />
+
+            <div className="my-3 h-px bg-border" />
+
+            <GuestCounter
+              label="Children"
+              description="Ages 2-12"
+              value={children}
+              min={0}
+              max={room.maxGuests - adults}
+              onChange={setChildren}
+              onMaxAttempt={onCapacityMaxAttempt}
+            />
+
+            <p className="mt-2 text-xs text-muted-foreground">
+              Total guests: <strong>{totalGuests}</strong>
+            </p>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -641,7 +701,7 @@ export default function RoomPage() {
           </div>
 
           <div className="rounded-2xl border border-[#eadfd6] bg-white p-4 md:w-[34%] w-full ">
-              <RoomNightlyPrices room={room} align="left" compact />
+              <RoomNightlyPrices room={room} guests={totalGuests} align="left" compact />
             </div>
         </div>
 
@@ -834,8 +894,22 @@ export default function RoomPage() {
                 onChange={setRange}
                 disabledRanges={disabledAll}
                 showWeekdayInBox
+                pricing={{
+                  weekdayPrice: getDisplayedNightlyPrices(room, totalGuests).weekdayPrice,
+                  weekendPrice: getDisplayedNightlyPrices(room, totalGuests).weekendPrice,
+                }}
               />
               </div>
+
+            {/* GUESTS */}
+            <RoomGuestPopover
+              room={room}
+              adults={adults}
+              setAdults={setAdults}
+              children={children}
+              setChildren={setChildren}
+              onCapacityMaxAttempt={handleCapacityMaxAttempt}
+            />
 
             {weekendOffer?.canSuggest && (
               <div className="rounded-[22px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-4 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
@@ -843,10 +917,10 @@ export default function RoomPage() {
                   <Flame className="h-3.5 w-3.5" />
                   Limited Offer
                 </span>
-                <p className="mt-1 text-lg font-semibold leading-5 text-[#1f1406]">
+                <p className="mt-1 text-[16px] font-semibold leading-5 text-[#1f1406]">
                   {weekendOffer.suggestionTitle}
                 </p>
-                <p className="mt-1 text-sm leading-5 text-[#6c5a35]">
+                <p className="mt-1 text-[12px] leading-5 text-[#6c5a35]">
                   {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
                 </p>
                 <Button
@@ -875,37 +949,6 @@ export default function RoomPage() {
                 </p>
               </div>
             )}
-
-            {/* GUESTS */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">
-                GUESTS (MAX {room.maxGuests || 10})
-              </label>
-
-              <GuestCounter
-                label="Adults"
-                description="Ages 13+"
-                value={adults}
-                min={1}
-                max={room.maxGuests - children}
-                onChange={setAdults}
-                onMaxAttempt={handleCapacityMaxAttempt}
-              />
-
-              <GuestCounter
-                label="Children"
-                description="Ages 2–12"
-                value={children}
-                min={0}
-                max={room.maxGuests - adults}
-                onChange={setChildren}
-                onMaxAttempt={handleCapacityMaxAttempt}
-              />
-
-              <p className="mt-2 text-xs text-muted-foreground">
-                Total guests: <strong>{totalGuests}</strong>
-              </p>
-            </div>
 
             {/* BOOK NOW */}
             <Button
@@ -956,10 +999,10 @@ export default function RoomPage() {
           <div className="w-[35%]">
             <div className="text-xs text-muted-foreground">Price</div>
             <div className="text-xs font-semibold leading-tight">
-              Weekday: {formatCurrency(room.pricePerNight)}
+              Weekday: {formatCurrency(getDisplayedNightlyPrices(room, totalGuests).weekdayPrice)}
             </div>
             <div className="text-xs font-semibold leading-tight">
-              Weekend: {formatCurrency(getWeekendPrice(room))}
+              Weekend: {formatCurrency(getDisplayedNightlyPrices(room, totalGuests).weekendPrice)}
             </div>
           </div>
 

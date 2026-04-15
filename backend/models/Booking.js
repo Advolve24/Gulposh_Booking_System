@@ -23,6 +23,8 @@ const bookingSchema = new mongoose.Schema(
       weekendPricePerNight: { type: Number, default: 0 },
       weekdayNights: { type: Number, default: 0 },
       weekendNights: { type: Number, default: 0 },
+      baseGuests: { type: Number, default: 1 },
+      guestCount: { type: Number, default: 1 },
     },
 
     withMeal: { type: Boolean, default: false },

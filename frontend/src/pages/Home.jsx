@@ -98,7 +98,6 @@ function rangeHasConflict(selected, blockedRanges) {
   });
 }
 
-
 export default function Home() {
   const navigate = useNavigate();
 

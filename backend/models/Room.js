@@ -19,6 +19,8 @@ const roomSchema = new mongoose.Schema(
 
     weekendPricePerNight: { type: Number, default: 0, min: 0 },
 
+    baseGuests: { type: Number, default: 1, min: 1 },
+
     priceWithMeal: { type: Number, default: 0, min: 0 },
 
     coverImage: { type: String, default: "" },
@@ -75,5 +77,22 @@ const roomSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+roomSchema.pre("validate", function enforceGuestCaps(next) {
+  const safeBaseGuests = Math.max(1, Number(this.baseGuests || 1));
+  const safeMaxGuests = Math.max(1, Number(this.maxGuests || 1));
+
+  this.baseGuests = safeBaseGuests;
+  this.maxGuests = safeMaxGuests;
+
+  if (safeBaseGuests > safeMaxGuests) {
+    this.invalidate(
+      "baseGuests",
+      "Base guests cannot be greater than max guests"
+    );
+  }
+
+  next();
+});
 
 export default mongoose.model("Room", roomSchema);

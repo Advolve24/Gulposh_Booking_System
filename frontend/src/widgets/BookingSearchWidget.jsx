@@ -224,6 +224,20 @@ export default function BookingSearchWidget() {
         }
 
         if (range?.from && !range?.to) {
+            if (clicked < toDateOnly(range.from)) {
+                if (isDisabledForCheckIn(clicked)) return;
+
+                setRange({ from: clicked, to: undefined });
+                setIsRangeInvalid(false);
+                return;
+            }
+
+            if (isSameDay(clicked, range.from)) {
+                setRange(undefined);
+                setIsRangeInvalid(false);
+                return;
+            }
+
             if (isDisabledForCheckOut(clicked, range.from)) return;
 
             const newRange = {
@@ -569,7 +583,9 @@ function MonthPanel({
             const inCurrentMonth = isSameMonth(current, month);
 
             const disabled = range?.from && !range?.to
-                ? isDisabledForCheckOut(current, range.from)
+                ? current <= range.from
+                    ? isDisabledForCheckIn(current)
+                    : isDisabledForCheckOut(current, range.from)
                 : isDisabledForCheckIn(current);
 
             const isStart = range?.from && isSameDay(current, range.from);
