@@ -531,7 +531,7 @@ function MobilePriceBreakupPanel({ pricingSummary, onClose }) {
   if (!pricingSummary?.nights) return null;
 
   return (
-    <div className="fixed inset-x-4 bottom-[88px] z-[70] rounded-3xl border border-[#e9dfd8] bg-white px-4 py-4 shadow-[0_20px_60px_-28px_rgba(42,32,27,0.35)] md:hidden">
+    <div className="fixed inset-x-4 bottom-[104px] z-[80] rounded-3xl border border-[#e9dfd8] bg-white px-4 py-4 shadow-[0_20px_60px_-28px_rgba(42,32,27,0.35)] md:hidden">
       <div className="flex items-center justify-between gap-3">
         <div className="text-[18px] font-semibold text-[#2A201B]">Price Breakup</div>
         <button
@@ -598,6 +598,24 @@ function MobilePriceBreakupPanel({ pricingSummary, onClose }) {
   );
 }
 
+function RoomPaymentMethodsBox() {
+  return (
+    <div className="border rounded-[12px]">
+      <p className="text-[16px] font-[600] text-green-600 p-3 flex items-center justify-center">
+        <ShieldCheck className="inline w-5 h-5 mr-1 " />
+        100% safe and secure payments.
+      </p>
+
+      <div className="border-t flex items-center justify-between">
+        <img src="/verifiedbyvisa.png" alt="Verified by Visa" className="w-full h-11 object-contain p-2" />
+        <img src="/mastercard.png" alt="Mastercard" className="w-full h-10 object-contain p-2" />
+        <img src="/Rupay.png" alt="Rupay" className="w-full h-8 object-contain p-2" />
+        <img src="/Upi.png" alt="UPI" className="w-full h-8 object-contain p-2" />
+      </div>
+    </div>
+  );
+}
+
 function MobileBookingDrawerCard({
   room,
   range,
@@ -613,7 +631,7 @@ function MobileBookingDrawerCard({
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4 pr-1">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-28 pr-1">
         <div>
           <label className="text-[11px] font-medium text-muted-foreground">
             CHECK IN / CHECK OUT
@@ -652,6 +670,19 @@ function MobileBookingDrawerCard({
             <p className="mt-1 text-[12px] leading-5 text-[#6c5a35]">
               {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
             </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-2 h-10 rounded-xl border border-[#1f1406] bg-white px-5 text-[15px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
+              onClick={() =>
+                setRange({
+                  from: range?.from || null,
+                  to: weekendOffer.suggestedCheckout,
+                })
+              }
+            >
+              {weekendOffer.suggestionButtonLabel}
+            </Button>
           </div>
         )}
 
@@ -665,6 +696,8 @@ function MobileBookingDrawerCard({
             </p>
           </div>
         ) : null}
+
+        <RoomPaymentMethodsBox />
       </div>
     </div>
   );
@@ -1432,7 +1465,7 @@ export default function RoomPage() {
                 <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   Total
                 </div>
-                <div className="mt-1 text-[26px] font-semibold leading-none text-[#2A201B]">
+                <div className="mt-1 text-[22px] font-semibold leading-none text-[#2A201B]">
                   {formatCurrency(pricingSummary.totalPayable)}
                   <span className="ml-1 text-sm font-normal text-muted-foreground">(incl. GST)</span>
                 </div>
@@ -1452,7 +1485,7 @@ export default function RoomPage() {
                 <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   Weekend Starting from
                 </div>
-                <div className="mt-1 text-[26px] font-semibold leading-none text-[#2A201B]">
+                <div className="mt-1 text-[22px] font-semibold leading-none text-[#2A201B]">
                   {formatCurrency(getDisplayedNightlyPrices(room, totalGuests).weekendPrice)}
                   <span className="ml-1 text-sm font-normal text-muted-foreground">/ N Incl. Taxes</span>
                 </div>
