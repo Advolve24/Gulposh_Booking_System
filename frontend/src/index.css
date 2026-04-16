@@ -256,8 +256,8 @@ Desktop unchanged
 
 @media (max-width: 767px) {
 .calendar-popover {
-width: min(330px, calc(100vw - 24px)) !important;
-max-width: 90vw !important;
+width: min(360px, calc(100vw - 16px)) !important;
+max-width: calc(100vw - 16px) !important;
 max-height: 334px !important;
 border-radius: 20px !important;
 overflow-x: hidden !important;
@@ -279,7 +279,7 @@ border-radius: 20px !important;
 .mobile-calendar-scroll {
 min-height: 334px;
 overflow: visible;
-padding: 14px 14px 10px; /* neat padding (no cut dates) */
+padding: 14px 18px 10px;
 background: #fff;
 display: flex;
 flex-direction: column;
