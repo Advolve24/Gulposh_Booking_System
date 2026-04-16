@@ -473,6 +473,7 @@ export default function CalendarRange({
       ) : (
         <div
           className="mobile-calendar-scroll"
+          data-vaul-no-drag=""
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
@@ -577,7 +578,10 @@ export default function CalendarRange({
       </PopoverTrigger>
 
       {/* ✅ DESKTOP width same, MOBILE becomes square fixed */}
-      <PopoverContent className="calendar-popover p-0 w-full md:w-[430px] overflow-hidden">
+      <PopoverContent
+        className="calendar-popover p-0 w-full md:w-[430px] overflow-hidden"
+        data-vaul-no-drag=""
+      >
         {calendarUI}
       </PopoverContent>
     </Popover>
