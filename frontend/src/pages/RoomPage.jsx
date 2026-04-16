@@ -13,7 +13,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import {
   ShieldCheck, Clock, Ban, Music, Flame,
-  Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft
+  Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft, BedDouble
 } from "lucide-react";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { getWeekendOfferState } from "../lib/weekendOffer";
@@ -525,6 +525,179 @@ function PriceBreakupSummary({ pricingSummary }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function buildBedroomCards(images) {
+  const safeImages = images?.length ? images : ["/placeholder-room.jpg"];
+
+  const bedroomContent = [
+    {
+      id: "bedroom-1",
+      name: "The Jade Slipper",
+      highlights: [
+        "Accommodates 2 guests + 1 extra guest",
+        "Queen sized bed with attached bathroom",
+        "Bathroom includes shower cubicle, instant geyser, and essential toiletries",
+        "Equipped with WiFi, AC, fan, and other essential amenities",
+      ],
+    },
+    {
+      id: "bedroom-2",
+      name: "The Blue Vanda",
+      highlights: [
+        "Accommodates 2 guests + 1 extra guest",
+        "Queen sized bed with attached bathroom",
+        "Bathroom includes shower cubicle, instant geyser, and essential toiletries",
+        "Equipped with WiFi, AC, fan, and other essential amenities",
+      ],
+    },
+    {
+      id: "bedroom-3",
+      name: "The White Egret",
+      highlights: [
+        "Accommodates 2 guests + 1 extra guest",
+        "Queen sized bed with attached bathroom and bathtub",
+        "Bathroom includes shower cubicle, instant geyser, and essential toiletries",
+        "Equipped with WiFi, AC, fan, and other essential amenities",
+      ],
+    },
+  ];
+
+  return bedroomContent.map((item, index) => ({
+    ...item,
+    image: safeImages[index % safeImages.length],
+  }));
+}
+
+function BedroomsSection({ images = [] }) {
+  const cards = useMemo(() => buildBedroomCards(images), [images]);
+  const viewportRef = useRef(null);
+  const [activeCard, setActiveCard] = useState(0);
+  const [cardsPerView, setCardsPerView] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth >= 1024 ? 2 : 1
+  );
+  const [viewportWidth, setViewportWidth] = useState(0);
+
+  const gap = cardsPerView === 2 ? 20 : 16;
+  const desktopPeek = cardsPerView === 2 ? 72 : 0;
+  const maxDotIndex = Math.max(0, cards.length - cardsPerView);
+  const dotIndexes = Array.from({ length: maxDotIndex + 1 }, (_, index) => index);
+  const clampedActiveCard = Math.min(activeCard, maxDotIndex);
+  const cardWidth =
+    cardsPerView === 2
+      ? Math.max(0, (viewportWidth - gap - desktopPeek) / 2)
+      : Math.max(0, viewportWidth);
+  const visibleCardWidth =
+    cardWidth && cardsPerView === 2 ? Math.max(0, cardWidth - 8) : cardWidth;
+  const translateX = clampedActiveCard * (visibleCardWidth + gap);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setCardsPerView(window.innerWidth >= 1024 ? 2 : 1);
+      setViewportWidth(viewportRef.current?.clientWidth || 0);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    setActiveCard((current) => Math.min(current, maxDotIndex));
+  }, [maxDotIndex]);
+
+  const scrollToCard = (index) => {
+    setActiveCard(Math.max(0, Math.min(index, maxDotIndex)));
+  };
+
+  const goPrev = () => {
+    setActiveCard((current) => Math.max(0, current - 1));
+  };
+
+  const goNext = () => {
+    setActiveCard((current) => Math.min(maxDotIndex, current + 1));
+  };
+
+  return (
+    <section>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg sm:text-xl font-semibold">Bedrooms</h3>
+          <div className="mt-1 flex items-center gap-2 text-sm text-[#6d5c52]">
+            <BedDouble className="h-4 w-4 text-primary" />
+            <span>3 curated sleeping spaces</span>
+          </div>
+        </div>
+
+        {maxDotIndex > 0 ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={goPrev}
+              disabled={clampedActiveCard === 0}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#2A201B]/35 bg-white text-[#2A201B] transition hover:bg-[#f8f4f1] disabled:cursor-not-allowed disabled:opacity-45"
+              aria-label="Previous bedroom slide"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={clampedActiveCard === maxDotIndex}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#2A201B]/35 bg-white text-[#2A201B] transition hover:bg-[#f8f4f1] disabled:cursor-not-allowed disabled:opacity-45"
+              aria-label="Next bedroom slide"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="relative px-0 md:px-0">
+        <div
+          ref={viewportRef}
+          className="overflow-hidden"
+        >
+          <div
+            className="flex transition-transform duration-500 ease-out"
+            style={{
+              gap: `${gap}px`,
+              transform: `translateX(-${translateX}px)`,
+            }}
+          >
+            {cards.map((card) => (
+              <article
+                key={card.id}
+                className="shrink-0 overflow-hidden rounded-[22px] border border-[#eadfd6] bg-white "
+                style={{ width: visibleCardWidth ? `${visibleCardWidth}px` : cardsPerView === 2 ? "calc(50% - 14px)" : "100%" }}
+              >
+                <div className="relative">
+                  <img
+                    src={card.image}
+                    alt={card.name}
+                    className="h-[210px] lg:h-[225px] w-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent px-5 pb-5 pt-10">
+                    <h4 className="text-lg lg:text-xl font-semibold text-white">{card.name}</h4>
+                  </div>
+                </div>
+
+                <div className="space-y-1 px-4 py-4 text-sm lg:text-[14px] leading-5 text-[#3b302a]">
+                  {card.highlights.map((item) => (
+                    <div key={item} className="flex items-start gap-3">
+                      <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-primary" />
+                      <p>{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1304,6 +1477,8 @@ export default function RoomPage() {
                 })}
               </ul>
             </section>
+
+            <BedroomsSection images={allImages} />
 
             {/* LOCATION */}
             <section>

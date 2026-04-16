@@ -56,11 +56,10 @@ export default function Footer() {
                             Quick Links
                         </h3>
                         <ul className="space-y-2 text-[13px] sm:text-[14px]">
-                            <FooterLink to="/about">About Villa</FooterLink>
-                            <FooterLink to="/amenities">Amenities</FooterLink>
-                            <FooterLink to="/gallery">Gallery</FooterLink>
-                            <FooterLink to="/book">Book Now</FooterLink>
-                            <FooterLink to="/faqs">FAQs</FooterLink>
+                            <FooterLink to="https://villagulposh.com/about-us">About Villa</FooterLink>
+                            <FooterLink to="https://villagulposh.com/amenities/">Amenities</FooterLink>
+                            <FooterLink to="https://villagulposh.com/gallery/">Gallery</FooterLink>
+                            <FooterLink to="https://villagulposh.com/faqs/">FAQs</FooterLink>
                         </ul>
                     </div>
 
