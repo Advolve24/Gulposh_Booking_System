@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowUpLeft, MapPin, Users, Utensils, Check, User, Mail, Phone, Home, CalendarIcon, Flame, ShieldCheck } from "lucide-react";
+import { ArrowUpLeft, MapPin, Users, Utensils, Check, User, Mail, Phone, Home, CalendarIcon, Flame, ShieldCheck, CreditCard } from "lucide-react";
 import { toDateOnly, toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -375,8 +375,16 @@ function CheckoutRoomSummaryCard({
   return (
     <div className="bg-white rounded-2xl border overflow-hidden">
       <div className="border-b px-5 py-4">
-        <div className="font-sans font-semibold text-base">
-          Payment Summary
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+            <CreditCard className="h-5 w-5 text-red-700" />
+          </div>
+          <div>
+            <h3 className="font-sans font-semibold text-base">Payment Summary</h3>
+            <p className="text-xs text-muted-foreground">
+              Review the final payable amount for this reservation
+            </p>
+          </div>
         </div>
       </div>
 
@@ -595,11 +603,16 @@ function CheckoutMealSection({
 
   return (
     <div className="rounded-2xl border bg-white p-5 sm:p-6 space-y-4">
-      <div>
-        <h3 className="font-sans font-semibold text-base">Meal Preferences</h3>
-        <p className="text-xs text-muted-foreground">
-          Customize meal selection for this reservation
-        </p>
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+          <Utensils className="h-5 w-5 text-red-700" />
+        </div>
+        <div>
+          <h3 className="font-sans font-semibold text-base">Meal Preferences</h3>
+          <p className="text-xs text-muted-foreground">
+            Customize meal selection for this reservation
+          </p>
+        </div>
       </div>
 
       <Label className="flex items-center gap-2">
