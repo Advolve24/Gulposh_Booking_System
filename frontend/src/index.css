@@ -258,27 +258,27 @@ Desktop unchanged
 .calendar-popover {
 width: min(330px, calc(100vw - 24px)) !important;
 max-width: 90vw !important;
+max-height: 334px !important;
 border-radius: 20px !important;
-overflow: hidden !important; /* keeps rounded corners */
+overflow-x: hidden !important;
+overflow-y: auto !important;
+-webkit-overflow-scrolling: touch;
+overscroll-behavior: contain;
+touch-action: pan-y;
 }
 
 
 /* IMPORTANT: remove extra padding that was cutting calendar */
 [data-radix-popover-content] {
 padding: 0 !important;
-overflow: hidden !important;
 border-radius: 20px !important;
 }
 
 
 /* Scroll area only (not the whole popup) */
 .mobile-calendar-scroll {
-height: 334px; /* fixed popup height */
-overflow-y: auto;
-overflow-x: hidden;
--webkit-overflow-scrolling: touch;
-overscroll-behavior: contain;
-touch-action: pan-y;
+min-height: 334px;
+overflow: visible;
 padding: 14px 14px 10px; /* neat padding (no cut dates) */
 background: #fff;
 display: flex;

@@ -254,16 +254,19 @@ export default function CalendarRange({
 
 
   const onTouchStart = (e) => {
+    if (!isDesktop) e.stopPropagation();
     if (isDesktop || selectingRef.current) return;
     touchStartX.current = e.touches[0].clientX;
   };
 
   const onTouchMove = (e) => {
+    if (!isDesktop) e.stopPropagation();
     if (isDesktop || selectingRef.current) return;
     touchEndX.current = e.touches[0].clientX;
   };
 
-  const onTouchEnd = () => {
+  const onTouchEnd = (e) => {
+    if (!isDesktop) e.stopPropagation();
     if (isDesktop || selectingRef.current) return;
 
     const deltaX = touchStartX.current - touchEndX.current;
@@ -474,6 +477,9 @@ export default function CalendarRange({
         <div
           className="mobile-calendar-scroll"
           data-vaul-no-drag=""
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
@@ -579,8 +585,12 @@ export default function CalendarRange({
 
       {/* ✅ DESKTOP width same, MOBILE becomes square fixed */}
       <PopoverContent
-        className="calendar-popover p-0 w-full md:w-[430px] overflow-hidden"
+        className="calendar-popover p-0 w-full overflow-y-auto overflow-x-hidden md:w-[430px] md:overflow-hidden"
         data-vaul-no-drag=""
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+        onTouchMoveCapture={(e) => e.stopPropagation()}
       >
         {calendarUI}
       </PopoverContent>
