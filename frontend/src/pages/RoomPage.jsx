@@ -97,7 +97,7 @@ function RoomNightlyPrices({
   compact = false,
   pricingSummary = null,
 }) {
-  const { weekdayPrice } = getDisplayedNightlyPrices(room, guests);
+  const { weekdayPrice, weekendPrice } = getDisplayedNightlyPrices(room, guests);
   const wrapperClass =
     align === "center"
       ? "text-center"
@@ -106,8 +106,10 @@ function RoomNightlyPrices({
         : "text-left sm:text-right";
   const priceClass = compact ? "text-[2rem] font-semibold leading-none" : "text-2xl sm:text-[2rem] font-semibold leading-none";
   const hasStaySelection = Boolean(pricingSummary?.nights > 0 && range?.from && range?.to);
-  const label = hasStaySelection ? `for ${pricingSummary.nights} night${pricingSummary.nights === 1 ? "" : "s"}` : "starting from";
-  const amount = hasStaySelection ? pricingSummary.totalPayable : weekdayPrice;
+  const label = hasStaySelection
+    ? `for ${pricingSummary.nights} night${pricingSummary.nights === 1 ? "" : "s"}`
+    : "Weekend Starting from";
+  const amount = hasStaySelection ? pricingSummary.totalPayable : weekendPrice;
   const amountSuffix = hasStaySelection ? " Incl. Taxes" : " / N Incl. Taxes";
   const mealsLabel = room?.mealMode === "only" ? "All Meals are included" : "";
   const showDiscountedComparison =
@@ -160,6 +162,9 @@ function BookingCard({
   weekendOffer,
   pricingSummary,
   onCapacityMaxAttempt,
+  showPriceSummary = true,
+  showFooterButton = true,
+  showBenefits = true,
 }) {
   const totalGuests = adults + children;
 
@@ -167,14 +172,16 @@ function BookingCard({
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* SCROLLABLE CONTENT */}
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4 pr-1">
-        <RoomNightlyPrices
-          room={room}
-          range={range}
-          guests={totalGuests}
-          align="left"
-          compact
-          pricingSummary={pricingSummary}
-        />
+        {showPriceSummary ? (
+          <RoomNightlyPrices
+            room={room}
+            range={range}
+            guests={totalGuests}
+            align="left"
+            compact
+            pricingSummary={pricingSummary}
+          />
+        ) : null}
 
         {/* DATES */}
         <div>
@@ -520,6 +527,149 @@ function PriceBreakupSummary({ pricingSummary }) {
   );
 }
 
+function MobilePriceBreakupPanel({ pricingSummary, onClose }) {
+  if (!pricingSummary?.nights) return null;
+
+  return (
+    <div className="fixed inset-x-4 bottom-[88px] z-[70] rounded-3xl border border-[#e9dfd8] bg-white px-4 py-4 shadow-[0_20px_60px_-28px_rgba(42,32,27,0.35)] md:hidden">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-[18px] font-semibold text-[#2A201B]">Price Breakup</div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-8 w-8 rounded-full bg-black/5 text-lg text-black/70"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-3 text-[13px]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-[14px] font-medium text-[#2A201B]">Property Charges</div>
+            <div className="text-[13px] text-muted-foreground">
+              {formatCurrency(pricingSummary.roomBasePerNight)} x {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
+            </div>
+          </div>
+          <div className="text-[14px] font-semibold text-[#2A201B]">
+            {formatCurrency(pricingSummary.roomSubtotal)}
+          </div>
+        </div>
+
+        {pricingSummary.weekendDiscountAmount > 0 ? (
+          <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-4">
+            <div>
+              <div className="text-[14px] font-medium text-[#12824c]">
+                Weekend Discount ({pricingSummary.weekendEligibleNights} night{pricingSummary.weekendEligibleNights === 1 ? "" : "s"} @ {pricingSummary.weekendDiscountPercent}%)
+              </div>
+              <div className="text-[13px] text-muted-foreground">
+                Discounts are calculated only on eligible nights.
+              </div>
+            </div>
+            <div className="text-[14px] font-semibold text-[#12824c]">
+              -{formatCurrency(pricingSummary.weekendDiscountAmount)}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
+          <div className="text-[14px] font-medium text-[#2A201B]">GST</div>
+          <div className="text-[14px] font-semibold text-[#2A201B]">
+            {formatCurrency(pricingSummary.totalTax)}
+          </div>
+        </div>
+
+        <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
+          <div>
+            <div className="text-[14px] font-medium text-[#2A201B]">Meals</div>
+            <div className="text-[13px] text-muted-foreground">Included</div>
+          </div>
+          <div className="text-[14px] font-semibold text-[#12824c]">Included</div>
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between border-t border-[#efe7e1] pt-3">
+        <div className="text-[15px] font-semibold text-[#2A201B]">Total Payable</div>
+        <div className="text-[21px] font-semibold leading-none text-[#2A201B]">
+          {formatCurrency(pricingSummary.totalPayable)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileBookingDrawerCard({
+  room,
+  range,
+  setRange,
+  adults,
+  setAdults,
+  children,
+  setChildren,
+  disabledAll,
+  weekendOffer,
+  pricingSummary,
+  onCapacityMaxAttempt,
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4 pr-1">
+        <div>
+          <label className="text-[11px] font-medium text-muted-foreground">
+            CHECK IN / CHECK OUT
+          </label>
+          <CalendarRange
+            roomId={room._id}
+            value={range}
+            onChange={setRange}
+            disabledRanges={disabledAll}
+            showWeekdayInBox
+            pricing={{
+              weekdayPrice: room?.pricePerNight,
+              weekendPrice: room?.weekendPricePerNight || room?.pricePerNight,
+            }}
+          />
+        </div>
+
+        <RoomGuestPopover
+          room={room}
+          adults={adults}
+          setAdults={setAdults}
+          children={children}
+          setChildren={setChildren}
+          onCapacityMaxAttempt={onCapacityMaxAttempt}
+        />
+
+        {weekendOffer?.canSuggest && (
+          <div className="rounded-[22px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-4 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
+            <span className="limited-offer-pill inline-flex items-center gap-1 rounded-full bg-[#ffc928] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.04em] text-[#4a3200]">
+              <Flame className="h-3.5 w-3.5" />
+              Limited Offer
+            </span>
+            <p className="mt-1 text-[16px] font-semibold leading-5 text-[#1f1406]">
+              {weekendOffer.suggestionTitle}
+            </p>
+            <p className="mt-1 text-[12px] leading-5 text-[#6c5a35]">
+              {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
+            </p>
+          </div>
+        )}
+
+        {weekendOffer?.eligible && pricingSummary?.nights > 0 ? (
+          <div className="rounded-2xl border border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 p-4 text-sm text-green-800 shadow-sm">
+            <p className="font-semibold">
+              {weekendOffer.percent}% weekend discount applied
+            </p>
+            <p className="mt-1 text-xs text-green-700">
+              Active for {weekendOffer.appliedTier} weekend night{weekendOffer.appliedTier === 1 ? "" : "s"} in your selected stay.
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 
 
 
@@ -556,6 +706,7 @@ export default function RoomPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+  const [showMobileBreakup, setShowMobileBreakup] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [capacityPopupOpen, setCapacityPopupOpen] = useState(false);
   const [discountConfig, setDiscountConfig] = useState({
@@ -795,6 +946,8 @@ export default function RoomPage() {
   const handleCapacityMaxAttempt = () => {
     setCapacityPopupOpen(true);
   };
+
+  const hasMobileStaySelection = Boolean(pricingSummary?.nights > 0 && range?.from && range?.to);
 
   const goToSuggestedRoom = (targetRoomId) => {
     sessionStorage.setItem("searchParams", JSON.stringify(savedBookingSearch));
@@ -1269,26 +1422,57 @@ export default function RoomPage() {
     fixed bottom-0 left-0 right-0 md:hidden
     bg-white border-t
     px-4 py-3
-    z-50
+    z-[60]
   "
       >
         <div className="flex items-center gap-3 max-w-md mx-auto">
-          {/* PRICE (30%) */}
-          <div className="w-[35%]">
-            <div className="text-xs text-muted-foreground">Price</div>
-            <div className="text-xs font-semibold leading-tight">
-              Weekday: {formatCurrency(getDisplayedNightlyPrices(room, totalGuests).weekdayPrice)}
-            </div>
-            <div className="text-xs font-semibold leading-tight">
-              Weekend: {formatCurrency(getDisplayedNightlyPrices(room, totalGuests).weekendPrice)}
-            </div>
+          <div className="min-w-0 flex-1">
+            {hasMobileStaySelection ? (
+              <>
+                <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Total
+                </div>
+                <div className="mt-1 text-[26px] font-semibold leading-none text-[#2A201B]">
+                  {formatCurrency(pricingSummary.totalPayable)}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">(incl. GST)</span>
+                </div>
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  {pricingSummary.dateLabel} • {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
+                </div>
+                <button
+                  type="button"
+                  className="mt-1 text-sm font-medium text-[#0a66c2] underline underline-offset-2"
+                  onClick={() => setShowMobileBreakup((prev) => !prev)}
+                >
+                  View price breakup
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Weekend Starting from
+                </div>
+                <div className="mt-1 text-[26px] font-semibold leading-none text-[#2A201B]">
+                  {formatCurrency(getDisplayedNightlyPrices(room, totalGuests).weekendPrice)}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">/ N Incl. Taxes</span>
+                </div>
+                {room?.mealMode === "only" ? (
+                  <div className="mt-1 text-sm text-green-600">All Meals are included</div>
+                ) : null}
+              </>
+            )}
           </div>
 
-          {/* BUTTON (70%) */}
           <Button
-            onClick={() => setShowDrawer(true)}
+            onClick={() => {
+              if (hasMobileStaySelection) {
+                goToCheckout();
+                return;
+              }
+              setShowDrawer(true);
+            }}
             className="
-        w-[60%]
+        w-[42%]
         h-12
         rounded-xl
         text-base
@@ -1302,6 +1486,13 @@ export default function RoomPage() {
           </Button>
         </div>
       </div>
+
+      {showMobileBreakup && hasMobileStaySelection ? (
+        <MobilePriceBreakupPanel
+          pricingSummary={pricingSummary}
+          onClose={() => setShowMobileBreakup(false)}
+        />
+      ) : null}
 
       {/* MOBILE DRAWER */}
       <Drawer open={showDrawer} onOpenChange={setShowDrawer}>
@@ -1352,7 +1543,7 @@ export default function RoomPage() {
           {/* CENTERED BOOKING CARD (NO EDGE TOUCH) */}
           <div className="min-h-0 flex-1 overflow-hidden px-4">
             <div className="mx-auto flex h-full min-h-0 max-w-[330px] flex-col overflow-hidden">
-              <BookingCard
+              <MobileBookingDrawerCard
                 room={room}
                 range={range}
                 setRange={setRange}
