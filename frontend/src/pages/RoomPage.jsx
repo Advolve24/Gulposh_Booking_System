@@ -6,8 +6,9 @@ import CalendarRange from "../components/CalendarRange";
 import GuestCounter from "../components/GuestCounter";
 import { amenityCategories } from "../data/aminities";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose, DrawerPortal } from "@/components/ui/drawer";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -527,24 +528,17 @@ function PriceBreakupSummary({ pricingSummary }) {
   );
 }
 
-function MobilePriceBreakupPanel({ pricingSummary, onClose }) {
+function MobilePriceBreakupPanel({ open, onOpenChange, pricingSummary }) {
   if (!pricingSummary?.nights) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] md:hidden">
-      <button
-        type="button"
-        aria-label="Close price breakup"
-        className="absolute inset-0 bg-black/20"
-        onClick={onClose}
-      />
-
-      <div className="absolute inset-x-4 bottom-[104px] rounded-3xl border border-[#e9dfd8] bg-white px-4 py-4 shadow-[0_20px_60px_-28px_rgba(42,32,27,0.35)]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="md:hidden [&>button]:hidden fixed left-1/2 top-auto bottom-[104px] z-[141] w-[calc(100vw-32px)] max-w-none translate-x-[-50%] translate-y-0 rounded-3xl border border-[#e9dfd8] bg-white px-4 py-4 shadow-[0_20px_60px_-28px_rgba(42,32,27,0.35)]">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[18px] font-semibold text-[#2A201B]">Price Breakup</div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => onOpenChange(false)}
             className="h-8 w-8 rounded-full bg-black/5 text-lg text-black/70"
           >
             ×
@@ -602,8 +596,8 @@ function MobilePriceBreakupPanel({ pricingSummary, onClose }) {
             {formatCurrency(pricingSummary.totalPayable)}
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -712,6 +706,86 @@ function MobileBookingDrawerCard({
   );
 }
 
+function MobileStickyBookingBar({
+  room,
+  totalGuests,
+  pricingSummary,
+  hasMobileStaySelection,
+  handleMobileBreakupOpen,
+  handleMobileBookNow,
+  showDrawer = false,
+  containerRef = null,
+}) {
+  const ctaLabel = showDrawer && hasMobileStaySelection ? "Continue" : "Book Now";
+
+  return (
+    <div
+      ref={containerRef}
+      className={`
+        fixed bottom-0 left-0 right-0 md:hidden
+        bg-white border-t px-4 py-3
+        pointer-events-auto
+        ${showDrawer ? "z-[90]" : "z-[60]"}
+      `}
+    >
+      <div className="flex items-center gap-3 max-w-md mx-auto">
+        <div className="min-w-0 flex-1">
+          {hasMobileStaySelection ? (
+            <>
+              <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Total
+              </div>
+              <div className="mt-1 text-[22px] font-semibold leading-none text-[#2A201B]">
+                {formatCurrency(pricingSummary.totalPayable)}
+                <span className="ml-1 text-sm font-normal text-muted-foreground">(incl. GST)</span>
+              </div>
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                {pricingSummary.dateLabel} • {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
+              </div>
+              <button
+                type="button"
+                className="mt-1 text-sm font-medium text-[#0a66c2] underline underline-offset-2"
+                onClick={handleMobileBreakupOpen}
+              >
+                View price breakup
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Weekend Starting from
+              </div>
+              <div className="mt-1 text-[22px] font-semibold leading-none text-[#2A201B]">
+                {formatCurrency(getDisplayedNightlyPrices(room, totalGuests).weekendPrice)}
+                <span className="ml-1 text-sm font-normal text-muted-foreground">/ N Incl. Taxes</span>
+              </div>
+              {room?.mealMode === "only" ? (
+                <div className="mt-1 text-sm text-green-600">All Meals are included</div>
+              ) : null}
+            </>
+          )}
+        </div>
+
+        <Button
+          onClick={handleMobileBookNow}
+          className="
+            w-[42%]
+            h-12
+            rounded-xl
+            text-base
+            font-semibold
+            bg-primary
+            hover:bg-primary/90
+            shadow-md
+          "
+        >
+          {ctaLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 
 
 
@@ -751,6 +825,7 @@ export default function RoomPage() {
   const [showMobileBreakup, setShowMobileBreakup] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [capacityPopupOpen, setCapacityPopupOpen] = useState(false);
+  const mobileDrawerFooterRef = useRef(null);
   const [discountConfig, setDiscountConfig] = useState({
     taxPercent: 0,
     weekendDiscountEnabled: false,
@@ -990,6 +1065,19 @@ export default function RoomPage() {
   };
 
   const hasMobileStaySelection = Boolean(pricingSummary?.nights > 0 && range?.from && range?.to);
+
+  const handleMobileBreakupOpen = () => {
+    if (!hasMobileStaySelection) return;
+    setShowMobileBreakup(true);
+  };
+
+  const handleMobileBookNow = () => {
+    if (showDrawer && hasMobileStaySelection) {
+      goToCheckout();
+      return;
+    }
+    setShowDrawer(true);
+  };
 
   const goToSuggestedRoom = (targetRoomId) => {
     sessionStorage.setItem("searchParams", JSON.stringify(savedBookingSearch));
@@ -1460,12 +1548,13 @@ export default function RoomPage() {
 
       {/* MOBILE STICKY FOOTER */}
       <div
-        className="
-    fixed bottom-0 left-0 right-0 md:hidden
-    bg-white border-t
-    px-4 py-3
-    z-[60]
-  "
+        className={`
+          fixed bottom-0 left-0 right-0 md:hidden
+          bg-white border-t
+          px-4 py-3
+          z-[60]
+          ${showDrawer ? "hidden" : ""}
+        `}
       >
         <div className="flex items-center gap-3 max-w-md mx-auto">
           <div className="min-w-0 flex-1">
@@ -1484,7 +1573,7 @@ export default function RoomPage() {
                 <button
                   type="button"
                   className="mt-1 text-sm font-medium text-[#0a66c2] underline underline-offset-2"
-                  onClick={() => setShowMobileBreakup((prev) => !prev)}
+                  onClick={handleMobileBreakupOpen}
                 >
                   View price breakup
                 </button>
@@ -1506,13 +1595,7 @@ export default function RoomPage() {
           </div>
 
           <Button
-            onClick={() => {
-              if (hasMobileStaySelection) {
-                goToCheckout();
-                return;
-              }
-              setShowDrawer(true);
-            }}
+            onClick={handleMobileBookNow}
             className="
         w-[42%]
         h-12
@@ -1531,18 +1614,40 @@ export default function RoomPage() {
 
       {showMobileBreakup && hasMobileStaySelection ? (
         <MobilePriceBreakupPanel
+          open={showMobileBreakup}
+          onOpenChange={setShowMobileBreakup}
           pricingSummary={pricingSummary}
-          onClose={() => setShowMobileBreakup(false)}
         />
       ) : null}
 
       {/* MOBILE DRAWER */}
       <Drawer open={showDrawer} onOpenChange={setShowDrawer}>
+      {showDrawer ? (
+        <DrawerPortal>
+          <MobileStickyBookingBar
+            room={room}
+            totalGuests={totalGuests}
+            pricingSummary={pricingSummary}
+            hasMobileStaySelection={hasMobileStaySelection}
+            handleMobileBreakupOpen={handleMobileBreakupOpen}
+            handleMobileBookNow={handleMobileBookNow}
+            showDrawer
+            containerRef={mobileDrawerFooterRef}
+          />
+        </DrawerPortal>
+      ) : null}
       <DrawerContent
+          overlayClassName="pointer-events-none"
+          onInteractOutside={(event) => {
+            if (mobileDrawerFooterRef.current?.contains(event.target)) {
+              event.preventDefault();
+            }
+          }}
           className="
       flex
-      h-[65vh]
-      max-h-[65vh]
+      bottom-[92px]
+      h-[calc(65vh-92px)]
+      max-h-[calc(65vh-92px)]
       flex-col
       rounded-t-2xl
       bg-white
