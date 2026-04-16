@@ -531,67 +531,76 @@ function MobilePriceBreakupPanel({ pricingSummary, onClose }) {
   if (!pricingSummary?.nights) return null;
 
   return (
-    <div className="fixed inset-x-4 bottom-[104px] z-[80] rounded-3xl border border-[#e9dfd8] bg-white px-4 py-4 shadow-[0_20px_60px_-28px_rgba(42,32,27,0.35)] md:hidden">
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-[18px] font-semibold text-[#2A201B]">Price Breakup</div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="h-8 w-8 rounded-full bg-black/5 text-lg text-black/70"
-        >
-          ×
-        </button>
-      </div>
+    <div className="fixed inset-0 z-[120] md:hidden">
+      <button
+        type="button"
+        aria-label="Close price breakup"
+        className="absolute inset-0 bg-black/20"
+        onClick={onClose}
+      />
 
-      <div className="mt-4 space-y-3 text-[13px]">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="text-[14px] font-medium text-[#2A201B]">Property Charges</div>
-            <div className="text-[13px] text-muted-foreground">
-              {formatCurrency(pricingSummary.roomBasePerNight)} x {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
-            </div>
-          </div>
-          <div className="text-[14px] font-semibold text-[#2A201B]">
-            {formatCurrency(pricingSummary.roomSubtotal)}
-          </div>
+      <div className="absolute inset-x-4 bottom-[104px] rounded-3xl border border-[#e9dfd8] bg-white px-4 py-4 shadow-[0_20px_60px_-28px_rgba(42,32,27,0.35)]">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-[18px] font-semibold text-[#2A201B]">Price Breakup</div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-8 w-8 rounded-full bg-black/5 text-lg text-black/70"
+          >
+            ×
+          </button>
         </div>
 
-        {pricingSummary.weekendDiscountAmount > 0 ? (
-          <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-4">
+        <div className="mt-4 space-y-3 text-[13px]">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-[14px] font-medium text-[#12824c]">
-                Weekend Discount ({pricingSummary.weekendEligibleNights} night{pricingSummary.weekendEligibleNights === 1 ? "" : "s"} @ {pricingSummary.weekendDiscountPercent}%)
-              </div>
+              <div className="text-[14px] font-medium text-[#2A201B]">Property Charges</div>
               <div className="text-[13px] text-muted-foreground">
-                Discounts are calculated only on eligible nights.
+                {formatCurrency(pricingSummary.roomBasePerNight)} x {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
               </div>
             </div>
-            <div className="text-[14px] font-semibold text-[#12824c]">
-              -{formatCurrency(pricingSummary.weekendDiscountAmount)}
+            <div className="text-[14px] font-semibold text-[#2A201B]">
+              {formatCurrency(pricingSummary.roomSubtotal)}
             </div>
           </div>
-        ) : null}
 
-        <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
-          <div className="text-[14px] font-medium text-[#2A201B]">GST</div>
-          <div className="text-[14px] font-semibold text-[#2A201B]">
-            {formatCurrency(pricingSummary.totalTax)}
+          {pricingSummary.weekendDiscountAmount > 0 ? (
+            <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-4">
+              <div>
+                <div className="text-[14px] font-medium text-[#12824c]">
+                  Weekend Discount ({pricingSummary.weekendEligibleNights} night{pricingSummary.weekendEligibleNights === 1 ? "" : "s"} @ {pricingSummary.weekendDiscountPercent}%)
+                </div>
+                <div className="text-[13px] text-muted-foreground">
+                  Discounts are calculated only on eligible nights.
+                </div>
+              </div>
+              <div className="text-[14px] font-semibold text-[#12824c]">
+                -{formatCurrency(pricingSummary.weekendDiscountAmount)}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
+            <div className="text-[14px] font-medium text-[#2A201B]">GST</div>
+            <div className="text-[14px] font-semibold text-[#2A201B]">
+              {formatCurrency(pricingSummary.totalTax)}
+            </div>
+          </div>
+
+          <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
+            <div>
+              <div className="text-[14px] font-medium text-[#2A201B]">Meals</div>
+              <div className="text-[13px] text-muted-foreground">Included</div>
+            </div>
+            <div className="text-[14px] font-semibold text-[#12824c]">Included</div>
           </div>
         </div>
 
-        <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
-          <div>
-            <div className="text-[14px] font-medium text-[#2A201B]">Meals</div>
-            <div className="text-[13px] text-muted-foreground">Included</div>
+        <div className="mt-3 flex items-center justify-between border-t border-[#efe7e1] pt-3">
+          <div className="text-[15px] font-semibold text-[#2A201B]">Total Payable</div>
+          <div className="text-[21px] font-semibold leading-none text-[#2A201B]">
+            {formatCurrency(pricingSummary.totalPayable)}
           </div>
-          <div className="text-[14px] font-semibold text-[#12824c]">Included</div>
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center justify-between border-t border-[#efe7e1] pt-3">
-        <div className="text-[15px] font-semibold text-[#2A201B]">Total Payable</div>
-        <div className="text-[21px] font-semibold leading-none text-[#2A201B]">
-          {formatCurrency(pricingSummary.totalPayable)}
         </div>
       </div>
     </div>
