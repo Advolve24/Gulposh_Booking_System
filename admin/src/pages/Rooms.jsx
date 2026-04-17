@@ -26,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { resolveImageUrl } from "@/lib/image";
 
 
 
@@ -197,8 +198,8 @@ function RoomCard({ room, view, onDelete }) {
   const name = room.name || "Room";
 
   const image =
-    room.coverImage ||
-    room.galleryImages?.[0] ||
+    resolveImageUrl(room.coverImage) ||
+    resolveImageUrl(room.galleryImages?.[0]) ||
     "https://via.placeholder.com/600x400?text=No+Image";
 
   return (

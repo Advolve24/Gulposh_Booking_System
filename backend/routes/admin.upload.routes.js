@@ -31,19 +31,13 @@ router.use(requireAdminSession);
 
 router.post("/upload", upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-  const base =
-    process.env.PUBLIC_URL ||
-    `${req.protocol}://${req.get("host")}`;
-  const url = `${base}/uploads/${req.file.filename}`;
+  const url = `/api/uploads/${req.file.filename}`;
   res.json({ url });
 });
 
 router.post("/upload/batch", upload.array("files", 24), (req, res) => {
   if (!req.files?.length) return res.status(400).json({ message: "No files uploaded" });
-  const base =
-    process.env.PUBLIC_URL ||
-    `${req.protocol}://${req.get("host")}`;
-  const urls = req.files.map((f) => `${base}/uploads/${f.filename}`);
+  const urls = req.files.map((f) => `/api/uploads/${f.filename}`);
   res.json({ urls });
 });
 

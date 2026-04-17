@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { ArrowLeft, Upload } from "lucide-react";
 import { amenityCategories } from "@/data/aminities";
+import { resolveImageUrl } from "@/lib/image";
 
 /* ====================================================== */
 
@@ -717,7 +718,7 @@ export default function RoomsNew() {
                 <div className="bg-muted rounded-xl p-3 text-xs sm:text-sm">
                   <div className="font-medium mb-2">Cover Preview</div>
                   <img
-                    src={coverFile ? URL.createObjectURL(coverFile) : coverImage}
+                    src={coverFile ? URL.createObjectURL(coverFile) : resolveImageUrl(coverImage)}
                     alt="cover"
                     className="h-32 w-full object-cover rounded-lg"
                   />
@@ -733,7 +734,7 @@ export default function RoomsNew() {
                     {galleryUrls.map((u) => (
                       <div key={u} className="relative">
                         <img
-                          src={u}
+                          src={resolveImageUrl(u)}
                           alt="gallery"
                           className="h-20 w-full object-cover rounded-lg"
                         />

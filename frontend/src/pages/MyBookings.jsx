@@ -8,6 +8,7 @@ import ViewBookingDialog from "@/components/ViewBookingDialog";
 import CancelBookingFlow from "@/components/CancelBookingFlow";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { getMyEnquiries } from "../api/bookings";
+import { resolveImageUrl } from "../lib/image";
 
 
 const fmt = (d) =>
@@ -28,7 +29,7 @@ const calcNights = (start, end) => {
 const getBookingImage = (b, isEnquiry) => {
   if (isEnquiry) return "/EntireVilla.webp";
   if (!b.room) return "/EntireVilla.webp";
-  return b.room?.coverImage || "/placeholder.jpg";
+  return resolveImageUrl(b.room?.coverImage) || "/placeholder.jpg";
 };
 
 export default function MyBookings() {

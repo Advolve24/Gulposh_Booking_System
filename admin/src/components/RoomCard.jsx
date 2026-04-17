@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { resolveImageUrl } from "@/lib/image";
 
 export default function RoomCard({ room, range, guests }) {
   const hasRange = range?.from && range?.to;
@@ -26,7 +27,7 @@ export default function RoomCard({ room, range, guests }) {
       {/* IMAGE CLICK → VIEW ROOM */}
       <Link to={imageLink} className="block">
         <img
-          src={room.coverImage || "https://picsum.photos/600/400"}
+          src={resolveImageUrl(room.coverImage) || "https://picsum.photos/600/400"}
           className="w-full h-[100px] object-cover hover:opacity-90 transition"
           alt={room.name}
         />

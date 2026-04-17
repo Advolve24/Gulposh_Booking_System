@@ -22,6 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { getBooking, cancelBooking } from "@/api/bookings";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { formatINR } from "@/lib/currency";
+import { resolveImageUrl } from "@/lib/image";
 
 /* ---------------------------------------------
    CONFIG
@@ -127,8 +128,8 @@ export default function CancelBookingFlow({
 
   const roomImage =
     room?.images?.length > 0
-      ? room.images[0]
-      : room?.image || room?.coverImage || null;
+      ? resolveImageUrl(room.images[0])
+      : resolveImageUrl(room?.image || room?.coverImage) || null;
 
   return (
     <Container open={open} onOpenChange={onOpenChange}>

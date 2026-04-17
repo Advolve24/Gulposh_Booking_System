@@ -18,6 +18,7 @@ import {
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { getWeekendOfferState } from "../lib/weekendOffer";
 import { getDisplayedNightlyPrices, getRoomPricingBreakdown } from "../lib/roomPricing";
+import { normalizeImageList } from "../lib/image";
 
 
 const humanize = (v = "") =>
@@ -529,7 +530,7 @@ function PriceBreakupSummary({ pricingSummary }) {
 }
 
 function buildBedroomCards(images) {
-  const safeImages = images?.length ? images : ["/placeholder-room.jpg"];
+  const safeImages = images?.length ? ["/The-Jade-Slipper.webp", "/The-Blue-Vanda.webp", "/The-White-Egret.webp" ] : ["/placeholder-room.jpg"];
 
   const bedroomContent = [
     {
@@ -1103,7 +1104,7 @@ export default function RoomPage() {
   );
 
   const allImages = useMemo(
-    () => [room?.coverImage, ...(room?.galleryImages || [])].filter(Boolean),
+    () => normalizeImageList([room?.coverImage, ...(room?.galleryImages || [])]),
     [room]
   );
 

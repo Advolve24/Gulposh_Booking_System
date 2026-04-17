@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Users, ArrowRight } from "lucide-react";
+import { resolveImageUrl } from "../lib/image";
 
 export default function RoomCard({ room, range, guests }) {
 
@@ -56,7 +57,7 @@ export default function RoomCard({ room, range, guests }) {
       <Link to={`/room/${room._id}${search}`} state={searchState}>
         <div className="relative h-56 overflow-hidden">
           <img
-            src={room.coverImage || "https://picsum.photos/600/400"}
+            src={resolveImageUrl(room.coverImage) || "https://picsum.photos/600/400"}
             alt={room.name}
             className="
               w-full h-full object-cover

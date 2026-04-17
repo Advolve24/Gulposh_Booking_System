@@ -21,6 +21,7 @@ import { api } from "@/api/http";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { formatINR } from "@/lib/currency";
+import { resolveImageUrl } from "@/lib/image";
 
 
 const fmt = (d) =>
@@ -157,8 +158,8 @@ export default function BookingSuccess() {
     );
 
     const roomImage =
-        room?.images?.[0] ||
-        room?.coverImage ||
+        resolveImageUrl(room?.images?.[0]) ||
+        resolveImageUrl(room?.coverImage) ||
         "/placeholder.jpg";
 
 

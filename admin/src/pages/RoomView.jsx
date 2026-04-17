@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import { api } from "@/api/http";
 import ImageSlider from "@/components/ImageSlider";
+import { normalizeImageList } from "@/lib/image";
 
 import {
   Wifi,
@@ -160,7 +161,7 @@ export default function AdminRoomView() {
   }, [id]);
 
   const images = useMemo(
-    () => [room?.coverImage, ...(room?.galleryImages || [])].filter(Boolean),
+    () => normalizeImageList([room?.coverImage, ...(room?.galleryImages || [])]),
     [room]
   );
 

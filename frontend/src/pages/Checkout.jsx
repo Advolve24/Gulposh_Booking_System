@@ -30,6 +30,7 @@ import { getRecaptchaVerifier } from "@/lib/recaptcha";
 import { getWeekendOfferState } from "../lib/weekendOffer";
 import { getDisplayedNightlyPrices, getRoomPricingBreakdown } from "../lib/roomPricing";
 import GuestCounter from "../components/GuestCounter";
+import { resolveImageUrl } from "../lib/image";
 
 
 function minusOneDay(date) {
@@ -369,8 +370,8 @@ function CheckoutRoomSummaryCard({
 }) {
   const summaryImage =
     room?.images?.length > 0
-      ? room.images[0]
-      : room?.image || room?.coverImage || null;
+      ? resolveImageUrl(room.images[0])
+      : resolveImageUrl(room?.image || room?.coverImage) || null;
 
   return (
     <div className="bg-white rounded-2xl border overflow-hidden">

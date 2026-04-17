@@ -63,6 +63,7 @@ app.use(cookieParser());
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 app.use("/uploads", express.static(UPLOAD_DIR));
+app.use("/api/uploads", express.static(UPLOAD_DIR));
 
 app.get("/", (_req, res) => {
   res.send("✅ API is up");

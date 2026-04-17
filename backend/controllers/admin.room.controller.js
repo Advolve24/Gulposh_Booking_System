@@ -12,6 +12,34 @@ const toArray = (v) => {
   return [];
 };
 
+const normalizeImageRef = (value) => {
+  if (!value) return "";
+
+  const raw = String(value).trim();
+  if (!raw) return "";
+
+  if (raw.startsWith("/api/uploads/")) return raw;
+  if (raw.startsWith("/uploads/")) return raw.replace(/^\/uploads\//, "/api/uploads/");
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.pathname.startsWith("/api/uploads/")) {
+      return parsed.pathname;
+    }
+    if (parsed.pathname.startsWith("/uploads/")) {
+      return parsed.pathname.replace(/^\/uploads\//, "/api/uploads/");
+    }
+  } catch {
+    return raw;
+  }
+
+  return raw;
+};
+
+const normalizeImageArray = (value) => {
+  return [...new Set(toArray(value).map(normalizeImageRef).filter(Boolean))];
+};
+
 const normalizeReviews = (v) => {
   if (!v) return [];
 
@@ -113,8 +141,8 @@ export const createRoom = async (req, res) => {
       discountLabel: discountLabel || "",
       discountCode: discountCode || "",
 
-      coverImage: coverImage || "",
-      galleryImages: toArray(galleryImages),
+      coverImage: normalizeImageRef(coverImage),
+      galleryImages: normalizeImageArray(galleryImages),
       description: description || "",
       amenities: toArray(amenities),
       houseRules: toArray(houseRules),
@@ -256,11 +284,11 @@ export const updateRoom = async (req, res) => {
     }
 
     if (coverImage !== undefined) {
-      update.coverImage = coverImage || "";
+      update.coverImage = normalizeImageRef(coverImage);
     }
 
     if (galleryImages !== undefined) {
-      update.galleryImages = toArray(galleryImages);
+      update.galleryImages = normalizeImageArray(galleryImages);
     }
 
     if (description !== undefined) {
