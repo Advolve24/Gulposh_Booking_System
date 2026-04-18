@@ -316,7 +316,16 @@ export default function EntireVilla() {
       pincode: address.pincode.trim(),
     };
 
-    if (!hasVerifiedIdentity) {
+    let authenticatedUser = user;
+    if (!authenticatedUser && initialized) {
+      try {
+        authenticatedUser = await refreshUser();
+      } catch {
+        authenticatedUser = null;
+      }
+    }
+
+    if (!otpVerified && !authenticatedUser) {
       toast.error("Please verify your mobile number first");
       return;
     }
