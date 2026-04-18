@@ -351,17 +351,6 @@ export default function EntireVilla() {
       toast.error("Please select check-in and check-out dates");
       return;
     }
-    if (
-      !normalizedAddress.address ||
-      !normalizedAddress.country ||
-      !normalizedAddress.state ||
-      !normalizedAddress.city ||
-      !normalizedAddress.pincode
-    ) {
-      toast.error("Please complete your address details");
-      return;
-    }
-
     try {
       const { data } = await api.post("/enquiries/entire-villa", {
         ...(firebaseToken ? { firebaseToken } : {}),
