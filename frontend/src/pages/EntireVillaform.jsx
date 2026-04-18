@@ -100,42 +100,52 @@ export default function EntireVilla() {
 
 
   useEffect(() => {
-    if (!initialized) return;
-    if (!user) return;
+    const allCountries = Country.getAllCountries();
+    setCountries(allCountries);
+  }, []);
+
+  useEffect(() => {
+    if (!countries.length) return;
+
+    const fallbackCountry =
+      countries.find((c) => c.name === user?.country) ||
+      countries.find((c) => c.isoCode === "IN");
+    const nextCountryCode = fallbackCountry?.isoCode || "IN";
+    const stateList = State.getStatesOfCountry(nextCountryCode);
+    const matchedState = stateList.find((s) => s.name === user?.state);
+    const nextStateCode = matchedState?.isoCode || "";
+    const cityList = nextStateCode
+      ? City.getCitiesOfState(nextCountryCode, nextStateCode)
+      : [];
+    const nextCityName = user?.city || "";
+
+    setCountryCode(nextCountryCode);
+    setStates(stateList);
+    setStateCode(nextStateCode);
+    setCities(cityList);
+    setCityName(nextCityName);
+
+    setAddress((prev) => ({
+      address: user?.address || prev.address || "",
+      country: user?.country || prev.country || fallbackCountry?.name || "",
+      state: user?.state || prev.state || "",
+      city: user?.city || prev.city || "",
+      pincode: user?.pincode || prev.pincode || "",
+    }));
+
+    if (!initialized || !user) return;
 
     setOtpVerified(true);
     setOtpStep(false);
 
-    setForm({
-      name: user.name || "",
-      email: user.email || "",
-      phone: user.phone || "",
-    });
-
-    setAddress({
-      address: user.address || "",
-      country: user.country || "",
-      state: user.state || "",
-      city: user.city || "",
-      pincode: user.pincode || "",
-    });
+    setForm((prev) => ({
+      name: user.name || prev.name || "",
+      email: user.email || prev.email || "",
+      phone: user.phone || prev.phone || "",
+    }));
 
     setProfileLocked(user.profileComplete === true);
-  }, [user, initialized]);
-
-
-  useEffect(() => {
-    const allCountries = Country.getAllCountries();
-    setCountries(allCountries);
-
-    const india = allCountries.find((c) => c.isoCode === "IN");
-    if (!india) return;
-
-    setAddress((a) => ({ ...a, country: india.name }));
-
-    const stateList = State.getStatesOfCountry("IN");
-    setStates(stateList);
-  }, []);
+  }, [countries, user, initialized]);
 
 
 
@@ -618,7 +628,11 @@ export default function EntireVilla() {
 
                 <div>
                   <Label>Country</Label>
-                  <Select value={countryCode} onValueChange={onCountryChange}>
+                  <Select
+                    value={countryCode}
+                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    onValueChange={onCountryChange}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Country" />
                     </SelectTrigger>
@@ -636,7 +650,11 @@ export default function EntireVilla() {
                   <Label>State</Label>
                   <Select
                     value={stateCode}
-                    disabled={!states.length}
+                    disabled={
+                      !otpVerified ||
+                      (profileLocked && user?.profileComplete) ||
+                      !states.length
+                    }
                     onValueChange={onStateChange}
                   >
                     <SelectTrigger>
@@ -656,7 +674,11 @@ export default function EntireVilla() {
                   <Label>City</Label>
                   <Select
                     value={cityName}
-                    disabled={!cities.length}
+                    disabled={
+                      !otpVerified ||
+                      (profileLocked && user?.profileComplete) ||
+                      !cities.length
+                    }
                     onValueChange={onCityChange}
                   >
                     <SelectTrigger>
