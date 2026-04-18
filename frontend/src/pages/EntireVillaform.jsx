@@ -304,6 +304,18 @@ export default function EntireVilla() {
 
 
   const submitEnquiry = async () => {
+    const normalizedAddress = {
+      address: address.address.trim(),
+      country:
+        countries.find((c) => c.isoCode === countryCode)?.name ||
+        address.country.trim(),
+      state:
+        states.find((s) => s.isoCode === stateCode)?.name ||
+        address.state.trim(),
+      city: cityName || address.city.trim(),
+      pincode: address.pincode.trim(),
+    };
+
     if (!hasVerifiedIdentity) {
       toast.error("Please verify your mobile number first");
       return;
@@ -322,11 +334,11 @@ export default function EntireVilla() {
       return;
     }
     if (
-      !address.address ||
-      !address.country ||
-      !address.state ||
-      !address.city ||
-      !address.pincode
+      !normalizedAddress.address ||
+      !normalizedAddress.country ||
+      !normalizedAddress.state ||
+      !normalizedAddress.city ||
+      !normalizedAddress.pincode
     ) {
       toast.error("Please complete your address details");
       return;
@@ -344,7 +356,7 @@ export default function EntireVilla() {
         endDate: range.to.toISOString().split("T")[0],
         guests: Number(guests),
 
-        addressInfo: address,
+        addressInfo: normalizedAddress,
         source: "frontend",
       });
 
@@ -359,7 +371,7 @@ export default function EntireVilla() {
           startDate: range.from,
           endDate: range.to,
           guests,
-          addressInfo: address,
+          addressInfo: normalizedAddress,
         })
       );
       navigate("/enquiry-success", { replace: true });
