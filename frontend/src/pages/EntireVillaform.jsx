@@ -76,6 +76,10 @@ export default function EntireVilla() {
   const [otp, setOtp] = useState("");
   const [checkingUser, setCheckingUser] = useState(false);
   const confirmationRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const addressInputRef = useRef(null);
+  const pincodeInputRef = useRef(null);
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [firebaseToken, setFirebaseToken] = useState(null);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
@@ -304,8 +308,22 @@ export default function EntireVilla() {
 
 
   const submitEnquiry = async () => {
+    const normalizedName = (
+      nameInputRef.current?.value ||
+      form.name ||
+      ""
+    ).trim();
+    const normalizedEmail = (
+      emailInputRef.current?.value ||
+      form.email ||
+      ""
+    ).trim();
     const normalizedAddress = {
-      address: address.address.trim(),
+      address: (
+        addressInputRef.current?.value ||
+        address.address ||
+        ""
+      ).trim(),
       country:
         countries.find((c) => c.isoCode === countryCode)?.name ||
         address.country.trim(),
@@ -313,15 +331,19 @@ export default function EntireVilla() {
         states.find((s) => s.isoCode === stateCode)?.name ||
         address.state.trim(),
       city: cityName || address.city.trim(),
-      pincode: address.pincode.trim(),
+      pincode: (
+        pincodeInputRef.current?.value ||
+        address.pincode ||
+        ""
+      ).trim(),
     };
 
-    if (!form.name || form.name.length < 3) {
+    if (!normalizedName || normalizedName.length < 3) {
       toast.error("Please enter your full name");
       return;
     }
 
-    if (!form.email || !form.email.includes("@")) {
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
       toast.error("Please enter valid email");
       return;
     }
@@ -344,8 +366,8 @@ export default function EntireVilla() {
       const { data } = await api.post("/enquiries/entire-villa", {
         ...(firebaseToken ? { firebaseToken } : {}),
 
-        name: form.name,
-        email: form.email,
+        name: normalizedName,
+        email: normalizedEmail,
         phone: form.phone,
 
         startDate: range.from.toISOString().split("T")[0],
@@ -361,8 +383,8 @@ export default function EntireVilla() {
       sessionStorage.setItem(
         "enquirySuccessData",
         JSON.stringify({
-          name: form.name,
-          email: form.email,
+          name: normalizedName,
+          email: normalizedEmail,
           phone: form.phone,
           startDate: range.from,
           endDate: range.to,
@@ -582,6 +604,7 @@ export default function EntireVilla() {
                 <div>
                   <Label>Full Name</Label>
                   <Input
+                    ref={nameInputRef}
                     value={form.name}
                     disabled={!hasVerifiedIdentity || (profileLocked && user?.profileComplete)}
                     onChange={(e) =>
@@ -593,6 +616,7 @@ export default function EntireVilla() {
                 <div>
                   <Label>Email</Label>
                   <Input
+                    ref={emailInputRef}
                     value={form.email}
                     disabled={!hasVerifiedIdentity || (profileLocked && user?.profileComplete)}
                     onChange={(e) =>
@@ -631,6 +655,7 @@ export default function EntireVilla() {
                 <div className="md:col-span-3">
                   <Label>Street Address</Label>
                   <Input
+                    ref={addressInputRef}
                     value={address.address}
                     disabled={!hasVerifiedIdentity || (profileLocked && user?.profileComplete)}
                     onChange={(e) =>
@@ -710,6 +735,7 @@ export default function EntireVilla() {
                 <div>
                   <Label>Pincode</Label>
                   <Input
+                    ref={pincodeInputRef}
                     value={address.pincode}
                     disabled={!hasVerifiedIdentity || (profileLocked && user?.profileComplete)}
                     onChange={(e) =>
