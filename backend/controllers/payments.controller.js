@@ -217,6 +217,13 @@ const getEligibleSpecialOffer = async (user, startDate, endDate) => {
   return doesOfferOverlapStay(offer, startDate, endDate) ? offer : null;
 };
 
+const hasApplicableCouponDiscount = (room, couponCode) =>
+  Boolean(
+    couponCode &&
+      room?.discountCode &&
+      couponCode.trim().toUpperCase() === room.discountCode.trim().toUpperCase()
+  );
+
 /* ============================= CREATE ORDER ============================= */
 export const createOrder = async (req, res) => {
   try {
@@ -270,6 +277,26 @@ export const createOrder = async (req, res) => {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
+    const currentUser = await User.findById(userId).select("email phone");
+    const specialOffer = await getEligibleSpecialOffer(currentUser, sDate, eDate);
+    const weekendStay = analyzeWeekendStay(sDate, eDate);
+    const weekendDiscountPercent =
+      weekendStay.weekendNights >= 3
+        ? Number(taxSetting.threeWeekendNightsDiscountPercent || 0)
+        : weekendStay.weekendNights >= 2
+        ? Number(taxSetting.twoWeekendNightsDiscountPercent || 0)
+        : 0;
+    const hasWeekendDiscount = Boolean(
+      taxSetting.weekendDiscountEnabled &&
+        weekendDiscountPercent > 0 &&
+        weekendStay.weekendNights >= 2
+    );
+    const hasCouponDiscount = hasApplicableCouponDiscount(room, couponCode);
+    const hasSpecialOfferDiscount = Boolean(
+      specialOffer?.discountPercent &&
+        getOfferEligibleNights(specialOffer, sDate, eDate) > 0
+    );
+
     const pricingBreakdown = getRoomPricingBreakdown(
       room,
       sDate,
@@ -277,7 +304,7 @@ export const createOrder = async (req, res) => {
       Number(guests)
     );
     const roomGrossTotal = Number(pricingBreakdown.roomTotal || 0);
-    const roomTotal =
+    const preciseRoomTotal =
       room.taxMode === "included"
         ? Number(
             (
@@ -286,6 +313,11 @@ export const createOrder = async (req, res) => {
             ).toFixed(2)
           )
         : roomGrossTotal;
+    const roomTotal =
+      room.taxMode === "included" &&
+      (hasWeekendDiscount || hasCouponDiscount || hasSpecialOfferDiscount)
+        ? Math.round(preciseRoomTotal)
+        : preciseRoomTotal;
 
     const mealTotal = withMeal
       ? nights *
@@ -294,9 +326,6 @@ export const createOrder = async (req, res) => {
       : 0;
 
     const subTotal = roomTotal + mealTotal;
-
-    const currentUser = await User.findById(userId).select("email phone");
-    const specialOffer = await getEligibleSpecialOffer(currentUser, sDate, eDate);
 
     const refreshedDiscountBreakup = getDiscountBreakup({
       subTotal,
@@ -463,6 +492,25 @@ export const verifyPayment = async (req, res) => {
       return res.status(500).json({ message: "Tax configuration missing" });
     }
 
+    const specialOffer = await getEligibleSpecialOffer(user, sDate, eDate);
+    const weekendStay = analyzeWeekendStay(sDate, eDate);
+    const weekendDiscountPercent =
+      weekendStay.weekendNights >= 3
+        ? Number(taxSetting.threeWeekendNightsDiscountPercent || 0)
+        : weekendStay.weekendNights >= 2
+        ? Number(taxSetting.twoWeekendNightsDiscountPercent || 0)
+        : 0;
+    const hasWeekendDiscount = Boolean(
+      taxSetting.weekendDiscountEnabled &&
+        weekendDiscountPercent > 0 &&
+        weekendStay.weekendNights >= 2
+    );
+    const hasCouponDiscount = hasApplicableCouponDiscount(room, couponCode);
+    const hasSpecialOfferDiscount = Boolean(
+      specialOffer?.discountPercent &&
+        getOfferEligibleNights(specialOffer, sDate, eDate) > 0
+    );
+
     const pricingBreakdown = getRoomPricingBreakdown(
       room,
       sDate,
@@ -470,7 +518,7 @@ export const verifyPayment = async (req, res) => {
       Number(guests)
     );
     const roomGrossTotal = Number(pricingBreakdown.roomTotal || 0);
-    const roomTotal =
+    const preciseRoomTotal =
       room.taxMode === "included"
         ? Number(
             (
@@ -479,6 +527,11 @@ export const verifyPayment = async (req, res) => {
             ).toFixed(2)
           )
         : roomGrossTotal;
+    const roomTotal =
+      room.taxMode === "included" &&
+      (hasWeekendDiscount || hasCouponDiscount || hasSpecialOfferDiscount)
+        ? Math.round(preciseRoomTotal)
+        : preciseRoomTotal;
     let mealTotal = 0;
 
     if (room.mealMode === "only") {
@@ -493,8 +546,6 @@ export const verifyPayment = async (req, res) => {
     }
 
     const subTotal = roomTotal + mealTotal;
-
-    const specialOffer = await getEligibleSpecialOffer(user, sDate, eDate);
 
     const discountBreakup = getDiscountBreakup({
       subTotal,

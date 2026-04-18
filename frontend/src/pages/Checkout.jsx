@@ -85,7 +85,11 @@ const INR = (num) =>
     maximumFractionDigits: 0,
   })}`;
 
-const roundedRupee = (num) => Math.round(Number(num || 0));
+const INRExact = (num) =>
+  `₹${Number(num || 0).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 const CHECK_IN_TIME = "12:00 PM";
 const CHECK_OUT_TIME = "10:00 AM";
 
@@ -260,6 +264,7 @@ function CheckoutSidebarBookingCard({
   acceptedTerms,
   showProceedButton = true,
   paymentMethodsPosition = "after-button",
+  fullWidthOfferButton = false,
 }) {
   return (
     <div className="rounded-2xl border border-[#eadfd6] bg-white p-5 space-y-3">
@@ -297,32 +302,54 @@ function CheckoutSidebarBookingCard({
         {paymentMethodsPosition === "after-guests" ? <CheckoutPaymentMethodsBox /> : null}
 
         {weekendOffer?.canSuggest && (
-          <div className="rounded-[22px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-4 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
-            <span className="limited-offer-pill inline-flex items-center gap-1 rounded-full bg-[#ffc928] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.04em] text-[#4a3200]">
-              <Flame className="h-3.5 w-3.5" />
-              Limited Offer
-            </span>
-            <p className="mt-3 text-lg font-semibold leading-7 text-[#1f1406]">
-              {weekendOffer.suggestionTitle}
-            </p>
-            <p className="text-sm leading-6 text-[#6c5a35]">
-              {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-1 h-11 rounded-xl border border-[#1f1406] bg-white px-5 text-[15px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
-              onClick={() =>
-                setRange((prev) => ({
-                  from: prev?.from || null,
-                  to: weekendOffer.suggestedCheckout,
-                }))
+          <div className="rounded-[18px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-3 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
+            <div
+              className={
+                fullWidthOfferButton
+                  ? "flex flex-col gap-2"
+                  : "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
               }
             >
-              {weekendOffer.suggestionButtonLabel}
-            </Button>
+              <div className="min-w-0">
+                <p className="mt-0 text-[15px] font-semibold leading-5 text-[#1f1406]">
+                  {weekendOffer.suggestionTitle}
+                </p>
+                <p className="mt-0 text-[11px] leading-5 text-[#6c5a35]">
+                  {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the weekend offer.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className={
+                  fullWidthOfferButton
+                    ? "h-10 w-full rounded-lg border border-[#1f1406] bg-white px-4 text-center text-[13px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
+                    : "h-auto w-[92px] shrink-0 self-start rounded-lg border border-[#1f1406] bg-white px-3 py-2 text-center text-[13px] font-semibold leading-4 text-[#1f1406] whitespace-normal hover:bg-[#fff7df] sm:self-center"
+                }
+                onClick={() =>
+                  setRange((prev) => ({
+                    from: prev?.from || null,
+                    to: weekendOffer.suggestedCheckout,
+                  }))
+                }
+              >
+                {weekendOffer.suggestionButtonLabel}
+              </Button>
+            </div>
           </div>
         )}
+
+        {weekendOffer?.eligible && (
+          <div className="rounded-2xl border border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-2 text-sm text-green-800 shadow-sm">
+            <p className="font-semibold">
+              {weekendOffer.percent}% weekend discount applied
+            </p>
+            <p className="mt-1 text-xs text-green-700">
+              Active for {weekendOffer.appliedTier} weekend night{weekendOffer.appliedTier === 1 ? "" : "s"} in your selected stay.
+            </p>
+          </div>
+        )}
+
       </div>
 
       {showProceedButton ? (
@@ -465,11 +492,12 @@ function CheckoutRoomSummaryCard({
         <div className="space-y-2">
           <div className="flex justify-between">
             <span>
-              ₹
-              {roundedRupee(
-                room?.taxMode === "included"
-                  ? roomPricing.averageBasePerNight
-                  : roomPricing.averageGrossPerNight
+              {INRExact(
+                nights > 0
+                  ? roomChargeTotal / nights
+                  : room?.taxMode === "included"
+                    ? roomPricing.averageBasePerNight
+                    : roomPricing.averageGrossPerNight
               )} x {nights} nights
             </span>
             <span className="font-semibold text-[#2A201B]">{INR(roomChargeTotal)}</span>
@@ -590,7 +618,6 @@ function CheckoutRoomSummaryCard({
 function CheckoutMealSection({
   room,
   withMealState,
-  setWithMealState,
   withMeal,
   vegGuests,
   setVegGuests,
@@ -619,15 +646,12 @@ function CheckoutMealSection({
       <Label className="flex items-center gap-2">
         <Checkbox
           checked={withMealState}
-          onCheckedChange={(v) => {
-            setWithMealState(Boolean(v));
-            setVegGuests(0);
-            setNonVegGuests(0);
-          }}
+          disabled
+          className="border-red-600 bg-red-600 text-white opacity-100 data-[state=checked]:border-red-600 data-[state=checked]:bg-red-600 disabled:cursor-not-allowed disabled:opacity-100"
         />
         <span className="flex items-center gap-1">
           <Utensils className="w-4 h-4" />
-          Include Meals
+          Meals Included
         </span>
       </Label>
 
@@ -639,7 +663,13 @@ function CheckoutMealSection({
 
       {room.mealMode === "only" && (
         <div className="rounded-xl border bg-green-50 px-4 py-3 text-sm text-green-700">
-          Meals are included in room price. You can opt out if not required.
+          Meals are included in the room price for all guests.
+        </div>
+      )}
+
+      {room.mealMode === "price" && (
+        <div className="rounded-xl border bg-green-50 px-4 py-3 text-sm text-green-700">
+          Meals are mandatory for this stay. Please choose veg and non-veg guest counts.
         </div>
       )}
 
@@ -783,11 +813,9 @@ export default function Checkout() {
   const [adults, setAdults] = useState(initialAdults);
   const [children, setChildren] = useState(initialChildren);
   const totalGuests = adults + children;
-  const [withMealState, setWithMealState] = useState(false);
+  const [withMealState, setWithMealState] = useState(true);
   const withMeal =
-    room?.mealMode === "only" || room?.mealMode === "price"
-      ? withMealState
-      : false;
+    room?.mealMode === "only" || room?.mealMode === "price";
 
   const [vegGuests, setVegGuests] = useState(0);
   const [nonVegGuests, setNonVegGuests] = useState(0);
@@ -912,6 +940,10 @@ export default function Checkout() {
 
 
   useEffect(() => {
+    setWithMealState(room?.mealMode === "only" || room?.mealMode === "price");
+  }, [room?.mealMode]);
+
+  useEffect(() => {
     if (!withMeal) return;
 
     const totalMeal = vegGuests + nonVegGuests;
@@ -972,9 +1004,46 @@ export default function Checkout() {
     [room, range, taxPercent, totalGuests]
   );
 
+  const weekendOffer = useMemo(() => {
+    if (!range?.from || !range?.to) {
+      return null;
+    }
+    return getWeekendOfferState(range, weekendDiscountConfig, disabledAll);
+  }, [disabledAll, range, weekendDiscountConfig]);
+
+  const hasAppliedCoupon = useMemo(
+    () =>
+      Boolean(
+        hasRoomCoupon &&
+          couponApplied &&
+          couponCode === room?.discountCode
+      ),
+    [couponApplied, couponCode, hasRoomCoupon, room?.discountCode]
+  );
+
+  const hasApplicableSpecialOffer = useMemo(
+    () =>
+      Boolean(
+        specialOffer?.discountPercent &&
+          doesOfferOverlapSelectedStay(specialOffer, range) &&
+          getOfferEligibleNights(specialOffer, range) > 0
+      ),
+    [range, specialOffer]
+  );
+
+  const shouldRoundIncludedRoomSubtotal = useMemo(
+    () =>
+      room?.taxMode === "included" &&
+      Boolean(weekendOffer?.eligible || hasAppliedCoupon || hasApplicableSpecialOffer),
+    [hasApplicableSpecialOffer, hasAppliedCoupon, room?.taxMode, weekendOffer?.eligible]
+  );
+
   const roomTotal = useMemo(() => {
-    return roomPricing.baseTotal;
-  }, [roomPricing]);
+    if (!room) return 0;
+    return shouldRoundIncludedRoomSubtotal
+      ? Math.round(Number(roomPricing.baseTotal || 0))
+      : Number(roomPricing.baseTotal || 0);
+  }, [room, roomPricing.baseTotal, shouldRoundIncludedRoomSubtotal]);
 
   const roomChargeTotal = useMemo(() => {
     return roomTotal;
@@ -996,13 +1065,6 @@ export default function Checkout() {
   const subTotal = useMemo(() => {
     return roomChargeTotal + mealTotal;
   }, [roomChargeTotal, mealTotal]);
-
-  const weekendOffer = useMemo(() => {
-    if (!range?.from || !range?.to) {
-      return null;
-    }
-    return getWeekendOfferState(range, weekendDiscountConfig, disabledAll);
-  }, [disabledAll, range, weekendDiscountConfig]);
 
   const couponDiscountAmount = useMemo(() => {
     if (!hasRoomCoupon) return 0;
@@ -1089,10 +1151,36 @@ export default function Checkout() {
 
   const totalTax = useMemo(() => cgstAmount + sgstAmount, [cgstAmount, sgstAmount]);
 
+  const originalCgstAmount = useMemo(() => {
+    if (!room) return 0;
+    return Number(((subTotal * cgstPercent) / 100).toFixed(2));
+  }, [room, subTotal, cgstPercent]);
+
+  const originalSgstAmount = useMemo(() => {
+    if (!room) return 0;
+    return Number(((subTotal * sgstPercent) / 100).toFixed(2));
+  }, [room, subTotal, sgstPercent]);
+
+  const originalTotalTax = useMemo(
+    () => originalCgstAmount + originalSgstAmount,
+    [originalCgstAmount, originalSgstAmount]
+  );
+
   const grandTotal = useMemo(() => {
     if (!room) return 0;
-    return Number((taxableAmount + totalTax).toFixed(2));
+    const payableAmount = taxableAmount + totalTax;
+    return room.taxMode === "included"
+      ? Math.round(payableAmount)
+      : Number(payableAmount.toFixed(2));
   }, [room, taxableAmount, totalTax]);
+
+  const originalGrandTotal = useMemo(() => {
+    if (!room) return 0;
+    const payableAmount = subTotal + originalTotalTax;
+    return room.taxMode === "included"
+      ? Math.round(payableAmount)
+      : Number(payableAmount.toFixed(2));
+  }, [room, subTotal, originalTotalTax]);
 
   const pricingSummaryProps = useMemo(
     () => ({
@@ -1100,7 +1188,7 @@ export default function Checkout() {
       range,
       nights,
       grandTotal,
-      originalGrandTotal: Number((subTotal + totalTax).toFixed(2)),
+      originalGrandTotal,
       roomChargeTotal,
       weekendDiscountAmount,
       weekendEligibleNights,
@@ -1110,6 +1198,7 @@ export default function Checkout() {
     [
       grandTotal,
       nights,
+      originalGrandTotal,
       subTotal,
       range,
       room,
@@ -1553,9 +1642,9 @@ export default function Checkout() {
           </button>
         </div>
 
-        <div className="flex justify-between items-start gap-6">
+        <div className="flex justify-between items-start gap-4">
 
-          <section className="lg:w-[64%] space-y-6">
+          <section className="lg:w-[62%] space-y-6">
             {/* ================= MOBILE ROOM CARD ================= */}
             <div className="lg:hidden">
               <MobileRoomCard room={room} image={roomImage} />
@@ -1722,6 +1811,7 @@ export default function Checkout() {
                 acceptedTerms={acceptedTerms}
                 showProceedButton={false}
                 paymentMethodsPosition="after-guests"
+                fullWidthOfferButton
               />
             </div>
 
@@ -1792,7 +1882,10 @@ export default function Checkout() {
                   <Label className="flex items-start gap-3 text-sm text-foreground">
                     <Checkbox
                       checked={acceptedTerms}
-                      onCheckedChange={(checked) => setAcceptedTerms(Boolean(checked))}
+                      onCheckedChange={(checked) => {
+                        setAcceptedTerms(Boolean(checked));
+                        setPolicyDialogOpen(false);
+                      }}
                       className="mt-0.5 border-red-700 data-[state=checked]:bg-red-700 data-[state=checked]:text-white"
                     />
                     <span>I accept terms and conditions</span>
@@ -1811,7 +1904,7 @@ export default function Checkout() {
 
 
           {/* ================= DESKTOP STICKY SUMMARY ================= */}
-          <aside className="hidden lg:block lg:w-[34%] lg:sticky lg:top-[70px] self-start">
+          <aside className="hidden lg:block lg:w-[36%] lg:sticky lg:top-[70px] self-start">
             <div className="px-4 py-0 mt-5">
 
               <div className="mb-5">

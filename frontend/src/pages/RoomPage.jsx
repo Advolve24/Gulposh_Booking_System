@@ -214,30 +214,30 @@ function BookingCard({
         />
 
         {weekendOffer?.canSuggest && (
-          <div className="rounded-[22px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-4 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
-            <span className="limited-offer-pill inline-flex items-center gap-1 rounded-full bg-[#ffc928] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.04em] text-[#4a3200]">
-              <Flame className="h-3.5 w-3.5" />
-              Limited Offer
-            </span>
-            <p className="mt-1 text-[16px] font-semibold leading-5 text-[#1f1406]">
-              {weekendOffer.suggestionTitle}
-            </p>
-            <p className="mt-1 text-[12px] leading-5 text-[#6c5a35]">
-              {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-1 h-10 rounded-xl border border-[#1f1406] bg-white px-5 text-[14px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
-              onClick={() =>
-                setRange({
-                  from: range?.from || null,
-                  to: weekendOffer.suggestedCheckout,
-                })
-              }
-            >
-              {weekendOffer.suggestionButtonLabel}
-            </Button>
+          <div className="rounded-[18px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-3 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+              <div className="min-w-0">
+                <p className="mt-0 text-[15px] font-semibold leading-5 text-[#1f1406]">
+                  {weekendOffer.suggestionTitle}
+                </p>
+                <p className="mt-0 text-[11px] leading-5 text-[#6c5a35]">
+                  {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the weekend offer.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto w-[92px] shrink-0 self-start rounded-lg border border-[#1f1406] bg-white px-3 py-2 text-center text-[13px] font-semibold leading-4 text-[#1f1406] whitespace-normal hover:bg-[#fff7df] sm:self-center"
+                onClick={() =>
+                  setRange({
+                    from: range?.from || null,
+                    to: weekendOffer.suggestedCheckout,
+                  })
+                }
+              >
+                {weekendOffer.suggestionButtonLabel}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -574,6 +574,8 @@ function buildBedroomCards(images) {
 function BedroomsSection({ images = [] }) {
   const cards = useMemo(() => buildBedroomCards(images), [images]);
   const viewportRef = useRef(null);
+  const dragStartXRef = useRef(null);
+  const dragDeltaXRef = useRef(0);
   const [activeCard, setActiveCard] = useState(0);
   const [cardsPerView, setCardsPerView] = useState(() =>
     typeof window !== "undefined" && window.innerWidth >= 1024 ? 2 : 1
@@ -620,6 +622,32 @@ function BedroomsSection({ images = [] }) {
     setActiveCard((current) => Math.min(maxDotIndex, current + 1));
   };
 
+  const handlePointerDown = (event) => {
+    dragStartXRef.current = event.clientX;
+    dragDeltaXRef.current = 0;
+  };
+
+  const handlePointerMove = (event) => {
+    if (dragStartXRef.current === null) return;
+    dragDeltaXRef.current = event.clientX - dragStartXRef.current;
+  };
+
+  const finishDrag = () => {
+    if (dragStartXRef.current === null) return;
+
+    const swipeThreshold = 48;
+    const deltaX = dragDeltaXRef.current;
+
+    if (deltaX <= -swipeThreshold) {
+      goNext();
+    } else if (deltaX >= swipeThreshold) {
+      goPrev();
+    }
+
+    dragStartXRef.current = null;
+    dragDeltaXRef.current = 0;
+  };
+
   return (
     <section>
       <div className="mb-4 flex items-start justify-between gap-4">
@@ -659,7 +687,13 @@ function BedroomsSection({ images = [] }) {
       <div className="relative px-0 md:px-0">
         <div
           ref={viewportRef}
-          className="overflow-hidden"
+          className="overflow-hidden cursor-grab active:cursor-grabbing"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={finishDrag}
+          onPointerCancel={finishDrag}
+          onPointerLeave={finishDrag}
+          style={{ touchAction: "pan-y" }}
         >
           <div
             className="flex transition-transform duration-500 ease-out"
@@ -808,7 +842,7 @@ function MobileBookingDrawerCard({
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-28 pr-1">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4 pr-1">
         <div>
           <label className="text-[11px] font-medium text-muted-foreground">
             CHECK IN / CHECK OUT
@@ -836,30 +870,30 @@ function MobileBookingDrawerCard({
         />
 
         {weekendOffer?.canSuggest && (
-          <div className="rounded-[22px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-4 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
-            <span className="limited-offer-pill inline-flex items-center gap-1 rounded-full bg-[#ffc928] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.04em] text-[#4a3200]">
-              <Flame className="h-3.5 w-3.5" />
-              Limited Offer
-            </span>
-            <p className="mt-1 text-[16px] font-semibold leading-5 text-[#1f1406]">
-              {weekendOffer.suggestionTitle}
-            </p>
-            <p className="mt-1 text-[12px] leading-5 text-[#6c5a35]">
-              {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-2 h-10 rounded-xl border border-[#1f1406] bg-white px-5 text-[15px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
-              onClick={() =>
-                setRange({
-                  from: range?.from || null,
-                  to: weekendOffer.suggestedCheckout,
-                })
-              }
-            >
-              {weekendOffer.suggestionButtonLabel}
-            </Button>
+          <div className="rounded-[18px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-3 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
+            <div className="flex flex-col gap-2">
+              <div className="min-w-0">
+                <p className="text-[15px] font-semibold leading-5 text-[#1f1406]">
+                  {weekendOffer.suggestionTitle}
+                </p>
+                <p className="mt-1 text-[11px] leading-5 text-[#6c5a35]">
+                  {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 w-full rounded-lg border border-[#1f1406] bg-white px-4 text-center text-[13px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
+                onClick={() =>
+                  setRange({
+                    from: range?.from || null,
+                    to: weekendOffer.suggestedCheckout,
+                  })
+                }
+              >
+                {weekendOffer.suggestionButtonLabel}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1138,16 +1172,7 @@ export default function RoomPage() {
       return null;
     }
 
-    const roomSubtotal = Number(roomPricing.baseTotal || 0);
-    const originalTotalPayable =
-      room.taxMode === "included"
-        ? Number(roomPricing.grossTotal || 0)
-        : Number(
-            (
-              roomSubtotal *
-              (1 + Number(discountConfig.taxPercent || 0) / 100)
-            ).toFixed(2)
-          );
+    const taxPercent = Number(discountConfig.taxPercent || 0);
     const weekendDiscountAmount =
       weekendOffer?.eligible && roomPricing.weekendNights > 0
         ? Math.round(
@@ -1156,29 +1181,28 @@ export default function RoomPage() {
               100
           )
         : 0;
+    const roomSubtotal =
+      room.taxMode === "included" && weekendDiscountAmount > 0
+        ? Math.round(Number(roomPricing.baseTotal || 0))
+        : Number(roomPricing.baseTotal || 0);
+    const originalTotalTax = Number(((roomSubtotal * taxPercent) / 100).toFixed(2));
     const discountedSubtotal = Math.max(0, roomSubtotal - weekendDiscountAmount);
-    const totalTax = Number(
-      (
-        discountedSubtotal * Number(discountConfig.taxPercent || 0) /
-        100
-      ).toFixed(2)
-    );
+    const totalTax = Number(((discountedSubtotal * taxPercent) / 100).toFixed(2));
+    const originalTotalPayable =
+      room.taxMode === "included"
+        ? Math.round(roomSubtotal + originalTotalTax)
+        : Number((roomSubtotal + originalTotalTax).toFixed(2));
     const totalPayable =
       room.taxMode === "included"
-        ? Math.max(
-            0,
-            Number(roomPricing.grossTotal || 0) -
-              Math.round(
-                (Number(roomPricing.weekendGrossTotal || 0) *
-                  Number(weekendOffer?.percent || 0)) /
-                  100
-              )
-          )
+        ? Math.round(discountedSubtotal + totalTax)
         : Number((discountedSubtotal + totalTax).toFixed(2));
 
     return {
       nights: roomPricing.nights,
-      roomBasePerNight: Number(roomPricing.averageBasePerNight || 0),
+      roomBasePerNight:
+        roomPricing.nights > 0
+          ? Number((roomSubtotal / roomPricing.nights).toFixed(2))
+          : 0,
       roomSubtotal,
       weekendDiscountAmount,
       weekendDiscountPercent: Number(weekendOffer?.percent || 0),
@@ -1645,30 +1669,30 @@ export default function RoomPage() {
             />
 
             {weekendOffer?.canSuggest && (
-              <div className="rounded-[22px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-4 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
-                <span className="limited-offer-pill inline-flex items-center gap-1 rounded-full bg-[#ffc928] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.04em] text-[#4a3200]">
-                  <Flame className="h-3.5 w-3.5" />
-                  Limited Offer
-                </span>
-                <p className="mt-1 text-[16px] font-semibold leading-5 text-[#1f1406]">
-                  {weekendOffer.suggestionTitle}
-                </p>
-                <p className="mt-1 text-[12px] leading-5 text-[#6c5a35]">
-                  {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the better weekend offer.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-2 h-10 rounded-xl border border-[#1f1406] bg-white px-5 text-[15px] font-semibold text-[#1f1406] hover:bg-[#fff7df]"
-                  onClick={() =>
-                    setRange({
-                      from: range?.from || null,
-                      to: weekendOffer.suggestedCheckout,
-                    })
-                  }
-                >
-                  {weekendOffer.suggestionButtonLabel}
-                </Button>
+              <div className="rounded-[18px] border-2 border-dashed border-[#f5be23] bg-[radial-gradient(circle_at_top_right,_rgba(255,224,130,0.45),_rgba(255,249,219,0.96)_42%,_rgba(255,243,201,0.92)_100%)] p-3 text-[#312312] shadow-[0_10px_28px_-18px_rgba(201,138,0,0.9)]">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                  <div className="min-w-0">
+                    <p className="mt-0 text-[15px] font-semibold leading-5 text-[#1f1406]">
+                      {weekendOffer.suggestionTitle}
+                    </p>
+                    <p className="mt-0 text-[11px] leading-5 text-[#6c5a35]">
+                      {weekendOffer.suggestionBodyPrefix} {weekendOffer.suggestedCheckoutLabel} to unlock the weekend offer.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-auto w-full md:w-[62px] shrink-0 self-start rounded-lg border border-[#1f1406] bg-white px-3 py-2 text-center text-[13px] font-semibold leading-4 text-[#1f1406] whitespace-normal hover:bg-[#fff7df] sm:self-center"
+                    onClick={() =>
+                      setRange({
+                        from: range?.from || null,
+                        to: weekendOffer.suggestedCheckout,
+                      })
+                    }
+                  >
+                    {weekendOffer.suggestionButtonLabel}
+                  </Button>
+                </div>
               </div>
             )}
 
