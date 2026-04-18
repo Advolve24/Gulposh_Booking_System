@@ -101,14 +101,13 @@ export const amenityCategories = [
     ],
   },
 
-  {
+ {
     id: "entertainment",
     label: "Entertainment",
     icon: Tv,
     items: [
       { id: "smart_tv", label: "Smart TV", icon: Tv },
-      { id: "ott_apps", label: "OTT apps", icon: Tv },
-      { id: "music_system", label: "Music system / speaker", icon: Music2 },
+      { id: "ott_apps", label: "OTT apps (Netflix, Prime, etc.)", icon: Tv },
       { id: "karaoke_setup", label: "Karaoke Setup", icon: Music2 },
     ],
   },
