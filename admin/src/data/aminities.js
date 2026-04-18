@@ -106,7 +106,7 @@ export const amenityCategories = [
     items: [
       { id: "smart_tv", label: "Smart TV", icon: Tv },
       { id: "ott_apps", label: "OTT apps (Netflix, Prime, etc.)", icon: Tv },
-      { id: "music_system", label: "Music system / Bluetooth speaker", icon: Music2 },
+      { id: "music_system", label: "Karaoke Setup", icon: Music2 },
     ],
   },
 
