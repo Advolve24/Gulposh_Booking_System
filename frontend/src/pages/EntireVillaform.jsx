@@ -92,6 +92,7 @@ export default function EntireVilla() {
   const [countryCode, setCountryCode] = useState("IN");
   const [stateCode, setStateCode] = useState("");
   const [cityName, setCityName] = useState("");
+  const hasVerifiedIdentity = otpVerified || !!user;
 
   const disabledAll = useMemo(
     () => mergeRanges([...bookedAll, ...blackoutRanges]),
@@ -303,7 +304,7 @@ export default function EntireVilla() {
 
 
   const submitEnquiry = async () => {
-    if (!otpVerified && !user) {
+    if (!hasVerifiedIdentity) {
       toast.error("Please verify your mobile number first");
       return;
     }
@@ -333,7 +334,7 @@ export default function EntireVilla() {
 
     try {
       const { data } = await api.post("/enquiries/entire-villa", {
-        firebaseToken,
+        ...(firebaseToken ? { firebaseToken } : {}),
 
         name: form.name,
         email: form.email,
@@ -570,7 +571,7 @@ export default function EntireVilla() {
                   <Label>Full Name</Label>
                   <Input
                     value={form.name}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={!hasVerifiedIdentity || (profileLocked && user?.profileComplete)}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, name: e.target.value }))
                     }
@@ -581,7 +582,7 @@ export default function EntireVilla() {
                   <Label>Email</Label>
                   <Input
                     value={form.email}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={!hasVerifiedIdentity || (profileLocked && user?.profileComplete)}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, email: e.target.value }))
                     }
@@ -592,7 +593,7 @@ export default function EntireVilla() {
                   <Label>Phone</Label>
                   <Input
                     value={form.phone}
-                    disabled={otpVerified || !!user}
+                    disabled={hasVerifiedIdentity}
                   />
                 </div>
               </div>
@@ -619,7 +620,7 @@ export default function EntireVilla() {
                   <Label>Street Address</Label>
                   <Input
                     value={address.address}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={!hasVerifiedIdentity || (profileLocked && user?.profileComplete)}
                     onChange={(e) =>
                       setAddress((a) => ({ ...a, address: e.target.value }))
                     }
@@ -630,7 +631,7 @@ export default function EntireVilla() {
                   <Label>Country</Label>
                   <Select
                     value={countryCode}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={!hasVerifiedIdentity || (profileLocked && user?.profileComplete)}
                     onValueChange={onCountryChange}
                   >
                     <SelectTrigger>
@@ -651,7 +652,7 @@ export default function EntireVilla() {
                   <Select
                     value={stateCode}
                     disabled={
-                      !otpVerified ||
+                      !hasVerifiedIdentity ||
                       (profileLocked && user?.profileComplete) ||
                       !states.length
                     }
@@ -675,7 +676,7 @@ export default function EntireVilla() {
                   <Select
                     value={cityName}
                     disabled={
-                      !otpVerified ||
+                      !hasVerifiedIdentity ||
                       (profileLocked && user?.profileComplete) ||
                       !cities.length
                     }
@@ -698,7 +699,7 @@ export default function EntireVilla() {
                   <Label>Pincode</Label>
                   <Input
                     value={address.pincode}
-                    disabled={!otpVerified || (profileLocked && user?.profileComplete)}
+                    disabled={!hasVerifiedIdentity || (profileLocked && user?.profileComplete)}
                     onChange={(e) =>
                       setAddress((a) => ({ ...a, pincode: e.target.value }))
                     }
