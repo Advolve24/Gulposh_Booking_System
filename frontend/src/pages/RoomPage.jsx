@@ -31,6 +31,13 @@ const AMENITY_ICONS = amenityCategories.reduce((icons, category) => {
   return icons;
 }, {});
 
+const AMENITY_LABELS = amenityCategories.reduce((labels, category) => {
+  category.items.forEach((item) => {
+    labels[item.id] = item.label;
+  });
+  return labels;
+}, {});
+
 const ruleIcon = (text = "") => {
   const t = text.toLowerCase();
   if (t.includes("check")) return Clock;
@@ -736,6 +743,166 @@ function BedroomsSection({ images = [] }) {
   );
 }
 
+function MobileReviewsSlider({ reviews = [], onViewMore, previewOnly = true }) {
+  const viewportRef = useRef(null);
+  const dragStartXRef = useRef(null);
+  const dragDeltaXRef = useRef(0);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
+
+  const slides = (previewOnly ? reviews.slice(0, 2) : reviews).map((review) => ({
+    type: "review",
+    review,
+  }));
+
+  if (previewOnly && reviews.length > 2) {
+    slides.push({ type: "view-more" });
+  }
+
+  const maxSlideIndex = Math.max(0, slides.length - 1);
+  const gap = 16;
+  const slideWidth = Math.max(0, viewportWidth);
+  const translateX = activeSlide * (slideWidth + gap);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportWidth(viewportRef.current?.clientWidth || 0);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    setActiveSlide((current) => Math.min(current, maxSlideIndex));
+  }, [maxSlideIndex]);
+
+  const goPrev = () => {
+    setActiveSlide((current) => Math.max(0, current - 1));
+  };
+
+  const goNext = () => {
+    setActiveSlide((current) => Math.min(maxSlideIndex, current + 1));
+  };
+
+  const handlePointerDown = (event) => {
+    dragStartXRef.current = event.clientX;
+    dragDeltaXRef.current = 0;
+  };
+
+  const handlePointerMove = (event) => {
+    if (dragStartXRef.current === null) return;
+    dragDeltaXRef.current = event.clientX - dragStartXRef.current;
+  };
+
+  const finishDrag = () => {
+    if (dragStartXRef.current === null) return;
+
+    const swipeThreshold = 48;
+    const deltaX = dragDeltaXRef.current;
+
+    if (deltaX <= -swipeThreshold) {
+      goNext();
+    } else if (deltaX >= swipeThreshold) {
+      goPrev();
+    }
+
+    dragStartXRef.current = null;
+    dragDeltaXRef.current = 0;
+  };
+
+  if (slides.length === 0) return null;
+
+  return (
+    <div className="md:hidden">
+      {maxSlideIndex > 0 ? (
+        <div className="mb-3 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={goPrev}
+            disabled={activeSlide === 0}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#2A201B]/35 bg-white text-[#2A201B] transition hover:bg-[#f8f4f1] disabled:cursor-not-allowed disabled:opacity-45"
+            aria-label="Previous review slide"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={activeSlide === maxSlideIndex}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#2A201B]/35 bg-white text-[#2A201B] transition hover:bg-[#f8f4f1] disabled:cursor-not-allowed disabled:opacity-45"
+            aria-label="Next review slide"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      ) : null}
+
+      <div
+        ref={viewportRef}
+        className="overflow-hidden cursor-grab active:cursor-grabbing"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishDrag}
+        onPointerCancel={finishDrag}
+        onPointerLeave={finishDrag}
+        style={{ touchAction: "pan-y" }}
+      >
+        <div
+          className="flex transition-transform duration-500 ease-out"
+          style={{
+            gap: `${gap}px`,
+            transform: `translateX(-${translateX}px)`,
+          }}
+        >
+          {slides.map((slide, index) =>
+            slide.type === "review" ? (
+              <div
+                key={`review-${index}`}
+                className="shrink-0 rounded-xl border bg-white p-4 transition hover:shadow-sm"
+                style={{ width: slideWidth ? `${slideWidth}px` : "100%" }}
+              >
+                <div className="mb-2 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+                    {slide.review.name?.charAt(0).toUpperCase()}
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">{slide.review.name}</div>
+                    <div className="flex items-center gap-0.5 text-yellow-500">
+                      {Array.from({ length: slide.review.rating }, (_, index) => (
+                        <Star key={index} className="h-3.5 w-3.5 fill-current" />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {slide.review.comment ? (
+                  <p className="text-sm leading-relaxed text-gray-700">
+                    {slide.review.comment}
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <button
+                key="review-view-more"
+                type="button"
+                onClick={onViewMore}
+                className="flex shrink-0 items-center justify-center rounded-xl border border-dashed border-[#d7cbc4] bg-[#faf7f4] p-4 text-sm font-semibold text-[#2A201B] transition hover:bg-[#f4ece6]"
+                style={{ width: slideWidth ? `${slideWidth}px` : "100%" }}
+              >
+                View More Reviews
+              </button>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MobilePriceBreakupPanel({ open, onOpenChange, pricingSummary }) {
   if (!pricingSummary?.nights) return null;
 
@@ -1028,6 +1195,7 @@ export default function RoomPage() {
   const [blackoutRanges, setBlackoutRanges] = useState([]);
 
   const [activeImage, setActiveImage] = useState(0);
+  const [showAllGalleryThumbs, setShowAllGalleryThumbs] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [showMobileBreakup, setShowMobileBreakup] = useState(false);
@@ -1141,6 +1309,14 @@ export default function RoomPage() {
     () => normalizeImageList([room?.coverImage, ...(room?.galleryImages || [])]),
     [room]
   );
+  const visibleGalleryThumbs = showAllGalleryThumbs
+    ? allImages
+    : allImages.slice(0, 3);
+  const remainingGalleryThumbs = Math.max(0, allImages.length - 3);
+
+  useEffect(() => {
+    setShowAllGalleryThumbs(false);
+  }, [room?._id]);
 
   const avgRating = useMemo(() => {
     if (!room?.reviews?.length) return null;
@@ -1418,21 +1594,41 @@ export default function RoomPage() {
           </div>
 
           {/* THUMBNAILS */}
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-            {allImages.map((img, i) => (
+          <div
+            className={
+              showAllGalleryThumbs
+                ? "flex gap-3 overflow-x-auto scrollbar-hide"
+                : "grid grid-cols-4 gap-2 md:flex md:items-start"
+            }
+          >
+            {visibleGalleryThumbs.map((img, i) => (
               <button
                 type="button"
                 key={i}
                 onClick={() => setActiveImage(i)}
-                className={`shrink-0 rounded-lg overflow-hidden border-2 transition
+                className={`rounded-lg overflow-hidden border-2 transition md:w-[110px]
                   ${i === activeImage
                     ? "border-primary"
                     : "border-transparent opacity-70 hover:opacity-100"
                   }`}
               >
-                <img src={img} alt="" className="h-[64px] w-[96px] object-cover" />
+                <img
+                  src={img}
+                  alt=""
+                  className={`object-cover ${showAllGalleryThumbs ? "h-[64px] w-[96px] shrink-0" : "h-[56px] w-full md:w-[110px]"}`}
+                />
               </button>
             ))}
+
+            {!showAllGalleryThumbs && remainingGalleryThumbs > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowAllGalleryThumbs(true)}
+                className="flex h-[56px] w-full items-center justify-center rounded-lg border-2 border-dashed border-[#d7cbc4] bg-[#faf7f4] px-2 text-center text-[12px] font-semibold text-[#2A201B] transition hover:bg-[#f4ece6] md:w-[110px]"
+              >
+                View More
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -1477,7 +1673,7 @@ export default function RoomPage() {
                       className="flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/40 border"
                     >
                       {Icon && <Icon className="w-5 h-5 text-primary" />}
-                      <span className="text-sm">{humanize(a)}</span>
+                      <span className="text-sm">{AMENITY_LABELS[a] || humanize(a)}</span>
                     </div>
                   );
                 })}
@@ -1512,7 +1708,7 @@ export default function RoomPage() {
               <div className="flex gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-primary" />
                 <a href="https://maps.google.com/?q=House+no+32+A,+Dnyandeep+Co-Op+Housing+Society,+Villa+Gulposh+Vidyasagar+Properties+Pvt+Ltd,+Kirawali,+Deulwadi,+Maharashtra+410201" target="_blank" rel="noopener noreferrer">
-                   Villa Gulposh Vidyasagar Properties Pvt Ltd. House no 32 A, Dnyandeep<br/> Society, Kirawali, Karjat - 410201
+                   Villa Gulposh, Vidyasagar Properties Pvt Ltd. House no 32 A, Dnyandeep<br/> Society, Kirawali, Karjat - 410201
                 </a>
               </div>
             </section>
@@ -1534,46 +1730,88 @@ export default function RoomPage() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  {(showAllReviews ? room.reviews : room.reviews.slice(0, 2)).map(
-                    (r, i) => (
-                      <div
-                        key={i}
-                        className="border rounded-xl p-4 bg-white transition hover:shadow-sm"
-                      >
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
-                            {r.name?.charAt(0).toUpperCase()}
-                          </div>
+                {!showAllReviews ? (
+                  <>
+                    <MobileReviewsSlider
+                      reviews={room.reviews}
+                      onViewMore={() => setShowAllReviews(true)}
+                    />
+                    <div className="hidden space-y-4 md:block">
+                      {room.reviews.slice(0, 2).map((r, i) => (
+                        <div
+                          key={i}
+                          className="border rounded-xl p-4 bg-white transition hover:shadow-sm"
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
+                              {r.name?.charAt(0).toUpperCase()}
+                            </div>
 
-                          <div className="flex-1">
-                            <div className="font-medium text-sm">{r.name}</div>
-                            <div className="flex items-center text-yellow-500 text-xs">
-                              {"★".repeat(r.rating)}
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{r.name}</div>
+                              <div className="flex items-center gap-0.5 text-yellow-500">
+                                {Array.from({ length: r.rating }, (_, index) => (
+                                  <Star key={index} className="h-3.5 w-3.5 fill-current" />
+                                ))}
+                              </div>
                             </div>
                           </div>
+
+                          {r.comment && (
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {r.comment}
+                            </p>
+                          )}
                         </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <MobileReviewsSlider
+                      reviews={room.reviews}
+                      previewOnly={false}
+                    />
+                    <div className="hidden space-y-4 md:block">
+                      {room.reviews.map((r, i) => (
+                        <div
+                          key={i}
+                          className="border rounded-xl p-4 bg-white transition hover:shadow-sm"
+                        >
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold">
+                              {r.name?.charAt(0).toUpperCase()}
+                            </div>
 
-                        {r.comment && (
-                          <p className="text-sm text-gray-700 leading-relaxed">
-                            {r.comment}
-                          </p>
-                        )}
-                      </div>
-                    )
-                  )}
-                </div>
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{r.name}</div>
+                              <div className="flex items-center gap-0.5 text-yellow-500">
+                                {Array.from({ length: r.rating }, (_, index) => (
+                                  <Star key={index} className="h-3.5 w-3.5 fill-current" />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
 
+                          {r.comment && (
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {r.comment}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
                 {room.reviews.length > 2 && !showAllReviews && (
                   <button
                     type="button"
                     onClick={() => setShowAllReviews(true)}
-                    className="mt-4 w-full border rounded-lg py-2 text-sm hover:bg-muted transition"
+                    className="mt-4 hidden w-full border rounded-lg py-2 text-sm hover:bg-muted transition md:block"
                   >
                     View All Reviews
                   </button>
                 )}
-
                 {showAllReviews && (
                   <button
                     type="button"
@@ -1982,3 +2220,7 @@ export default function RoomPage() {
     </>
   );
 }
+
+
+
+

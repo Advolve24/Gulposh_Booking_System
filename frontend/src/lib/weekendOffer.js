@@ -113,7 +113,7 @@ export function getWeekendOfferState(range, config = {}, disabledRanges = []) {
       targetWeekendNights: 2,
       targetCheckout: addDays(analysis.stayEndExclusive, 2),
       title: `Add Friday and Saturday nights and save ${twoNightPercent}%.`,
-      buttonLabel: "Add Weekend Nights",
+      buttonLabel: "Add",
       bodyPrefix: "Checkout on",
     };
   }
@@ -126,7 +126,7 @@ export function getWeekendOfferState(range, config = {}, disabledRanges = []) {
         targetWeekendNights: 2,
         targetCheckout: addDays(analysis.stayEndExclusive, 1),
         title: `Add Sunday night and save ${twoNightPercent}%.`,
-        buttonLabel: "Add Sunday",
+        buttonLabel: "Add",
         bodyPrefix: "Checkout on",
       };
     } else if (!suggestion && missingSaturday && analysis.fridayNights > 0) {
@@ -136,7 +136,7 @@ export function getWeekendOfferState(range, config = {}, disabledRanges = []) {
         targetWeekendNights: 2,
         targetCheckout: addDays(analysis.stayEndExclusive, 1),
         title: `Add Saturday night and save ${twoNightPercent}%.`,
-        buttonLabel: "Add Saturday",
+        buttonLabel: "Add",
         bodyPrefix: "Checkout on",
       };
     }
@@ -149,7 +149,7 @@ export function getWeekendOfferState(range, config = {}, disabledRanges = []) {
       targetWeekendNights: 3,
       targetCheckout: addDays(analysis.stayEndExclusive, 1),
       title: `Add Sunday night and save ${threeNightPercent}%.`,
-      buttonLabel: "Add Sunday",
+      buttonLabel: "Add",
       bodyPrefix: "Checkout on",
     };
   }

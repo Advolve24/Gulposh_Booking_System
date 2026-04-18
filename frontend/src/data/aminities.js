@@ -57,7 +57,7 @@ export const amenityCategories = [
     icon: BedDouble,
     items: [
       { id: "comfy_mattress", label: "Comfortable mattress", icon: BedDouble },
-      { id: "fresh_linen", label: "Fresh bedsheets & pillows", icon: Shirt },
+      { id: "fresh_linen", label: "Fresh Linens", icon: Shirt },
       { id: "wardrobe", label: "Wardrobe / closet", icon: Users },
       { id: "washing_machine", label: "Washing machine", icon: WashingMachine },
       { id: "iron_board", label: "Iron & ironing board", icon: Settings },
@@ -109,6 +109,7 @@ export const amenityCategories = [
       { id: "smart_tv", label: "Smart TV", icon: Tv },
       { id: "ott_apps", label: "OTT apps", icon: Tv },
       { id: "music_system", label: "Music system / speaker", icon: Music2 },
+      { id: "karaoke_setup", label: "Karaoke Setup", icon: Music2 },
     ],
   },
 
