@@ -303,7 +303,7 @@ export default function EntireVilla() {
 
 
   const submitEnquiry = async () => {
-    if (!otpVerified || !firebaseToken) {
+    if (!otpVerified && !user) {
       toast.error("Please verify your mobile number first");
       return;
     }
