@@ -2,7 +2,7 @@ import { useEffect, useState, useLayoutEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { format } from "date-fns";
-import { useAuth } from "@/store/authStore";
+import { useAuth } from "../store/authStore";
 
 
 import {

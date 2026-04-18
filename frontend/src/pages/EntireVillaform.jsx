@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getRecaptchaVerifier } from "@/lib/recaptcha";
-import { useAuth } from "@/store/authStore";
+import { useAuth } from "../store/authStore";
 
 const CHECK_IN_TIME = "12:00 PM";
 const CHECK_OUT_TIME = "10:00 AM";
@@ -316,19 +316,6 @@ export default function EntireVilla() {
       pincode: address.pincode.trim(),
     };
 
-    let authenticatedUser = user;
-    if (!authenticatedUser && initialized) {
-      try {
-        authenticatedUser = await refreshUser();
-      } catch {
-        authenticatedUser = null;
-      }
-    }
-
-    if (!otpVerified && !authenticatedUser) {
-      toast.error("Please verify your mobile number first");
-      return;
-    }
     if (!form.name || form.name.length < 3) {
       toast.error("Please enter your full name");
       return;
@@ -386,6 +373,10 @@ export default function EntireVilla() {
       navigate("/enquiry-success", { replace: true });
     } catch (err) {
       console.error(err);
+      if (err?.response?.status === 401) {
+        toast.error("Please verify your mobile number first");
+        return;
+      }
       toast.error("Failed to submit enquiry. Please try again.");
     }
   };

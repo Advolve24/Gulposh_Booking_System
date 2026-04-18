@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useAuth } from "@/store/authStore";
+import { useAuth } from "../store/authStore";
 
 const getBaseURL = () => {
   if (import.meta.env.VITE_API_URL) {
