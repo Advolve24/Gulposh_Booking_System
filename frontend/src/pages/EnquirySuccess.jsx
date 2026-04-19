@@ -15,6 +15,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { DEFAULT_ROOM_PATH } from "@/lib/utils";
 
 /* ================= HELPERS ================= */
 
@@ -75,7 +76,7 @@ export default function EnquirySuccess() {
   useEffect(() => {
     const raw = sessionStorage.getItem("enquirySuccessData");
     if (!raw) {
-      navigate("/", { replace: true });
+      navigate(DEFAULT_ROOM_PATH, { replace: true });
       return;
     }
 
@@ -162,7 +163,7 @@ export default function EnquirySuccess() {
         </div>
 
         <div className="flex justify-center">
-          <Button variant="outline" onClick={() => navigate("/")}>
+          <Button variant="outline" onClick={() => navigate(DEFAULT_ROOM_PATH)}>
             <Home className="w-4 h-4 mr-2" />
             Back to Home
           </Button>

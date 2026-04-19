@@ -585,7 +585,10 @@ export default function CalendarRange({
 
       {/* ✅ DESKTOP width same, MOBILE becomes square fixed */}
       <PopoverContent
-        className="calendar-popover p-0 w-full overflow-y-auto overflow-x-hidden md:w-[430px] md:overflow-hidden"
+        align={isDesktop ? "end" : "center"}
+        alignOffset={isDesktop ? 400 : 0}
+        sideOffset={isDesktop ? -88 : 4}
+        className="calendar-popover p-0 rounded-[15px] w-full overflow-y-auto overflow-x-hidden md:w-[430px] md:overflow-hidden"
         data-vaul-no-drag=""
         onPointerDown={(e) => e.stopPropagation()}
         onPointerMove={(e) => e.stopPropagation()}

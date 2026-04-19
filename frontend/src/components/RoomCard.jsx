@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Users, ArrowRight } from "lucide-react";
 import { resolveImageUrl } from "../lib/image";
+import { getRoomPath } from "../lib/utils";
 
 export default function RoomCard({ room, range, guests }) {
 
@@ -24,6 +25,7 @@ export default function RoomCard({ room, range, guests }) {
   }
 
   const search = params.toString() ? `?${params.toString()}` : "";
+  const roomPath = `${getRoomPath(room)}${search}`;
 
 
   const maxGuestsCap = (() => {
@@ -54,7 +56,7 @@ export default function RoomCard({ room, range, guests }) {
       "
     >
       {/* IMAGE */}
-      <Link to={`/room/${room._id}${search}`} state={searchState}>
+      <Link to={roomPath} state={searchState}>
         <div className="relative h-56 overflow-hidden">
           <img
             src={resolveImageUrl(room.coverImage) || "https://picsum.photos/600/400"}
@@ -104,7 +106,7 @@ export default function RoomCard({ room, range, guests }) {
       <div className="p-3 space-y-3">
         {/* TITLE */}
         <div className="flex items-start justify-between gap-3">
-          <Link to={`/room/${room._id}${search}`} state={searchState}>
+          <Link to={roomPath} state={searchState}>
             <h3
               className="
                 text-lg
@@ -148,7 +150,7 @@ export default function RoomCard({ room, range, guests }) {
 
           {/* CTA */}
           <Link
-            to={`/room/${room._id}${search}`}
+            to={roomPath}
             state={searchState}
             className="w-32"
           >

@@ -19,6 +19,8 @@ import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { getWeekendOfferState } from "../lib/weekendOffer";
 import { getDisplayedNightlyPrices, getRoomPricingBreakdown } from "../lib/roomPricing";
 import { normalizeImageList } from "../lib/image";
+import { DEFAULT_ROOM_PATH, getRoomPath } from "../lib/utils";
+import { useMediaQuery } from "../hooks/use-media-query";
 
 
 const humanize = (v = "") =>
@@ -306,6 +308,7 @@ function RoomGuestPopover({
   onCapacityMaxAttempt,
 }) {
   const totalGuests = adults + children;
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   return (
     <div>
@@ -331,7 +334,9 @@ function RoomGuestPopover({
 
         <PopoverContent
           className="w-[330px] rounded-2xl p-4"
-          align="start"
+          align={isDesktop ? "end" : "start"}
+          alignOffset={isDesktop ? 400 : 0}
+          sideOffset={isDesktop ? -8 : 4}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
@@ -371,6 +376,7 @@ function RoomGuestPopover({
 function PriceBreakupSummary({ pricingSummary }) {
   const [showBreakup, setShowBreakup] = useState(false);
   const triggerRef = useRef(null);
+  const breakdownButtonRef = useRef(null);
   const popupRef = useRef(null);
   const [popupStyle, setPopupStyle] = useState({
     position: "fixed",
@@ -384,7 +390,7 @@ function PriceBreakupSummary({ pricingSummary }) {
     if (!showBreakup) return;
 
     const updatePopupPosition = () => {
-      const triggerEl = triggerRef.current;
+      const triggerEl = breakdownButtonRef.current || triggerRef.current;
       const popupEl = popupRef.current;
       if (!triggerEl || !popupEl) return;
 
@@ -392,6 +398,7 @@ function PriceBreakupSummary({ pricingSummary }) {
       const popupRect = popupEl.getBoundingClientRect();
       const gap = 12;
       const viewportPadding = 16;
+      const headerClearance = 76;
 
       const spaceBelow = window.innerHeight - triggerRect.bottom;
       const spaceAbove = triggerRect.top;
@@ -402,8 +409,8 @@ function PriceBreakupSummary({ pricingSummary }) {
         ? triggerRect.top - popupRect.height - gap
         : triggerRect.bottom + gap;
 
-      if (top < viewportPadding) {
-        top = viewportPadding;
+      if (top < headerClearance) {
+        top = headerClearance;
       }
 
       if (top + popupRect.height > window.innerHeight - viewportPadding) {
@@ -413,9 +420,12 @@ function PriceBreakupSummary({ pricingSummary }) {
         );
       }
 
-      let left = triggerRect.left;
+      let left = triggerRect.left - popupRect.width - gap;
+      if (left < viewportPadding) {
+        left = triggerRect.right + gap;
+      }
       if (left + popupRect.width > window.innerWidth - viewportPadding) {
-        left = triggerRect.right - popupRect.width;
+        left = window.innerWidth - popupRect.width - viewportPadding;
       }
       if (left < viewportPadding) {
         left = viewportPadding;
@@ -454,6 +464,7 @@ function PriceBreakupSummary({ pricingSummary }) {
             {pricingSummary.dateLabel} • {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
           </div>
           <button
+            ref={breakdownButtonRef}
             type="button"
             className="mt-1 text-sm font-medium text-[#0a66c2] underline underline-offset-2"
             onFocus={() => setShowBreakup(true)}
@@ -480,11 +491,39 @@ function PriceBreakupSummary({ pricingSummary }) {
           <div className="text-[20px] font-semibold text-[#2A201B]">Price Breakup</div>
 
           <div className="mt-4 space-y-3 text-[13px]">
-            <div className="flex items-start justify-between gap-4">
+            {pricingSummary.weekdayNights > 0 ? (
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-[14px] font-medium text-[#2A201B]">Weekday Charges</div>
+                  <div className="text-[13px] text-muted-foreground">
+                    {formatCurrency(pricingSummary.weekdayBasePerNight)} x {pricingSummary.weekdayNights} night{pricingSummary.weekdayNights === 1 ? "" : "s"}
+                  </div>
+                </div>
+                <div className="text-[14px] font-semibold text-[#2A201B]">
+                  {formatCurrency(pricingSummary.weekdayBaseTotal)}
+                </div>
+              </div>
+            ) : null}
+
+            {pricingSummary.weekendNights > 0 ? (
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-[14px] font-medium text-[#2A201B]">Weekend Charges</div>
+                  <div className="text-[13px] text-muted-foreground">
+                    {formatCurrency(pricingSummary.weekendBasePerNight)} x {pricingSummary.weekendNights} night{pricingSummary.weekendNights === 1 ? "" : "s"}
+                  </div>
+                </div>
+                <div className="text-[14px] font-semibold text-[#2A201B]">
+                  {formatCurrency(pricingSummary.weekendBaseTotal)}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
               <div>
                 <div className="text-[14px] font-medium text-[#2A201B]">Property Charges</div>
                 <div className="text-[13px] text-muted-foreground">
-                  {formatCurrency(pricingSummary.roomBasePerNight)} x {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
+                  {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"} subtotal
                 </div>
               </div>
               <div className="text-[14px] font-semibold text-[#2A201B]">
@@ -499,7 +538,10 @@ function PriceBreakupSummary({ pricingSummary }) {
                     Weekend Discount ({pricingSummary.weekendEligibleNights} night{pricingSummary.weekendEligibleNights === 1 ? "" : "s"} @ {pricingSummary.weekendDiscountPercent}%)
                   </div>
                   <div className="text-[13px] text-muted-foreground">
-                    Discounts are calculated only on eligible nights.
+                    Applied on {formatCurrency(pricingSummary.weekendDiscountBaseAmount)}
+                  </div>
+                  <div className="text-[13px] text-muted-foreground">
+                    {formatCurrency(pricingSummary.weekendDiscountBaseAmount)} x {pricingSummary.weekendDiscountPercent}% = {formatCurrency(pricingSummary.weekendDiscountAmount)}
                   </div>
                 </div>
                 <div className="text-[14px] font-semibold text-[#12824c]">
@@ -921,11 +963,39 @@ function MobilePriceBreakupPanel({ open, onOpenChange, pricingSummary }) {
         </div>
 
         <div className="mt-4 space-y-3 text-[13px]">
-          <div className="flex items-start justify-between gap-4">
+          {pricingSummary.weekdayNights > 0 ? (
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[14px] font-medium text-[#2A201B]">Weekday Charges</div>
+                <div className="text-[13px] text-muted-foreground">
+                  {formatCurrency(pricingSummary.weekdayBasePerNight)} x {pricingSummary.weekdayNights} night{pricingSummary.weekdayNights === 1 ? "" : "s"}
+                </div>
+              </div>
+              <div className="text-[14px] font-semibold text-[#2A201B]">
+                {formatCurrency(pricingSummary.weekdayBaseTotal)}
+              </div>
+            </div>
+          ) : null}
+
+          {pricingSummary.weekendNights > 0 ? (
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[14px] font-medium text-[#2A201B]">Weekend Charges</div>
+                <div className="text-[13px] text-muted-foreground">
+                  {formatCurrency(pricingSummary.weekendBasePerNight)} x {pricingSummary.weekendNights} night{pricingSummary.weekendNights === 1 ? "" : "s"}
+                </div>
+              </div>
+              <div className="text-[14px] font-semibold text-[#2A201B]">
+                {formatCurrency(pricingSummary.weekendBaseTotal)}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
             <div>
               <div className="text-[14px] font-medium text-[#2A201B]">Property Charges</div>
               <div className="text-[13px] text-muted-foreground">
-                {formatCurrency(pricingSummary.roomBasePerNight)} x {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"}
+                {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"} subtotal
               </div>
             </div>
             <div className="text-[14px] font-semibold text-[#2A201B]">
@@ -940,7 +1010,10 @@ function MobilePriceBreakupPanel({ open, onOpenChange, pricingSummary }) {
                   Weekend Discount ({pricingSummary.weekendEligibleNights} night{pricingSummary.weekendEligibleNights === 1 ? "" : "s"} @ {pricingSummary.weekendDiscountPercent}%)
                 </div>
                 <div className="text-[13px] text-muted-foreground">
-                  Discounts are calculated only on eligible nights.
+                  Applied on {formatCurrency(pricingSummary.weekendDiscountBaseAmount)}
+                </div>
+                <div className="text-[13px] text-muted-foreground">
+                  {formatCurrency(pricingSummary.weekendDiscountBaseAmount)} x {pricingSummary.weekendDiscountPercent}% = {formatCurrency(pricingSummary.weekendDiscountAmount)}
                 </div>
               </div>
               <div className="text-[14px] font-semibold text-[#12824c]">
@@ -1210,7 +1283,7 @@ export default function RoomPage() {
   });
 
   const handleBack = () => {
-    navigate("/", { state: { scrollToResults: true } });
+    navigate(DEFAULT_ROOM_PATH, { state: { scrollToResults: true } });
   };
 
 
@@ -1349,10 +1422,15 @@ export default function RoomPage() {
     }
 
     const taxPercent = Number(discountConfig.taxPercent || 0);
+    const weekendBaseTotal = Number(roomPricing.weekendBaseTotal || 0);
+    const weekdayBaseTotal = Math.max(
+      0,
+      Number(roomPricing.baseTotal || 0) - weekendBaseTotal
+    );
     const weekendDiscountAmount =
       weekendOffer?.eligible && roomPricing.weekendNights > 0
         ? Math.round(
-            (Number(roomPricing.weekendBaseTotal || 0) *
+            (weekendBaseTotal *
               Number(weekendOffer.percent || 0)) /
               100
           )
@@ -1375,12 +1453,25 @@ export default function RoomPage() {
 
     return {
       nights: roomPricing.nights,
+      weekdayNights: roomPricing.weekdayNights,
+      weekendNights: roomPricing.weekendNights,
       roomBasePerNight:
         roomPricing.nights > 0
           ? Number((roomSubtotal / roomPricing.nights).toFixed(2))
           : 0,
+      weekdayBasePerNight:
+        roomPricing.weekdayNights > 0
+          ? Number((weekdayBaseTotal / roomPricing.weekdayNights).toFixed(2))
+          : 0,
+      weekendBasePerNight:
+        roomPricing.weekendNights > 0
+          ? Number((weekendBaseTotal / roomPricing.weekendNights).toFixed(2))
+          : 0,
+      weekdayBaseTotal: Number(weekdayBaseTotal.toFixed(2)),
+      weekendBaseTotal: Number(weekendBaseTotal.toFixed(2)),
       roomSubtotal,
       weekendDiscountAmount,
+      weekendDiscountBaseAmount: Number(weekendBaseTotal.toFixed(2)),
       weekendDiscountPercent: Number(weekendOffer?.percent || 0),
       weekendEligibleNights: Number(weekendOffer?.eligibleNights || 0),
       discountedSubtotal,
@@ -1456,7 +1547,8 @@ export default function RoomPage() {
   const goToSuggestedRoom = (targetRoomId) => {
     sessionStorage.setItem("searchParams", JSON.stringify(savedBookingSearch));
     setCapacityPopupOpen(false);
-    navigate(`/room/${targetRoomId}${roomSearch}`, {
+    const targetRoom = allRooms.find((candidate) => candidate._id === targetRoomId);
+    navigate(`${getRoomPath(targetRoomId, targetRoom?.name)}${roomSearch}`, {
       state: savedBookingSearch,
     });
   };
@@ -1665,7 +1757,9 @@ export default function RoomPage() {
               <h3 className="text-lg sm:text-xl font-semibold mb-4">Amenities</h3>
 
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {(room.amenities || []).map((a) => {
+                {(room.amenities || [])
+                  .filter((a) => a !== "music_system")
+                  .map((a) => {
                   const Icon = AMENITY_ICONS[a];
                   return (
                     <div

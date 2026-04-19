@@ -11,7 +11,6 @@ import {
 import { useAuth } from "./store/authStore";
 
 /* ================= PAGES ================= */
-import Home from "./pages/Home";
 import CompleteProfile from "./pages/CompleteProfile";
 import RoomPage from "./pages/RoomPage";
 import Checkout from "./pages/Checkout";
@@ -34,9 +33,11 @@ import Footer from "./components/Footer";
 import AuthModal from "./components/AuthModal";
 import VillaInvoice from "./components/VillaInvoice";
 import ReactGA from "react-ga4";
+import { DEFAULT_ROOM_PATH } from "./lib/utils";
 
 
 const TRACKING_ID = "G-D2R9FKL1W9";
+
 ReactGA.initialize(TRACKING_ID);
 
 
@@ -78,7 +79,7 @@ function RequireAuth({ children }) {
     );
 
     openAuth();
-    return <Navigate to="/" replace />;
+    return <Navigate to={DEFAULT_ROOM_PATH} replace />;
   }
 
   return children;
@@ -122,8 +123,9 @@ function AppRoutes() {
 
       <Routes>
         {/* PUBLIC */}
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Navigate to={DEFAULT_ROOM_PATH} replace />} />
         <Route path="/room/:id" element={<RoomPage />} />
+        <Route path="/room/:id/:slug" element={<RoomPage />} />
         <Route path="/entire-villa-form" element={<EntireVillaform />} />
 
         {/* PROFILE */}
@@ -205,7 +207,7 @@ function AppRoutes() {
         <Route path="/house-rules" element={<HouseRules />} />
 
         {/* FALLBACK */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to={DEFAULT_ROOM_PATH} replace />} />
       </Routes>
 
       <Footer />

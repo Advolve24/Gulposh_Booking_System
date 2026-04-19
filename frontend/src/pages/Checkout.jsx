@@ -31,6 +31,7 @@ import { getWeekendOfferState } from "../lib/weekendOffer";
 import { getDisplayedNightlyPrices, getRoomPricingBreakdown } from "../lib/roomPricing";
 import GuestCounter from "../components/GuestCounter";
 import { resolveImageUrl } from "../lib/image";
+import { getRoomPath } from "../lib/utils";
 
 
 function minusOneDay(date) {
@@ -1228,7 +1229,8 @@ export default function Checkout() {
 
   const goToSuggestedRoom = (targetRoomId) => {
     setCapacityPopupOpen(false);
-    navigate(`/room/${targetRoomId}`, {
+    const targetRoom = allRooms.find((candidate) => candidate._id === targetRoomId);
+    navigate(getRoomPath(targetRoomId, targetRoom?.name), {
       state: {
         range: {
           from: range?.from || null,

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { formatINR } from "@/lib/currency";
 import { resolveImageUrl } from "@/lib/image";
+import { DEFAULT_ROOM_PATH, getRoomPath } from "@/lib/utils";
 
 
 const fmt = (d) =>
@@ -111,7 +112,7 @@ export default function BookingSuccess() {
                 const { data } = await api.get(`/bookings/${id}`);
                 setBooking(data);
             } catch {
-                navigate("/", { replace: true });
+                navigate(DEFAULT_ROOM_PATH, { replace: true });
             } finally {
                 setLoading(false);
             }
@@ -441,7 +442,7 @@ export default function BookingSuccess() {
 
                     <Button
                         variant="outline"
-                        onClick={() => navigate("/")}
+                        onClick={() => navigate(getRoomPath(room))}
                     >
                         <Home className="w-4 h-4 mr-2" />
                         Back to Home
