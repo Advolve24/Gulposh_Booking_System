@@ -86,7 +86,11 @@ export const createAdminOrder = async (req, res) => {
             averagePricePerNight: flatNightPrice,
             roomTotal: nights * flatNightPrice,
           }
-        : getRoomPricingBreakdown(room, sDate, eDate, Number(guests));
+        : getRoomPricingBreakdown(room, sDate, eDate, {
+            guests: Number(guests),
+            adults: Number(adults || 0),
+            children: Number(children || 0),
+          });
     const pricePerNight = pricingBreakdown.averagePricePerNight;
     const roomTotal = pricingBreakdown.roomTotal;
     const amountPaise = Math.round(roomTotal * 100);
@@ -184,7 +188,11 @@ export const verifyAdminPayment = async (req, res) => {
             averagePricePerNight: flatNightPrice,
             roomTotal: nights * flatNightPrice,
           }
-        : getRoomPricingBreakdown(room, sDate, eDate, Number(guests));
+        : getRoomPricingBreakdown(room, sDate, eDate, {
+            guests: Number(guests),
+            adults: Number(adults || 0),
+            children: Number(children || 0),
+          });
     const pricePerNight = pricingBreakdown.averagePricePerNight;
 
     const vegPrice = Number(room.mealPriceVeg || 0);
@@ -323,7 +331,11 @@ export const adminActionBooking = async (req, res) => {
         },
         ns,
         ne,
-        Number(booking.guests || booking.pricingMeta?.guestCount || 1)
+        {
+          guests: Number(booking.guests || booking.pricingMeta?.guestCount || 1),
+          adults: Number(booking.adults || 0),
+          children: Number(booking.children || 0),
+        }
       );
 
       booking.pricePerNight = refreshedPricing.averagePricePerNight;

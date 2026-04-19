@@ -104,11 +104,17 @@ function RoomNightlyPrices({
   room,
   range,
   guests = 0,
+  adults = 0,
+  children = 0,
   align = "right",
   compact = false,
   pricingSummary = null,
 }) {
-  const { weekdayPrice, weekendPrice } = getDisplayedNightlyPrices(room, guests);
+  const { weekdayPrice, weekendPrice } = getDisplayedNightlyPrices(room, {
+    guests,
+    adults,
+    children,
+  });
   const wrapperClass =
     align === "center"
       ? "text-center"
@@ -188,6 +194,8 @@ function BookingCard({
             room={room}
             range={range}
             guests={totalGuests}
+            adults={adults}
+            children={children}
             align="left"
             compact
             pricingSummary={pricingSummary}
@@ -1204,7 +1212,13 @@ function MobileStickyBookingBar({
                 Weekend Starting from
               </div>
               <div className="mt-1 text-[22px] font-semibold leading-none text-[#2A201B]">
-                {formatCurrency(getDisplayedNightlyPrices(room, totalGuests).weekendPrice)}
+                {formatCurrency(
+                  getDisplayedNightlyPrices(room, {
+                    guests: totalGuests,
+                    adults,
+                    children,
+                  }).weekendPrice
+                )}
                 <span className="ml-1 text-sm font-normal text-muted-foreground">/ N Incl. Taxes</span>
               </div>
               {room?.mealMode === "only" ? (
@@ -1411,9 +1425,13 @@ export default function RoomPage() {
         room,
         range,
         Number(discountConfig.taxPercent || 0),
-        totalGuests
+        {
+          guests: totalGuests,
+          adults,
+          children,
+        }
       ),
-    [discountConfig.taxPercent, range, room, totalGuests]
+    [adults, children, discountConfig.taxPercent, range, room, totalGuests]
   );
 
   const pricingSummary = useMemo(() => {
@@ -1435,16 +1453,17 @@ export default function RoomPage() {
               100
           )
         : 0;
+    const preciseRoomSubtotal = Number(roomPricing.baseTotal || 0);
     const roomSubtotal =
       room.taxMode === "included" && weekendDiscountAmount > 0
-        ? Math.round(Number(roomPricing.baseTotal || 0))
-        : Number(roomPricing.baseTotal || 0);
+        ? Math.round(preciseRoomSubtotal)
+        : preciseRoomSubtotal;
     const originalTotalTax = Number(((roomSubtotal * taxPercent) / 100).toFixed(2));
-    const discountedSubtotal = Math.max(0, roomSubtotal - weekendDiscountAmount);
+    const discountedSubtotal = Math.max(0, preciseRoomSubtotal - weekendDiscountAmount);
     const totalTax = Number(((discountedSubtotal * taxPercent) / 100).toFixed(2));
     const originalTotalPayable =
       room.taxMode === "included"
-        ? Math.round(roomSubtotal + originalTotalTax)
+        ? Math.round(Number(roomPricing.grossTotal || 0))
         : Number((roomSubtotal + originalTotalTax).toFixed(2));
     const totalPayable =
       room.taxMode === "included"
@@ -1971,6 +1990,8 @@ export default function RoomPage() {
                 room={room}
                 range={range}
                 guests={totalGuests}
+                adults={adults}
+                children={children}
                 align="left"
                 compact
                 pricingSummary={pricingSummary}
@@ -2116,7 +2137,13 @@ export default function RoomPage() {
                   Weekend Starting from
                 </div>
                 <div className="mt-1 text-[22px] font-semibold leading-none text-[#2A201B]">
-                  {formatCurrency(getDisplayedNightlyPrices(room, totalGuests).weekendPrice)}
+                  {formatCurrency(
+                    getDisplayedNightlyPrices(room, {
+                      guests: totalGuests,
+                      adults,
+                      children,
+                    }).weekendPrice
+                  )}
                   <span className="ml-1 text-sm font-normal text-muted-foreground">/ N Incl. Taxes</span>
                 </div>
                 {room?.mealMode === "only" ? (

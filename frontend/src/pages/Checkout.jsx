@@ -1001,8 +1001,13 @@ export default function Checkout() {
 
 
   const roomPricing = useMemo(
-    () => getRoomPricingBreakdown(room, range, taxPercent, totalGuests),
-    [room, range, taxPercent, totalGuests]
+    () =>
+      getRoomPricingBreakdown(room, range, taxPercent, {
+        guests: totalGuests,
+        adults,
+        children,
+      }),
+    [adults, children, room, range, taxPercent, totalGuests]
   );
 
   const weekendOffer = useMemo(() => {
@@ -1046,6 +1051,11 @@ export default function Checkout() {
       : Number(roomPricing.baseTotal || 0);
   }, [room, roomPricing.baseTotal, shouldRoundIncludedRoomSubtotal]);
 
+  const preciseRoomChargeTotal = useMemo(() => {
+    if (!room) return 0;
+    return Number(roomPricing.baseTotal || 0);
+  }, [room, roomPricing.baseTotal]);
+
   const roomChargeTotal = useMemo(() => {
     return roomTotal;
   }, [roomTotal]);
@@ -1064,8 +1074,8 @@ export default function Checkout() {
   }, [room, nights, withMeal, vegGuests, nonVegGuests]);
 
   const subTotal = useMemo(() => {
-    return roomChargeTotal + mealTotal;
-  }, [roomChargeTotal, mealTotal]);
+    return preciseRoomChargeTotal + mealTotal;
+  }, [mealTotal, preciseRoomChargeTotal]);
 
   const couponDiscountAmount = useMemo(() => {
     if (!hasRoomCoupon) return 0;
@@ -1177,11 +1187,12 @@ export default function Checkout() {
 
   const originalGrandTotal = useMemo(() => {
     if (!room) return 0;
+    if (room.taxMode === "included") {
+      return Math.round(Number(roomPricing.roomTotal || 0) + Number(mealTotal || 0));
+    }
     const payableAmount = subTotal + originalTotalTax;
-    return room.taxMode === "included"
-      ? Math.round(payableAmount)
-      : Number(payableAmount.toFixed(2));
-  }, [room, subTotal, originalTotalTax]);
+    return Number(payableAmount.toFixed(2));
+  }, [mealTotal, room, roomPricing.roomTotal, subTotal, originalTotalTax]);
 
   const pricingSummaryProps = useMemo(
     () => ({

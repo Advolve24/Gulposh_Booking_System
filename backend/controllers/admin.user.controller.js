@@ -444,7 +444,11 @@ export const updateBookingAdmin = async (req, res) => {
       pricingSource,
       booking.startDate,
       booking.endDate,
-      Number(booking.guests || booking.pricingMeta?.guestCount || 1)
+      {
+        guests: Number(booking.guests || booking.pricingMeta?.guestCount || 1),
+        adults: Number(booking.adults || 0),
+        children: Number(booking.children || 0),
+      }
     );
 
     booking.pricePerNight = pricingBreakdown.averagePricePerNight;
@@ -462,7 +466,11 @@ export const updateBookingAdmin = async (req, res) => {
           booking.room,
           booking.startDate,
           booking.endDate,
-          Number(booking.guests || 1)
+          {
+            guests: Number(booking.guests || 1),
+            adults: Number(booking.adults || 0),
+            children: Number(booking.children || 0),
+          }
         );
     booking.amount = booking.roomTotal + booking.mealTotal;
 

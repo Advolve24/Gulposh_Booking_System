@@ -76,6 +76,8 @@ const getDiscountBreakup = ({
   couponCode,
   room,
   guests,
+  adults = 0,
+  children = 0,
   discountSettings,
   startDate,
   endDate,
@@ -117,7 +119,11 @@ const getDiscountBreakup = ({
     room,
     discountSettings?.taxPercent,
     Number(
-      getRoomPricingBreakdown(room, startDate, endDate, guests)
+      getRoomPricingBreakdown(room, startDate, endDate, {
+        guests,
+        adults,
+        children,
+      })
         .weekendPricePerNight || room?.weekendPricePerNight || room?.pricePerNight || 0
     )
   );
@@ -301,7 +307,11 @@ export const createOrder = async (req, res) => {
       room,
       sDate,
       eDate,
-      Number(guests)
+      {
+        guests: Number(guests),
+        adults: Number(adults || 0),
+        children: Number(children || 0),
+      }
     );
     const roomGrossTotal = Number(pricingBreakdown.roomTotal || 0);
     const preciseRoomTotal =
@@ -318,6 +328,7 @@ export const createOrder = async (req, res) => {
       (hasWeekendDiscount || hasCouponDiscount || hasSpecialOfferDiscount)
         ? Math.round(preciseRoomTotal)
         : preciseRoomTotal;
+    const calculationRoomTotal = preciseRoomTotal;
 
     const mealTotal = withMeal
       ? nights *
@@ -325,13 +336,15 @@ export const createOrder = async (req, res) => {
         nonVegGuests * room.mealPriceNonVeg)
       : 0;
 
-    const subTotal = roomTotal + mealTotal;
+    const subTotal = calculationRoomTotal + mealTotal;
 
     const refreshedDiscountBreakup = getDiscountBreakup({
       subTotal,
       couponCode,
       room,
       guests: Number(guests),
+      adults: Number(adults || 0),
+      children: Number(children || 0),
       discountSettings: taxSetting,
       startDate: sDate,
       endDate: eDate,
@@ -515,7 +528,11 @@ export const verifyPayment = async (req, res) => {
       room,
       sDate,
       eDate,
-      Number(guests)
+      {
+        guests: Number(guests),
+        adults: Number(adults || 0),
+        children: Number(children || 0),
+      }
     );
     const roomGrossTotal = Number(pricingBreakdown.roomTotal || 0);
     const preciseRoomTotal =
@@ -545,13 +562,15 @@ export const verifyPayment = async (req, res) => {
           nonVegGuests * room.mealPriceNonVeg);
     }
 
-    const subTotal = roomTotal + mealTotal;
+    const subTotal = calculationRoomTotal + mealTotal;
 
     const discountBreakup = getDiscountBreakup({
       subTotal,
       couponCode,
       room,
       guests: Number(guests),
+      adults: Number(adults || 0),
+      children: Number(children || 0),
       discountSettings: taxSetting,
       startDate: sDate,
       endDate: eDate,

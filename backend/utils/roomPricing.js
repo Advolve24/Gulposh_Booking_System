@@ -9,6 +9,35 @@ const toUtcDateOnly = (value) => {
   );
 };
 
+const getGuestPricingCounts = (room, guestInfo = 0) => {
+  const baseGuests = Math.max(1, Number(room?.baseGuests || 1));
+  const guestPayload =
+    typeof guestInfo === "object" && guestInfo !== null
+      ? guestInfo
+      : { guests: guestInfo };
+  const adults = Math.max(0, Number(guestPayload.adults || 0));
+  const children = Math.max(0, Number(guestPayload.children || 0));
+  const totalGuests = Math.max(
+    0,
+    Number(
+      guestPayload.guests !== undefined
+        ? guestPayload.guests
+        : adults + children
+    )
+  );
+  const extraGuestCount = Math.max(0, totalGuests - baseGuests);
+  const extraChildCount = Math.min(children, extraGuestCount);
+  const extraAdultCount = Math.max(0, extraGuestCount - extraChildCount);
+
+  return {
+    baseGuests,
+    totalGuests,
+    extraGuestCount,
+    extraAdultCount,
+    extraChildCount,
+  };
+};
+
 export const isWeekendNight = (value) => {
   const date = toUtcDateOnly(value);
   if (!date) return false;
@@ -18,23 +47,24 @@ export const isWeekendNight = (value) => {
 };
 
 export const getExtraGuestCount = (room, guests = 0) => {
-  const baseGuests = Math.max(1, Number(room?.baseGuests || 1));
-  const totalGuests = Math.max(0, Number(guests || 0));
-
-  return Math.max(0, totalGuests - baseGuests);
+  return getGuestPricingCounts(room, guests).extraGuestCount;
 };
 
 export const getRoomNightPrice = (room, value, guests = 0) => {
   const weekdayPrice = Number(room?.pricePerNight || 0);
   const weekendPrice = Number(room?.weekendPricePerNight || weekdayPrice);
-  const extraGuestCount = getExtraGuestCount(room, guests);
-  const baseGuests = Math.max(1, Number(room?.baseGuests || 1));
+  const { baseGuests, extraAdultCount, extraChildCount } =
+    getGuestPricingCounts(room, guests);
   const weekdayExtraGuestFee = weekdayPrice / baseGuests;
   const weekendExtraGuestFee = weekendPrice / baseGuests;
 
   return isWeekendNight(value)
-    ? weekendPrice + extraGuestCount * weekendExtraGuestFee
-    : weekdayPrice + extraGuestCount * weekdayExtraGuestFee;
+    ? weekendPrice +
+        extraAdultCount * weekendExtraGuestFee +
+        extraChildCount * weekendExtraGuestFee * 0.5
+    : weekdayPrice +
+        extraAdultCount * weekdayExtraGuestFee +
+        extraChildCount * weekdayExtraGuestFee * 0.5;
 };
 
 export const getRoomPricingBreakdown = (room, startDate, endDate, guests = 0) => {
@@ -44,14 +74,23 @@ export const getRoomPricingBreakdown = (room, startDate, endDate, guests = 0) =>
   const weekendBasePrice = Number(
     room?.weekendPricePerNight || room?.pricePerNight || 0
   );
-  const baseGuests = Math.max(1, Number(room?.baseGuests || 1));
-  const extraGuestCount = getExtraGuestCount(room, guests);
+  const {
+    baseGuests,
+    extraGuestCount,
+    extraAdultCount,
+    extraChildCount,
+    totalGuests,
+  } = getGuestPricingCounts(room, guests);
   const weekdayExtraGuestFee = weekdayBasePrice / baseGuests;
   const weekendExtraGuestFee = weekendBasePrice / baseGuests;
   const weekdayPricePerNight =
-    weekdayBasePrice + extraGuestCount * weekdayExtraGuestFee;
+    weekdayBasePrice +
+    extraAdultCount * weekdayExtraGuestFee +
+    extraChildCount * weekdayExtraGuestFee * 0.5;
   const weekendPricePerNight =
-    weekendBasePrice + extraGuestCount * weekendExtraGuestFee;
+    weekendBasePrice +
+    extraAdultCount * weekendExtraGuestFee +
+    extraChildCount * weekendExtraGuestFee * 0.5;
 
   if (!room || !start || !end || end <= start) {
     return {
@@ -64,6 +103,8 @@ export const getRoomPricingBreakdown = (room, startDate, endDate, guests = 0) =>
       weekendBasePrice,
       baseGuests,
       extraGuestCount,
+      extraAdultCount,
+      extraChildCount,
       averagePricePerNight: weekdayPricePerNight,
       roomTotal: 0,
     };
@@ -100,6 +141,8 @@ export const getRoomPricingBreakdown = (room, startDate, endDate, guests = 0) =>
     weekendBasePrice,
     baseGuests,
     extraGuestCount,
+    extraAdultCount,
+    extraChildCount,
     averagePricePerNight: nights > 0 ? Number((roomTotal / nights).toFixed(2)) : 0,
     roomTotal,
   };
@@ -107,6 +150,14 @@ export const getRoomPricingBreakdown = (room, startDate, endDate, guests = 0) =>
 
 export const getRoomPricingMeta = (room, startDate, endDate, guests = 0) => {
   const breakdown = getRoomPricingBreakdown(room, startDate, endDate, guests);
+  const guestCount =
+    typeof guests === "object" && guests !== null
+      ? Number(
+          guests.guests !== undefined
+            ? guests.guests
+            : Number(guests.adults || 0) + Number(guests.children || 0)
+        )
+      : Math.max(0, Number(guests || 0));
 
   return {
     weekdayPricePerNight: breakdown.weekdayPricePerNight,
@@ -114,6 +165,6 @@ export const getRoomPricingMeta = (room, startDate, endDate, guests = 0) => {
     weekdayNights: breakdown.weekdayNights,
     weekendNights: breakdown.weekendNights,
     baseGuests: breakdown.baseGuests,
-    guestCount: Math.max(0, Number(guests || 0)),
+    guestCount,
   };
 };
