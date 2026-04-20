@@ -382,11 +382,17 @@ function CheckoutRoomSummaryCard({
   nights,
   roomPricing,
   roomChargeTotal,
+  originalGrandTotal,
   mealTotal,
   couponDiscountAmount,
   weekendDiscountAmount,
+  weekendDiscountBaseAmount,
   weekendEligibleNights,
   weekendOffer,
+  weekdayBasePerNight,
+  weekendBasePerNight,
+  weekdayBaseTotal,
+  weekendBaseTotal,
   specialOfferAmount,
   specialOfferEligibleNights,
   specialOffer,
@@ -404,6 +410,10 @@ function CheckoutRoomSummaryCard({
     room?.images?.length > 0
       ? resolveImageUrl(room.images[0])
       : resolveImageUrl(room?.image || room?.coverImage) || null;
+  const showDiscountedComparison =
+    nights > 0 &&
+    Math.round(Number(originalGrandTotal || 0)) >
+      Math.round(Number(grandTotal || 0));
 
   return (
     <div className="bg-white rounded-2xl border overflow-hidden">
@@ -495,16 +505,46 @@ function CheckoutRoomSummaryCard({
         <Separator />
 
         <div className="space-y-2">
+          {showDiscountedComparison ? (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Original Total</span>
+              <span className="font-semibold text-muted-foreground line-through">
+                {INR(originalGrandTotal)}
+              </span>
+            </div>
+          ) : null}
+
+          {roomPricing.weekdayNights > 0 ? (
+            <div className="flex justify-between">
+              <div>
+                <div>Weekday Charges</div>
+                <div className="text-xs text-muted-foreground">
+                  {INRExact(weekdayBasePerNight)} x {roomPricing.weekdayNights} night{roomPricing.weekdayNights === 1 ? "" : "s"}
+                </div>
+              </div>
+              <span className="font-semibold text-[#2A201B]">{INRExact(weekdayBaseTotal)}</span>
+            </div>
+          ) : null}
+
+          {roomPricing.weekendNights > 0 ? (
+            <div className="flex justify-between">
+              <div>
+                <div>Weekend Charges</div>
+                <div className="text-xs text-muted-foreground">
+                  {INRExact(weekendBasePerNight)} x {roomPricing.weekendNights} night{roomPricing.weekendNights === 1 ? "" : "s"}
+                </div>
+              </div>
+              <span className="font-semibold text-[#2A201B]">{INRExact(weekendBaseTotal)}</span>
+            </div>
+          ) : null}
+
           <div className="flex justify-between">
-            <span>
-              {INRExact(
-                nights > 0
-                  ? roomChargeTotal / nights
-                  : room?.taxMode === "included"
-                    ? roomPricing.averageBasePerNight
-                    : roomPricing.averageGrossPerNight
-              )} x {nights} nights
-            </span>
+            <div>
+              <div>Stay Charges</div>
+              <div className="text-xs text-muted-foreground">
+                {nights} night{nights === 1 ? "" : "s"} subtotal
+              </div>
+            </div>
             <span className="font-semibold text-[#2A201B]">{INR(roomChargeTotal)}</span>
           </div>
 
@@ -524,9 +564,17 @@ function CheckoutRoomSummaryCard({
 
           {weekendDiscountAmount > 0 && (
             <div className="flex justify-between text-green-700">
-              <span>
-                Weekend Discount ({weekendEligibleNights} night{weekendEligibleNights === 1 ? "" : "s"} @ {weekendOffer?.percent || 0}%)
-              </span>
+              <div>
+                <div>
+                  Weekend Discount ({weekendEligibleNights} night{weekendEligibleNights === 1 ? "" : "s"} @ {weekendOffer?.percent || 0}%)
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Applied on {INRExact(weekendDiscountBaseAmount)}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {INRExact(weekendDiscountBaseAmount)} x {weekendOffer?.percent || 0}% = {INR(weekendDiscountAmount)}
+                </div>
+              </div>
               <span>-{INR(weekendDiscountAmount)}</span>
             </div>
           )}
@@ -540,7 +588,7 @@ function CheckoutRoomSummaryCard({
             </div>
           )}
 
-          {(weekendDiscountAmount > 0 || specialOfferAmount > 0) && (
+          {(specialOfferAmount > 0) && (
             <p className="text-xs text-muted-foreground">
               Discounts are calculated only on eligible nights within the selected stay.
             </p>
@@ -1198,6 +1246,36 @@ export default function Checkout() {
     return Number(payableAmount.toFixed(2));
   }, [mealTotal, room, roomPricing.roomTotal, subTotal, originalTotalTax]);
 
+  const weekdayBaseTotal = useMemo(
+    () =>
+      Math.max(
+        0,
+        Number(roomPricing.baseTotal || 0) - Number(roomPricing.weekendBaseTotal || 0)
+      ),
+    [roomPricing.baseTotal, roomPricing.weekendBaseTotal]
+  );
+
+  const weekendBaseTotal = useMemo(
+    () => Number(roomPricing.weekendBaseTotal || 0),
+    [roomPricing.weekendBaseTotal]
+  );
+
+  const weekdayBasePerNight = useMemo(
+    () =>
+      roomPricing.weekdayNights > 0
+        ? Number((weekdayBaseTotal / roomPricing.weekdayNights).toFixed(2))
+        : 0,
+    [roomPricing.weekdayNights, weekdayBaseTotal]
+  );
+
+  const weekendBasePerNight = useMemo(
+    () =>
+      roomPricing.weekendNights > 0
+        ? Number((weekendBaseTotal / roomPricing.weekendNights).toFixed(2))
+        : 0,
+    [roomPricing.weekendNights, weekendBaseTotal]
+  );
+
   const pricingSummaryProps = useMemo(
     () => ({
       room,
@@ -1781,11 +1859,17 @@ export default function Checkout() {
               nights={nights}
               roomPricing={roomPricing}
               roomChargeTotal={roomChargeTotal}
+              originalGrandTotal={originalGrandTotal}
               mealTotal={mealTotal}
               couponDiscountAmount={couponDiscountAmount}
               weekendDiscountAmount={weekendDiscountAmount}
+              weekendDiscountBaseAmount={weekendBaseTotal}
               weekendEligibleNights={weekendEligibleNights}
               weekendOffer={weekendOffer}
+              weekdayBasePerNight={weekdayBasePerNight}
+              weekendBasePerNight={weekendBasePerNight}
+              weekdayBaseTotal={weekdayBaseTotal}
+              weekendBaseTotal={weekendBaseTotal}
               specialOfferAmount={specialOfferAmount}
               specialOfferEligibleNights={specialOfferEligibleNights}
               specialOffer={specialOffer}

@@ -530,7 +530,7 @@ function PriceBreakupSummary({ pricingSummary }) {
 
             <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
               <div>
-                <div className="text-[14px] font-medium text-[#2A201B]">Property Charges</div>
+                <div className="text-[14px] font-medium text-[#2A201B]">Stay Charges</div>
                 <div className="text-[13px] text-muted-foreground">
                   {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"} subtotal
                 </div>
@@ -1002,7 +1002,7 @@ function MobilePriceBreakupPanel({ open, onOpenChange, pricingSummary }) {
 
           <div className="flex items-start justify-between gap-4 border-t border-[#efe7e1] pt-3">
             <div>
-              <div className="text-[14px] font-medium text-[#2A201B]">Property Charges</div>
+              <div className="text-[14px] font-medium text-[#2A201B]">Stay Charges</div>
               <div className="text-[13px] text-muted-foreground">
                 {pricingSummary.nights} night{pricingSummary.nights === 1 ? "" : "s"} subtotal
               </div>

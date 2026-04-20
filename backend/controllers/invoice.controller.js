@@ -360,7 +360,7 @@ export const downloadInvoicePDF = async (req, res) => {
       </thead>
       <tbody>
         <tr>
-          <td>Room Charges</td>
+          <td>Stay Charges</td>
           <td>₹${booking.pricePerNight} × ${booking.nights}</td>
           <td class="right">₹${booking.roomTotal}</td>
         </tr>

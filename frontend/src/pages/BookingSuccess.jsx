@@ -271,7 +271,7 @@ export default function BookingSuccess() {
 
                             {/* ROOM CHARGES */}
                             <div className="flex justify-between">
-                                <span className="font-[500]">Room Charges</span>
+                                <span className="font-[500]">Stay Charges</span>
                                 <span className="font-[500]">
                                     {formatINR(roomTotal)}
                                 </span>

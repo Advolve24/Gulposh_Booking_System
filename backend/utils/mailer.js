@@ -228,7 +228,7 @@ const renderBookingEmailHtml = ({
                 <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">${meta.foodText}</td>
               </tr>
               <tr>
-                <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Room Charges</td>
+                <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Stay Charges</td>
                 <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">${formatCurrency(meta.roomTotal)}</td>
               </tr>
               <tr>
