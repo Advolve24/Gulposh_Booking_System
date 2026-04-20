@@ -342,9 +342,10 @@ function RoomGuestPopover({
 
         <PopoverContent
           className="w-[330px] rounded-2xl p-4"
+          side={isDesktop ? "bottom" : "top"}
           align={isDesktop ? "end" : "start"}
           alignOffset={isDesktop ? 400 : 0}
-          sideOffset={isDesktop ? -8 : 4}
+          sideOffset={isDesktop ? -8 : 8}
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >

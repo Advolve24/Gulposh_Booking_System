@@ -32,6 +32,7 @@ import { getDisplayedNightlyPrices, getRoomPricingBreakdown } from "../lib/roomP
 import GuestCounter from "../components/GuestCounter";
 import { resolveImageUrl } from "../lib/image";
 import { getRoomPath } from "../lib/utils";
+import { useMediaQuery } from "../hooks/use-media-query";
 
 
 function minusOneDay(date) {
@@ -161,6 +162,7 @@ function CheckoutGuestPopover({
   onMaxAttempt,
 }) {
   const totalGuests = adults + children;
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   return (
     <Popover>
@@ -183,7 +185,9 @@ function CheckoutGuestPopover({
 
       <PopoverContent
         className="w-[330px] rounded-2xl p-4"
-        align="start"
+        side={isDesktop ? "bottom" : "top"}
+        align={isDesktop ? "start" : "start"}
+        sideOffset={isDesktop ? 4 : 8}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
