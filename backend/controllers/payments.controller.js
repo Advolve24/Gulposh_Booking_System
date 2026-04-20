@@ -552,6 +552,7 @@ export const verifyPayment = async (req, res) => {
       (hasWeekendDiscount || hasCouponDiscount || hasSpecialOfferDiscount)
         ? Math.round(preciseRoomTotal)
         : preciseRoomTotal;
+    const calculationRoomTotal = preciseRoomTotal;
     let mealTotal = 0;
 
     if (room.mealMode === "only") {
@@ -741,6 +742,6 @@ export const verifyPayment = async (req, res) => {
     console.error("❌ verifyPayment error:", err);
     return res
       .status(500)
-      .json({ message: "Payment verification failed" });
+      .json({ message: err?.message || "Payment verification failed" });
   }
 };

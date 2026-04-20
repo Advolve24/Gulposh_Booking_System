@@ -1240,11 +1240,11 @@ export default function Checkout() {
   const originalGrandTotal = useMemo(() => {
     if (!room) return 0;
     if (room.taxMode === "included") {
-      return Math.round(Number(roomPricing.roomTotal || 0) + Number(mealTotal || 0));
+      return Math.round(Number(roomPricing.grossTotal || 0) + Number(mealTotal || 0));
     }
     const payableAmount = subTotal + originalTotalTax;
     return Number(payableAmount.toFixed(2));
-  }, [mealTotal, room, roomPricing.roomTotal, subTotal, originalTotalTax]);
+  }, [mealTotal, room, roomPricing.grossTotal, subTotal, originalTotalTax]);
 
   const weekdayBaseTotal = useMemo(
     () =>
