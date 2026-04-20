@@ -275,7 +275,7 @@ export default function ViewBookingDialog({
 
                 <div className="mt-3 rounded-xl overflow-hidden border bg-white">
                   <div className="grid grid-cols-6 text-[11px] font-semibold uppercase bg-[#f3f0ed] text-[#6b5f57] px-3 py-2">
-                    <div className="text-left">Room</div>
+                    <div className="text-left">Stay</div>
                     <div className="text-left">Food</div>
                     <div className="text-left">Discount</div>
                     <div className="text-left">After Disc</div>

@@ -9,6 +9,7 @@ import CancelBookingFlow from "@/components/CancelBookingFlow";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { getMyEnquiries } from "../api/bookings";
 import { resolveImageUrl } from "../lib/image";
+import { formatINR } from "../lib/currency";
 
 
 const fmt = (d) =>
@@ -278,7 +279,7 @@ export default function MyBookings() {
                       <div>
                         <div className="text-xs">Total</div>
                         <div className="text-lg font-semibold">
-                          {isEnquiry ? "Quotation Pending" : `₹${b.amount}`}
+                          {isEnquiry ? "Quotation Pending" : formatINR(b.amount)}
                         </div>
                       </div>
 
@@ -351,3 +352,4 @@ export default function MyBookings() {
     </>
   );
 }
+
