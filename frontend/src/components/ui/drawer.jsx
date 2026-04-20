@@ -35,7 +35,7 @@ const DrawerContent = React.forwardRef(({ className, overlayClassName, children,
         className
       )}
       {...props}>
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      <div className="mx-auto mt-0 h-1 w-[100px] rounded-full bg-muted" />
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>

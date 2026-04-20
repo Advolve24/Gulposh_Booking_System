@@ -1165,6 +1165,8 @@ function MobileBookingDrawerCard({
 function MobileStickyBookingBar({
   room,
   totalGuests,
+  adults = 0,
+  children = 0,
   pricingSummary,
   hasMobileStaySelection,
   handleMobileBreakupOpen,
@@ -2186,6 +2188,8 @@ export default function RoomPage() {
           <MobileStickyBookingBar
             room={room}
             totalGuests={totalGuests}
+            adults={adults}
+            children={children}
             pricingSummary={pricingSummary}
             hasMobileStaySelection={hasMobileStaySelection}
             handleMobileBreakupOpen={handleMobileBreakupOpen}
