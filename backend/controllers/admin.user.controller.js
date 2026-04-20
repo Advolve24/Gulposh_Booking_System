@@ -683,6 +683,31 @@ export const cancelBookingAdmin = async (req, res) => {
       }
     }
 
+    const userEmail = String(
+      updated.contactEmail ||
+      updated.userSnapshot?.email ||
+      updated.user?.email ||
+      ""
+    ).trim();
+    if (userEmail) {
+      try {
+        await sendBookingCancellationMail({
+          to: userEmail,
+          booking: updated,
+          room: updated.room,
+          recipientName:
+            updated.contactName ||
+            updated.userSnapshot?.name ||
+            updated.user?.name ||
+            "Guest",
+          isAdmin: false,
+        });
+        console.log("User cancellation mail sent:", userEmail);
+      } catch (err) {
+        console.error("User cancellation mail error:", err.message);
+      }
+    }
+
     res.json({
       ok: true,
       message: "Booking cancelled by admin",

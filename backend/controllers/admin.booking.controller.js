@@ -382,6 +382,31 @@ export const adminActionBooking = async (req, res) => {
         }
       }
 
+      const userEmail = String(
+        booking.contactEmail ||
+        booking.userSnapshot?.email ||
+        booking.user?.email ||
+        ""
+      ).trim();
+      if (userEmail) {
+        try {
+          await sendBookingCancellationMail({
+            to: userEmail,
+            booking,
+            room: booking.room,
+            recipientName:
+              booking.contactName ||
+              booking.userSnapshot?.name ||
+              booking.user?.name ||
+              "Guest",
+            isAdmin: false,
+          });
+          console.log("User cancellation mail sent:", userEmail);
+        } catch (err) {
+          console.error("User cancellation mail error:", err.message);
+        }
+      }
+
       return res.json({
         ok: true,
         message: "Booking rescheduled due to maintenance",
