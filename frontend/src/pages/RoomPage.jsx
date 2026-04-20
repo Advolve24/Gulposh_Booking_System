@@ -1257,8 +1257,9 @@ function MobileStickyBookingBar({
 export default function RoomPage() {
   const location = useLocation();
   const { openAuth, user } = useAuth();
-  const { id } = useParams();
+  const { id, slug } = useParams();
   const navigate = useNavigate();
+  const roomIdentifier = id || slug;
 
   const navState = location.state;
   const initialSearch = navState || null;
@@ -1326,7 +1327,7 @@ export default function RoomPage() {
 
 
   useEffect(() => {
-    api.get(`/rooms/${id}`).then(({ data }) => setRoom(data));
+    api.get(`/rooms/${roomIdentifier}`).then(({ data }) => setRoom(data));
     api.get("/rooms").then(({ data }) => setAllRooms(data || []));
 
     api.get("/rooms/disabled/all").then(({ data }) =>
@@ -1366,7 +1367,21 @@ export default function RoomPage() {
         threeWeekendNightsDiscountPercent: 0,
       });
     });
-  }, [id]);
+  }, [roomIdentifier]);
+
+  useEffect(() => {
+    if (!room?._id) return;
+
+    const canonicalPath = getRoomPath(room);
+    const currentPath = location.pathname;
+
+    if (currentPath !== canonicalPath) {
+      navigate(`${canonicalPath}${location.search}`, {
+        replace: true,
+        state: location.state || null,
+      });
+    }
+  }, [location.pathname, location.search, location.state, navigate, room]);
 
   useEffect(() => {
     if (!room?.maxGuests) return;
@@ -1388,7 +1403,7 @@ export default function RoomPage() {
 
     setAdults(clamped.adults);
     setChildren(clamped.children);
-  }, [id, room?.maxGuests]);
+  }, [roomIdentifier, room?.maxGuests]);
 
   const disabledAll = useMemo(
     () => mergeRanges([...blackoutRanges, ...bookedAll]),

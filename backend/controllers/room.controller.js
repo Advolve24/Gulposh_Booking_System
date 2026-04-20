@@ -4,6 +4,12 @@ import Booking from "../models/Booking.js";
 import Blackout from "../models/Blackout.js";
 
 const { isValidObjectId } = mongoose;
+const slugifyRoomName = (value = "") =>
+  String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const toYmd = (d) => new Date(d).toISOString().slice(0, 10);
 
@@ -53,7 +59,7 @@ export const listRooms = async (_req, res) => {
   try {
     const rooms = await Room.find({ isVilla: { $ne: true } })
       .select(
-        "name coverImage pricePerNight weekendPricePerNight baseGuests priceWithMeal description amenities maxGuests"
+        "name slug coverImage pricePerNight weekendPricePerNight baseGuests priceWithMeal description amenities maxGuests"
       )
       .sort({ createdAt: -1 });
     res.json(rooms);
@@ -66,10 +72,27 @@ export const listRooms = async (_req, res) => {
 export const getRoomById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ message: "Invalid room id" });
+    let room = null;
+
+    if (isValidObjectId(id)) {
+      room = await Room.findById(id);
     }
-    const room = await Room.findById(id);
+
+    if (!room) {
+      room = await Room.findOne({ slug: String(id).trim().toLowerCase() });
+    }
+
+    if (!room) {
+      const rooms = await Room.find().select("name slug");
+      const matched = rooms.find(
+        (candidate) => slugifyRoomName(candidate.slug || candidate.name) === String(id).trim().toLowerCase()
+      );
+
+      if (matched) {
+        room = await Room.findById(matched._id);
+      }
+    }
+
     if (!room) return res.status(404).json({ message: "Room not found" });
     res.json(room);
   } catch (err) {

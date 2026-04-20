@@ -20,15 +20,15 @@ export function getRoomPath(roomOrId, roomName = "") {
     typeof roomOrId === "object" && roomOrId !== null ? roomOrId._id : roomOrId;
   const sourceName =
     typeof roomOrId === "object" && roomOrId !== null
-      ? roomOrId.name || roomName
+      ? roomOrId.slug || roomOrId.name || roomName
       : roomName;
   const slug = slugifyRoomName(sourceName);
 
-  if (!roomId) {
+  if (!slug && !roomId) {
     return "/";
   }
 
-  return slug ? `/room/${roomId}/${slug}` : `/room/${roomId}`;
+  return slug ? `/room/${slug}` : `/room/${roomId}`;
 }
 
 export const DEFAULT_ROOM_PATH = getRoomPath(DEFAULT_ROOM_ID, "villa-gulposh");

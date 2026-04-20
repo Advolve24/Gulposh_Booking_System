@@ -1,5 +1,12 @@
 import mongoose from "mongoose";
 
+const slugifyRoomName = (value = "") =>
+  String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 const reviewSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -14,6 +21,7 @@ const reviewSchema = new mongoose.Schema(
 const roomSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+    slug: { type: String, trim: true, lowercase: true, index: true },
 
     pricePerNight: { type: Number, required: true, min: 0 },
 
@@ -93,6 +101,35 @@ roomSchema.pre("validate", function enforceGuestCaps(next) {
   }
 
   next();
+});
+
+roomSchema.pre("validate", async function ensureSlug(next) {
+  if (!this.isModified("name") && this.slug) {
+    return next();
+  }
+
+  const baseSlug = slugifyRoomName(this.slug || this.name);
+  if (!baseSlug) {
+    return next();
+  }
+
+  let nextSlug = baseSlug;
+  let suffix = 2;
+
+  while (true) {
+    const existing = await mongoose.models.Room.findOne({
+      slug: nextSlug,
+      _id: { $ne: this._id },
+    }).select("_id");
+
+    if (!existing) {
+      this.slug = nextSlug;
+      return next();
+    }
+
+    nextSlug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
 });
 
 export default mongoose.model("Room", roomSchema);

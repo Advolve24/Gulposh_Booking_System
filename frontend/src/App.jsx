@@ -124,8 +124,9 @@ function AppRoutes() {
       <Routes>
         {/* PUBLIC */}
         <Route path="/" element={<Navigate to={DEFAULT_ROOM_PATH} replace />} />
+        <Route path="/room/:slug" element={<RoomPage />} />
         <Route path="/room/:id" element={<RoomPage />} />
-        <Route path="/room/:id/:slug" element={<RoomPage />} />
+        <Route path="/room/:id/:legacySlug" element={<RoomPage />} />
         <Route path="/entire-villa-form" element={<EntireVillaform />} />
 
         {/* PROFILE */}
