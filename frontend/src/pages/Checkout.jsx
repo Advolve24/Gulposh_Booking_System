@@ -1507,10 +1507,10 @@ export default function Checkout() {
           console.error("Payment verified but booking failed:", err);
 
           // ❌ replace loading toast with error
-          toast.error(
-            "Payment successful, but booking confirmation failed. Please contact support.",
-            { id: toastId }
-          );
+          const message =
+            err?.response?.data?.message ||
+            "Payment successful, but booking confirmation failed. Please contact support.";
+          toast.error(message, { id: toastId });
         }
       },
 

@@ -422,9 +422,12 @@ export const createOrder = async (req, res) => {
 export const verifyPayment = async (req, res) => {
   try {
     const userId = req.user?.id;
-    const user = await User.findById(userId);
     if (!userId) {
       return res.status(401).json({ message: "Auth required" });
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(401).json({ message: "User not found for booking confirmation" });
     }
 
     const {
@@ -629,7 +632,11 @@ export const verifyPayment = async (req, res) => {
       pricePerNight:
         nights > 0 ? Number((roomTotal / nights).toFixed(2)) : 0,
       roomTotal,
-      pricingMeta: getRoomPricingMeta(room, sDate, eDate, Number(guests)),
+      pricingMeta: getRoomPricingMeta(room, sDate, eDate, {
+        guests: Number(guests),
+        adults: Number(adults || 0),
+        children: Number(children || 0),
+      }),
       withMeal: !!withMeal,
       vegGuests,
       nonVegGuests,
