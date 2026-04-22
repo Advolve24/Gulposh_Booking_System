@@ -86,9 +86,10 @@ function StatCard({
       className={`
         ${mobileFull ? "col-span-2 md:col-span-1" : ""}
         w-full
+        h-full
         rounded-xl
         p-3 sm:p-4
-        min-h-[100px]
+        min-h-[132px]
         flex items-start md:items-center justify-between
         transition
         ${onClick ? "cursor-pointer hover:opacity-90" : ""}
@@ -126,8 +127,8 @@ function UpcomingBookingCard({ booking }) {
   const date = new Date(booking.startDate);
 
   return (
-    <Link to={"/bookings?status=upcoming"} className="col-span-2 md:col-span-1 w-full md:w-full">
-      <div className="bg-[#055c00] rounded-xl w-full p-3 flex flex-col gap-3 md:gap-5  justify-start items-start text-center">
+    <Link to={"/bookings?status=upcoming"} className="col-span-2 md:col-span-1 w-full md:w-full h-full">
+      <div className="bg-[#055c00] rounded-xl w-full h-full min-h-[132px] p-3 sm:p-4 flex flex-col gap-3 md:gap-5 justify-start items-start text-center">
         <p className="text-sm font-medium text-white ">
           Upcoming Booking
         </p>
@@ -621,6 +622,7 @@ export default function Dashboard() {
         className="
     grid grid-cols-2
     gap-3
+    items-stretch
     justify-items-center
     sm:grid-cols-2
     md:grid-cols-5
@@ -655,6 +657,16 @@ export default function Dashboard() {
 
 
         <StatCard
+          icon={Mail}
+          label="All Enquiries"
+          value={enquiries.length}
+          hint={enquiryHint}
+          hintColor={openEnquiries.length ? "text-amber-700" : "text-green-600"}
+          onClick={() => navigate("/enquiries")}
+          bg="white"
+        />
+
+        <StatCard
           icon={CalendarDays}
           label="Total Bookings"
           value={stats?.totalBookings ?? 0}
@@ -666,16 +678,6 @@ export default function Dashboard() {
           textColor="text-white"
           iconColor="text-white"
           mobileFull
-        />
-
-        <StatCard
-          icon={Mail}
-          label="All Enquiries"
-          value={enquiries.length}
-          hint={enquiryHint}
-          hintColor={openEnquiries.length ? "text-amber-700" : "text-green-600"}
-          onClick={() => navigate("/enquiries")}
-          bg="white"
         />
 
 
