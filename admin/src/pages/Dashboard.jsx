@@ -76,6 +76,7 @@ function StatCard({
   bg,
   textColor = "text-foreground",
   mobileFull = false,
+  matchHeight = false,
   iconColor,
   valueColor,
 }) {
@@ -86,7 +87,7 @@ function StatCard({
       className={`
         ${mobileFull ? "col-span-2 md:col-span-1" : ""}
         w-full
-        h-full
+        ${matchHeight ? "h-full" : ""}
         rounded-xl
         p-3 sm:p-4
         min-h-[132px]
@@ -638,6 +639,7 @@ export default function Dashboard() {
           hintColor="text-green-600"
           onClick={() => navigate("/bookings?status=confirmed")}
           bg="white"
+          matchHeight
         />
 
         <StatCard
@@ -648,6 +650,7 @@ export default function Dashboard() {
           hintColor={cancelledChange <= 0 ? "text-green-600" : "text-red-600"}
           onClick={() => navigate("/bookings?status=cancelled")}
           bg="white"
+          matchHeight
         />
 
 
@@ -659,6 +662,7 @@ export default function Dashboard() {
           hintColor={openEnquiries.length ? "text-amber-700" : "text-green-600"}
           onClick={() => navigate("/enquiries")}
           bg="white"
+          matchHeight
         />
 
         <StatCard
@@ -673,6 +677,7 @@ export default function Dashboard() {
           textColor="text-white"
           iconColor="text-white"
           mobileFull
+          matchHeight
         />
 
 
