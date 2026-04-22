@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowUpLeft, MapPin, Users, Utensils, Check, User, Mail, Phone, Home, CalendarIcon, Flame, ShieldCheck, CreditCard } from "lucide-react";
+import { ArrowUpLeft, MapPin, Users, Utensils, Check, User, Mail, Phone, Home, CalendarIcon, Flame, ShieldCheck, CreditCard, Info } from "lucide-react";
 import { toDateOnly, toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -39,6 +39,56 @@ function minusOneDay(date) {
   const d = new Date(date);
   d.setDate(d.getDate() - 1);
   return d;
+}
+
+const MEAL_MENU_PDF_URL = "/villa-gulposh-menu.pdf";
+
+function MealInfoPopover({ iconClassName = "h-4 w-4" }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Meal details"
+          className="inline-flex items-center justify-center rounded-full text-[#d88a95] transition hover:opacity-80"
+        >
+          <Info className={iconClassName} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={8}
+        className="w-[280px] rounded-2xl border border-[#e5ddd6] bg-white p-4 shadow-[0_18px_50px_-24px_rgba(42,32,27,0.35)]"
+      >
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-[#2A201B]">Meal details</p>
+            <p className="mt-1 text-sm leading-6 text-[#5f5248]">
+              Meals include lunch, hi tea, dinner, breakfast.
+            </p>
+          </div>
+
+          <a
+            href={MEAL_MENU_PDF_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center rounded-xl bg-[#7f1124] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6c0e1e]"
+          >
+            View menu
+          </a>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function MealsIncludedNote() {
+  return (
+    <div className="mt-1 inline-flex items-center gap-1.5 text-sm text-green-600">
+      <span>All Meals are included</span>
+      <MealInfoPopover iconClassName="h-4 w-4" />
+    </div>
+  );
 }
 
 function normalizeDateStart(dateLike) {
@@ -145,9 +195,7 @@ function CheckoutPriceSummaryCard({
           </>
         )}
       </div>
-      {room?.mealMode === "only" ? (
-        <div className="mt-1 text-sm text-green-600">All Meals are included</div>
-      ) : null}
+      {room?.mealMode === "only" ? <MealsIncludedNote /> : null}
 
     </div>
   );
