@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
-import { format } from "date-fns";
+import { formatDateOnlyUTC } from "../lib/date";
 
 import {
   Check,
@@ -19,7 +19,7 @@ import { DEFAULT_ROOM_PATH } from "@/lib/utils";
 
 /* ================= HELPERS ================= */
 
-const fmt = (d) => format(new Date(d), "dd MMM yyyy");
+const fmt = (d) => formatDateOnlyUTC(d);
 
 /* ================= CONFETTI ================= */
 

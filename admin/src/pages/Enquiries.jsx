@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/api/http";
-import { format } from "date-fns";
 import AppLayout from "@/components/layout/AppLayout";
+import { formatDateOnlyUTC } from "@/lib/date";
+import { format } from "date-fns";
 
 export default function Enquiries() {
   const navigate = useNavigate();
@@ -50,8 +51,8 @@ export default function Enquiries() {
                   <td>{e.guests}</td>
 
                   <td>
-                    {format(new Date(e.startDate), "dd MMM yyyy")} →
-                    {format(new Date(e.endDate), "dd MMM yyyy")}
+                    {formatDateOnlyUTC(e.startDate)} →
+                    {formatDateOnlyUTC(e.endDate)}
                   </td>
 
                   <td className="capitalize">{e.status}</td>
@@ -122,8 +123,11 @@ export default function Enquiries() {
               <div className="text-sm">
                 <p>
                   📅{" "}
-                  {format(new Date(e.startDate), "dd MMM")} →{" "}
-                  {format(new Date(e.endDate), "dd MMM yyyy")}
+                  {formatDateOnlyUTC(e.startDate, "en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                  })} →{" "}
+                  {formatDateOnlyUTC(e.endDate)}
                 </p>
 
                 <p className="text-gray-500 text-xs">

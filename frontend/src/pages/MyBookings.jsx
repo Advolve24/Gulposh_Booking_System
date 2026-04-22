@@ -10,14 +10,11 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { getMyEnquiries } from "../api/bookings";
 import { resolveImageUrl } from "../lib/image";
 import { formatINR } from "../lib/currency";
+import { formatDateOnlyUTC } from "../lib/date";
 
 
 const fmt = (d) =>
-  new Date(d).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  formatDateOnlyUTC(d);
 
 const isFuture = (d) => new Date(d) > new Date();
 

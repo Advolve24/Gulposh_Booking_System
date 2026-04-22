@@ -27,6 +27,19 @@ const formatDate = (value) => {
   return new Date(value).toDateString();
 };
 
+const formatDateOnlyUTC = (value) => {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "UTC",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+};
+
 const formatCurrency = (value) =>
   `Rs.${Number(value || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -379,8 +392,8 @@ const renderEnquiryEmailHtml = ({
   enquiry,
   isAdmin = false,
 }) => {
-  const startDate = formatDate(enquiry?.startDate);
-  const endDate = formatDate(enquiry?.endDate);
+  const startDate = formatDateOnlyUTC(enquiry?.startDate);
+  const endDate = formatDateOnlyUTC(enquiry?.endDate);
   const guests = Number(enquiry?.guests || 0);
   const status = enquiry?.status || "enquiry";
   const submittedOn = formatDate(enquiry?.createdAt);

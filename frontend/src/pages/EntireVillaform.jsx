@@ -10,7 +10,11 @@ import { Separator } from "@/components/ui/separator";
 import { MapPin, Users, User, ConciergeBell, ArrowUpLeft } from "lucide-react";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import CalendarRange from "../components/CalendarRange";
-import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
+import {
+  toDateOnlyFromAPI,
+  toDateOnlyFromAPIUTC,
+  toLocalDateInputValue,
+} from "../lib/date";
 import { format } from "date-fns";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -359,8 +363,8 @@ export default function EntireVilla() {
         email: normalizedEmail,
         phone: form.phone,
 
-        startDate: range.from.toISOString().split("T")[0],
-        endDate: range.to.toISOString().split("T")[0],
+        startDate: toLocalDateInputValue(range.from),
+        endDate: toLocalDateInputValue(range.to),
         guests: Number(guests),
 
         addressInfo: normalizedAddress,
