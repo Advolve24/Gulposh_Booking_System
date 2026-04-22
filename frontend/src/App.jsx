@@ -73,7 +73,7 @@ function RequireAuth({ children }) {
     sessionStorage.setItem(
       "postAuthRedirect",
       JSON.stringify({
-        redirectTo: location.pathname,
+        redirectTo: `${location.pathname}${location.search}`,
         bookingState: location.state || null,
       })
     );
@@ -98,7 +98,7 @@ function RequireProfile({ children }) {
         to="/complete-profile"
         replace
         state={{
-          redirectTo: location.pathname,
+          redirectTo: `${location.pathname}${location.search}`,
           bookingState: location.state || null,
         }}
       />

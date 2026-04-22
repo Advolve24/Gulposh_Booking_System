@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getMyBookings } from "../api/bookings";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -32,11 +32,17 @@ const getBookingImage = (b, isEnquiry) => {
 
 export default function MyBookings() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const validTabs = ["upcoming", "past", "cancelled", "enquiries"];
+  const getTabFromParams = () => {
+    const tabParam = searchParams.get("tab");
+    return validTabs.includes(tabParam) ? tabParam : "upcoming";
+  };
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("upcoming");
+  const [tab, setTab] = useState(getTabFromParams);
 
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState(null);
@@ -68,6 +74,11 @@ export default function MyBookings() {
   useEffect(() => {
     reload();
   }, []);
+
+  useEffect(() => {
+    const nextTab = getTabFromParams();
+    setTab((current) => (current === nextTab ? current : nextTab));
+  }, [searchParams]);
 
   /* ---------------- FILTERS ---------------- */
 
@@ -107,6 +118,19 @@ export default function MyBookings() {
     setCancelOpen(true);
   };
 
+  const handleTabChange = (nextTab) => {
+    setTab(nextTab);
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      if (nextTab === "upcoming") {
+        params.delete("tab");
+      } else {
+        params.set("tab", nextTab);
+      }
+      return params;
+    });
+  };
+
 
   /* ---------------- UI ---------------- */
 
@@ -135,7 +159,7 @@ export default function MyBookings() {
             ].map(([key, label]) => (
               <button
                 key={key}
-                onClick={() => setTab(key)}
+                onClick={() => handleTabChange(key)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition
                 ${tab === key
                     ? "bg-primary text-primary-foreground"

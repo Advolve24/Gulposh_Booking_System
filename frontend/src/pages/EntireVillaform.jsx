@@ -379,8 +379,8 @@ export default function EntireVilla() {
           name: normalizedName,
           email: normalizedEmail,
           phone: form.phone,
-          startDate: range.from,
-          endDate: range.to,
+          startDate: toLocalDateInputValue(range.from),
+          endDate: toLocalDateInputValue(range.to),
           guests,
           addressInfo: normalizedAddress,
         })
