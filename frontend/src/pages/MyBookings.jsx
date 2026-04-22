@@ -300,7 +300,7 @@ export default function MyBookings() {
                       <div>
                         <div className="text-xs">Total</div>
                         <div className="text-lg font-semibold">
-                          {isEnquiry ? "Quotation Pending" : formatINR(b.amount)}
+                          {isEnquiry ? "Awaiting Confirmation" : formatINR(b.amount)}
                         </div>
                       </div>
 
