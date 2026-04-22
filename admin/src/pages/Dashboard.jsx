@@ -8,7 +8,7 @@ import {
   format, addDays, startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval,
   isWithinInterval, isSameMonth, addMonths, subMonths, isAfter
 } from "date-fns";
-import { CalendarDays, CalendarCheck2, XCircle, Wallet, Plus, Home, Ban, Calendar, Moon, Users, Heart, Mail, ArrowRight } from "lucide-react";
+import { CalendarDays, CalendarCheck2, XCircle, Wallet, Plus, Home, Ban, Calendar, Moon, Users, Heart, Mail } from "lucide-react";
 import { getStats, listBookingsAdmin, listBlackouts, createBlackout, deleteBlackout, getBirthdayGuests, getAnniversaryGuests, listEnquiriesAdmin } from "../api/admin";
 import MobileBookingCard from "@/components/MobileBookingCard";
 import BookingTable from "@/components/BookingTable";
@@ -603,11 +603,6 @@ export default function Dashboard() {
     () => enquiries.filter((enquiry) => enquiry.status === "enquiry"),
     [enquiries]
   );
-  const latestOpenEnquiry = useMemo(
-    () => openEnquiries[0] ?? null,
-    [openEnquiries]
-  );
-  const enquiryHighlight = latestOpenEnquiry ?? latestEnquiry;
   const enquiryHint = openEnquiries.length
     ? `${openEnquiries.length} awaiting response`
     : latestEnquiry
@@ -790,55 +785,6 @@ export default function Dashboard() {
 
         <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3">
           <h3 className="font-semibold">Quick Actions</h3>
-
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[#2b1e1e]">
-                  Latest Enquiry
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {enquiryHighlight
-                    ? `Received ${formatDistanceToNow(new Date(enquiryHighlight.createdAt), { addSuffix: true })}`
-                    : "New enquiries will show up here"}
-                </p>
-              </div>
-
-              {latestOpenEnquiry && (
-                <span className="rounded-full bg-amber-200 px-2.5 py-1 text-[11px] font-semibold text-amber-900">
-                  Needs action
-                </span>
-              )}
-            </div>
-
-            {enquiryHighlight ? (
-              <>
-                <div className="mt-3 space-y-1">
-                  <p className="text-sm font-semibold text-[#2b1e1e]">
-                    {enquiryHighlight.name || "Guest enquiry"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {safeFormat(enquiryHighlight.startDate)} to {safeFormat(enquiryHighlight.endDate)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {enquiryHighlight.guests || 0} guest{enquiryHighlight.guests === 1 ? "" : "s"} · {enquiryHighlight.phone || enquiryHighlight.email || "No contact info"}
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => navigate("/enquiries")}
-                  className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[#7a2437] hover:opacity-80"
-                >
-                  View enquiries
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </>
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">
-                No enquiries received yet.
-              </p>
-            )}
-          </div>
 
           <Action icon={Plus} title="Add Room" desc="Create a new room listing" link="/rooms/new" />
           <Action icon={Home} title="Book Villa" desc="Book the entire property" link="/villa-booking" />
