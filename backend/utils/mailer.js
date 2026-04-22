@@ -368,6 +368,112 @@ const renderCancellationEmailHtml = ({
   });
 };
 
+const renderEnquiryEmailHtml = ({
+  recipientName,
+  introText,
+  heading,
+  footerText,
+  ctaLabel,
+  ctaHref,
+  subjectLabel,
+  enquiry,
+  isAdmin = false,
+}) => {
+  const startDate = formatDate(enquiry?.startDate);
+  const endDate = formatDate(enquiry?.endDate);
+  const guests = Number(enquiry?.guests || 0);
+  const status = enquiry?.status || "enquiry";
+  const submittedOn = formatDate(enquiry?.createdAt);
+  const contact = enquiry?.phone || enquiry?.email || "-";
+  const address = [
+    enquiry?.addressInfo?.address,
+    enquiry?.addressInfo?.city,
+    enquiry?.addressInfo?.state,
+    enquiry?.addressInfo?.country,
+    enquiry?.addressInfo?.pincode,
+  ]
+    .filter(Boolean)
+    .join(", ") || "-";
+
+  return renderMailShell({
+    preheader: subjectLabel,
+    body: `
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center" style="padding:30px 10px;">
+      <table width="640" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;">
+        <tr>
+          <td style="background:#7a2437;padding:28px;">
+            <h1 style="margin:0;font-size:22px;color:#ffffff;font-weight:600;">${heading}</h1>
+            <p style="margin:8px 0 0;font-size:13px;color:#fbcfe8;">Enquiry ID: ${enquiry?._id || "-"}</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 28px 10px;font-size:15px;color:#111827;">
+            Hello <b>${recipientName}</b>, ${introText}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 28px 24px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;font-size:14px;color:#111827;">
+              <tr>
+                <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Guest</td>
+                <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">${enquiry?.name || "Guest"}</td>
+              </tr>
+              <tr>
+                <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Contact</td>
+                <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">${contact}</td>
+              </tr>
+              ${isAdmin ? `
+              <tr>
+                <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Email</td>
+                <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">${enquiry?.email || "-"}</td>
+              </tr>
+              <tr>
+                <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Address</td>
+                <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">${address}</td>
+              </tr>
+              ` : ""}
+              <tr>
+                <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Stay Dates</td>
+                <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">${startDate} to ${endDate}</td>
+              </tr>
+              <tr>
+                <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Guests</td>
+                <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;">${guests}</td>
+              </tr>
+              <tr>
+                <td style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#374151;">Status</td>
+                <td align="right" style="padding:16px 16px;border-bottom:1px solid #e5e7eb;color:#111827;text-transform:capitalize;">${status}</td>
+              </tr>
+              <tr>
+                <td style="padding:18px 16px;background:#7a2437;color:#ffffff;font-weight:700;">Submitted On</td>
+                <td align="right" style="padding:18px 16px;background:#7a2437;color:#ffffff;font-weight:800;font-size:16px;">${submittedOn}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:0 28px 24px;">
+            <a href="${ctaHref}" style="background:#7a2437;color:#ffffff;padding:16px 26px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">${ctaLabel}</a>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:18px;text-align:center;font-size:13px;color:#6b7280;border-top:1px solid #e5e7eb;">
+            ${footerText}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`,
+  });
+};
+
 export const sendBookingConfirmationMail = async ({ to, name, booking, room }) =>
   transporter.sendMail({
     from: `"Villa Gulposh" <${process.env.SMTP_USER}>`,
@@ -434,5 +540,50 @@ export const sendBookingCancellationMail = async ({
       subjectLabel: "Booking cancelled",
       booking,
       room,
+    }),
+  });
+
+export const sendEnquiryConfirmationMail = async ({
+  to,
+  recipientName,
+  enquiry,
+}) =>
+  transporter.sendMail({
+    from: `"Villa Gulposh" <${process.env.SMTP_USER}>`,
+    to,
+    subject: "Enquiry Received - Villa Gulposh",
+    html: renderEnquiryEmailHtml({
+      recipientName: recipientName || enquiry?.name || "Guest",
+      introText:
+        "thank you for your enquiry. Our team has received it and will get back to you shortly.",
+      heading: "Enquiry Received",
+      footerText: "We will review your request and contact you soon. - Team Gulposh",
+      ctaLabel: "Visit Villa Gulposh",
+      ctaHref: "https://booking.villagulposh.com",
+      subjectLabel: "Enquiry received",
+      enquiry,
+      isAdmin: false,
+    }),
+  });
+
+export const sendAdminEnquiryNotificationMail = async ({
+  to,
+  enquiry,
+}) =>
+  transporter.sendMail({
+    from: `"Villa Gulposh" <${process.env.SMTP_USER}>`,
+    to,
+    subject: "New Enquiry Received - Villa Gulposh",
+    html: renderEnquiryEmailHtml({
+      recipientName: "Admin",
+      introText:
+        `a new enquiry has been submitted by ${enquiry?.name || "a guest"}.`,
+      heading: "New Enquiry Received",
+      footerText: "This is an automated admin notification from Villa Gulposh.",
+      ctaLabel: "Open Admin Dashboard",
+      ctaHref: "https://admin.villagulposh.com/enquiries",
+      subjectLabel: "New enquiry received",
+      enquiry,
+      isAdmin: true,
     }),
   });

@@ -1,5 +1,9 @@
 import Enquiry from "../models/Enquiry.js";
 import { notifyAdmin } from "../utils/notifyAdmin.js";
+import {
+  sendAdminEnquiryNotificationMail,
+  sendEnquiryConfirmationMail,
+} from "../utils/mailer.js";
 import admin from "../config/firebaseAdmin.js";
 import User from "../models/User.js";
 import { setSessionCookie } from "../utils/session.js";
@@ -56,6 +60,39 @@ export const createEntireVillaEnquiry = async (req, res) => {
       guests,
       dates: `${startDate} → ${endDate}`,
     });
+
+    const userEmail = String(user.email || email || "").trim();
+    if (userEmail) {
+      sendEnquiryConfirmationMail({
+        to: userEmail,
+        recipientName: user.name || name || "Guest",
+        enquiry,
+      })
+        .then(() => {
+          console.log("Enquiry confirmation mail sent:", userEmail);
+        })
+        .catch((err) => {
+          console.error("Enquiry confirmation mail error:", err.message);
+        });
+    } else {
+      console.warn("No user email found; enquiry confirmation mail skipped");
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL?.trim();
+    if (adminEmail) {
+      sendAdminEnquiryNotificationMail({
+        to: adminEmail,
+        enquiry,
+      })
+        .then(() => {
+          console.log("Admin enquiry mail sent:", adminEmail);
+        })
+        .catch((err) => {
+          console.error("Admin enquiry mail error:", err.message);
+        });
+    } else {
+      console.warn("ADMIN_EMAIL not configured; admin enquiry mail skipped");
+    }
 
     res.status(201).json({
       message: "Enquiry submitted successfully",

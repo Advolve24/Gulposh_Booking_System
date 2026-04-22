@@ -53,6 +53,8 @@ export const uploadImages = async (files) => {
 };
 
 export const getStats = () => api.get("/admin/stats").then(r => r.data);
+export const listEnquiriesAdmin = (params) =>
+  api.get("/admin/enquiries", { params }).then(r => r.data);
 
 export const updateBookingAdmin = (id, payload) =>
   api.put(`/admin/bookings/${id}`, payload).then(r => r.data);
