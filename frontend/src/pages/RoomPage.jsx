@@ -13,7 +13,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import {
   ShieldCheck, Clock, Ban, Music, Flame,
-  Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft, BedDouble, House, UtensilsCrossed, Info
+  Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft, BedDouble, House, UtensilsCrossed, Info, Instagram
 } from "lucide-react";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { getWeekendOfferState } from "../lib/weekendOffer";
@@ -169,6 +169,7 @@ function renderBedroomHighlight(text = "") {
     "2",
     "+ 1 extra guest",
     "+ 1 extra",
+    "King",
     "Queen",
     "bathroom",
     "shower cubicle",
@@ -706,7 +707,7 @@ function buildBedroomCards(images) {
       name: "The Jade Slipper",
       highlights: [
         "Accommodates 2 guests + 1 extra guest",
-        "Queen sized bed with attached bathroom",
+        "King sized bed with attached bathroom",
         "Bathroom includes shower cubicle, instant geyser, and essential toiletries",
         "Equipped with WiFi, AC, fan, and other essential amenities",
       ],
@@ -1166,6 +1167,57 @@ function ExperiencesSection() {
           </article>
         ))}
       </div>
+    </section>
+  );
+}
+
+function SneakPeekSection({ images = [] }) {
+  const instagramUrl = "https://www.instagram.com/villagulposh/";
+  const fallbackImages = [
+    "/EntireVilla.webp",
+    "/The-Jade-Slipper.webp",
+    "/Bonfire.webp",
+    "/Barbecue.webp",
+  ];
+
+  const previewImages = (images?.length ? images : fallbackImages)
+    .filter(Boolean)
+    .slice(0, 4);
+
+  const previewCards = previewImages.map((image, index) => ({
+    id: `peek-${index + 1}`,
+    image,
+    eyebrow: index % 2 === 0 ? "Reel" : "Post",
+    title:
+      [
+        "Villa corners",
+        "Bedroom moments",
+        "Golden hour vibes",
+        "Outdoor experiences",
+      ][index] || "Villa moments",
+  }));
+
+  return (
+    <section className="bg-[#ebebeb] p-4 rounded-[10px]">
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h3 className="text-lg sm:text-xl font-semibold">Sneak peek to the villa</h3>
+          <p className="mt-2 text-sm text-[#6d5c52]">
+            Catch glimpses of villa life, warm corners, and moments from Gulposh on Instagram.
+          </p>
+        </div>
+
+        <a
+          href={instagramUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
+        >
+          <Instagram className="h-4 w-4" />
+          Follow on Instagram
+        </a>
+      </div>
+
     </section>
   );
 }
@@ -2370,6 +2422,8 @@ export default function RoomPage() {
             )}
 
             <ExperiencesSection />
+
+            <SneakPeekSection images={allImages} />
 
             {/* FAQ */}
             <section>
