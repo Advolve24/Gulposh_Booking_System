@@ -1,5 +1,5 @@
 import { NavLink, Link, useLocation } from "react-router-dom";
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin, Instagram, Facebook } from "lucide-react";
 
 export default function Footer() {
       const { pathname } = useLocation();
@@ -156,10 +156,10 @@ export default function Footer() {
 
             {/* ================= BOTTOM BAR ================= */}
             <div className="border-t border-white/20 py-3 px-4 text-[13px] sm:text-[14px]">
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-white/80">
-                    <span>© 2026 Villa Gulposh. All rights reserved.</span>
+                <div className="max-w-7xl mx-auto grid grid-cols-1 gap-3 text-white/80 sm:grid-cols-3 sm:items-center">
+                    <span className="text-center sm:text-left">� 2026 Villa Gulposh. All rights reserved.</span>
 
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center justify-center gap-1 text-center">
                         Designed & Powered by{" "}
                         <a
                             href="https://advolve.in"
@@ -177,6 +177,28 @@ export default function Footer() {
                             />
                         </a>
                     </span>
+
+                    <div className="flex items-center justify-center gap-4 sm:justify-end">
+                        <a
+                            href="https://www.instagram.com/villagulposh/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Villa Gulposh Instagram"
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-primary transition hover:opacity-90"
+                        >
+                            <Instagram size={18} />
+                        </a>
+
+                        <a
+                            href="https://www.facebook.com/villagulposh/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Villa Gulposh Facebook"
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-primary transition hover:opacity-90"
+                        >
+                            <Facebook size={18} />
+                        </a>
+                    </div>
                 </div>
             </div>
         </footer>

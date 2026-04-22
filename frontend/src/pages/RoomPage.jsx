@@ -13,7 +13,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import {
   ShieldCheck, Clock, Ban, Music, Flame,
-  Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft, BedDouble
+  Users, IdCard, MapPin, Star, ChevronDown, ChevronLeft, ChevronRight, ArrowUpLeft, BedDouble, House, UtensilsCrossed, Info
 } from "lucide-react";
 import { toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { getWeekendOfferState } from "../lib/weekendOffer";
@@ -100,6 +100,112 @@ function clampGuestSelection(adultsValue, childrenValue, maxGuests) {
 const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
+const MEAL_MENU_PDF_URL = "/villa-gulposh-menu.pdf";
+const VILLA_LOCATION_URL =
+  "https://www.google.com/maps/dir/18.5827328,73.8885632/Villa+Gulposh,+House+no+32+A,+Dnyandeep+Co-Op+Housing+Society,+Villa+Gulposh+Vidyasagar+Properties+Pvt+Ltd,+Kirawali,+Deulwadi,+Maharashtra+410201/@18.7385871,73.2684341,92694m/data=!3m1!1e3!4m10!4m9!1m1!4e1!1m5!1m1!1s0x3be7fbd691fc22d7:0xad136b1d5b318a7d!2m2!1d73.3207934!2d18.920402!3e0?entry=ttu&g_ep=EgoyMDI2MDQxOS4wIKXMDSoASAFQAw%3D%3D";
+const VILLA_LOCATION_EMBED_URL =
+  "https://www.google.com/maps?q=Villa%20Gulposh%2C%20House%20no%2032%20A%2C%20Dnyandeep%20Co-Op%20Housing%20Society%2C%20Kirawali%2C%20Karjat%2C%20Maharashtra%20410201&z=9&output=embed";
+
+function MealInfoPopover({ iconClassName = "h-4 w-4", triggerClassName = "" }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Meal details"
+          className={`inline-flex items-center justify-center rounded-full text-[#d88a95] transition hover:opacity-80 ${triggerClassName}`}
+        >
+          <Info className={iconClassName} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={8}
+        className="w-[280px] rounded-2xl border border-[#e5ddd6] bg-white p-4 shadow-[0_18px_50px_-24px_rgba(42,32,27,0.35)]"
+      >
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-[#2A201B]">Meal details</p>
+            <p className="mt-1 text-sm leading-6 text-[#5f5248]">
+              Meals include Lunch, High Tea, Dinner, Breakfast.
+            </p>
+          </div>
+
+          <a
+            href={MEAL_MENU_PDF_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center rounded-xl bg-[#7f1124] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6c0e1e]"
+          >
+            View menu
+          </a>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function RoomFeatureChip({ icon: Icon, label, withMealInfo = false }) {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-[8px] bg-[#ebebeb] px-3 py-2 text-sm font-medium text-[#2A201B]">
+      <Icon className="h-4 w-4 text-[#d88a95]" />
+      <span>{label}</span>
+      {withMealInfo ? <MealInfoPopover iconClassName="h-4 w-4" /> : null}
+    </div>
+  );
+}
+
+function MealsIncludedNote() {
+  return (
+    <div className="mt-1 inline-flex items-center gap-1.5 text-sm text-green-600">
+      <span>All Meals are included</span>
+      <MealInfoPopover iconClassName="h-4 w-4" />
+    </div>
+  );
+}
+
+function renderBedroomHighlight(text = "") {
+  const phrases = [
+    "2",
+    "+ 1 extra guest",
+    "+ 1 extra",
+    "Queen",
+    "bathroom",
+    "shower cubicle",
+    "geyser",
+    "WiFi",
+    "AC",
+    "fan",
+  ];
+
+  const escaped = phrases
+    .sort((a, b) => b.length - a.length)
+    .map((phrase) => {
+      const escapedPhrase = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const startsWithWord = /^[A-Za-z0-9]/.test(phrase);
+      const endsWithWord = /[A-Za-z0-9]$/.test(phrase);
+      const leftBoundary = startsWithWord ? "(?<![A-Za-z0-9])" : "";
+      const rightBoundary = endsWithWord ? "(?![A-Za-z0-9])" : "";
+      return `${leftBoundary}${escapedPhrase}${rightBoundary}`;
+    });
+  const matcher = new RegExp(`(${escaped.join("|")})`, "gi");
+  const parts = text.split(matcher);
+
+  return parts.map((part, index) => {
+    const isHighlighted = phrases.some(
+      (phrase) => phrase.toLowerCase() === part.toLowerCase()
+    );
+
+    return isHighlighted ? (
+      <strong key={`${part}-${index}`} className="font-semibold text-[#2A201B]">
+        {part}
+      </strong>
+    ) : (
+      <span key={`${part}-${index}`}>{part}</span>
+    );
+  });
+}
+
 function RoomNightlyPrices({
   room,
   range,
@@ -159,9 +265,7 @@ function RoomNightlyPrices({
           </>
         )}
       </div>
-      {mealsLabel ? (
-        <div className="mt-1 text-sm text-green-600">{mealsLabel}</div>
-      ) : null}
+      {mealsLabel ? <MealsIncludedNote /> : null}
     </div>
   );
 }
@@ -588,7 +692,13 @@ function PriceBreakupSummary({ pricingSummary }) {
 }
 
 function buildBedroomCards(images) {
-  const safeImages = images?.length ? ["/The-Jade-Slipper.webp", "/The-Blue-Vanda.webp", "/The-White-Egret.webp" ] : ["/placeholder-room.jpg"];
+  const dedicatedImages = [
+    "/The-Jade-Slipper.webp",
+    "/The-Blue-Vanda.webp",
+    "/The-White-Egret.webp",
+  ];
+  const galleryImages = Array.isArray(images) ? images.filter(Boolean) : [];
+  const fallbackImage = "/placeholder-room.jpg";
 
   const bedroomContent = [
     {
@@ -625,7 +735,10 @@ function buildBedroomCards(images) {
 
   return bedroomContent.map((item, index) => ({
     ...item,
-    image: safeImages[index % safeImages.length],
+    images: [
+      dedicatedImages[index] || fallbackImage,
+      ...galleryImages.filter((_, galleryIndex) => galleryIndex % bedroomContent.length === index),
+    ].filter((image, imageIndex, arr) => arr.indexOf(image) === imageIndex),
   }));
 }
 
@@ -635,6 +748,9 @@ function BedroomsSection({ images = [] }) {
   const dragStartXRef = useRef(null);
   const dragDeltaXRef = useRef(0);
   const [activeCard, setActiveCard] = useState(0);
+  const [activeBedroomPhotos, setActiveBedroomPhotos] = useState({});
+  const [lightboxBedroom, setLightboxBedroom] = useState(null);
+  const [lightboxPhotoIndex, setLightboxPhotoIndex] = useState(0);
   const [cardsPerView, setCardsPerView] = useState(() =>
     typeof window !== "undefined" && window.innerWidth >= 1024 ? 2 : 1
   );
@@ -678,6 +794,58 @@ function BedroomsSection({ images = [] }) {
 
   const goNext = () => {
     setActiveCard((current) => Math.min(maxDotIndex, current + 1));
+  };
+
+  const setBedroomPhoto = (cardId, nextIndex) => {
+    setActiveBedroomPhotos((current) => ({
+      ...current,
+      [cardId]: nextIndex,
+    }));
+  };
+
+  const goToNextBedroomPhoto = (cardId, totalPhotos) => {
+    if (totalPhotos <= 1) return;
+    const currentIndex = activeBedroomPhotos[cardId] || 0;
+    setBedroomPhoto(cardId, (currentIndex + 1) % totalPhotos);
+  };
+
+  const goToPrevBedroomPhoto = (cardId, totalPhotos) => {
+    if (totalPhotos <= 1) return;
+    const currentIndex = activeBedroomPhotos[cardId] || 0;
+    setBedroomPhoto(cardId, (currentIndex - 1 + totalPhotos) % totalPhotos);
+  };
+
+  const openBedroomLightbox = (card, startIndex = 0) => {
+    setLightboxBedroom(card);
+    setLightboxPhotoIndex(startIndex);
+  };
+
+  const closeBedroomLightbox = () => {
+    setLightboxBedroom(null);
+    setLightboxPhotoIndex(0);
+  };
+
+  const goToNextLightboxPhoto = () => {
+    const totalPhotos = lightboxBedroom?.images?.length || 0;
+    if (totalPhotos <= 1) return;
+    setLightboxPhotoIndex((current) => (current + 1) % totalPhotos);
+  };
+
+  const goToPrevLightboxPhoto = () => {
+    const totalPhotos = lightboxBedroom?.images?.length || 0;
+    if (totalPhotos <= 1) return;
+    setLightboxPhotoIndex((current) => (current - 1 + totalPhotos) % totalPhotos);
+  };
+
+  const stopSliderEvent = (event) => {
+    event.stopPropagation();
+  };
+
+  const stopSliderPointerStart = (event) => {
+    event.stopPropagation();
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
   };
 
   const handlePointerDown = (event) => {
@@ -766,22 +934,91 @@ function BedroomsSection({ images = [] }) {
                 className="shrink-0 overflow-hidden rounded-[22px] border border-[#eadfd6] bg-white "
                 style={{ width: visibleCardWidth ? `${visibleCardWidth}px` : cardsPerView === 2 ? "calc(50% - 14px)" : "100%" }}
               >
+                {(() => {
+                  const totalPhotos = card.images?.length || 1;
+                  const activePhoto = activeBedroomPhotos[card.id] || 0;
+                  const currentImage = card.images?.[activePhoto] || "/placeholder-room.jpg";
+
+                  return (
                 <div className="relative">
                   <img
-                    src={card.image}
+                    src={currentImage}
                     alt={card.name}
                     className="h-[210px] lg:h-[225px] w-full object-cover"
                   />
+
+                  <button
+                    type="button"
+                    onMouseDown={stopSliderPointerStart}
+                    onTouchStart={stopSliderPointerStart}
+                    onPointerDown={stopSliderPointerStart}
+                    onClick={() => openBedroomLightbox(card, activePhoto)}
+                    className="absolute inset-0 z-[1] block w-full cursor-pointer text-left"
+                    aria-label={`Open photo gallery for ${card.name}`}
+                  />
+
+                  <div className="absolute left-4 top-4 rounded-xl bg-black/65 px-3 py-1 text-sm font-semibold tracking-wide text-white">
+                    {activePhoto + 1}/{totalPhotos}
+                  </div>
+
+                  {totalPhotos > 1 ? (
+                    <>
+                      <button
+                        type="button"
+                        onMouseDown={stopSliderPointerStart}
+                        onTouchStart={stopSliderPointerStart}
+                        onPointerDown={stopSliderPointerStart}
+                        onClick={() => goToPrevBedroomPhoto(card.id, totalPhotos)}
+                        className="absolute left-4 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-white/95 text-[#2A201B] shadow-md transition hover:bg-white"
+                        aria-label={`Previous photo for ${card.name}`}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onMouseDown={stopSliderPointerStart}
+                        onTouchStart={stopSliderPointerStart}
+                        onPointerDown={stopSliderPointerStart}
+                        onClick={() => goToNextBedroomPhoto(card.id, totalPhotos)}
+                        className="absolute right-4 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-white/95 text-[#2A201B] shadow-md transition hover:bg-white"
+                        aria-label={`Next photo for ${card.name}`}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : null}
+
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent px-5 pb-5 pt-10">
                     <h4 className="text-lg lg:text-xl font-semibold text-white">{card.name}</h4>
+                    {totalPhotos > 1 ? (
+                      <div className="mt-3 flex items-center justify-center gap-2">
+                        {card.images.map((_, imageIndex) => (
+                          <button
+                            key={`${card.id}-dot-${imageIndex}`}
+                            type="button"
+                            onMouseDown={stopSliderPointerStart}
+                            onTouchStart={stopSliderPointerStart}
+                            onPointerDown={stopSliderPointerStart}
+                            onClick={() => setBedroomPhoto(card.id, imageIndex)}
+                            className={`z-10 cursor-pointer h-2.5 rounded-full transition ${
+                              imageIndex === activePhoto ? "w-6 bg-white" : "w-2.5 bg-white/60"
+                            }`}
+                            aria-label={`Show photo ${imageIndex + 1} for ${card.name}`}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
+                  );
+                })()}
 
                 <div className="space-y-1 px-4 py-4 text-sm lg:text-[14px] leading-5 text-[#3b302a]">
                   {card.highlights.map((item) => (
                     <div key={item} className="flex items-start gap-3">
                       <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-primary" />
-                      <p>{item}</p>
+                      <p>{renderBedroomHighlight(item)}</p>
                     </div>
                   ))}
                 </div>
@@ -789,6 +1026,145 @@ function BedroomsSection({ images = [] }) {
             ))}
           </div>
         </div>
+      </div>
+
+      <Dialog open={!!lightboxBedroom} onOpenChange={(open) => !open && closeBedroomLightbox()}>
+        <DialogContent className="w-[92vw] max-w-4xl overflow-hidden rounded-[28px] border border-[#eadfd6] bg-white p-0 [&>button]:right-4 [&>button]:top-4 [&>button]:z-20 [&>button]:flex [&>button]:h-11 [&>button]:w-11 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:border [&>button]:border-[#d8d3cd] [&>button]:bg-white [&>button]:p-0 [&>button]:text-[#2A201B] [&>button]:opacity-100 [&>button]:shadow-md">
+          {lightboxBedroom ? (
+            <div className="relative bg-white">
+              <img
+                src={lightboxBedroom.images?.[lightboxPhotoIndex] || "/placeholder-room.jpg"}
+                alt={lightboxBedroom.name}
+                className="h-[56vh] w-full bg-white object-contain p-4 md:h-[72vh] md:p-6"
+              />
+
+              <div className="absolute left-5 top-5 rounded-xl bg-black/65 px-3 py-1 text-sm font-semibold tracking-wide text-white">
+                {lightboxPhotoIndex + 1}/{lightboxBedroom.images?.length || 1}
+              </div>
+
+              {(lightboxBedroom.images?.length || 0) > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={goToPrevLightboxPhoto}
+                    className="absolute left-5 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-[#2A201B] shadow-md transition hover:bg-white"
+                    aria-label={`Previous photo for ${lightboxBedroom.name}`}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={goToNextLightboxPhoto}
+                    className="absolute right-5 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/95 text-[#2A201B] shadow-md transition hover:bg-white"
+                    aria-label={`Next photo for ${lightboxBedroom.name}`}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              ) : null}
+
+              <div className="px-6 pb-6 pt-2">
+                <h4 className="text-xl font-semibold text-[#2A201B]">{lightboxBedroom.name}</h4>
+                {(lightboxBedroom.images?.length || 0) > 1 ? (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    {lightboxBedroom.images.map((_, imageIndex) => (
+                      <button
+                        key={`${lightboxBedroom.id}-lightbox-dot-${imageIndex}`}
+                        type="button"
+                        onClick={() => setLightboxPhotoIndex(imageIndex)}
+                        className={`h-2.5 rounded-full transition ${
+                          imageIndex === lightboxPhotoIndex ? "w-6 bg-primary" : "w-2.5 bg-[#e5b9c0]"
+                        }`}
+                        aria-label={`Show photo ${imageIndex + 1} for ${lightboxBedroom.name}`}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}
+
+function ExperiencesSection() {
+  const [activeTab, setActiveTab] = useState("paid");
+
+  const experiences = {
+    paid: [
+      {
+        id: "barbecue",
+        title: "Barbecue",
+        price: "500 / night",
+        image: "/Barbecue.webp",
+      },
+      {
+        id: "bonfire",
+        title: "Bonfire",
+        price: "650 / night",
+        image: "/Bonfire.webp",
+      },
+    ],
+  };
+
+  const tabs = [
+    { id: "paid", label: "Paid" },
+  ];
+
+  const items = experiences[activeTab] || [];
+
+  return (
+    <section>
+      <div className="mb-5">
+        <h3 className="text-lg sm:text-xl font-semibold">Experiences</h3>
+        <p className="mt-2 text-sm text-[#6d5c52]">
+          Enjoy a variety of experiences, request yours after booking.
+        </p>
+      </div>
+
+      <div className="mb-5 flex flex-wrap gap-3">
+        {tabs.map((tab) => {
+          const active = tab.id === activeTab;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                active
+                  ? "bg-[#6608100f] text-[#2A201B]"
+                  : "bg-white text-[#6d5c52] hover:bg-[#faf7f4]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {items.map((item) => (
+          <article
+            key={item.id}
+            className="overflow-hidden rounded-[22px] border border-[#eadfd6] bg-white shadow-[0_14px_30px_-28px_rgba(42,32,27,0.45)]"
+          >
+            <img
+              src={item.image}
+              alt={item.title}
+              className="h-[220px] w-full object-cover"
+            />
+
+            <div className="space-y-2 px-4 py-4">
+              <h4 className="text-xl font-semibold text-[#2A201B]">{item.title}</h4>
+              <p className="text-[15px] text-[#6d5c52]">
+                Starting ₹{item.price}
+              </p>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -1224,9 +1600,7 @@ function MobileStickyBookingBar({
                 )}
                 <span className="ml-1 text-sm font-normal text-muted-foreground">/ N Incl. Taxes</span>
               </div>
-              {room?.mealMode === "only" ? (
-                <div className="mt-1 text-sm text-green-600">All Meals are included</div>
-              ) : null}
+              {room?.mealMode === "only" ? <MealsIncludedNote /> : null}
             </>
           )}
         </div>
@@ -1301,7 +1675,7 @@ export default function RoomPage() {
   });
 
   const handleBack = () => {
-    navigate(DEFAULT_ROOM_PATH, { state: { scrollToResults: true } });
+    window.location.href = "https://villagulposh.com";
   };
 
 
@@ -1429,6 +1803,16 @@ export default function RoomPage() {
       room.reviews.reduce((a, r) => a + r.rating, 0) / room.reviews.length
     ).toFixed(1);
   }, [room]);
+
+  const roomBaseGuests = Number(room?.baseGuests || 6);
+  const roomMaxGuests = Number(room?.maxGuests || 10);
+  const roomAddressLine = room?.location || "Karjat, Maharashtra";
+  const roomFeatureChips = [
+    { icon: Users, label: `${roomBaseGuests}–${roomMaxGuests} Guests` },
+    { icon: BedDouble, label: "3 Bedrooms" },
+    { icon: House, label: "Entire Home" },
+    { icon: UtensilsCrossed, label: "Meals Available", withMealInfo: true },
+  ];
 
   const weekendOffer = useMemo(() => {
     if (!range?.from || !range?.to) {
@@ -1764,12 +2148,23 @@ export default function RoomPage() {
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-3 md:items-center">
           <div className="mt-4">
-            <h1 className="text-xl sm:text-2xl font-bold">{room.name}</h1>
-            <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              Upto {room.maxGuests} guests
-            </span>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#2A201B]">{room.name}</h1>
+            <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4 text-[#7a6c62]" />
+              <span>{roomAddressLine}</span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {roomFeatureChips.map((chip) => (
+                <RoomFeatureChip
+                  key={chip.label}
+                  icon={chip.icon}
+                  label={chip.label}
+                  withMealInfo={chip.withMealInfo}
+                />
+              ))}
+            </div>
             {avgRating && (
-              <div className="flex items-center gap-1 text-sm mt-1">
+              <div className="flex items-center gap-1 text-sm mt-3">
                 <Star className="w-4 h-4 text-yellow-500" />
                 <span>{avgRating}</span>
                 <span className="text-muted-foreground">
@@ -1836,11 +2231,30 @@ export default function RoomPage() {
             <section>
               <h3 className="text-lg sm:text-xl font-semibold mb-2">Location</h3>
 
-              <div className="flex gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-primary" />
-                <a href="https://maps.google.com/?q=House+no+32+A,+Dnyandeep+Co-Op+Housing+Society,+Villa+Gulposh+Vidyasagar+Properties+Pvt+Ltd,+Kirawali,+Deulwadi,+Maharashtra+410201" target="_blank" rel="noopener noreferrer">
-                   Villa Gulposh, Vidyasagar Properties Pvt Ltd. House no 32 A, Dnyandeep<br/> Society, Kirawali, Karjat - 410201
-                </a>
+              <div className="space-y-4">
+                <div className="flex gap-2 text-sm">
+                  <MapPin className="w-4 h-4 text-primary mt-0.5" />
+                  <a
+                    href={VILLA_LOCATION_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary transition"
+                  >
+                    Villa Gulposh, Vidyasagar Properties Pvt Ltd. House no 32 A, Dnyandeep
+                    <br />
+                    Society, Kirawali, Karjat - 410201
+                  </a>
+                </div>
+
+                <div className="overflow-hidden rounded-[22px] border border-[#eadfd6] bg-white shadow-[0_14px_30px_-28px_rgba(42,32,27,0.45)]">
+                  <iframe
+                    title="Villa Gulposh location map"
+                    src={VILLA_LOCATION_EMBED_URL}
+                    className="h-[260px] w-full md:h-[340px]"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
               </div>
             </section>
 
@@ -1955,6 +2369,8 @@ export default function RoomPage() {
               </section>
             )}
 
+            <ExperiencesSection />
+
             {/* FAQ */}
             <section>
               <h3 className="text-lg sm:text-xl font-semibold mb-4">
@@ -1964,16 +2380,16 @@ export default function RoomPage() {
               <div className="space-y-3">
                 {[
                   {
-                    q: "How do I book Villa Gulposh?",
-                    a: "You can book directly through our booking portal: booking.villagulposh.com. Select dates, enter guest details, and complete payment to confirm the booking.",
+                    q: "Can I book only one or two rooms, or do I need to book the entire Home?",
+                    a: "No, you cannot book just one room. You would need to book the entire home.",
                   },
                   {
-                    q: "Is my booking confirmed immediately after payment?",
-                    a: "Yes—once payment is successful and the booking confirmation is generated on the portal, your booking is considered confirmed.",
+                    q: "Are meals provided onsite? What are the charges?",
+                    a: "Meals are provided onsite and can be availed at additional charges. We levy an on-site cash handling charge and request you to pay for all meals before check-in to avoid this inconvenience. Furthermore, all digitally checked-in guests can avail of additional Reward Points and Villa gulposh Infinitum benefits for pre-paid meals.\n\nTea/Coffee will be served during breakfast and afternoon tea time. If you would like tea/coffee during the day, this will be arranged at an additional charge.",
                   },
                   {
-                    q: "What payment methods do you accept?",
-                    a: "We accept online payments via Razorpay (UPI, cards, netbanking, etc. as supported by Razorpay).",
+                    q: "Do you allow loud music?",
+                    a: "We're planning to drive down. Are the roads good? Any specific things we need to know?",
                   },
                   {
                     q: "What are the check-in and check-out timings?",
@@ -2164,9 +2580,7 @@ export default function RoomPage() {
                   )}
                   <span className="ml-1 text-sm font-normal text-muted-foreground">/ N Incl. Taxes</span>
                 </div>
-                {room?.mealMode === "only" ? (
-                  <div className="mt-1 text-sm text-green-600">All Meals are included</div>
-                ) : null}
+                {room?.mealMode === "only" ? <MealsIncludedNote /> : null}
               </>
             )}
           </div>
