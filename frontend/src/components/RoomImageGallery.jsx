@@ -176,7 +176,7 @@ export default function RoomImageGallery({ images = [], title = "Room gallery" }
               />
 
               {isLast && list.length > 1 ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition duration-300 group-hover:bg-black/55 group-hover:opacity-100">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition duration-300 group-hover:bg-black/55">
                   <span className="rounded-[8px] bg-white/95 px-5 py-2 text-sm font-semibold text-[#2A201B] shadow-lg">
                     View More
                   </span>
