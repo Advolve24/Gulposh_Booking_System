@@ -232,7 +232,7 @@ export default function RoomImageGallery({ images = [], title = "Room gallery" }
           </div>
 
           {list.length > 1 ? (
-            <div className="flex gap-2 overflow-x-auto border-t border-[#eadfd6] bg-white px-4 py-3">
+            <div className="flex justify-center gap-2 overflow-x-auto border-t border-[#eadfd6] bg-white px-4 py-3">
               {list.map((image, index) => (
                 <button
                   type="button"
