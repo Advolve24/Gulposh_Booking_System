@@ -106,6 +106,8 @@ const VILLA_LOCATION_URL =
   "https://www.google.com/maps/dir/18.5827328,73.8885632/Villa+Gulposh,+House+no+32+A,+Dnyandeep+Co-Op+Housing+Society,+Villa+Gulposh+Vidyasagar+Properties+Pvt+Ltd,+Kirawali,+Deulwadi,+Maharashtra+410201/@18.7385871,73.2684341,92694m/data=!3m1!1e3!4m10!4m9!1m1!4e1!1m5!1m1!1s0x3be7fbd691fc22d7:0xad136b1d5b318a7d!2m2!1d73.3207934!2d18.920402!3e0?entry=ttu&g_ep=EgoyMDI2MDQxOS4wIKXMDSoASAFQAw%3D%3D";
 const VILLA_LOCATION_EMBED_URL =
   "https://www.google.com/maps?q=Villa%20Gulposh%2C%20House%20no%2032%20A%2C%20Dnyandeep%20Co-Op%20Housing%20Society%2C%20Kirawali%2C%20Karjat%2C%20Maharashtra%20410201&z=9&output=embed";
+const GOOGLE_REVIEWS_URL =
+  "https://www.google.com/search?sca_esv=36c9f6b89ecd9dae&rlz=1C1RXQR_en-GBIN1072IN1072&sxsrf=ANbL-n64g1KbuAVP5LLpqdu5FjZyyxqRgA:1776944777978&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOURoCHVfIn80LwxZsUmwV7cz1C90e0OvCQIF9f_uVMQEgHqeCnx7_FmycD5nqliZDuN0NHO7Ta6f52TfqO8PN4hnLaTI&q=Villa+Gulposh+Reviews&sa=X&ved=2ahUKEwjWmJuS84OUAxVoRWcHHa9XOs0Q0bkNegQIJBAH&biw=1366&bih=641&dpr=1";
 
 function MealInfoPopover({ iconClassName = "h-4 w-4", triggerClassName = "" }) {
   return (
@@ -2178,8 +2180,8 @@ export default function RoomPage() {
                 House Rules
               </h3>
 
-              <ul className="space-y-3 text-sm">
-                {(room.houseRules || []).map((r, i) => {
+              <ul className="grid grid-cols-1 gap-x-10 gap-y-1 text-sm sm:grid-flow-col sm:grid-cols-2 sm:grid-rows-3">
+                {(room.houseRules || []).slice(0, 5).map((r, i) => {
                   const Icon = ruleIcon(r);
                   return (
                     <li key={i} className="flex gap-3">
@@ -2188,6 +2190,14 @@ export default function RoomPage() {
                     </li>
                   );
                 })}
+                <li>
+                  <Link
+                    to="/house-rules"
+                    className="inline-flex items-center rounded-[8px] bg-white px-4 py-2 text-sm font-semibold text-primary shadow-[0_2px_6px_rgba(42,32,27,0.08),0_14px_30px_rgba(42,32,27,0.12)] transition hover:text-[#7f1124] hover:shadow-[0_4px_10px_rgba(42,32,27,0.1),0_18px_36px_rgba(42,32,27,0.14)]"
+                  >
+                    View all
+                  </Link>
+                </li>
               </ul>
             </section>
 
@@ -2245,7 +2255,9 @@ export default function RoomPage() {
                   <>
                     <MobileReviewsSlider
                       reviews={room.reviews}
-                      onViewMore={() => setShowAllReviews(true)}
+                      onViewMore={() => {
+                        window.location.href = GOOGLE_REVIEWS_URL;
+                      }}
                     />
                     <div className="hidden space-y-4 md:block">
                       {room.reviews.slice(0, 2).map((r, i) => (
@@ -2315,13 +2327,12 @@ export default function RoomPage() {
                   </>
                 )}
                 {room.reviews.length > 2 && !showAllReviews && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllReviews(true)}
-                    className="mt-4 hidden w-full border rounded-lg py-2 text-sm hover:bg-muted transition md:block"
+                  <a
+                    href={GOOGLE_REVIEWS_URL}
+                    className="mt-4 hidden w-full rounded-lg border py-2 text-center text-sm transition hover:bg-muted md:block"
                   >
                     View All Reviews
-                  </button>
+                  </a>
                 )}
                 {showAllReviews && (
                   <button
