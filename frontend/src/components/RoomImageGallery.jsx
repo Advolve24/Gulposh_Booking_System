@@ -12,6 +12,8 @@ export default function RoomImageGallery({ images = [], title = "Room gallery" }
   const previewImages = list.slice(0, 4);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [mobileActiveIndex, setMobileActiveIndex] = useState(0);
+  const [showAllMobileThumbs, setShowAllMobileThumbs] = useState(false);
 
   const openGallery = (index = 0) => {
     setActiveIndex(index);
@@ -42,16 +44,109 @@ export default function RoomImageGallery({ images = [], title = "Room gallery" }
     if (activeIndex > list.length - 1) {
       setActiveIndex(0);
     }
-  }, [activeIndex, list.length]);
+
+    if (mobileActiveIndex > list.length - 1) {
+      setMobileActiveIndex(0);
+    }
+  }, [activeIndex, mobileActiveIndex, list.length]);
+
+  useEffect(() => {
+    setShowAllMobileThumbs(false);
+  }, [list]);
 
   if (!previewImages.length) return null;
 
   const activeImage = list[activeIndex] || list[0];
+  const mobileActiveImage = list[mobileActiveIndex] || list[0];
+  const visibleMobileThumbs = showAllMobileThumbs ? list : list.slice(0, 3);
+  const remainingMobileThumbs = Math.max(0, list.length - 3);
   const lastPreviewIndex = previewImages.length - 1;
 
   return (
     <>
-      <div className="grid h-[260px] grid-cols-2 gap-2 overflow-hidden rounded-[18px] sm:h-[340px] md:h-[420px] md:grid-cols-4 md:grid-rows-2">
+      <div className="space-y-3 md:hidden">
+        <div className="relative overflow-hidden rounded-xl">
+          <img
+            src={mobileActiveImage}
+            alt={`${title} ${mobileActiveIndex + 1}`}
+            className="h-[220px] w-full object-cover transition-all duration-300 sm:h-[320px]"
+            draggable={false}
+          />
+
+          {list.length > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  setMobileActiveIndex((current) =>
+                    current === 0 ? list.length - 1 : current - 1
+                  )
+                }
+                className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 shadow"
+                aria-label="Previous image"
+              >
+                <ChevronLeft />
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setMobileActiveIndex((current) =>
+                    current === list.length - 1 ? 0 : current + 1
+                  )
+                }
+                className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 shadow"
+                aria-label="Next image"
+              >
+                <ChevronRight />
+              </button>
+            </>
+          ) : null}
+        </div>
+
+        <div
+          className={
+            showAllMobileThumbs
+              ? "flex gap-3 overflow-x-auto"
+              : "grid grid-cols-4 gap-2"
+          }
+        >
+          {visibleMobileThumbs.map((image, index) => (
+            <button
+              type="button"
+              key={`${image}-mobile-${index}`}
+              onClick={() => setMobileActiveIndex(index)}
+              className={`overflow-hidden rounded-lg border-2 transition ${
+                index === mobileActiveIndex
+                  ? "border-primary"
+                  : "border-transparent opacity-70 hover:opacity-100"
+              }`}
+              aria-label={`Show ${title} image ${index + 1}`}
+            >
+              <img
+                src={image}
+                alt=""
+                className={`object-cover ${
+                  showAllMobileThumbs ? "h-[64px] w-[96px] shrink-0" : "h-[56px] w-full"
+                }`}
+                draggable={false}
+              />
+            </button>
+          ))}
+
+          {!showAllMobileThumbs && remainingMobileThumbs > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowAllMobileThumbs(true)}
+              className="flex h-[56px] w-full items-center justify-center rounded-lg border-2 border-dashed border-[#d7cbc4] bg-[#faf7f4] px-2 text-center text-[12px] font-semibold text-[#2A201B] transition hover:bg-[#f4ece6]"
+            >
+              View More
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="hidden h-[260px] grid-cols-2 gap-2 overflow-hidden rounded-[18px] sm:h-[340px] md:grid md:h-[420px] md:grid-cols-4 md:grid-rows-2">
         {previewImages.map((image, index) => {
           const isHero = index === 0;
           const isTall = index === 1;
@@ -81,8 +176,8 @@ export default function RoomImageGallery({ images = [], title = "Room gallery" }
               />
 
               {isLast && list.length > 1 ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/35 group-hover:opacity-100">
-                  <span className="rounded-[8px] bg-white px-5 py-2 text-sm font-semibold text-[#2A201B] shadow-lg">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition duration-300 group-hover:bg-black/55 group-hover:opacity-100">
+                  <span className="rounded-[8px] bg-white/95 px-5 py-2 text-sm font-semibold text-[#2A201B] shadow-lg">
                     View More
                   </span>
                 </div>
@@ -93,14 +188,14 @@ export default function RoomImageGallery({ images = [], title = "Room gallery" }
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="w-[94vw] max-w-6xl overflow-hidden rounded-[8px] border border-white/10 bg-[#111] p-0 text-white shadow-2xl [&>button]:right-4 [&>button]:top-4 [&>button]:z-30 [&>button]:flex [&>button]:h-10 [&>button]:w-10 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:bg-white/90 [&>button]:p-0 [&>button]:text-[#2A201B] [&>button]:opacity-100">
+        <DialogContent className="w-[94vw] max-w-6xl overflow-hidden rounded-[8px] border border-[#eadfd6] bg-white p-0 text-[#2A201B] shadow-2xl [&>button]:right-4 [&>button]:top-4 [&>button]:z-30 [&>button]:flex [&>button]:h-10 [&>button]:w-10 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:bg-white [&>button]:p-0 [&>button]:text-[#2A201B] [&>button]:opacity-100 [&>button]:shadow-md">
           <DialogTitle className="sr-only">{title}</DialogTitle>
           <DialogDescription className="sr-only">
             Browse all room images with previous and next controls.
           </DialogDescription>
 
           <div className="relative">
-            <div className="flex h-[62vh] min-h-[320px] items-center justify-center bg-black sm:h-[72vh]">
+            <div className="flex h-[62vh] min-h-[320px] items-center justify-center bg-white sm:h-[72vh]">
               <img
                 src={activeImage}
                 alt={`${title} ${activeIndex + 1}`}
@@ -131,13 +226,13 @@ export default function RoomImageGallery({ images = [], title = "Room gallery" }
               </>
             ) : null}
 
-            <div className="absolute bottom-3 left-1/2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur -translate-x-1/2">
+            <div className="absolute bottom-3 left-1/2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#2A201B] shadow-md backdrop-blur -translate-x-1/2">
               {activeIndex + 1} / {list.length}
             </div>
           </div>
 
           {list.length > 1 ? (
-            <div className="flex gap-2 overflow-x-auto bg-[#151515] px-4 py-3">
+            <div className="flex gap-2 overflow-x-auto border-t border-[#eadfd6] bg-white px-4 py-3">
               {list.map((image, index) => (
                 <button
                   type="button"
@@ -145,7 +240,7 @@ export default function RoomImageGallery({ images = [], title = "Room gallery" }
                   onClick={() => setActiveIndex(index)}
                   className={`h-16 w-24 shrink-0 overflow-hidden rounded-[8px] border-2 transition ${
                     index === activeIndex
-                      ? "border-white opacity-100"
+                      ? "border-[#7f1124] opacity-100"
                       : "border-transparent opacity-60 hover:opacity-100"
                   }`}
                   aria-label={`Show image ${index + 1}`}
