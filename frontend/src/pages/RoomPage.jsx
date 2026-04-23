@@ -4,6 +4,7 @@ import { useAuth } from "../store/authStore";
 import { api } from "../api/http";
 import CalendarRange from "../components/CalendarRange";
 import GuestCounter from "../components/GuestCounter";
+import RoomImageGallery from "../components/RoomImageGallery";
 import { amenityCategories } from "../data/aminities";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -1711,8 +1712,6 @@ export default function RoomPage() {
   const [bookedAll, setBookedAll] = useState([]);
   const [blackoutRanges, setBlackoutRanges] = useState([]);
 
-  const [activeImage, setActiveImage] = useState(0);
-  const [showAllGalleryThumbs, setShowAllGalleryThumbs] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const [showMobileBreakup, setShowMobileBreakup] = useState(false);
@@ -1840,14 +1839,6 @@ export default function RoomPage() {
     () => normalizeImageList([room?.coverImage, ...(room?.galleryImages || [])]),
     [room]
   );
-  const visibleGalleryThumbs = showAllGalleryThumbs
-    ? allImages
-    : allImages.slice(0, 3);
-  const remainingGalleryThumbs = Math.max(0, allImages.length - 3);
-
-  useEffect(() => {
-    setShowAllGalleryThumbs(false);
-  }, [room?._id]);
 
   const avgRating = useMemo(() => {
     if (!room?.reviews?.length) return null;
@@ -2118,84 +2109,7 @@ export default function RoomPage() {
           Back
         </button>
 
-        {/* IMAGE SLIDER WITH THUMBNAILS */}
-        <div className="space-y-3">
-          {/* MAIN IMAGE */}
-          <div className="relative rounded-xl overflow-hidden">
-            <img
-              src={allImages[activeImage]}
-              alt=""
-              className="w-full h-[220px] sm:h-[320px] md:h-[420px] object-cover transition-all duration-300"
-            />
-
-            {/* NAV */}
-            {allImages.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActiveImage((p) =>
-                      p === 0 ? allImages.length - 1 : p - 1
-                    )
-                  }
-                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center shadow"
-                >
-                  <ChevronLeft />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActiveImage((p) =>
-                      p === allImages.length - 1 ? 0 : p + 1
-                    )
-                  }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center shadow"
-                >
-                  <ChevronRight />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* THUMBNAILS */}
-          <div
-            className={
-              showAllGalleryThumbs
-                ? "flex gap-3 overflow-x-auto scrollbar-hide"
-                : "grid grid-cols-4 gap-2 md:flex md:items-start"
-            }
-          >
-            {visibleGalleryThumbs.map((img, i) => (
-              <button
-                type="button"
-                key={i}
-                onClick={() => setActiveImage(i)}
-                className={`rounded-lg overflow-hidden border-2 transition md:w-[110px]
-                  ${i === activeImage
-                    ? "border-primary"
-                    : "border-transparent opacity-70 hover:opacity-100"
-                  }`}
-              >
-                <img
-                  src={img}
-                  alt=""
-                  className={`object-cover ${showAllGalleryThumbs ? "h-[64px] w-[96px] shrink-0" : "h-[56px] w-full md:w-[110px]"}`}
-                />
-              </button>
-            ))}
-
-            {!showAllGalleryThumbs && remainingGalleryThumbs > 0 ? (
-              <button
-                type="button"
-                onClick={() => setShowAllGalleryThumbs(true)}
-                className="flex h-[56px] w-full items-center justify-center rounded-lg border-2 border-dashed border-[#d7cbc4] bg-[#faf7f4] px-2 text-center text-[12px] font-semibold text-[#2A201B] transition hover:bg-[#f4ece6] md:w-[110px]"
-              >
-                View More
-              </button>
-            ) : null}
-          </div>
-        </div>
+        <RoomImageGallery images={allImages} title={room.name} />
 
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:justify-between gap-3 md:items-center">

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../store/authStore";
 import {
   DropdownMenu,
@@ -49,9 +49,13 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-6 h-[64px] flex items-center justify-between">
 
         {/* LOGO */}
-        <Link to="/" className="flex items-center gap-2">
+        <a
+          href="https://villagulposh.com/"
+          className="flex items-center gap-2"
+          aria-label="Visit Villa Gulposh website"
+        >
           <img src="/Gulposh-Logo2.png" className="md:w-[180px] w-[150px]" alt="logo" />
-        </Link>
+        </a>
 
         {/* RIGHT */}
         <div className="flex items-center gap-4">
