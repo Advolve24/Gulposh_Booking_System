@@ -12,6 +12,7 @@ import {
   Bath,
   ShowerHead,
   Droplets,
+  Waves,
   CookingPot,
   Refrigerator,
   Utensils,
@@ -117,7 +118,7 @@ export const amenityCategories = [
     label: "Outdoor & Nature",
     icon: Trees,
     items: [
-      { id: "swimming_pool", label: "Swimming pool", icon: Droplets },
+      { id: "swimming_pool", label: "Swimming pool", icon: Waves },
       { id: "balcony", label: "Balcony / sit-out", icon: Tent },
       { id: "garden", label: "Garden / lawn", icon: Trees },
       { id: "bonfire", label: "Bonfire (on request)", icon: PartyPopper },

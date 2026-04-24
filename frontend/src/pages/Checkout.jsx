@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowUpLeft, MapPin, Users, Utensils, Check, User, Mail, Phone, Home, CalendarIcon, Flame, ShieldCheck, CreditCard, Info } from "lucide-react";
+import { ArrowUpLeft, ArrowRight, MapPin, Users, Utensils, Check, User, Mail, Phone, Home, CalendarIcon, Flame, ShieldCheck, CreditCard, Info } from "lucide-react";
 import { toDateOnly, toDateOnlyFromAPI, toDateOnlyFromAPIUTC } from "../lib/date";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -2123,14 +2123,11 @@ export default function Checkout() {
 
               <div className="border-b border-[#eadfd6] px-6 py-5">
                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ba081c]">
-                  Room Capacity Reached
+                  Online Booking Capacity Reached
                 </div>
                 <h3 className="mt-2 text-2xl font-semibold text-[#2A201B]">
-                  This room&apos;s max guest capacity is {room?.maxGuests}
+                  More than {room?.maxGuests} guests? Don&apos;t worry, we are happy to accommodate.
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-[#6d5c52]">
-                  Please select another room for more guests, or choose the entire villa for your group.
-                </p>
               </div>
 
               <div className="px-6 py-6">
@@ -2157,18 +2154,18 @@ export default function Checkout() {
                   <button
                     type="button"
                     onClick={goToEntireVilla}
-                    className="flex w-full items-center justify-between rounded-2xl bg-[#ba081c] px-4 py-4 text-left text-white transition hover:bg-[#a00718]"
-                  >
-                    <div>
-                      <div className="text-base font-semibold">
-                        Entire Villa
-                      </div>
-                      <div className="text-sm text-white/85">
-                        Reserve all rooms for larger groups
-                      </div>
+                  className="flex w-full items-center justify-between rounded-2xl bg-[#ba081c] px-4 py-4 text-left text-white transition hover:bg-[#a00718]"
+                >
+                  <div>
+                    <div className="text-base font-semibold">
+                      Send Enquiry
                     </div>
-                    <ArrowUpLeft className="h-4 w-4" />
-                  </button>
+                    <div className="text-sm text-white/85">
+                      We will get in touch with you to discuss and book.
+                    </div>
+                  </div>
+                    <ArrowRight className="h-4 w-4" />
+                </button>
                 </div>
               </div>
             </div>
