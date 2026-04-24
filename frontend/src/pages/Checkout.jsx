@@ -707,7 +707,7 @@ function CheckoutRoomSummaryCard({
             </div>
           </div>
 
-          <div className="text-xl font-semibold text-red-600">
+          <div className="text-xl font-semibold text-green-600">
             {INR(grandTotal)}
           </div>
         </div>
