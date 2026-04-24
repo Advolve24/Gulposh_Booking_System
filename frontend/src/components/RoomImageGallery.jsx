@@ -195,7 +195,7 @@ export default function RoomImageGallery({ images = [], title = "Room gallery" }
           </DialogDescription>
 
           <div className="relative">
-            <div className="flex h-[62vh] min-h-[320px] items-center justify-center bg-white sm:h-[72vh]">
+            <div className="flex h-[62vh] min-h-[320px] items-center justify-center bg-white sm:h-[72vh] pt-4">
               <img
                 src={activeImage}
                 alt={`${title} ${activeIndex + 1}`}

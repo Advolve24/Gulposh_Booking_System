@@ -895,7 +895,7 @@ function BedroomsSection({ images = [] }) {
               type="button"
               onClick={goPrev}
               disabled={clampedActiveCard === 0}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#2A201B]/35 bg-white text-[#2A201B] transition hover:bg-[#f8f4f1] disabled:cursor-not-allowed disabled:opacity-45"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-primary bg-primary text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-45"
               aria-label="Previous bedroom slide"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -905,7 +905,7 @@ function BedroomsSection({ images = [] }) {
               type="button"
               onClick={goNext}
               disabled={clampedActiveCard === maxDotIndex}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#2A201B]/35 bg-white text-[#2A201B] transition hover:bg-[#f8f4f1] disabled:cursor-not-allowed disabled:opacity-45"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-primary bg-primary text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-45"
               aria-label="Next bedroom slide"
             >
               <ChevronRight className="h-5 w-5" />
@@ -973,7 +973,7 @@ function BedroomsSection({ images = [] }) {
                         onTouchStart={stopSliderPointerStart}
                         onPointerDown={stopSliderPointerStart}
                         onClick={() => goToPrevBedroomPhoto(card.id, totalPhotos)}
-                        className="absolute left-4 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-white/95 text-[#2A201B] shadow-md transition hover:bg-white"
+                        className="absolute left-4 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-transparent text-white shadow-md transition hover:bg-white/10"
                         aria-label={`Previous photo for ${card.name}`}
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -985,7 +985,7 @@ function BedroomsSection({ images = [] }) {
                         onTouchStart={stopSliderPointerStart}
                         onPointerDown={stopSliderPointerStart}
                         onClick={() => goToNextBedroomPhoto(card.id, totalPhotos)}
-                        className="absolute right-4 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-white/95 text-[#2A201B] shadow-md transition hover:bg-white"
+                        className="absolute right-4 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/80 bg-transparent text-white shadow-md transition hover:bg-white/10"
                         aria-label={`Next photo for ${card.name}`}
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -1005,8 +1005,8 @@ function BedroomsSection({ images = [] }) {
                             onTouchStart={stopSliderPointerStart}
                             onPointerDown={stopSliderPointerStart}
                             onClick={() => setBedroomPhoto(card.id, imageIndex)}
-                            className={`z-10 cursor-pointer h-2.5 rounded-full transition ${
-                              imageIndex === activePhoto ? "w-6 bg-white" : "w-2.5 bg-white/60"
+                            className={`z-10 cursor-pointer h-2 rounded-full transition ${
+                              imageIndex === activePhoto ? "w-5 bg-white" : "w-2 bg-white/60"
                             }`}
                             aria-label={`Show photo ${imageIndex + 1} for ${card.name}`}
                           />
@@ -1201,8 +1201,8 @@ function SneakPeekSection({ images = [] }) {
   }));
 
   return (
-    <section className="bg-[#ebebeb] p-4 rounded-[10px]">
-      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <section className="p-4 rounded-[10px] border border-[#f3f3f3] ">
+      <div className="mb-3 md:mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h3 className="text-lg sm:text-xl font-semibold">Sneak peek to the villa</h3>
           <p className="mt-2 text-sm text-[#6d5c52]">
@@ -2193,7 +2193,7 @@ export default function RoomPage() {
                 <li>
                   <Link
                     to="/house-rules"
-                    className="inline-flex items-center rounded-[8px] bg-white px-4 py-2 text-sm font-semibold text-primary shadow-[0_2px_6px_rgba(42,32,27,0.08),0_14px_30px_rgba(42,32,27,0.12)] transition hover:text-[#7f1124] hover:shadow-[0_4px_10px_rgba(42,32,27,0.1),0_18px_36px_rgba(42,32,27,0.14)]"
+                    className="inline-flex items-center rounded-[8px] bg-white px-4 py-2 text-sm font-semibold text-primary shadow-[0_1px_3px_rgba(42,32,27,0.06),0_8px_18px_rgba(42,32,27,0.08)] transition hover:text-[#7f1124] hover:shadow-[0_2px_6px_rgba(42,32,27,0.08),0_10px_20px_rgba(42,32,27,0.1)]"
                   >
                     View all
                   </Link>

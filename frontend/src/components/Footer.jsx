@@ -157,7 +157,7 @@ export default function Footer() {
             {/* ================= BOTTOM BAR ================= */}
             <div className="border-t border-white/20 py-3 px-4 text-[13px] sm:text-[14px]">
                 <div className="max-w-7xl mx-auto grid grid-cols-1 gap-3 text-white/80 sm:grid-cols-3 sm:items-center">
-                    <span className="text-center sm:text-left">� 2026 Villa Gulposh. All rights reserved.</span>
+                    <span className="text-center sm:text-left">® 2026 Villa Gulposh. All rights reserved.</span>
 
                     <span className="flex items-center justify-center gap-1 text-center">
                         Designed & Powered by{" "}
