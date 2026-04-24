@@ -225,7 +225,6 @@ function CheckoutGuestPopover({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <span>MAX {room.maxGuests || 10}</span>
             <Users className="h-4 w-4 text-[#a11d2e]" />
           </div>
         </Button>
