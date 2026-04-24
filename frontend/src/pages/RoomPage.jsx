@@ -1852,7 +1852,7 @@ export default function RoomPage() {
     { icon: Users, label: `${roomBaseGuests}–${roomMaxGuests} Guests` },
     { icon: BedDouble, label: "3 Bedrooms" },
     { icon: House, label: "Entire Home" },
-    { icon: UtensilsCrossed, label: "Meals Available", withMealInfo: true },
+    { icon: UtensilsCrossed, label: "Meals Included", withMealInfo: true },
   ];
 
   const weekendOffer = useMemo(() => {
