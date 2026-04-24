@@ -1700,7 +1700,7 @@ export default function RoomPage() {
     };
   });
 
-  const [adults, setAdults] = useState(initialSearch?.adults ?? 1);
+  const [adults, setAdults] = useState(initialSearch?.adults ?? 6);
   const [children, setChildren] = useState(initialSearch?.children ?? 0);
 
 
