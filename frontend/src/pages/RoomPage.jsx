@@ -1856,6 +1856,13 @@ export default function RoomPage() {
 
   const roomBaseGuests = Number(room?.baseGuests || 6);
   const roomMaxGuests = Number(room?.maxGuests || 10);
+  const displayedAmenities = useMemo(() => {
+    const amenities = Array.isArray(room?.amenities) ? [...room.amenities] : [];
+    if (!amenities.includes("swimming_pool")) {
+      amenities.push("swimming_pool");
+    }
+    return amenities;
+  }, [room?.amenities]);
   const roomAddressLine = room?.location || "Karjat, Maharashtra";
   const roomFeatureChips = [
     { icon: Users, label: `${roomBaseGuests}–${roomMaxGuests} Guests` },
@@ -2162,7 +2169,7 @@ export default function RoomPage() {
               <h3 className="text-lg sm:text-xl font-semibold mb-4">Amenities</h3>
 
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {(room.amenities || [])
+                {displayedAmenities
                   .filter((a) => a !== "music_system")
                   .map((a) => {
                   const Icon = AMENITY_ICONS[a];

@@ -117,6 +117,7 @@ export const amenityCategories = [
     label: "Outdoor & Nature",
     icon: Trees,
     items: [
+      { id: "swimming_pool", label: "Swimming pool", icon: Droplets },
       { id: "balcony", label: "Balcony / sit-out", icon: Tent },
       { id: "garden", label: "Garden / lawn", icon: Trees },
       { id: "bonfire", label: "Bonfire (on request)", icon: PartyPopper },
