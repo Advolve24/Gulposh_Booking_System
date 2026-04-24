@@ -711,28 +711,24 @@ function buildBedroomCards(images) {
       highlights: [
         "Accommodates 2 guests + 1 extra guest",
         "King sized bed with attached bathroom",
-        "Bathroom includes shower cubicle, instant geyser, and essential toiletries",
-        "Equipped with WiFi, AC, fan, and other essential amenities",
+        "Attached bathroom features a shower cubicle, instant geyser, and essential toiletries",
+        "Equipped with WiFi, AC, fan, and all standard amenities for a comfortable stay",
       ],
     },
     {
       id: "bedroom-2",
       name: "The Blue Vanda",
       highlights: [
-        "Accommodates 2 guests + 1 extra guest",
         "Queen sized bed with attached bathroom",
-        "Bathroom includes shower cubicle, instant geyser, and essential toiletries",
-        "Equipped with WiFi, AC, fan, and other essential amenities",
+        "All standard amenities",
       ],
     },
     {
       id: "bedroom-3",
       name: "The White Egret",
       highlights: [
-        "Accommodates 2 guests + 1 extra guest",
-        "Queen sized bed with attached bathroom and bathtub",
-        "Bathroom includes shower cubicle, instant geyser, and essential toiletries",
-        "Equipped with WiFi, AC, fan, and other essential amenities",
+        "Queen sized bed with bathtub",
+        "All standard amenities",
       ],
     },
   ];
