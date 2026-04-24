@@ -220,11 +220,6 @@ function RoomNightlyPrices({
   compact = false,
   pricingSummary = null,
 }) {
-  const { weekdayPrice, weekendPrice } = getDisplayedNightlyPrices(room, {
-    guests,
-    adults,
-    children,
-  });
   const wrapperClass =
     align === "center"
       ? "text-center"
@@ -233,6 +228,16 @@ function RoomNightlyPrices({
         : "text-left sm:text-right";
   const priceClass = compact ? "text-[2rem] font-semibold leading-none" : "text-2xl sm:text-[2rem] font-semibold leading-none";
   const hasStaySelection = Boolean(pricingSummary?.nights > 0 && range?.from && range?.to);
+  const { weekendPrice } = getDisplayedNightlyPrices(
+    room,
+    hasStaySelection
+      ? {
+          guests,
+          adults,
+          children,
+        }
+      : 0
+  );
   const label = hasStaySelection
     ? `for ${pricingSummary.nights} night${pricingSummary.nights === 1 ? "" : "s"}`
     : "Weekend Starting from";
@@ -1603,6 +1608,16 @@ function MobileStickyBookingBar({
   containerRef = null,
 }) {
   const ctaLabel = showDrawer && hasMobileStaySelection ? "Continue" : "Book Now";
+  const mobileStartingWeekendPrice = getDisplayedNightlyPrices(
+    room,
+    hasMobileStaySelection
+      ? {
+          guests: totalGuests,
+          adults,
+          children,
+        }
+      : 0
+  ).weekendPrice;
 
   return (
     <div
@@ -1642,13 +1657,7 @@ function MobileStickyBookingBar({
                 Weekend Starting from
               </div>
               <div className="mt-1 text-[22px] font-semibold leading-none text-[#2A201B]">
-                {formatCurrency(
-                  getDisplayedNightlyPrices(room, {
-                    guests: totalGuests,
-                    adults,
-                    children,
-                  }).weekendPrice
-                )}
+                {formatCurrency(mobileStartingWeekendPrice)}
                 <span className="ml-1 text-sm font-normal text-muted-foreground">/ N Incl. Taxes</span>
               </div>
               {room?.mealMode === "only" ? <MealsIncludedNote /> : null}
